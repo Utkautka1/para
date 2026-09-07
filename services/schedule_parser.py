@@ -181,7 +181,7 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
             _DATA_CACHE = (now, snapshot)
             return snapshot
     except httpx.TimeoutException:
-        log.warning("Таймаут подключения к API КТМУ (3 сек). Используем кэш.")
+        log.debug("Таймаут подключения к API КТМУ (3 сек). Используем кэш.")
         return _DATA_CACHE[1]
     except Exception as e:
         log.error(f"Исключение при запросе к API КТМУ: {e}")
