@@ -204,7 +204,7 @@ async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext)
     await callback.answer()
 
 
-@router.message(AddTeacherState.waiting_for_full_name)
+@router.message(AddTeacherState.waiting_for_full_name, F.chat.type == "private")
 async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> None:
     """
     Сохраняет ФИО и запрашивает ссылку на Zoom/Телемост.
@@ -223,7 +223,7 @@ async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> Non
     await message.answer(prompt)
 
 
-@router.message(AddTeacherState.waiting_for_link_info)
+@router.message(AddTeacherState.waiting_for_link_info, F.chat.type == "private")
 async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None:
     """
     Сохраняет преподавателя в custom_teachers.json и очищает FSM.

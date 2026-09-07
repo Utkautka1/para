@@ -4,17 +4,17 @@
 Срабатывает, если Telegram ID отправителя не совпадает с ALLOWED_USER_ID.
 """
 
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.types import Message
 from config import ALLOWED_USER_ID
 
 router = Router()
 
 
-@router.message()
+@router.message(F.chat.type == "private")
 async def unauth_fallback(message: Message) -> None:
     """
-    Информирует посторонних пользователей об ограничении доступа.
+    Информирует посторонних пользователей об ограничении доступа в ЛС.
 
     :param message: Входящее сообщение
     """
