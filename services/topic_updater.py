@@ -98,7 +98,7 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
         return
     pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
     diff_sec = (pair_dt - now_dt).total_seconds()
-    if 480 <= diff_sec <= 660:
+    if 0 < diff_sec <= 600:
         _SENT_REMINDERS.add(rem_key)
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
