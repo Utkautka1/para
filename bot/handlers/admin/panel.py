@@ -89,12 +89,12 @@ async def cb_admin_status(callback: CallbackQuery) -> None:
 @router.callback_query(F.data == "admin:force_topic")
 async def cb_admin_force_topic(callback: CallbackQuery) -> None:
     """
-    Принудительно обновляет сообщение в топике.
+    Принудительно публикует или обновляет сообщение в топике без утренних задержек.
 
     :param callback: CallbackQuery
     """
-    await sync_topic_main_message()
-    note = "📢 Сообщение в топике группы принудительно обновлено!"
+    await sync_topic_main_message(ignore_time_restriction=True)
+    note = "📢 Сообщение в топике группы принудительно отправлено/обновлено!"
     text = format_admin_panel_text(note)
     if callback.message:
         await callback.message.edit_text(text, reply_markup=get_admin_main_kb())

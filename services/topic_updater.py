@@ -103,9 +103,11 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
 
-async def sync_topic_main_message() -> None:
+async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None:
     """
     Атомарно обновляет главное сообщение расписания в топике без создания дублей.
+
+    :param ignore_time_restriction: Флаг принудительной отправки (из админки)
     """
     global _TOPIC_MAIN_MSG_ID
     if _TOPIC_MAIN_MSG_ID is None:
@@ -123,10 +125,9 @@ async def sync_topic_main_message() -> None:
     # Находим первую пару дня
     first_lesson = min(lessons, key=lambda x: x.period)
     start_t = parse_lesson_start_time(first_lesson.time_str)
-    if start_t:
+    if start_t and not ignore_time_restriction:
         first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
         publish_dt = first_pair_dt - timedelta(minutes=60)
-        # Если время публикации еще не наступило (раньше чем за 1 час до 1 пары) — не отправляем первичное сообщение
         if now_dt < publish_dt and _TOPIC_MAIN_MSG_ID is None:
             log.debug(f"Публикация в топик отложена до {publish_dt.strftime('%H:%M:%S')} (за 1 час до 1 пары)")
             return
