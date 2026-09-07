@@ -103,77 +103,91 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
 
+def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Optional[datetime.date]:
+    """
+    Вычисляет целевую дату расписания (с учетом ограничений воскресенья).
+
+    :param now_dt: Текущее время МСК
+    :param ignore_restriction: Игнорировать ли временные фильтры
+    :return: Дата или None, если публикация отложена
+    """
+    today = now_dt.date()
+    if today.weekday() == 6:
+        if now_dt.hour < 18 and not ignore_restriction:
+            log.debug("Воскресенье (до 18:00) — публикация в топик отложена.")
+            return None
+        return today + timedelta(days=1)
+    return today
+
+
+def is_too_early_to_publish(lessons: List[Lesson], now_dt: datetime, today: datetime.date, ignore_restriction: bool) -> bool:
+    """
+    Проверяет, не рано ли публиковать расписание (за 1 час до 1-й пары).
+
+    :return: True если еще рано отправлять новое сообщение
+    """
+    if today.weekday() == 6 or ignore_restriction or _TOPIC_MAIN_MSG_ID is not None:
+        return False
+    first_lesson = min(lessons, key=lambda x: x.period)
+    start_t = parse_lesson_start_time(first_lesson.time_str)
+    if start_t:
+        first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
+        if now_dt < first_pair_dt - timedelta(minutes=60):
+            return True
+    return False
+
+
+async def update_topic_message_payload(text: str, kb: Any) -> None:
+    """
+    Атомарно отправляет новое или редактирует существующее сообщение топика.
+
+    :param text: Текст HTML
+    :param kb: Инлайн-клавиатура
+    """
+    global _TOPIC_MAIN_MSG_ID
+    try:
+        if _TOPIC_MAIN_MSG_ID is None:
+            msg = await bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID, text=text, reply_markup=kb)
+            _TOPIC_MAIN_MSG_ID = msg.message_id
+            save_topic_state(_TOPIC_MAIN_MSG_ID)
+            log.info(f"Главное сообщение расписания создано в топике: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+        else:
+            await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=_TOPIC_MAIN_MSG_ID, text=text, reply_markup=kb)
+            log.debug(f"Сообщение расписания в топике обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+    except TelegramBadRequest as e:
+        if "message to edit not found" in str(e).lower():
+            _TOPIC_MAIN_MSG_ID = None
+            save_topic_state(None)
+    except Exception as e:
+        log.error(f"Ошибка обновления топика: {e}")
+
+
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None:
     """
-    Атомарно обновляет главное сообщение расписания в топике без создания дублей.
+    Атомарно обновляет главное сообщение расписания в топике.
 
-    :param ignore_time_restriction: Флаг принудительной отправки (из админки)
+    :param ignore_time_restriction: Флаг принудительной отправки
     """
     global _TOPIC_MAIN_MSG_ID
     if _TOPIC_MAIN_MSG_ID is None:
         _TOPIC_MAIN_MSG_ID = load_topic_state()
 
     now_dt = datetime.now(TIMEZONE)
-    today = now_dt.date()
-
-    target_date = today
-    if today.weekday() == 6:
-        # В воскресенье до 18:00 ничего не публиковать
-        if now_dt.hour < 18 and not ignore_time_restriction:
-            log.debug("Воскресенье (до 18:00) — публикация в топик отложена.")
-            return
-        # В воскресенье с 18:00 публикуем расписание на Понедельник
-        target_date = today + timedelta(days=1)
-
-    lessons = await get_schedule_for_date(target_date)
-    text = format_day_schedule(target_date, lessons)
-    kb = get_topic_inline_kb(lessons)
-
-    if not lessons:
+    target_date = resolve_target_date(now_dt, ignore_time_restriction)
+    if not target_date:
         return
 
-    # Находим первую пару дня (для обычных дней кроме воскресенья с 18:00)
-    if today.weekday() != 6:
-        first_lesson = min(lessons, key=lambda x: x.period)
-        start_t = parse_lesson_start_time(first_lesson.time_str)
-        if start_t and not ignore_time_restriction:
-            first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
-            publish_dt = first_pair_dt - timedelta(minutes=60)
-            if now_dt < publish_dt and _TOPIC_MAIN_MSG_ID is None:
-                log.debug(f"Публикация в топик отложена до {publish_dt.strftime('%H:%M:%S')} (за 1 час до 1 пары)")
-                return
+    lessons = await get_schedule_for_date(target_date)
+    if not lessons or is_too_early_to_publish(lessons, now_dt, now_dt.date(), ignore_time_restriction):
+        return
 
-    if today.weekday() == target_date.weekday():
+    if now_dt.date() == target_date:
         for l in lessons:
-            check_and_trigger_reminder(l, now_dt, today)
+            check_and_trigger_reminder(l, now_dt, now_dt.date())
 
-    try:
-        if _TOPIC_MAIN_MSG_ID is None:
-            msg = await bot.send_message(
-                chat_id=TOPIC_CHAT_ID,
-                message_thread_id=TOPIC_THREAD_ID,
-                text=text,
-                reply_markup=kb
-            )
-            _TOPIC_MAIN_MSG_ID = msg.message_id
-            save_topic_state(_TOPIC_MAIN_MSG_ID)
-            log.info(f"Главное сообщение расписания создано в топике: MSG_ID={_TOPIC_MAIN_MSG_ID}")
-        else:
-            await bot.edit_message_text(
-                chat_id=TOPIC_CHAT_ID,
-                message_id=_TOPIC_MAIN_MSG_ID,
-                text=text,
-                reply_markup=kb
-            )
-            log.debug(f"Сообщение расписания в топике обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
-    except TelegramBadRequest as e:
-        if "message is not modified" in str(e).lower():
-            pass
-        elif "message to edit not found" in str(e).lower():
-            _TOPIC_MAIN_MSG_ID = None
-            save_topic_state(None)
-    except Exception as e:
-        log.error(f"Ошибка обновления топика: {e}")
+    text = format_day_schedule(target_date, lessons)
+    kb = get_topic_inline_kb(lessons)
+    await update_topic_message_payload(text, kb)
 
 
 async def topic_sync_loop() -> None:
