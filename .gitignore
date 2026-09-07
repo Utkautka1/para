@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python virtual environment
+venv/
+ENV/
+env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+**/__pycache__/
+
+# Logs directory
+logs/*
+!logs/.gitkeep
+*.log
+
+# Local data storage
+data/*
+!data/.gitkeep
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+.DS_Store
