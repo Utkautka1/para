@@ -119,10 +119,13 @@ def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datet
 
 async def daily_schedule_dispatch() -> None:
     """
-    Ежедневный воркер расчёта таймеров (без спама в 6:00 утра).
+    Ежедневный воркер расчёта таймеров (пропускает воскресенье).
     """
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
+    if today.weekday() == 6:
+        log.info("Сегодня Воскресенье — фоновый расчет рассылок пропущен.")
+        return
     log.info(f"=== ЕЖЕДНЕВНЫЙ ФОНОВЫЙ РАСЧЁТ ТАЙМЕРОВ ({today}) ===")
     lessons = await get_schedule_for_date(today, force_refresh=True)
     for lesson in lessons:

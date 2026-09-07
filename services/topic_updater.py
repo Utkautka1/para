@@ -115,6 +115,10 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
 
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
+    if today.weekday() == 6 and not ignore_time_restriction:
+        log.debug("Воскресенье — авто-обновление топика пропущено.")
+        return
+
     lessons = await get_schedule_for_date(today)
     text = format_day_schedule(today, lessons)
     kb = get_topic_inline_kb(lessons)
