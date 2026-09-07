@@ -69,18 +69,20 @@ async def send_to_user(text: str, reply_markup=None) -> None:
 
 def parse_lesson_start_time(time_str: str) -> Optional[dtime]:
     """
-    Парсит время начала пары из строки формата '08:30–09:55'.
+    Парсит время начала пары из строки любого формата ('08:30–09:55', '8:30-09:55').
 
     :param time_str: Строка времени
     :return: Объект time или None при ошибке
     """
     try:
-        start_part = time_str.split("–")[0].strip()
-        h, m = map(int, start_part.split(":"))
-        return dtime(hour=h, minute=m)
+        import re
+        match = re.search(r"(\d{1,2})[:\.](\d{2})", time_str)
+        if match:
+            h, m = int(match.group(1)), int(match.group(2))
+            return dtime(hour=h, minute=m)
     except Exception as e:
         log.error(f"Не удалось распарсить время пары {time_str}: {e}")
-        return None
+    return None
 
 
 async def send_single_reminder(lesson: Lesson) -> None:
