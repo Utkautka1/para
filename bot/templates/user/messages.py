@@ -36,12 +36,10 @@ def format_lesson_card(lesson: Lesson) -> str:
         f"{loc_str}"
     )
     if lesson.is_remote and (lesson.remote_passcode or lesson.remote_meeting_id):
-        creds = []
         if lesson.remote_meeting_id:
-            creds.append(f"ID: <code>{lesson.remote_meeting_id}</code>")
+            card += f"\n🆔 <b>Идентификатор Zoom:</b> <code>{lesson.remote_meeting_id}</code>"
         if lesson.remote_passcode:
-            creds.append(f"Код: <code>{lesson.remote_passcode}</code>")
-        card += f"\n🔑 <b>Реквизиты:</b> {' • '.join(creds)}"
+            card += f"\n🔐 <b>Код доступа:</b> <code>{lesson.remote_passcode}</code>"
     return card
 
 
