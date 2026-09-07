@@ -49,10 +49,6 @@ def get_schedule_inline_kb(
         if link_btns:
             rows.append(link_btns)
 
-        copy_row = build_zoom_copy_row(lessons)
-        if copy_row:
-            rows.append(copy_row)
-
     rows.append([
         InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today"),
         InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow")
@@ -93,9 +89,5 @@ def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> InlineKeyboar
                     link_btns.append(InlineKeyboardButton(text=f"🔗 {l.period + 1}-я пара{sg}", url=url, style="success"))
         if link_btns:
             rows.append(link_btns)
-
-        copy_row = build_zoom_copy_row(lessons)
-        if copy_row:
-            rows.append(copy_row)
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
