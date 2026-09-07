@@ -115,29 +115,37 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
 
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
-    if today.weekday() == 6 and not ignore_time_restriction:
-        log.debug("Воскресенье — авто-обновление топика пропущено.")
-        return
 
-    lessons = await get_schedule_for_date(today)
-    text = format_day_schedule(today, lessons)
+    target_date = today
+    if today.weekday() == 6:
+        # В воскресенье до 18:00 ничего не публиковать
+        if now_dt.hour < 18 and not ignore_time_restriction:
+            log.debug("Воскресенье (до 18:00) — публикация в топик отложена.")
+            return
+        # В воскресенье с 18:00 публикуем расписание на Понедельник
+        target_date = today + timedelta(days=1)
+
+    lessons = await get_schedule_for_date(target_date)
+    text = format_day_schedule(target_date, lessons)
     kb = get_topic_inline_kb(lessons)
 
     if not lessons:
         return
 
-    # Находим первую пару дня
-    first_lesson = min(lessons, key=lambda x: x.period)
-    start_t = parse_lesson_start_time(first_lesson.time_str)
-    if start_t and not ignore_time_restriction:
-        first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
-        publish_dt = first_pair_dt - timedelta(minutes=60)
-        if now_dt < publish_dt and _TOPIC_MAIN_MSG_ID is None:
-            log.debug(f"Публикация в топик отложена до {publish_dt.strftime('%H:%M:%S')} (за 1 час до 1 пары)")
-            return
+    # Находим первую пару дня (для обычных дней кроме воскресенья с 18:00)
+    if today.weekday() != 6:
+        first_lesson = min(lessons, key=lambda x: x.period)
+        start_t = parse_lesson_start_time(first_lesson.time_str)
+        if start_t and not ignore_time_restriction:
+            first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
+            publish_dt = first_pair_dt - timedelta(minutes=60)
+            if now_dt < publish_dt and _TOPIC_MAIN_MSG_ID is None:
+                log.debug(f"Публикация в топик отложена до {publish_dt.strftime('%H:%M:%S')} (за 1 час до 1 пары)")
+                return
 
-    for l in lessons:
-        check_and_trigger_reminder(l, now_dt, today)
+    if today.weekday() == target_date.weekday():
+        for l in lessons:
+            check_and_trigger_reminder(l, now_dt, today)
 
     try:
         if _TOPIC_MAIN_MSG_ID is None:
