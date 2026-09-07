@@ -181,7 +181,7 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
             _DATA_CACHE = (now, snapshot)
             return snapshot
     except Exception as e:
-        log.error(f"Исключение при запросе к API КТМУ: {e}")
+        log.error(f"Исключение при запросе к API КТМУ: {e}", exc_info=True)
         return _DATA_CACHE[1]
 
 
