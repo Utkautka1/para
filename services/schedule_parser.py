@@ -234,6 +234,10 @@ def build_lesson_object(
             teacher_name = t_info.get("full_name") or raw_teacher
             if is_remote and t_info.get("link_info"):
                 remote_link, meeting_id, passcode = extract_zoom_creds(t_info["link_info"])
+        elif is_remote:
+            import asyncio
+            from services.notifier import notify_missing_teacher
+            asyncio.create_task(notify_missing_teacher(raw_teacher, subj_name))
 
     subgroup = inst.get("subgroup", 0)
     return Lesson(

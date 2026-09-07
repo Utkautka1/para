@@ -18,6 +18,9 @@ def get_admin_main_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="📊 Статус и Кэш", callback_data="admin:status")
             ],
             [
+                InlineKeyboardButton(text="👨‍🏫 Ручные ссылки преподавателей", callback_data="admin:list_custom")
+            ],
+            [
                 InlineKeyboardButton(text="📢 Обновить топик сейчас", callback_data="admin:force_topic")
             ],
             [

@@ -99,7 +99,7 @@ def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
 
 async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherData]:
     """
-    Возвращает карту контактов преподавателей с учётом кэша.
+    Возвращает карту контактов преподавателей (Docx + Custom JSON).
 
     :param force_refresh: Принудительное обновление кэша
     :return: Словарь контактов преподавателей
@@ -109,10 +109,12 @@ async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherDat
     if not force_refresh and (now - _CACHE[0] < DOCX_CACHE_TTL_SECONDS) and _CACHE[1]:
         return _CACHE[1]
 
+    from services.custom_teachers import load_custom_teachers
     log.info("Загрузка свежих данных с Яндекс Диска...")
     content = await fetch_docx_bytes()
-    if content:
-        parsed = parse_docx_teachers(content)
-        _CACHE = (now, parsed)
-        return parsed
-    return _CACHE[1]
+    parsed = parse_docx_teachers(content) if content else _CACHE[1].copy()
+    custom = load_custom_teachers()
+    # Сначала применяем данные из docx, затем перекрываем кастомными
+    parsed.update(custom)
+    _CACHE = (now, parsed)
+    return parsed

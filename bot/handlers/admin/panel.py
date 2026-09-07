@@ -99,3 +99,105 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
     if callback.message:
         await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
     await callback.answer("Топик обновлен!")
+
+
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from services.custom_teachers import load_custom_teachers, save_custom_teacher
+
+
+class AddTeacherState(StatesGroup):
+    waiting_for_full_name = State()
+    waiting_for_link_info = State()
+
+
+@router.callback_query(F.data == "admin:list_custom")
+async def cb_admin_list_custom(callback: CallbackQuery) -> None:
+    """
+    Выводит список всех ручных записей преподавателей.
+
+    :param callback: CallbackQuery
+    """
+    custom = load_custom_teachers()
+    if not custom:
+        text = "👨‍🏫 <b>Ручных записей пока нет.</b>"
+    else:
+        text = "👨‍🏫 <b>Добавленные вручную контакты:</b>\n\n"
+        for key, val in custom.items():
+            text += f"🔹 <b>{val['full_name']}</b> ({key}):\n<code>{val['link_info']}</code>\n\n"
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Добавить нового", callback_data="admin:add_t:manual")],
+        [InlineKeyboardButton(text="◀️ В панель", callback_data="admin:menu")]
+    ])
+    if callback.message:
+        await callback.message.edit_text(text, reply_markup=kb)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin:add_t:"))
+async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Запускает FSM диалог ввода ФИО преподавателя.
+
+    :param callback: CallbackQuery
+    :param state: FSMContext
+    """
+    suggested_key = callback.data.split(":")[-1]
+    await state.set_state(AddTeacherState.waiting_for_full_name)
+    await state.update_data(suggested_key=suggested_key)
+    prompt = (
+        "👨‍🏫 <b>Ввод данных преподавателя</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Шаг 1/2: Отправьте полные ФИО преподавателя (например, <code>Валуев Константин Владимирович</code>):"
+    )
+    if callback.message:
+        await callback.message.edit_text(prompt)
+    await callback.answer()
+
+
+@router.message(AddTeacherState.waiting_for_full_name)
+async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> None:
+    """
+    Сохраняет ФИО и запрашивает ссылку на Zoom/Телемост.
+
+    :param message: Message
+    :param state: FSMContext
+    """
+    full_name = message.text.strip() if message.text else ""
+    await state.update_data(full_name=full_name)
+    await state.set_state(AddTeacherState.waiting_for_link_info)
+    prompt = (
+        f"✅ ФИО: <b>{full_name}</b>\n\n"
+        "Шаг 2/2: Отправьте ссылку на Zoom/Телемост или полные реквизиты встречи "
+        "(включая Идентификатор и Пароль, если есть):"
+    )
+    await message.answer(prompt)
+
+
+@router.message(AddTeacherState.waiting_for_link_info)
+async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None:
+    """
+    Сохраняет преподавателя в custom_teachers.json и очищает FSM.
+
+    :param message: Message
+    :param state: FSMContext
+    """
+    data = await state.get_data()
+    full_name = data.get("full_name", "")
+    link_info = message.text.strip() if message.text else ""
+    last_name = full_name.split()[0].lower() if full_name else data.get("suggested_key", "custom")
+
+    save_custom_teacher(last_name, full_name, link_info)
+    await get_teacher_links(force_refresh=True)
+    await state.clear()
+
+    res_text = (
+        f"🎉 <b>Преподаватель успешно сохранён!</b>\n"
+        f"👤 <b>ФИО:</b> {full_name}\n"
+        f"🔗 <b>Контакты:</b> {link_info}\n\n"
+        f"<i>Данные применены и будут использоваться во всех дистанционных парах.</i>"
+    )
+    await message.answer(res_text, reply_markup=get_admin_main_kb())
+
