@@ -54,7 +54,7 @@ def get_schedule_inline_kb(
             rows.append(copy_row)
 
     rows.append([
-        InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
+        InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today"),
         InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow")
     ])
 
