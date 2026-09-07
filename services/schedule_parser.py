@@ -167,7 +167,7 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
     if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and _DATA_CACHE[1]:
         return _DATA_CACHE[1]
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             res = await client.get(SCHEDULE_API_URL)
             if res.status_code != 200:
                 log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
