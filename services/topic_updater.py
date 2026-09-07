@@ -90,7 +90,7 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
     :param now_dt: Время МСК
     :param today: Дата
     """
-    rem_key = f"{today.isoformat()}_{lesson.period}_{lesson.subgroup}"
+    rem_key = f"{today.isoformat()}_{lesson.period}_{lesson.subgroup}_{lesson.subject}"
     if rem_key in _SENT_REMINDERS:
         return
     start_t = parse_lesson_start_time(lesson.time_str)
