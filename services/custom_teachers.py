@@ -41,3 +41,17 @@ def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
     os.makedirs("data", exist_ok=True)
     with open(CUSTOM_TEACHERS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def delete_custom_teacher(last_name: str) -> None:
+    """
+    Удаляет преподавателя по его ключу-фамилии из JSON.
+
+    :param last_name: Фамилия (ключ)
+    """
+    data = load_custom_teachers()
+    if last_name.lower() in data:
+        data.pop(last_name.lower())
+        with open(CUSTOM_TEACHERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+

@@ -112,27 +112,74 @@ class AddTeacherState(StatesGroup):
     waiting_for_link_info = State()
 
 
-@router.callback_query(F.data == "admin:list_custom")
+@router.callback_query(F.data.startswith("admin:list_custom"))
 async def cb_admin_list_custom(callback: CallbackQuery) -> None:
     """
-    Выводит список всех ручных записей преподавателей.
+    Выводит список кастомных преподавателей с кнопками ред/удал и навигацией.
 
     :param callback: CallbackQuery
     """
     custom = load_custom_teachers()
     if not custom:
-        text = "👨‍🏫 <b>Ручных записей пока нет.</b>"
+        text = "👨‍🏫 <b>Ручных записей преподавателей пока нет.</b>"
+        kb_rows = []
     else:
         text = "👨‍🏫 <b>Добавленные вручную контакты:</b>\n\n"
+        kb_rows = []
         for key, val in custom.items():
-            text += f"🔹 <b>{val['full_name']}</b> ({key}):\n<code>{val['link_info']}</code>\n\n"
+            text += f"🔹 <b>{val['full_name']}</b> (код: <code>{key}</code>):\n<code>{val['link_info']}</code>\n\n"
+            kb_rows.append([
+                InlineKeyboardButton(text=f"✏️ {val['full_name'].split()[0]}", callback_data=f"admin:edit_t:{key}"),
+                InlineKeyboardButton(text=f"🗑️ Удалить", callback_data=f"admin:del_t:{key}")
+            ])
 
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Добавить нового", callback_data="admin:add_t:manual")],
-        [InlineKeyboardButton(text="◀️ В панель", callback_data="admin:menu")]
-    ])
+    kb_rows.append([InlineKeyboardButton(text="➕ Добавить нового", callback_data="admin:add_t:manual")])
+    kb_rows.append([InlineKeyboardButton(text="◀️ В главную панель", callback_data="admin:menu")])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=kb_rows)
     if callback.message:
         await callback.message.edit_text(text, reply_markup=kb)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin:del_t:"))
+async def cb_admin_delete_teacher(callback: CallbackQuery) -> None:
+    """
+    Удаляет преподавателя и обновляет список.
+
+    :param callback: CallbackQuery
+    """
+    from services.custom_teachers import delete_custom_teacher
+    last_name = callback.data.split(":")[-1]
+    delete_custom_teacher(last_name)
+    await get_teacher_links(force_refresh=True)
+    await callback.answer("❌ Запись удалена!")
+    await cb_admin_list_custom(callback)
+
+
+@router.callback_query(F.data.startswith("admin:edit_t:"))
+async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Быстрое редактирование преподавателя.
+
+    :param callback: CallbackQuery
+    :param state: FSMContext
+    """
+    last_name = callback.data.split(":")[-1]
+    custom = load_custom_teachers()
+    t_info = custom.get(last_name, {})
+    full_name = t_info.get("full_name", last_name.capitalize())
+
+    await state.set_state(AddTeacherState.waiting_for_link_info)
+    await state.update_data(full_name=full_name, suggested_key=last_name)
+    prompt = (
+        f"✏️ <b>Редактирование ссылок преподавателя</b>\n"
+        f"👤 <b>ФИО:</b> {full_name}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"Отправьте НОВУЮ ссылку на Zoom/Телемост или полные реквизиты встречи:"
+    )
+    if callback.message:
+        await callback.message.edit_text(prompt)
     await callback.answer()
 
 
