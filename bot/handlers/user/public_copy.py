@@ -15,8 +15,12 @@ public_router = Router()
 async def cb_public_copy_value(callback: CallbackQuery) -> None:
     """
     Публичный обработчик копирования ID и паролей Zoom.
+    Отправляет значение отдельным всплывающим сообщением для зажатия/копирования в клик.
 
     :param callback: CallbackQuery
     """
     val = callback.data.split("copy:", 1)[1]
-    await callback.answer(f"Скопировано: {val}", show_alert=True)
+    await callback.answer(f"Скопировано: {val}")
+    if callback.message:
+        await callback.message.answer(f"<code>{val}</code>")
+
