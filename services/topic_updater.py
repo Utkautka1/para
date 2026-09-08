@@ -159,7 +159,10 @@ async def update_topic_message_payload(text: str, kb: Any) -> None:
             _TOPIC_MAIN_MSG_ID = None
             save_topic_state(None)
     except Exception as e:
-        log.error(f"Ошибка обновления топика: {e}")
+        if "network" in str(e).lower() or "timeout" in str(e).lower():
+            log.warning(f"Сетевая задержка при обновлении топика Telegram: {e}")
+        else:
+            log.error(f"Ошибка обновления топика: {e}")
 
 
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None:

@@ -7,15 +7,18 @@
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from config import BOT_TOKEN
 from core.logger import get_logger
 
 log = get_logger("bot_core")
 
-# Бот с отключенными превью ссылок по умолчанию
+session = AiohttpSession(timeout=10.0)
+
 bot = Bot(
     token=BOT_TOKEN,
+    session=session,
     default=DefaultBotProperties(
         parse_mode=ParseMode.HTML,
         link_preview_is_disabled=True
