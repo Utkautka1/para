@@ -18,7 +18,7 @@ from core.logger import get_logger
 from services.schedule_parser import Lesson, get_schedule_for_date
 from bot.templates.user.keyboards import get_topic_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
-from services.notifier import parse_lesson_start_time
+from services.notifier import parse_lesson_end_time, parse_lesson_start_time
 
 log = get_logger("topic_updater")
 STATE_FILE = "data/topic_state.json"
@@ -103,20 +103,40 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
 
-def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Optional[datetime.date]:
+def get_next_working_day(target_date: datetime.date) -> datetime.date:
     """
-    Вычисляет целевую дату расписания (с учетом ограничений воскресенья).
+    Возвращает следующий рабочий день (пропускает воскресенье, сдвигая на понедельник).
+
+    :param target_date: Текущая дата
+    :return: Следующая дата без воскресенья
+    """
+    next_d = target_date + timedelta(days=1)
+    if next_d.weekday() == 6:
+        return next_d + timedelta(days=1)
+    return next_d
+
+
+async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Optional[datetime.date]:
+    """
+    Вычисляет целевую дату: при завершении всех пар на сегодня переключает на следующий день.
 
     :param now_dt: Текущее время МСК
     :param ignore_restriction: Игнорировать ли временные фильтры
-    :return: Дата или None, если публикация отложена
+    :return: Дата или None
     """
     today = now_dt.date()
     if today.weekday() == 6:
         if now_dt.hour < 18 and not ignore_restriction:
-            log.debug("Воскресенье (до 18:00) — публикация в топик отложена.")
             return None
         return today + timedelta(days=1)
+    today_lessons = await get_schedule_for_date(today)
+    if today_lessons:
+        last_lesson = max(today_lessons, key=lambda x: x.period)
+        end_t = parse_lesson_end_time(last_lesson.time_str)
+        if end_t:
+            last_end_dt = datetime.combine(today, end_t).replace(tzinfo=TIMEZONE)
+            if now_dt >= last_end_dt:
+                return get_next_working_day(today)
     return today
 
 
@@ -176,7 +196,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
         _TOPIC_MAIN_MSG_ID = load_topic_state()
 
     now_dt = datetime.now(TIMEZONE)
-    target_date = resolve_target_date(now_dt, ignore_time_restriction)
+    target_date = await resolve_target_date(now_dt, ignore_time_restriction)
     if not target_date:
         return
 

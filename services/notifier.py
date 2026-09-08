@@ -85,6 +85,24 @@ def parse_lesson_start_time(time_str: str) -> Optional[dtime]:
     return None
 
 
+def parse_lesson_end_time(time_str: str) -> Optional[dtime]:
+    """
+    Парсит время окончания пары из строки любого формата ('08:30–09:55').
+
+    :param time_str: Строка времени
+    :return: Объект time или None при ошибке
+    """
+    try:
+        import re
+        matches = re.findall(r"(\d{1,2})[:\.](\d{2})", time_str)
+        if len(matches) >= 2:
+            h, m = int(matches[1][0]), int(matches[1][1])
+            return dtime(hour=h, minute=m)
+    except Exception as e:
+        log.error(f"Не удалось распарсить время окончания пары {time_str}: {e}")
+    return None
+
+
 async def send_single_reminder(lesson: Lesson) -> None:
     """
     Отправляет 10-минутное напоминание о паре с инлайн-кнопками.
