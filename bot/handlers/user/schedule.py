@@ -52,15 +52,10 @@ async def cmd_start(message: Message) -> None:
 
     :param message: Telegram сообщение
     """
-    from aiogram.types import ReplyKeyboardRemove
     now = datetime.now(TIMEZONE).date()
     lessons = await get_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
-    # Отправляем сообщение с удалением старой Reply-клавиатуры
     await message.answer(text, reply_markup=get_schedule_inline_kb(lessons))
-    # В случае наличия зависшей старой клавиатуры Telegram - очищаем ее
-    remove_msg = await message.answer("🧹 Очистка старого меню...", reply_markup=ReplyKeyboardRemove())
-    await remove_msg.delete()
 
 
 @router.callback_query(F.data == "sched:today")
