@@ -5,7 +5,7 @@
 Контрольные работы) с точной привязкой к неделям семестра.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel
 
 from config import GROUP_ID
@@ -43,9 +43,79 @@ class ExamItem(BaseModel):
     format_str: str = "Очно"
 
 
+def is_assessment_type(type_id: str, l_types: Dict[str, str]) -> Tuple[bool, str]:
+    """
+    Проверяет, относится ли пара к видам аттестаций/экзаменов.
+
+    :return: Кортеж (флаг_успеха, название_типа)
+    """
+    t_name = EXAM_TYPE_MAPPING.get(type_id) or l_types.get(type_id, "")
+    is_valid = t_name in ("Контрольная работа", "Зачёт", "Диф. зачёт", "Курсовая работа")
+    return is_valid, t_name
+
+
+def parse_exam_from_load(
+    load: Dict[str, Any], entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict], teacher_links: Dict[str, Any]
+) -> Optional[Tuple[str, ExamItem]]:
+    """
+    Создает элемент ExamItem из нагрузки (loads) учебного плана.
+
+    :return: Кортеж (ключ, ExamItem) или None
+    """
+    subjs, teachs, _, _, l_types = entity_maps
+    valid, type_name = is_assessment_type(load.get("typeId", ""), l_types)
+    if not valid or load.get("groupId") != GROUP_ID:
+        return None
+
+    subj_name = clean_subject_title(subjs.get(load.get("subjectId"), "Аттестация"))
+    raw_teacher = teachs.get(load.get("teacherId"), "Преподаватель")
+    is_remote = load.get("format") == "remote"
+
+    last_name = raw_teacher.split()[0].lower() if raw_teacher else ""
+    t_info = teacher_links.get(last_name)
+    teacher_name = t_info.get("full_name") if t_info else raw_teacher
+
+    weeks_keys = list(load.get("weeklyPairs", {}).keys())
+    weeks = [int(w) for w in weeks_keys if w.isdigit()] if weeks_keys else load.get("customWeeks", [])
+    subgroup = load.get("subgroup", 0)
+
+    item = ExamItem(
+        subject=subj_name, exam_type=type_name, teacher=teacher_name,
+        room="Дистанционно" if is_remote else "Кабинет уточняется",
+        address=resolve_room_address("Дистанционно" if is_remote else "", is_remote),
+        weeks=sorted(weeks), subgroup=subgroup,
+        format_str="🌐 Дистанционно" if is_remote else "📍 Очно",
+    )
+    return f"{subj_name}_{type_name}_{subgroup}", item
+
+
+def enrich_exam_from_instance(
+    inst: Dict[str, Any], entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict], exams_dict: Dict[str, ExamItem]
+) -> None:
+    """
+    Уточняет аудиторию и недели из запланированного экземпляра в сетке.
+    """
+    subjs, _, rms, _, l_types = entity_maps
+    valid, type_name = is_assessment_type(inst.get("typeId", ""), l_types)
+    if not valid or inst.get("groupId") != GROUP_ID:
+        return
+
+    subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Аттестация"))
+    subgroup = inst.get("subgroup", 0)
+    key = f"{subj_name}_{type_name}_{subgroup}"
+
+    if key in exams_dict:
+        is_remote = inst.get("format") == "remote"
+        room_name = rms.get((inst.get("preferredRoomIds") or [""])[0], "Кабинет уточняется") if not is_remote else "Дистанционно"
+        exams_dict[key].room = room_name
+        exams_dict[key].address = resolve_room_address(room_name, is_remote)
+        if inst.get("customWeeks"):
+            exams_dict[key].weeks = sorted(inst.get("customWeeks", []))
+
+
 async def get_group_exams() -> List[ExamItem]:
     """
-    Извлекает аттестации как из расписания (schedule.instances), так и из нагрузки (loads).
+    Извлекает аттестации как из расписания (instances), так и из нагрузки (loads).
 
     :return: Список объектов ExamItem
     """
@@ -53,70 +123,17 @@ async def get_group_exams() -> List[ExamItem]:
     if not data:
         return []
 
-    sched = data.get("schedule", {})
-    instances = sched.get("instances", [])
-    loads = data.get("loads", [])
     entity_maps = extract_entity_maps(data)
-    subjs, teachs, rms, _, l_types = entity_maps
     teacher_links = await get_teacher_links(force_refresh=False)
-
     exams_dict: Dict[str, ExamItem] = {}
 
-    # 1. Считываем из loads (учебного плана семестра)
-    for load in loads:
-        if not isinstance(load, dict) or load.get("groupId") != GROUP_ID:
-            continue
-        type_id = load.get("typeId")
-        type_name = EXAM_TYPE_MAPPING.get(type_id) or l_types.get(type_id, "")
-        if type_name not in ("Контрольная работа", "Зачёт", "Диф. зачёт", "Курсовая работа"):
-            continue
+    for load in data.get("loads", []):
+        parsed = parse_exam_from_load(load, entity_maps, teacher_links)
+        if parsed:
+            exams_dict[parsed[0]] = parsed[1]
 
-        subj_name = clean_subject_title(subjs.get(load.get("subjectId"), "Аттестация"))
-        raw_teacher = teachs.get(load.get("teacherId"), "Преподаватель")
-        is_remote = load.get("format") == "remote"
-
-        last_name = raw_teacher.split()[0].lower() if raw_teacher else ""
-        t_info = teacher_links.get(last_name)
-        teacher_name = t_info.get("full_name") if t_info else raw_teacher
-
-        weeks_str_keys = list(load.get("weeklyPairs", {}).keys())
-        weeks = [int(w) for w in weeks_str_keys if w.isdigit()] if weeks_str_keys else load.get("customWeeks", [])
-        subgroup = load.get("subgroup", 0)
-
-        key = f"{subj_name}_{type_name}_{subgroup}"
-        exams_dict[key] = ExamItem(
-            subject=subj_name,
-            exam_type=type_name,
-            teacher=teacher_name,
-            room="Дистанционно" if is_remote else "Кабинет уточняется",
-            address=resolve_room_address("Дистанционно" if is_remote else "", is_remote),
-            weeks=sorted(weeks),
-            subgroup=subgroup,
-            format_str="🌐 Дистанционно" if is_remote else "📍 Очно",
-        )
-
-    # 2. Уточняем кабинеты из запланированных сеткой экземпляров (instances)
-    for inst in instances:
-        if not isinstance(inst, dict) or inst.get("groupId") != GROUP_ID:
-            continue
-        type_id = inst.get("typeId")
-        type_name = EXAM_TYPE_MAPPING.get(type_id) or l_types.get(type_id, "")
-        if type_name not in ("Контрольная работа", "Зачёт", "Диф. зачёт", "Курсовая работа"):
-            continue
-
-        subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Аттестация"))
-        subgroup = inst.get("subgroup", 0)
-        key = f"{subj_name}_{type_name}_{subgroup}"
-
-        is_remote = inst.get("format") == "remote"
-        room_name = rms.get((inst.get("preferredRoomIds") or [""])[0], "Кабинет уточняется") if not is_remote else "Дистанционно"
-        address = resolve_room_address(room_name, is_remote)
-
-        if key in exams_dict:
-            exams_dict[key].room = room_name
-            exams_dict[key].address = address
-            if inst.get("customWeeks"):
-                exams_dict[key].weeks = sorted(inst.get("customWeeks", []))
+    for inst in data.get("schedule", {}).get("instances", []):
+        enrich_exam_from_instance(inst, entity_maps, exams_dict)
 
     result = list(exams_dict.values())
     result.sort(key=lambda x: (min(x.weeks) if x.weeks else 99, x.subject))
