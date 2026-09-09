@@ -96,6 +96,30 @@ def format_exams_schedule_message(exams: List[ExamItem]) -> str:
     return header + "\n\n".join(blocks)
 
 
+async def send_or_edit_exam_msg(text: str) -> None:
+    """
+    Отправляет или редактирует главное сообщение в топике экзаменов.
+    """
+    global _EXAM_MAIN_MSG_ID
+    try:
+        if _EXAM_MAIN_MSG_ID is None:
+            msg = await bot.send_message(
+                chat_id=TOPIC_CHAT_ID, message_thread_id=EXAM_TOPIC_THREAD_ID, text=text
+            )
+            _EXAM_MAIN_MSG_ID = msg.message_id
+            save_exam_topic_state(_EXAM_MAIN_MSG_ID)
+            log.info(f"Главное сообщение создано в топике Экзамены: MSG_ID={_EXAM_MAIN_MSG_ID}")
+        else:
+            await bot.edit_message_text(
+                chat_id=TOPIC_CHAT_ID, message_id=_EXAM_MAIN_MSG_ID, text=text
+            )
+            log.debug(f"Сообщение в топике Экзамены обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+    except TelegramBadRequest as e:
+        if "message to edit not found" in str(e).lower():
+            _EXAM_MAIN_MSG_ID = None
+            save_exam_topic_state(None)
+
+
 async def sync_exam_topic_message() -> None:
     """
     Атомарно публикует или обновляет расписание экзаменов в топике.
@@ -106,28 +130,8 @@ async def sync_exam_topic_message() -> None:
 
     exams = await get_group_exams()
     text = format_exams_schedule_message(exams)
-
     try:
-        if _EXAM_MAIN_MSG_ID is None:
-            msg = await bot.send_message(
-                chat_id=TOPIC_CHAT_ID,
-                message_thread_id=EXAM_TOPIC_THREAD_ID,
-                text=text
-            )
-            _EXAM_MAIN_MSG_ID = msg.message_id
-            save_exam_topic_state(_EXAM_MAIN_MSG_ID)
-            log.info(f"Главное сообщение создано в топике Экзамены: MSG_ID={_EXAM_MAIN_MSG_ID}")
-        else:
-            await bot.edit_message_text(
-                chat_id=TOPIC_CHAT_ID,
-                message_id=_EXAM_MAIN_MSG_ID,
-                text=text
-            )
-            log.debug(f"Сообщение в топике Экзамены обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
-    except TelegramBadRequest as e:
-        if "message to edit not found" in str(e).lower():
-            _EXAM_MAIN_MSG_ID = None
-            save_exam_topic_state(None)
+        await send_or_edit_exam_msg(text)
     except Exception as e:
         log.error(f"Ошибка обновления топика экзаменов: {e}")
 
