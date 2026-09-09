@@ -7,7 +7,7 @@
 
 import os
 from dotenv import load_dotenv
-from pytz import timezone
+
 
 # Загружаем переменные окружения из файла .env
 load_dotenv()
@@ -40,7 +40,8 @@ GROUP_NAME: str = get_required_env("GROUP_NAME")
 
 # Часовой пояс проекта
 TIMEZONE_NAME: str = get_required_env("TIMEZONE")
-TIMEZONE = timezone(TIMEZONE_NAME)
+from zoneinfo import ZoneInfo
+TIMEZONE = ZoneInfo(TIMEZONE_NAME)
 
 # Интервалы рассылок и кэширования
 DAILY_NOTIFY_HOUR: int = int(get_required_env("DAILY_NOTIFY_HOUR"))

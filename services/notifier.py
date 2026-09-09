@@ -126,7 +126,7 @@ def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datet
     start_t = parse_lesson_start_time(lesson.time_str)
     if not start_t:
         return
-    pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
+    pair_dt = datetime.combine(today, start_t, tzinfo=TIMEZONE)
     remind_dt = pair_dt - timedelta(minutes=REMINDER_OFFSET_MINUTES)
     if remind_dt > now_dt:
         job_id = f"remind_{today.isoformat()}_{lesson.period}"

@@ -96,7 +96,7 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
     start_t = parse_lesson_start_time(lesson.time_str)
     if not start_t:
         return
-    pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
+    pair_dt = datetime.combine(today, start_t, tzinfo=TIMEZONE)
     diff_sec = (pair_dt - now_dt).total_seconds()
     if 0 < diff_sec <= 600:
         _SENT_REMINDERS.add(rem_key)
@@ -134,7 +134,7 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Opt
         last_lesson = max(today_lessons, key=lambda x: x.period)
         end_t = parse_lesson_end_time(last_lesson.time_str)
         if end_t:
-            last_end_dt = datetime.combine(today, end_t).replace(tzinfo=TIMEZONE)
+            last_end_dt = datetime.combine(today, end_t, tzinfo=TIMEZONE)
             if now_dt >= last_end_dt:
                 return get_next_working_day(today)
     return today
@@ -151,7 +151,7 @@ def is_too_early_to_publish(lessons: List[Lesson], now_dt: datetime, today: date
     first_lesson = min(lessons, key=lambda x: x.period)
     start_t = parse_lesson_start_time(first_lesson.time_str)
     if start_t:
-        first_pair_dt = datetime.combine(today, start_t).replace(tzinfo=TIMEZONE)
+        first_pair_dt = datetime.combine(today, start_t, tzinfo=TIMEZONE)
         if now_dt < first_pair_dt - timedelta(minutes=60):
             return True
     return False
