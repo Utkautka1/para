@@ -89,15 +89,16 @@ def calculate_week_number(target_date: date, semester_start_str: str) -> int:
     Вычисляет порядковый номер учебной недели.
 
     :param target_date: Целевая дата
-    :param semester_start_str: Старт семестра
-    :return: Номер недели
+    :param semester_start_str: Старт семестра (например, '2026-09-01')
+    :return: Порядковый номер учебной недели
     """
     start_date = datetime.strptime(semester_start_str, "%Y-%m-%d").date()
-    start_monday = start_date - timedelta(days=start_date.weekday())
-    days_diff = (target_date - start_monday).days
-    if days_diff < 0:
+    # Воскресенье недели старта семестра
+    start_sunday = start_date + timedelta(days=(6 - start_date.weekday()))
+    if target_date <= start_sunday:
         return 1
-    return (days_diff // 7) + 1
+    days_after_first_week = (target_date - (start_sunday + timedelta(days=1))).days
+    return 2 + (days_after_first_week // 7)
 
 
 def is_instance_active_for_week(inst: Dict[str, Any], week_num: int) -> bool:
