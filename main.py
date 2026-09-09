@@ -47,9 +47,11 @@ async def main() -> None:
     dp.include_router(fallback_router)
 
     from services.topic_updater import topic_sync_loop
+    from services.exam_topic_updater import exam_topic_sync_loop
     setup_scheduler()
     await schedule_today_reminders_on_startup()
     asyncio.create_task(topic_sync_loop())
+    asyncio.create_task(exam_topic_sync_loop())
 
     try:
         await dp.start_polling(bot)

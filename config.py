@@ -53,6 +53,8 @@ SCHEDULE_CACHE_TTL_SECONDS: int = int(get_required_env("SCHEDULE_CACHE_TTL_SECON
 # Настройки топика группы Telegram
 TOPIC_CHAT_ID: int = int(get_required_env("TOPIC_CHAT_ID"))
 TOPIC_THREAD_ID: int = int(get_required_env("TOPIC_THREAD_ID"))
+EXAM_TOPIC_THREAD_ID: int = int(get_required_env("EXAM_TOPIC_THREAD_ID"))
+EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
 
 # Файл с подписками
 SUBSCRIBERS_FILE_PATH: str = "data/subscribers.json"
