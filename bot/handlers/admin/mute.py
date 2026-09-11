@@ -13,29 +13,29 @@ from utils.mute_parser import parse_duration_to_seconds
 router = Router()
 
 
-USERNAME_CACHE: dict[str, int] = {}
+from services.user_cache import add_user_to_cache, get_cached_user_id
 
 
 def cache_user_from_message(message: Message) -> None:
     """
-    Сохраняет username и user_id из любых сообщений и сущностей Telegram.
+    Сохраняет username и user_id из любых сообщений и сущностей Telegram в постоянный файл.
 
     :param message: Входящее сообщение
     """
     if message.from_user and message.from_user.username:
-        USERNAME_CACHE[message.from_user.username.lower()] = message.from_user.id
+        add_user_to_cache(message.from_user.username, message.from_user.id)
     if message.reply_to_message and message.reply_to_message.from_user and message.reply_to_message.from_user.username:
         u = message.reply_to_message.from_user
-        USERNAME_CACHE[u.username.lower()] = u.id
+        add_user_to_cache(u.username, u.id)
     if message.entities:
         for e in message.entities:
             if e.type == "text_mention" and e.user and e.user.username:
-                USERNAME_CACHE[e.user.username.lower()] = e.user.id
+                add_user_to_cache(e.user.username, e.user.id)
 
 
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
     """
-    Пытается найти ID пользователя по юзернейму в чате через кэш, список админов и зарос.
+    Пытается найти ID пользователя по юзернейму через дисковый кэш, список админов и Telegram API.
 
     :param bot: Экземпляр бота
     :param chat_id: ID чата группы
@@ -43,15 +43,15 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
     :return: Кортеж (user_id, display_name) или None
     """
     clean = username.lstrip("@").lower()
-    if clean in USERNAME_CACHE:
-        uid = USERNAME_CACHE[clean]
-        return uid, f"<b>@{clean}</b>"
+    cached_id = get_cached_user_id(clean)
+    if cached_id:
+        return cached_id, f"<b>@{clean}</b>"
 
     try:
         admins = await bot.get_chat_administrators(chat_id)
         for a in admins:
             if a.user and a.user.username and a.user.username.lower() == clean:
-                USERNAME_CACHE[clean] = a.user.id
+                add_user_to_cache(clean, a.user.id)
                 return a.user.id, f"<b>{a.user.full_name}</b>"
     except Exception:
         pass
@@ -59,12 +59,13 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
     try:
         member = await bot.get_chat_member(chat_id, f"@{clean}")
         if member and member.user:
-            USERNAME_CACHE[clean] = member.user.id
+            add_user_to_cache(clean, member.user.id)
             return member.user.id, f"<b>{member.user.full_name}</b>"
     except Exception:
         pass
 
     return None
+
 
 
 

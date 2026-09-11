@@ -213,14 +213,47 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
     await update_topic_message_payload(text, kb)
 
 
+_API_FAIL_START_TIME: Optional[datetime] = None
+_API_ALERT_SENT: bool = False
+
+
+async def notify_admin_about_api_down() -> None:
+    """
+    Отправляет экстренное уведомление администратору в ЛС при сбое внешних сервисов свыше 30 минут.
+    """
+    global _API_ALERT_SENT
+    if _API_ALERT_SENT:
+        return
+    try:
+        from config import ALLOWED_USER_ID
+        msg = "⚠️ <b>ВНИМАНИЕ:</b> Внешний сервис расписания КТМУ или Яндекс Диск недоступен более 30 минут!"
+        await bot.send_message(chat_id=ALLOWED_USER_ID, text=msg)
+        _API_ALERT_SENT = True
+        log.warning("Отправлено экстренное уведомление администратору о сбое API > 30 мин")
+    except Exception as e:
+        log.error(f"Не удалось отправить алерт администратору: {e}")
+
+
 async def topic_sync_loop() -> None:
     """
     Фоновый цикл синхронизации топика каждые 60 секунд.
     """
+    global _API_FAIL_START_TIME, _API_ALERT_SENT
     log.info("Запущен фоновый сервис авто-обновления расписания в топике Telegram (60 сек)")
     while True:
         try:
             await sync_topic_main_message()
+            if _API_FAIL_START_TIME is not None:
+                _API_FAIL_START_TIME = None
+                _API_ALERT_SENT = False
+                log.info("Соединение с внешними сервисами восстановлено.")
         except Exception as e:
             log.error(f"Ошибка в цикле topic_sync_loop: {e}")
+            now = datetime.now(TIMEZONE)
+            if _API_FAIL_START_TIME is None:
+                _API_FAIL_START_TIME = now
+            elif (now - _API_FAIL_START_TIME).total_seconds() >= 1800:
+                await notify_admin_about_api_down()
+
         await asyncio.sleep(60)
+
