@@ -13,35 +13,27 @@ from utils.mute_parser import parse_duration_to_seconds
 router = Router()
 
 
-def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
     """
-    Извлекает target_id, target_name, time_raw и reason из сообщения или реплая.
+    Пытается найти ID пользователя по юзернейму в чате.
 
-    :param message: Входящее сообщение
-    :return: Кортеж (target_id, target_name, time_raw, reason)
+    :param bot: Экземпляр бота
+    :param chat_id: ID чата группы
+    :param username: Имя пользователя с @ или без
+    :return: Кортеж (user_id, display_name) или None
     """
-    if message.reply_to_message and message.reply_to_message.from_user:
-        u = message.reply_to_message.from_user
-        time_raw, reason = parse_reply_mute_args(message.text or "")
-        return u.id, f"<b>{u.full_name}</b>", time_raw, reason
-
-    return parse_standalone_mute_args(message)
-
-
-def parse_reply_mute_args(text: str) -> Tuple[str, str]:
-    """
-    Парсит время и причину при ответе на сообщение (реплай).
-
-    :param text: Текст сообщения
-    :return: Кортеж (time_raw, reason)
-    """
-    parts = text.strip().split(maxsplit=2)
-    time_raw = parts[1] if len(parts) > 1 else "10м"
-    reason = parts[2] if len(parts) > 2 else "без указания причины"
-    return time_raw, reason
+    clean_username = username.lstrip("@").lower()
+    try:
+        admins = await bot.get_chat_administrators(chat_id)
+        for admin in admins:
+            if admin.user and admin.user.username and admin.user.username.lower() == clean_username:
+                return admin.user.id, f"<b>{admin.user.full_name}</b>"
+    except Exception:
+        pass
+    return None
 
 
-def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+async def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, str, str]:
     """
     Парсит аргументы при указании ID или @username без реплая.
 
@@ -58,16 +50,54 @@ def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, st
     reason = parts[3] if len(parts) > 3 else "без указания причины"
 
     target_id: Optional[int] = None
+    target_name = f"<b>{target_raw}</b>"
+
     if target_raw.isdigit():
         target_id = int(target_raw)
     elif message.entities:
         for entity in message.entities:
             if entity.type == "text_mention" and entity.user:
                 target_id = entity.user.id
+                target_name = f"<b>{entity.user.full_name}</b>"
                 break
 
-    name = f"<b>{target_raw}</b>" if target_id else f"<code>{target_raw}</code>"
-    return target_id, name, time_raw, reason
+    if not target_id and target_raw.startswith("@"):
+        chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
+        found = await resolve_user_id_by_username(message.bot, chat_id, target_raw)
+        if found:
+            target_id, target_name = found
+
+    return target_id, target_name, time_raw, reason
+
+
+def parse_reply_mute_args(text: str) -> Tuple[str, str]:
+    """
+    Парсит время и причину при ответе на сообщение (реплай).
+
+    :param text: Текст сообщения
+    :return: Кортеж (time_raw, reason)
+    """
+    parts = text.strip().split(maxsplit=2)
+    time_raw = parts[1] if len(parts) > 1 else "10м"
+    reason = parts[2] if len(parts) > 2 else "без указания причины"
+    return time_raw, reason
+
+
+async def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+    """
+    Извлекает target_id, target_name, time_raw и reason из сообщения или реплая.
+
+    :param message: Входящее сообщение
+    :return: Кортеж (target_id, target_name, time_raw, reason)
+    """
+    if message.reply_to_message and message.reply_to_message.from_user:
+        u = message.reply_to_message.from_user
+        time_raw, reason = parse_reply_mute_args(message.text or "")
+        return u.id, f"<b>{u.full_name}</b>", time_raw, reason
+
+    return await parse_standalone_mute_args(message)
+
+
 
 
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None:
@@ -112,8 +142,9 @@ async def cmd_mute_user(message: Message) -> None:
     if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
         return
 
-    target_id, target_name, time_raw, reason = extract_target_id_and_args(message)
+    target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
     duration_sec = parse_duration_to_seconds(time_raw) or 600
+
 
     if not target_id:
         msg = "⚠️ <b>Пользователь не найден!</b>\nУкажите ID (например, <code>.закрыть рот 12345678 10м</code>) или ответьте на его сообщение."
