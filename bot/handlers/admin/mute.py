@@ -172,18 +172,22 @@ async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: 
     )
 
 
+from config import ALLOWED_USER_ID, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID, TOPIC_THREAD_ID
+
+
 async def send_mute_notification(message: Message, res_text: str) -> None:
     """
-    Отправляет результаты выдачи мута в ЛС админу и в основной топик группы.
+    Отправляет результаты выдачи мута в ЛС админу и в топик Флудилка (thread_id 4).
 
     :param message: Входящее сообщение
     :param res_text: Сформированный текст отчета
     """
     if message.chat.type == "private":
-        await message.bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID, text=res_text)
+        await message.bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=FLOOD_TOPIC_THREAD_ID, text=res_text)
         await message.answer(f"✅ <b>Успешно замучен в чате группы:</b>\n\n{res_text}")
     else:
         await message.answer(res_text)
+
 
 
 def is_mute_command(text: str) -> bool:

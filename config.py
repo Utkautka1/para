@@ -54,6 +54,7 @@ SCHEDULE_CACHE_TTL_SECONDS: int = int(get_required_env("SCHEDULE_CACHE_TTL_SECON
 TOPIC_CHAT_ID: int = int(get_required_env("TOPIC_CHAT_ID"))
 TOPIC_THREAD_ID: int = int(get_required_env("TOPIC_THREAD_ID"))
 EXAM_TOPIC_THREAD_ID: int = int(get_required_env("EXAM_TOPIC_THREAD_ID"))
+FLOOD_TOPIC_THREAD_ID: int = int(os.getenv("FLOOD_TOPIC_THREAD_ID", "4"))
 EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
 
 # Настройки прокси (опционально)
