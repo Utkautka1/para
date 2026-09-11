@@ -6,79 +6,133 @@ from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from aiogram import Router, F
 from aiogram.types import ChatPermissions, Message
-from config import TIMEZONE
+from config import ALLOWED_USER_ID, TIMEZONE, TOPIC_CHAT_ID, TOPIC_THREAD_ID
 from bot.filters.auth import AuthFilter
 from utils.mute_parser import parse_duration_to_seconds
 
 router = Router()
 
 
-def extract_target_user_info(message: Message) -> Tuple[Optional[int], str]:
+def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
     """
-    Извлекает ID и отображаемое имя нарушителя из реплая или упоминания.
+    Извлекает target_id, target_name, time_raw и reason из сообщения или реплая.
 
-    :param message: Объект входящего сообщения
-    :return: Кортеж (user_id, name)
+    :param message: Входящее сообщение
+    :return: Кортеж (target_id, target_name, time_raw, reason)
     """
     if message.reply_to_message and message.reply_to_message.from_user:
         u = message.reply_to_message.from_user
-        return u.id, f"<b>{u.full_name}</b>"
-    if message.entities:
-        for entity in message.entities:
-            if entity.type == "text_mention" and entity.user:
-                return entity.user.id, f"<b>{entity.user.full_name}</b>"
-    return None, ""
+        time_raw, reason = parse_reply_mute_args(message.text or "")
+        return u.id, f"<b>{u.full_name}</b>", time_raw, reason
+
+    return parse_standalone_mute_args(message)
 
 
-def parse_mute_args(text: str) -> Tuple[str, str]:
+def parse_reply_mute_args(text: str) -> Tuple[str, str]:
     """
-    Извлекает параметры времени и причины из команды .закрыть рот.
+    Парсит время и причину при ответе на сообщение (реплай).
 
     :param text: Текст сообщения
     :return: Кортеж (time_raw, reason)
     """
+    parts = text.strip().split(maxsplit=2)
+    time_raw = parts[1] if len(parts) > 1 else "10м"
+    reason = parts[2] if len(parts) > 2 else "без указания причины"
+    return time_raw, reason
+
+
+def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+    """
+    Парсит аргументы при указании ID или @username без реплая.
+
+    :param message: Входящее сообщение
+    :return: Кортеж (target_id, target_name, time_raw, reason)
+    """
+    text = message.text or ""
     parts = text.strip().split(maxsplit=3)
-    if len(parts) >= 4 and (parts[2].startswith("@") or parts[2].isdigit()):
-        return parts[3], parts[4] if len(parts) > 4 else "без указания причины"
-    elif len(parts) >= 3 and not (parts[2].startswith("@") or parts[2].isdigit()):
-        reason = " ".join(parts[3:]) if len(parts) > 3 else "без указания причины"
-        return parts[2], reason
-    return "10м", "без указания причины"
+    if len(parts) < 2:
+        return None, "", "10м", "без указания причины"
+
+    target_raw = parts[1]
+    time_raw = parts[2] if len(parts) > 2 else "10м"
+    reason = parts[3] if len(parts) > 3 else "без указания причины"
+
+    target_id: Optional[int] = None
+    if target_raw.isdigit():
+        target_id = int(target_raw)
+    elif message.entities:
+        for entity in message.entities:
+            if entity.type == "text_mention" and entity.user:
+                target_id = entity.user.id
+                break
+
+    name = f"<b>{target_raw}</b>" if target_id else f"<code>{target_raw}</code>"
+    return target_id, name, time_raw, reason
+
+
+async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None:
+    """
+    Применяет ограничение отправки сообщений для пользователя.
+
+    :param bot: Экземпляр Bot
+    :param chat_id: ID чата
+    :param user_id: ID целевого пользователя
+    :param duration_sec: Длительность в секундах
+    """
+    until_dt = datetime.now(TIMEZONE) + timedelta(seconds=duration_sec)
+    await bot.restrict_chat_member(
+        chat_id=chat_id,
+        user_id=user_id,
+        permissions=ChatPermissions(can_send_messages=False),
+        until_date=until_dt
+    )
+
+
+async def send_mute_notification(message: Message, res_text: str) -> None:
+    """
+    Отправляет результаты выдачи мута в ЛС админу и в основной топик группы.
+
+    :param message: Входящее сообщение
+    :param res_text: Сформированный текст отчета
+    """
+    if message.chat.type == "private":
+        await message.bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID, text=res_text)
+        await message.answer(f"✅ <b>Успешно замучен в чате группы:</b>\n\n{res_text}")
+    else:
+        await message.answer(res_text)
 
 
 @router.message(F.text & F.text.func(lambda t: t.lower().strip().startswith(".закрыть рот")))
 async def cmd_mute_user(message: Message) -> None:
     """
-    Ограничивает отправку сообщений пользователем во всех топиках чата.
+    Ограничивает отправку сообщений пользователем в основном чате группы.
 
     :param message: Message
     """
     if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
         return
 
-    target_id, target_name = extract_target_user_info(message)
-    time_raw, reason = parse_mute_args(message.text or "")
+    target_id, target_name, time_raw, reason = extract_target_id_and_args(message)
     duration_sec = parse_duration_to_seconds(time_raw) or 600
 
     if not target_id:
-        await message.answer("⚠️ <b>Пользователь не найден!</b> Ответьте на его сообщение или упомяните его через <code>@username</code>.")
+        msg = "⚠️ <b>Пользователь не найден!</b>\nУкажите ID (например, <code>.закрыть рот 12345678 10м</code>) или ответьте на его сообщение."
+        await message.answer(msg)
         return
 
-    until_dt = datetime.now(TIMEZONE) + timedelta(seconds=duration_sec)
+    target_chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
+
     try:
-        await message.bot.restrict_chat_member(
-            chat_id=message.chat.id,
-            user_id=target_id,
-            permissions=ChatPermissions(can_send_messages=False),
-            until_date=until_dt
-        )
+        await apply_user_restriction(message.bot, target_chat_id, target_id, duration_sec)
         res_text = (
             f"🔇 {target_name} <b>закрыли рот во всех топиках!</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"⏳ <b>Длительность:</b> {time_raw}\n"
             f"📝 <b>Причина:</b> {reason}"
         )
-        await message.answer(res_text)
+        await send_mute_notification(message, res_text)
     except Exception as e:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
+
+
 
