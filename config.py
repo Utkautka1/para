@@ -56,5 +56,8 @@ TOPIC_THREAD_ID: int = int(get_required_env("TOPIC_THREAD_ID"))
 EXAM_TOPIC_THREAD_ID: int = int(get_required_env("EXAM_TOPIC_THREAD_ID"))
 EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
 
+# Настройки прокси (опционально)
+PROXY_URL: str | None = os.getenv("PROXY_URL")
+
 # Файл с подписками
 SUBSCRIBERS_FILE_PATH: str = "data/subscribers.json"
