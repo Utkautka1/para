@@ -40,7 +40,9 @@ async def main() -> None:
 
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.admin.panel import router as admin_router
-    # Порядок подключения: публичные команды, админка, авторизованные, затем fallback
+    from bot.handlers.admin.mute import router as mute_router
+    # Порядок подключения: модерация/админка, публичные команды, авторизованные, затем fallback
+    dp.include_router(mute_router)
     dp.include_router(public_router)
     dp.include_router(admin_router)
     dp.include_router(user_router)
