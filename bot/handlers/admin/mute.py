@@ -131,12 +131,21 @@ def parse_reply_mute_args(text: str) -> Tuple[str, str]:
     :return: Кортеж (time_raw, reason)
     """
     parts = text.strip().split(maxsplit=2)
-    first_arg = parts[1] if len(parts) > 1 else "10м"
-    second_arg = parts[2] if len(parts) > 2 else "без указания причины"
+    if len(parts) < 2:
+        return "10м", "без указания причины"
+
+    first_arg = parts[1]
+    rest_arg = parts[2] if len(parts) > 2 else ""
 
     if parse_duration_to_seconds(first_arg) is not None:
-        return first_arg, second_arg
-    return "10м", f"{first_arg} {second_arg}".strip()
+        time_raw = first_arg
+        reason = rest_arg if rest_arg else "без указания причины"
+    else:
+        time_raw = "10м"
+        reason = f"{first_arg} {rest_arg}".strip()
+
+    return time_raw, reason
+
 
 
 async def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
