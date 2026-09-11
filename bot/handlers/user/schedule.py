@@ -72,6 +72,7 @@ async def cb_today(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Нажата инлайн-кнопка: Сегодня")
     now = datetime.now(TIMEZONE).date()
     lessons = await get_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
@@ -85,6 +86,7 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Нажата инлайн-кнопка: Завтра")
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
     lessons = await get_schedule_for_date(tomorrow)
     text = format_day_schedule(tomorrow, lessons)
@@ -98,6 +100,7 @@ async def cb_week(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Нажата инлайн-кнопка: Эта неделя")
     today = datetime.now(TIMEZONE).date()
     monday = today - timedelta(days=today.weekday())
     days_data = await get_week_schedule(monday)
@@ -112,6 +115,7 @@ async def cb_week_next(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Нажата инлайн-кнопка: Следующая неделя")
     today = datetime.now(TIMEZONE).date()
     next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
     days_data = await get_week_schedule(next_monday)
@@ -127,6 +131,7 @@ async def cb_copy_value(callback: CallbackQuery) -> None:
     :param callback: CallbackQuery
     """
     val = callback.data.split("copy:", 1)[1]
+    log.debug(f"Нажато копирование реквизитов: {val}")
     await callback.answer(f"Скопировано: {val}", show_alert=True)
 
 
@@ -137,9 +142,11 @@ async def cb_refresh(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Нажата инлайн-кнопка: Обновить расписание")
     links = await get_teacher_links(force_refresh=True)
     now = datetime.now(TIMEZONE).date()
     lessons = await get_schedule_for_date(now, force_refresh=True)
     text = format_day_schedule(now, lessons)
     text += f"\n\n<i>✅ Расписание КТМУ и контакты преподавателей ({len(links)}) сверены и обновлены!</i>"
     await edit_or_answer(callback, text, lessons)
+

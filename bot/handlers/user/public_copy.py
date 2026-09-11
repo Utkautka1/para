@@ -7,6 +7,9 @@
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
+from core.logger import get_logger
+
+log = get_logger("public_copy")
 
 public_router = Router()
 
@@ -19,6 +22,9 @@ async def cb_public_copy_value(callback: CallbackQuery) -> None:
     :param callback: CallbackQuery
     """
     val = callback.data.split("copy:", 1)[1]
+    user_id = callback.from_user.id if callback.from_user else 0
+    log.info(f"Публичный копир реквизитов вызван user_id={user_id}: {val}")
     await callback.answer(f"Реквизиты: {val}", show_alert=False)
+
 
 
