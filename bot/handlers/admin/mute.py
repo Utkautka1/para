@@ -11,7 +11,6 @@ from bot.filters.auth import AuthFilter
 from utils.mute_parser import parse_duration_to_seconds
 
 router = Router()
-router.message.filter(AuthFilter())
 
 
 def extract_target_user_info(message: Message) -> Tuple[Optional[int], str]:
@@ -47,19 +46,22 @@ def parse_mute_args(text: str) -> Tuple[str, str]:
     return "10м", "без указания причины"
 
 
-@router.message(F.text.startswith(".закрыть рот"))
+@router.message(F.text & F.text.func(lambda t: t.lower().strip().startswith(".закрыть рот")))
 async def cmd_mute_user(message: Message) -> None:
     """
     Ограничивает отправку сообщений пользователем во всех топиках чата.
 
     :param message: Message
     """
+    if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
+        return
+
     target_id, target_name = extract_target_user_info(message)
     time_raw, reason = parse_mute_args(message.text or "")
     duration_sec = parse_duration_to_seconds(time_raw) or 600
 
     if not target_id:
-        await message.answer("⚠️ <b>Пользователь не найден!</b> Ответьте на его сообщение или упомяните <code>@username</code>.")
+        await message.answer("⚠️ <b>Пользователь не найден!</b> Ответьте на его сообщение или упомяните его через <code>@username</code>.")
         return
 
     until_dt = datetime.now(TIMEZONE) + timedelta(seconds=duration_sec)
@@ -79,3 +81,4 @@ async def cmd_mute_user(message: Message) -> None:
         await message.answer(res_text)
     except Exception as e:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
+
