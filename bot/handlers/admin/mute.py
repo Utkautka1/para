@@ -130,12 +130,18 @@ def parse_reply_mute_args(text: str) -> Tuple[str, str]:
     :param text: Текст сообщения
     :return: Кортеж (time_raw, reason)
     """
-    parts = text.strip().split(maxsplit=2)
-    if len(parts) < 2:
+    clean_text = text.strip()
+    for prefix in [".закрыть рот", ".закрой рот"]:
+        if clean_text.lower().startswith(prefix):
+            clean_text = clean_text[len(prefix):].strip()
+            break
+
+    parts = clean_text.split(maxsplit=1)
+    if not parts or not parts[0]:
         return "10м", "без указания причины"
 
-    first_arg = parts[1]
-    rest_arg = parts[2] if len(parts) > 2 else ""
+    first_arg = parts[0]
+    rest_arg = parts[1] if len(parts) > 1 else ""
 
     if parse_duration_to_seconds(first_arg) is not None:
         time_raw = first_arg
@@ -145,6 +151,7 @@ def parse_reply_mute_args(text: str) -> Tuple[str, str]:
         reason = f"{first_arg} {rest_arg}".strip()
 
     return time_raw, reason
+
 
 
 
