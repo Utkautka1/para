@@ -22,12 +22,12 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
     :param username: Имя пользователя с @ или без
     :return: Кортеж (user_id, display_name) или None
     """
-    clean_username = username.lstrip("@").lower()
+    clean = username.lstrip("@").lower()
     try:
         admins = await bot.get_chat_administrators(chat_id)
-        for admin in admins:
-            if admin.user and admin.user.username and admin.user.username.lower() == clean_username:
-                return admin.user.id, f"<b>{admin.user.full_name}</b>"
+        for a in admins:
+            if a.user and a.user.username and a.user.username.lower() == clean:
+                return a.user.id, f"<b>{a.user.full_name}</b>"
     except Exception:
         pass
     return None
@@ -40,34 +40,50 @@ async def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], s
     :param message: Входящее сообщение
     :return: Кортеж (target_id, target_name, time_raw, reason)
     """
-    text = message.text or ""
-    parts = text.strip().split(maxsplit=3)
+    parts = (message.text or "").strip().split(maxsplit=3)
     if len(parts) < 2:
         return None, "", "10м", "без указания причины"
 
     target_raw = parts[1]
-    time_raw = parts[2] if len(parts) > 2 else "10м"
-    reason = parts[3] if len(parts) > 3 else "без указания причины"
+    second = parts[2] if len(parts) > 2 else "10м"
+    third = parts[3] if len(parts) > 3 else "без указания причины"
 
+    if parse_duration_to_seconds(second) is not None:
+        time_raw, reason = second, third
+    else:
+        time_raw = "10м"
+        reason = f"{second} {third}".strip() if len(parts) > 2 else "без указания причины"
+
+    target_id, target_name = await resolve_target_identity(message, target_raw)
+    return target_id, target_name, time_raw, reason
+
+
+async def resolve_target_identity(message: Message, target_raw: str) -> Tuple[Optional[int], str]:
+    """
+    Определяет ID и отображаемое имя из строки аргументов или сущностей Telegram.
+
+    :param message: Message
+    :param target_raw: Исходный параметр пользователя
+    :return: Кортеж (target_id, target_name)
+    """
     target_id: Optional[int] = None
     target_name = f"<b>{target_raw}</b>"
 
     if target_raw.isdigit():
-        target_id = int(target_raw)
-    elif message.entities:
-        for entity in message.entities:
-            if entity.type == "text_mention" and entity.user:
-                target_id = entity.user.id
-                target_name = f"<b>{entity.user.full_name}</b>"
-                break
+        return int(target_raw), f"<b>ID: {target_raw}</b>"
 
-    if not target_id and target_raw.startswith("@"):
-        chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
-        found = await resolve_user_id_by_username(message.bot, chat_id, target_raw)
+    if message.entities:
+        for e in message.entities:
+            if e.type == "text_mention" and e.user:
+                return e.user.id, f"<b>{e.user.full_name}</b>"
+
+    if target_raw.startswith("@"):
+        cid = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
+        found = await resolve_user_id_by_username(message.bot, cid, target_raw)
         if found:
-            target_id, target_name = found
+            return found
 
-    return target_id, target_name, time_raw, reason
+    return None, target_name
 
 
 def parse_reply_mute_args(text: str) -> Tuple[str, str]:
@@ -78,9 +94,12 @@ def parse_reply_mute_args(text: str) -> Tuple[str, str]:
     :return: Кортеж (time_raw, reason)
     """
     parts = text.strip().split(maxsplit=2)
-    time_raw = parts[1] if len(parts) > 1 else "10м"
-    reason = parts[2] if len(parts) > 2 else "без указания причины"
-    return time_raw, reason
+    first_arg = parts[1] if len(parts) > 1 else "10м"
+    second_arg = parts[2] if len(parts) > 2 else "без указания причины"
+
+    if parse_duration_to_seconds(first_arg) is not None:
+        return first_arg, second_arg
+    return "10м", f"{first_arg} {second_arg}".strip()
 
 
 async def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
@@ -96,8 +115,6 @@ async def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], s
         return u.id, f"<b>{u.full_name}</b>", time_raw, reason
 
     return await parse_standalone_mute_args(message)
-
-
 
 
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None:
@@ -132,7 +149,18 @@ async def send_mute_notification(message: Message, res_text: str) -> None:
         await message.answer(res_text)
 
 
-@router.message(F.text & F.text.func(lambda t: t.lower().strip().startswith(".закрыть рот")))
+def is_mute_command(text: str) -> bool:
+    """
+    Проверяет, является ли сообщение командой наложения мута.
+
+    :param text: Текст сообщения
+    :return: True, если команда мута
+    """
+    t = text.lower().strip()
+    return t.startswith(".закрыть рот") or t.startswith(".закрой рот")
+
+
+@router.message(F.text & F.text.func(is_mute_command))
 async def cmd_mute_user(message: Message) -> None:
     """
     Ограничивает отправку сообщений пользователем в основном чате группы.
@@ -145,9 +173,8 @@ async def cmd_mute_user(message: Message) -> None:
     target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
     duration_sec = parse_duration_to_seconds(time_raw) or 600
 
-
     if not target_id:
-        msg = "⚠️ <b>Пользователь не найден!</b>\nУкажите ID (например, <code>.закрыть рот 12345678 10м</code>) или ответьте на его сообщение."
+        msg = "⚠️ <b>Пользователь не найден!</b>\nУкажите ID (например, <code>.закрой рот 12345678 10м</code>) или ответьте на его сообщение."
         await message.answer(msg)
         return
 
@@ -164,6 +191,54 @@ async def cmd_mute_user(message: Message) -> None:
         await send_mute_notification(message, res_text)
     except Exception as e:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
+
+
+def is_unmute_command(text: str) -> bool:
+    """
+    Проверяет, является ли сообщение командой снятия мута.
+
+    :param text: Текст сообщения
+    :return: True, если команда снятия мута
+    """
+    t = text.lower().strip()
+    return t.startswith(".открыть рот") or t.startswith(".открой рот")
+
+
+@router.message(F.text & F.text.func(is_unmute_command))
+async def cmd_unmute_user(message: Message) -> None:
+    """
+    Снимает ограничение отправки сообщений с пользователя.
+
+    :param message: Message
+    """
+    if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
+        return
+
+    target_id, target_name, _, _ = await extract_target_id_and_args(message)
+    if not target_id:
+        await message.answer("⚠️ <b>Пользователь не найден!</b> Укажите ID или ответьте на его сообщение.")
+        return
+
+    target_chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
+    try:
+        await message.bot.restrict_chat_member(
+            chat_id=target_chat_id,
+            user_id=target_id,
+            permissions=ChatPermissions(
+                can_send_messages=True,
+                can_send_audios=True,
+                can_send_documents=True,
+                can_send_photos=True,
+                can_send_videos=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
+        )
+        res_text = f"🔊 {target_name} <b>снова может говорить во всех топиках!</b>"
+        await send_mute_notification(message, res_text)
+    except Exception as e:
+        await message.answer(f"❌ <b>Не удалось размутить:</b> {e}")
+
 
 
 
