@@ -31,7 +31,7 @@ def cache_user_from_message(message: Message) -> None:
 
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
     """
-    Пытается найти ID пользователя по юзернейму в чате через кэш и список администраторов.
+    Пытается найти ID пользователя по юзернейму в чате через кэш, список админов и попытку запроса.
 
     :param bot: Экземпляр бота
     :param chat_id: ID чата группы
@@ -51,7 +51,17 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
                 return a.user.id, f"<b>{a.user.full_name}</b>"
     except Exception:
         pass
+
+    try:
+        member = await bot.get_chat_member(chat_id, f"@{clean}")
+        if member and member.user:
+            USERNAME_CACHE[clean] = member.user.id
+            return member.user.id, f"<b>{member.user.full_name}</b>"
+    except Exception:
+        pass
+
     return None
+
 
 
 
