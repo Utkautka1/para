@@ -206,15 +206,18 @@ async def send_mute_notification(message: Message, res_text: str) -> None:
 
 
 
-def is_mute_command(text: str) -> bool:
+def is_mute_command(text: Optional[str]) -> bool:
     """
     Проверяет, является ли сообщение командой наложения мута.
 
     :param text: Текст сообщения
     :return: True, если команда мута
     """
+    if not text:
+        return False
     t = text.lower().strip()
     return t.startswith(".закрыть рот") or t.startswith(".закрой рот")
+
 
 
 @router.message(F.text & F.text.func(is_mute_command))
@@ -257,15 +260,18 @@ async def cmd_mute_user(message: Message) -> None:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
 
 
-def is_unmute_command(text: str) -> bool:
+def is_unmute_command(text: Optional[str]) -> bool:
     """
     Проверяет, является ли сообщение командой снятия мута.
 
     :param text: Текст сообщения
     :return: True, если команда снятия мута
     """
+    if not text:
+        return False
     t = text.lower().strip()
     return t.startswith(".открыть рот") or t.startswith(".открой рот")
+
 
 
 @router.message(F.text & F.text.func(is_unmute_command))
