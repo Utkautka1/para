@@ -18,7 +18,7 @@ USERNAME_CACHE: dict[str, int] = {}
 
 def cache_user_from_message(message: Message) -> None:
     """
-    Сохраняет username и user_id из сообщения в локальный кэш.
+    Сохраняет username и user_id из любых сообщений и сущностей Telegram.
 
     :param message: Входящее сообщение
     """
@@ -27,11 +27,15 @@ def cache_user_from_message(message: Message) -> None:
     if message.reply_to_message and message.reply_to_message.from_user and message.reply_to_message.from_user.username:
         u = message.reply_to_message.from_user
         USERNAME_CACHE[u.username.lower()] = u.id
+    if message.entities:
+        for e in message.entities:
+            if e.type == "text_mention" and e.user and e.user.username:
+                USERNAME_CACHE[e.user.username.lower()] = e.user.id
 
 
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
     """
-    Пытается найти ID пользователя по юзернейму в чате через кэш, список админов и попытку запроса.
+    Пытается найти ID пользователя по юзернейму в чате через кэш, список админов и зарос.
 
     :param bot: Экземпляр бота
     :param chat_id: ID чата группы
@@ -61,6 +65,7 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
         pass
 
     return None
+
 
 
 
