@@ -13,9 +13,25 @@ from utils.mute_parser import parse_duration_to_seconds
 router = Router()
 
 
+USERNAME_CACHE: dict[str, int] = {}
+
+
+def cache_user_from_message(message: Message) -> None:
+    """
+    Сохраняет username и user_id из сообщения в локальный кэш.
+
+    :param message: Входящее сообщение
+    """
+    if message.from_user and message.from_user.username:
+        USERNAME_CACHE[message.from_user.username.lower()] = message.from_user.id
+    if message.reply_to_message and message.reply_to_message.from_user and message.reply_to_message.from_user.username:
+        u = message.reply_to_message.from_user
+        USERNAME_CACHE[u.username.lower()] = u.id
+
+
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
     """
-    Пытается найти ID пользователя по юзернейму в чате.
+    Пытается найти ID пользователя по юзернейму в чате через кэш и список администраторов.
 
     :param bot: Экземпляр бота
     :param chat_id: ID чата группы
@@ -23,14 +39,20 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
     :return: Кортеж (user_id, display_name) или None
     """
     clean = username.lstrip("@").lower()
+    if clean in USERNAME_CACHE:
+        uid = USERNAME_CACHE[clean]
+        return uid, f"<b>@{clean}</b>"
+
     try:
         admins = await bot.get_chat_administrators(chat_id)
         for a in admins:
             if a.user and a.user.username and a.user.username.lower() == clean:
+                USERNAME_CACHE[clean] = a.user.id
                 return a.user.id, f"<b>{a.user.full_name}</b>"
     except Exception:
         pass
     return None
+
 
 
 async def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, str, str]:
@@ -167,8 +189,10 @@ async def cmd_mute_user(message: Message) -> None:
 
     :param message: Message
     """
+    cache_user_from_message(message)
     if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
         return
+
 
     target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
     duration_sec = parse_duration_to_seconds(time_raw) or 600
