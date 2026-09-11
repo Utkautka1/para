@@ -248,6 +248,11 @@ async def cmd_mute_user(message: Message) -> None:
             f"📝 <b>Причина:</b> {reason}"
         )
         await send_mute_notification(message, res_text)
+        if message.chat.type != "private":
+            try:
+                await message.delete()
+            except Exception:
+                pass
     except Exception as e:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
 
@@ -295,8 +300,14 @@ async def cmd_unmute_user(message: Message) -> None:
         )
         res_text = f"🔊 {target_name} <b>снова может говорить во всех топиках!</b>"
         await send_mute_notification(message, res_text)
+        if message.chat.type != "private":
+            try:
+                await message.delete()
+            except Exception:
+                pass
     except Exception as e:
         await message.answer(f"❌ <b>Не удалось размутить:</b> {e}")
+
 
 
 
