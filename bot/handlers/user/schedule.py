@@ -19,6 +19,10 @@ from services.schedule_parser import Lesson, get_schedule_for_date, get_week_sch
 from bot.templates.user.keyboards import get_schedule_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_week_schedule
 
+from core.logger import get_logger
+
+log = get_logger("user_schedule")
+
 router = Router()
 router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
@@ -52,10 +56,13 @@ async def cmd_start(message: Message) -> None:
 
     :param message: Telegram сообщение
     """
+    user_id = message.from_user.id if message.from_user else "unknown"
+    log.info(f"Получена команда /start или /today от user_id={user_id}")
     now = datetime.now(TIMEZONE).date()
     lessons = await get_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
     await message.answer(text, reply_markup=get_schedule_inline_kb(lessons))
+
 
 
 @router.callback_query(F.data == "sched:today")

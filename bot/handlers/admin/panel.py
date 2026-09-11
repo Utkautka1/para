@@ -12,6 +12,10 @@ from services.schedule_parser import fetch_schedule_data
 from services.topic_updater import sync_topic_main_message
 from bot.templates.admin.keyboards import get_admin_main_kb
 
+from core.logger import get_logger
+
+log = get_logger("admin_panel")
+
 router = Router()
 router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
@@ -43,6 +47,7 @@ async def cb_admin_menu(event: Message | CallbackQuery) -> None:
 
     :param event: Message или CallbackQuery
     """
+    log.info("Открыто меню админ-панели")
     text = format_admin_panel_text()
     kb = get_admin_main_kb()
 
@@ -61,7 +66,9 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    log.info("Запущена принудительная синхронизация данных из админки")
     await callback.answer("⏳ Синхронизация данных...", show_alert=False)
+
     links = await get_teacher_links(force_refresh=True)
     await fetch_schedule_data(force_refresh=True)
     await sync_topic_main_message()
