@@ -221,6 +221,11 @@ def is_mute_command(text: Optional[str]) -> bool:
 
 
 
+from core.logger import get_logger
+
+log = get_logger("admin_mute")
+
+
 @router.message(F.text & F.text.func(is_mute_command))
 async def cmd_mute_user(message: Message) -> None:
     """
@@ -232,11 +237,11 @@ async def cmd_mute_user(message: Message) -> None:
     if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
         return
 
-
     target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
     duration_sec = parse_duration_to_seconds(time_raw) or 600
 
     if not target_id:
+        log.warning(f"Команда мута не выполнена: пользователь не найден ({message.text})")
         msg = "⚠️ <b>Пользователь не найден!</b>\nУкажите ID (например, <code>.закрой рот 12345678 10м</code>) или ответьте на его сообщение."
         await message.answer(msg)
         return
@@ -245,6 +250,7 @@ async def cmd_mute_user(message: Message) -> None:
 
     try:
         await apply_user_restriction(message.bot, target_chat_id, target_id, duration_sec)
+        log.info(f"✅ Наложен мут: target_id={target_id}, duration={time_raw}, reason='{reason}'")
         res_text = (
             f"🔇 {target_name} <b>закрыли рот во всех топиках!</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -258,6 +264,7 @@ async def cmd_mute_user(message: Message) -> None:
             except Exception:
                 pass
     except Exception as e:
+        log.error(f"❌ Ошибка при наложении мута (target_id={target_id}): {e}")
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {e}")
 
 
@@ -274,7 +281,6 @@ def is_unmute_command(text: Optional[str]) -> bool:
     return t.startswith(".открыть рот") or t.startswith(".открой рот")
 
 
-
 @router.message(F.text & F.text.func(is_unmute_command))
 async def cmd_unmute_user(message: Message) -> None:
     """
@@ -287,6 +293,7 @@ async def cmd_unmute_user(message: Message) -> None:
 
     target_id, target_name, _, _ = await extract_target_id_and_args(message)
     if not target_id:
+        log.warning(f"Команда размута не выполнена: пользователь не найден ({message.text})")
         await message.answer("⚠️ <b>Пользователь не найден!</b> Укажите ID или ответьте на его сообщение.")
         return
 
@@ -305,6 +312,7 @@ async def cmd_unmute_user(message: Message) -> None:
                 can_add_web_page_previews=True
             )
         )
+        log.info(f"🔊 Мут успешно снят с пользователя target_id={target_id}")
         res_text = f"🔊 {target_name} <b>снова может говорить во всех топиках!</b>"
         await send_mute_notification(message, res_text)
         if message.chat.type != "private":
@@ -313,7 +321,9 @@ async def cmd_unmute_user(message: Message) -> None:
             except Exception:
                 pass
     except Exception as e:
+        log.error(f"❌ Ошибка при размуте (target_id={target_id}): {e}")
         await message.answer(f"❌ <b>Не удалось размутить:</b> {e}")
+
 
 
 
