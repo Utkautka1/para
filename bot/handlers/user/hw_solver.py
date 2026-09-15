@@ -52,21 +52,35 @@ async def process_homework_media(bot: Bot, msg: Message, img_bytes: bytes, promp
         os.remove(doc_path)
 
 
+def is_valid_homework_prompt(text: str | None, has_image: bool) -> bool:
+    """
+    Проверяет, содержит ли сообщение реальную учебную задачу или картинку.
+    Игнорирует флуд ('Привет', 'Как дела?') для защиты баланса DeepSeek API.
+    """
+    if has_image:
+        return True
+    if not text:
+        return False
+    
+    t = text.lower().strip()
+    # Простые бытовые сообщения
+    flood_words = {"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"}
+    if t in flood_words or len(t) < 5:
+        return False
+    
+    # Ключевые слова учебных заданий
+    hw_keywords = ["реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача", "задание", "номер", "№", "=", "+", "-"]
+    if any(kw in t for kw in hw_keywords) or len(t) >= 25:
+        return True
+    return False
+
+
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает новое входящее ДЗ (фото, файлы, текст, reply) в топике ДЗ.
+    Отлавливает новое входящее ДЗ в топике ДЗ с фильтрацией бытового флуда.
     """
     target_msg = msg.reply_to_message if msg.reply_to_message else msg
-
-    if await is_message_processed(target_msg.message_id):
-        log.debug(f"Задание из сообщения {target_msg.message_id} уже было обработано. Пропускаем.")
-        return
-
-    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
-    await mark_message_processed(target_msg.message_id)
-    if target_msg.message_id != msg.message_id:
-        await mark_message_processed(msg.message_id)
 
     img_bytes = None
     if target_msg.photo:
@@ -78,7 +92,23 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
         file_io = await bot.download_file(file.file_path)
         img_bytes = file_io.read()
 
-    # Собираем контекстный промпт
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
+    has_image = img_bytes is not None
+
+    # Фильтр бытовых сообщений без картинок
+    if not is_valid_homework_prompt(text_prompt, has_image):
+        log.debug(f"Игнорируем сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
+        return
+
+    if await is_message_processed(target_msg.message_id):
+        log.debug(f"Задание из сообщения {target_msg.message_id} уже было обработано. Пропускаем.")
+        return
+
+    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
+    await mark_message_processed(target_msg.message_id)
+    if target_msg.message_id != msg.message_id:
+        await mark_message_processed(msg.message_id)
+
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
+
 
