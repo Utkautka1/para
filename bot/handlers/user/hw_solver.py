@@ -6,6 +6,7 @@
 """
 
 import os
+from typing import Optional
 from aiogram import Router, F, Bot
 from aiogram.types import Message, FSInputFile
 import config
@@ -16,6 +17,9 @@ from services.doc_generator import create_solution_docx
 
 log = get_logger("hw_handler")
 router = Router()
+
+# Максимальный размер скачиваемого медиа-файла (20 МБ)
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
 
 def build_original_post_link(chat_id: int, message_id: int) -> str:
@@ -30,7 +34,45 @@ def build_original_post_link(chat_id: int, message_id: int) -> str:
     return f"https://t.me/c/{clean_id}/{message_id}"
 
 
-async def process_homework_media(bot: Bot, msg: Message, img_bytes: bytes, prompt: str | None) -> None:
+async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int]) -> Optional[bytes]:
+    """
+    Безопасно скачивает байты файла изображения с ограничением по размеру.
+
+    :param bot: Экземпляр бота
+    :param file_id: Telegram file_id
+    :param file_size: Размер файла в байтах
+    :return: Байты или None
+    """
+    if file_size and file_size > MAX_FILE_SIZE_BYTES:
+        log.warning(f"Файл превышает лимит {MAX_FILE_SIZE_BYTES} байт. Пропускаем скачивание.")
+        return None
+    try:
+        file = await bot.get_file(file_id)
+        file_io = await bot.download_file(file.file_path)
+        return file_io.read()
+    except Exception as e:
+        log.error(f"Ошибка скачивания файла {file_id}: {e}")
+        return None
+
+
+async def extract_image_bytes(bot: Bot, target_msg: Message) -> Optional[bytes]:
+    """
+    Извлекает байты картинки из сообщения или прикрепленного документа.
+
+    :param bot: Экземпляр бота
+    :param target_msg: Целевое сообщение
+    :return: Байты изображения или None
+    """
+    if target_msg.photo:
+        photo = target_msg.photo[-1]
+        return await download_image_bytes(bot, photo.file_id, photo.file_size)
+    elif target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"):
+        doc = target_msg.document
+        return await download_image_bytes(bot, doc.file_id, doc.file_size)
+    return None
+
+
+async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[bytes], prompt: Optional[str]) -> None:
     """
     Обрабатывает медиа ДЗ: решает в DeepSeek, создает документ и отправляет в топик решений.
     """
@@ -52,7 +94,7 @@ async def process_homework_media(bot: Bot, msg: Message, img_bytes: bytes, promp
         os.remove(doc_path)
 
 
-def is_valid_homework_prompt(text: str | None, has_image: bool) -> bool:
+def is_valid_homework_prompt(text: Optional[str], has_image: bool) -> bool:
     """
     Проверяет, содержит ли сообщение реальную учебную задачу или картинку.
     Игнорирует флуд ('Привет', 'Как дела?') для защиты баланса DeepSeek API.
@@ -61,54 +103,39 @@ def is_valid_homework_prompt(text: str | None, has_image: bool) -> bool:
         return True
     if not text:
         return False
-    
+
     t = text.lower().strip()
-    # Простые бытовые сообщения
     flood_words = {"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"}
     if t in flood_words or len(t) < 5:
         return False
-    
-    # Ключевые слова учебных заданий
+
     hw_keywords = ["реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача", "задание", "номер", "№", "=", "+", "-"]
-    if any(kw in t for kw in hw_keywords) or len(t) >= 25:
-        return True
-    return False
+    return any(kw in t for kw in hw_keywords) or len(t) >= 25
 
 
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает новое входящее ДЗ в топике ДЗ с фильтрацией бытового флуда.
+    Отлавливает новое входящее ДЗ в топике ДЗ с атомарной блокировкой Redis и фильтрацией флуда.
     """
     target_msg = msg.reply_to_message if msg.reply_to_message else msg
 
-    img_bytes = None
-    if target_msg.photo:
-        file = await bot.get_file(target_msg.photo[-1].file_id)
-        file_io = await bot.download_file(file.file_path)
-        img_bytes = file_io.read()
-    elif target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"):
-        file = await bot.get_file(target_msg.document.file_id)
-        file_io = await bot.download_file(file.file_path)
-        img_bytes = file_io.read()
-
-    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
-    has_image = img_bytes is not None
-
-    # Фильтр бытовых сообщений без картинок
-    if not is_valid_homework_prompt(text_prompt, has_image):
-        log.debug(f"Игнорируем сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
-        return
-
+    # Атомарная проверка до тяжелых скачиваний для исключения Race Condition
     if await is_message_processed(target_msg.message_id):
-        log.debug(f"Задание из сообщения {target_msg.message_id} уже было обработано. Пропускаем.")
+        log.debug(f"Задание {target_msg.message_id} уже обрабатывается или решено. Пропускаем.")
         return
 
-    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
+    # Захватываем ID атомарно до загрузки медиа
     await mark_message_processed(target_msg.message_id)
     if target_msg.message_id != msg.message_id:
         await mark_message_processed(msg.message_id)
 
+    img_bytes = await extract_image_bytes(bot, target_msg)
+    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
+
+    if not is_valid_homework_prompt(text_prompt, img_bytes is not None):
+        log.debug(f"Игнорируем бытовое сообщение (msg_id={msg.message_id}): '{text_prompt}'")
+        return
+
+    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
-
-
