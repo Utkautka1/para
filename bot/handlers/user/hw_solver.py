@@ -147,12 +147,15 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
         log.debug(f"Задание {target_msg.message_id} уже обрабатывается или решено. Пропускаем.")
         return
 
-    img_bytes = await extract_image_bytes(bot, target_msg)
+    # Проверяем наличие объектов изображений прямо во входящих структурах Telegram
+    has_image = bool(target_msg.photo or (target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image")))
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
-    if not is_valid_homework_prompt(text_prompt, img_bytes is not None):
+    if not is_valid_homework_prompt(text_prompt, has_image):
         log.info(f"ℹ️ Игнорируем сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
         return
+
+    img_bytes = await extract_image_bytes(bot, target_msg)
 
     # 2. Проверка дубликатов по SHA256 хэшу контента
     c_hash = compute_prompt_hash(text_prompt, img_bytes)
@@ -167,5 +170,6 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
 
     log.info(f"🚀 Запуск решения ДЗ (msg_id={msg.message_id}, target_id={target_msg.message_id})")
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
+
 
 
