@@ -11,24 +11,25 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, FSInputFile
 import config
 from core.logger import get_logger
-from services.redis_cache import is_message_processed, mark_message_processed
+from services.redis_cache import (
+    is_message_processed,
+    mark_message_processed,
+    check_user_rate_limit,
+    is_hash_processed,
+    mark_hash_processed
+)
 from services.deepseek_solver import solve_homework
 from services.doc_generator import create_solution_docx
 
 log = get_logger("hw_handler")
 router = Router()
 
-# Максимальный размер скачиваемого медиа-файла (20 МБ)
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
 
 def build_original_post_link(chat_id: int, message_id: int) -> str:
     """
     Формирует прямую ссылку на оригинальное сообщение в Telegram.
-
-    :param chat_id: ID супергруппы
-    :param message_id: ID сообщения
-    :return: Ссылка t.me/c/...
     """
     clean_id = str(chat_id).replace("-100", "")
     return f"https://t.me/c/{clean_id}/{message_id}"
@@ -37,14 +38,9 @@ def build_original_post_link(chat_id: int, message_id: int) -> str:
 async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int]) -> Optional[bytes]:
     """
     Безопасно скачивает байты файла изображения с ограничением по размеру.
-
-    :param bot: Экземпляр бота
-    :param file_id: Telegram file_id
-    :param file_size: Размер файла в байтах
-    :return: Байты или None
     """
     if file_size and file_size > MAX_FILE_SIZE_BYTES:
-        log.warning(f"Файл превышает лимит {MAX_FILE_SIZE_BYTES} байт. Пропускаем скачивание.")
+        log.warning(f"Файл превышает лимит {MAX_FILE_SIZE_BYTES} байт. Пропускаем.")
         return None
     try:
         file = await bot.get_file(file_id)
@@ -58,10 +54,6 @@ async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int])
 async def extract_image_bytes(bot: Bot, target_msg: Message) -> Optional[bytes]:
     """
     Извлекает байты картинки из сообщения или прикрепленного документа.
-
-    :param bot: Экземпляр бота
-    :param target_msg: Целевое сообщение
-    :return: Байты изображения или None
     """
     if target_msg.photo:
         photo = target_msg.photo[-1]
@@ -97,7 +89,6 @@ async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[byt
 def is_valid_homework_prompt(text: Optional[str], has_image: bool) -> bool:
     """
     Проверяет, содержит ли сообщение реальную учебную задачу или картинку.
-    Игнорирует флуд ('Привет', 'Как дела?') для защиты баланса DeepSeek API.
     """
     if has_image:
         return True
@@ -126,55 +117,61 @@ def compute_prompt_hash(text: Optional[str], img_bytes: Optional[bytes]) -> str:
     return hasher.hexdigest()
 
 
-@router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
-async def handle_new_homework(msg: Message, bot: Bot) -> None:
+async def check_and_mark_duplicate_hash(text: Optional[str], img_bytes: Optional[bytes]) -> bool:
     """
-    Отлавливает новое ДЗ с поддержкой защиты от спама и логгированием каждого шага.
+    Проверяет и маркирует SHA256 хэш контента. Возвращает True если это дубликат.
     """
-    user_id = msg.from_user.id if msg.from_user else 0
-    log.info(f"📩 Входящее сообщение в топике {msg.message_thread_id} от user_id={user_id} (msg_id={msg.message_id})")
+    c_hash = compute_prompt_hash(text, img_bytes)
+    if await is_hash_processed(c_hash):
+        return True
+    await mark_hash_processed(c_hash)
+    return False
 
-    from services.redis_cache import check_user_rate_limit, is_hash_processed, mark_hash_processed
 
-    # 1. Проверка лимита частоты запросов от пользователя (max 3 в минуту)
+async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: int) -> bool:
+    """
+    Проверяет рат-лимит, статус обработки и валидность бытового текста.
+    """
     if not await check_user_rate_limit(user_id):
-        log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}. Пропускаем ДЗ.")
-        return
-
-    target_msg = msg.reply_to_message if msg.reply_to_message else msg
+        log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
+        return False
 
     if await is_message_processed(target_msg.message_id):
-        log.debug(f"Задание {target_msg.message_id} уже обрабатывается или решено. Пропускаем.")
-        return
+        return False
 
-    # Опредяляем наличие картинки напрямую из входящих медиа-структур
     has_photo = bool(target_msg.photo)
     has_doc_img = bool(target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"))
     has_image = has_photo or has_doc_img
-
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
-    # Фильтруем ТОЛЬКО чистые текстовые сообщения без медиа
     if not has_image and not is_valid_homework_prompt(text_prompt, False):
-        log.info(f"ℹ️ Игнорируем обычное текстовое сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
+        log.info(f"ℹ️ Игнорируем бытовое сообщение без задания (msg_id={msg.message_id})")
+        return False
+
+    return True
+
+
+@router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
+async def handle_new_homework(msg: Message, bot: Bot) -> None:
+    """
+    Отлавливает новое ДЗ с поддержкой защиты от спама (до 25 строк).
+    """
+    user_id = msg.from_user.id if msg.from_user else 0
+    target_msg = msg.reply_to_message if msg.reply_to_message else msg
+
+    if not await is_homework_msg_allowed(msg, target_msg, user_id):
         return
 
     img_bytes = await extract_image_bytes(bot, target_msg)
+    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
-    # 2. Проверка дубликатов по SHA256 хэшу контента
-    c_hash = compute_prompt_hash(text_prompt, img_bytes)
-    if await is_hash_processed(c_hash):
-        log.warning(f"⚠️ Аналогичное задание уже вычислялось в течение 24ч (hash={c_hash[:8]}). Пропускаем.")
+    if await check_and_mark_duplicate_hash(text_prompt, img_bytes):
+        log.warning(f"⚠️ Повтор ДЗ по SHA256 хэшу (msg_id={msg.message_id}). Пропуск.")
         return
 
     await mark_message_processed(target_msg.message_id)
-    await mark_hash_processed(c_hash)
     if target_msg.message_id != msg.message_id:
         await mark_message_processed(msg.message_id)
 
-    log.info(f"🚀 Запуск авторешения ДЗ в DeepSeek (msg_id={msg.message_id}, target_id={target_msg.message_id})")
+    log.info(f"🚀 Запуск авторешения ДЗ в DeepSeek (msg_id={msg.message_id})")
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
-
-
-
-
