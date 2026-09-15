@@ -55,24 +55,30 @@ async def process_homework_media(bot: Bot, msg: Message, img_bytes: bytes, promp
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает любое новое входящее ДЗ (фото, файлы, текст) в топике ДЗ.
+    Отлавливает новое входящее ДЗ (фото, файлы, текст, reply) в топике ДЗ.
     """
-    if await is_message_processed(msg.message_id):
-        log.debug(f"Сообщение {msg.message_id} уже было обработано ранее. Пропускаем.")
+    target_msg = msg.reply_to_message if msg.reply_to_message else msg
+
+    if await is_message_processed(target_msg.message_id):
+        log.debug(f"Задание из сообщения {target_msg.message_id} уже было обработано. Пропускаем.")
         return
 
-    log.info(f"Получено новое ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id})")
-    await mark_message_processed(msg.message_id)
+    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
+    await mark_message_processed(target_msg.message_id)
+    if target_msg.message_id != msg.message_id:
+        await mark_message_processed(msg.message_id)
 
     img_bytes = None
-    if msg.photo:
-        file = await bot.get_file(msg.photo[-1].file_id)
+    if target_msg.photo:
+        file = await bot.get_file(target_msg.photo[-1].file_id)
         file_io = await bot.download_file(file.file_path)
         img_bytes = file_io.read()
-    elif msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image"):
-        file = await bot.get_file(msg.document.file_id)
+    elif target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"):
+        file = await bot.get_file(target_msg.document.file_id)
         file_io = await bot.download_file(file.file_path)
         img_bytes = file_io.read()
 
-    text_prompt = msg.caption or msg.text
-    await process_homework_media(bot, msg, img_bytes, text_prompt)
+    # Собираем контекстный промпт
+    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
+    await process_homework_media(bot, target_msg, img_bytes, text_prompt)
+
