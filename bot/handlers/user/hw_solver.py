@@ -51,15 +51,16 @@ async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int])
         return None
 
 
-async def extract_image_bytes(bot: Bot, target_msg: Message) -> Optional[bytes]:
+async def extract_image_bytes(bot: Bot, msg: Message, target_msg: Message) -> Optional[bytes]:
     """
-    Извлекает байты картинки из сообщения или прикрепленного документа.
+    Извлекает байты картинки из текущего или цитируемого сообщения.
     """
-    if target_msg.photo:
-        photo = target_msg.photo[-1]
+    m = msg if (msg.photo or (msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image"))) else target_msg
+    if m.photo:
+        photo = m.photo[-1]
         return await download_image_bytes(bot, photo.file_id, photo.file_size)
-    elif target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"):
-        doc = target_msg.document
+    elif m.document and m.document.mime_type and m.document.mime_type.startswith("image"):
+        doc = m.document
         return await download_image_bytes(bot, doc.file_id, doc.file_size)
     return None
 
@@ -136,16 +137,19 @@ async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: in
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
         return False
 
-    if await is_message_processed(target_msg.message_id):
+    if await is_message_processed(target_msg.message_id) or await is_message_processed(msg.message_id):
         return False
 
-    has_photo = bool(target_msg.photo)
-    has_doc_img = bool(target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"))
+    has_photo = bool(msg.photo or target_msg.photo)
+    has_doc_img = bool(
+        (msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image")) or
+        (target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"))
+    )
     has_image = has_photo or has_doc_img
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
-    if not has_image and not is_valid_homework_prompt(text_prompt, False):
-        log.info(f"ℹ️ Игнорируем бытовое сообщение без задания (msg_id={msg.message_id})")
+    if not is_valid_homework_prompt(text_prompt, has_image):
+        log.info(f"ℹ️ Игнорируем обычное текстовое сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
         return False
 
     return True
@@ -162,7 +166,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     if not await is_homework_msg_allowed(msg, target_msg, user_id):
         return
 
-    img_bytes = await extract_image_bytes(bot, target_msg)
+    img_bytes = await extract_image_bytes(bot, msg, target_msg)
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
     if await check_and_mark_duplicate_hash(text_prompt, img_bytes):
