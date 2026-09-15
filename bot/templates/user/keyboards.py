@@ -1,7 +1,7 @@
 """
 Модуль аккуратных Inline-клавиатур навигации.
 
-Создает компактные кнопки управления и ссылки для подключения к парам в один ряд.
+Создает компактные кнопки управления и ссылки для подключения к парам (максимум по 2 в ряд).
 """
 
 from typing import List, Optional
@@ -37,6 +37,24 @@ def format_lesson_button_text(lesson: Lesson) -> str:
     return f"🔗 {lesson.period + 1}-я пара{sg}"
 
 
+def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]]:
+    """
+    Разбивает кнопки ссылок на дистанционные пары по рядам (максимум по 2 в ряд).
+
+    :param lessons: Список предметов
+    :return: Двумерный список кнопок
+    """
+    btns = []
+    for l in lessons:
+        if l.is_remote and l.remote_link:
+            url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
+            if url:
+                btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
+
+    # Распределяем по 2 кнопки на ряд для сохранения полной читаемости текста
+    return [btns[i:i + 2] for i in range(0, len(btns), 2)]
+
+
 def get_schedule_inline_kb(
     lessons: Optional[List[Lesson]] = None,
     week_offset: int = 0
@@ -51,14 +69,7 @@ def get_schedule_inline_kb(
     rows = []
 
     if lessons:
-        link_btns = []
-        for l in lessons:
-            if l.is_remote and l.remote_link:
-                url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
-                if url:
-                    link_btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
-        if link_btns:
-            rows.append(link_btns)
+        rows.extend(chunk_link_buttons(lessons))
 
     rows.append([
         InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today"),
@@ -91,14 +102,6 @@ def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> InlineKeyboar
     rows = []
 
     if lessons:
-        link_btns = []
-        for l in lessons:
-            if l.is_remote and l.remote_link:
-                url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
-                if url:
-                    link_btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
-        if link_btns:
-            rows.append(link_btns)
+        rows.extend(chunk_link_buttons(lessons))
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
