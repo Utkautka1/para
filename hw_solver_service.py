@@ -24,7 +24,7 @@ async def main() -> None:
     log.info(f"  Исходящий топик: {config.HW_OUTPUT_TOPIC_THREAD_ID}")
     log.info("=" * 60)
 
-    bot = Bot(token=config.BOT_TOKEN)
+    from core.bot import bot
     dp = Dispatcher()
     dp.include_router(hw_solver_router)
 
@@ -34,8 +34,7 @@ async def main() -> None:
         await dp.start_polling(bot)
     except Exception as e:
         log.error(f"❌ Ошибка микросервиса авторешалки: {e}")
-    finally:
-        await bot.session.close()
+
 
 
 if __name__ == "__main__":
