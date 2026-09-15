@@ -59,3 +59,27 @@ async def cache_flush() -> None:
             log.info("Кэш Redis полностью очищен!")
     except Exception as e:
         log.error(f"Ошибка очистки Redis: {e}")
+
+
+async def is_message_processed(message_id: int) -> bool:
+    """
+    Проверяет, было ли сообщение с ДЗ уже решено и отправлено ранее.
+
+    :param message_id: Telegram ID сообщения
+    :return: True если решено, иначе False
+    """
+    key = f"hw_processed:{message_id}"
+    val = await cache_get(key)
+    return val == "1"
+
+
+async def mark_message_processed(message_id: int) -> None:
+    """
+    Отмечает сообщение с ДЗ как обработанное на 30 дней в Redis.
+
+    :param message_id: Telegram ID сообщения
+    """
+    key = f"hw_processed:{message_id}"
+    # Сохраняем на 30 дней (2592000 сек)
+    await cache_set(key, "1", ttl=2592000)
+

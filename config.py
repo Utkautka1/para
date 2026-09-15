@@ -68,5 +68,12 @@ REDIS_HOST: str = get_required_env("REDIS_HOST")
 REDIS_PORT: int = int(get_required_env("REDIS_PORT"))
 REDIS_CACHE_TTL_SECONDS: int = int(get_required_env("REDIS_CACHE_TTL_SECONDS"))
 
+# Настройки DeepSeek HW Solver
+DEEPSEEK_API_KEY: str = get_required_env("DEEPSEEK_API_KEY")
+DEEPSEEK_API_BASE: str = os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
+DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-v4-flash-vision-exp")
+HW_INPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_INPUT_TOPIC_THREAD_ID"))
+HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID"))
+
 
 

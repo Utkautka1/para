@@ -41,12 +41,15 @@ async def main() -> None:
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.admin.panel import router as admin_router
     from bot.handlers.admin.mute import router as mute_router
-    # Порядок подключения: модерация/админка, публичные команды, авторизованные, затем fallback
+    from bot.handlers.user.hw_solver import router as hw_solver_router
+    # Порядок подключения: модерация/админка, публичные команды, авторешалка ДЗ, авторизованные, затем fallback
     dp.include_router(mute_router)
     dp.include_router(public_router)
     dp.include_router(admin_router)
+    dp.include_router(hw_solver_router)
     dp.include_router(user_router)
     dp.include_router(fallback_router)
+
 
     from services.topic_updater import topic_sync_loop
     from services.exam_topic_updater import exam_topic_sync_loop
