@@ -129,33 +129,35 @@ def compute_prompt_hash(text: Optional[str], img_bytes: Optional[bytes]) -> str:
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает новое ДЗ с поддержкой защиты от спама и лимита запросов.
+    Отлавливает новое ДЗ с поддержкой защиты от спама и логгированием каждого шага.
     """
     user_id = msg.from_user.id if msg.from_user else 0
+    log.info(f"📩 Входящее сообщение в топике {msg.message_thread_id} от user_id={user_id} (msg_id={msg.message_id})")
+
     from services.redis_cache import check_user_rate_limit, is_hash_processed, mark_hash_processed
 
     # 1. Проверка лимита частоты запросов от пользователя (max 3 в минуту)
     if not await check_user_rate_limit(user_id):
-        log.warning(f"Превышен rate-limit для пользователя {user_id}. Пропускаем ДЗ.")
+        log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}. Пропускаем ДЗ.")
         return
 
     target_msg = msg.reply_to_message if msg.reply_to_message else msg
 
     if await is_message_processed(target_msg.message_id):
-        log.debug(f"Задание {target_msg.message_id} уже обрабатывается. Пропускаем.")
+        log.debug(f"Задание {target_msg.message_id} уже обрабатывается или решено. Пропускаем.")
         return
 
     img_bytes = await extract_image_bytes(bot, target_msg)
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
     if not is_valid_homework_prompt(text_prompt, img_bytes is not None):
-        log.debug(f"Игнорируем бытовое сообщение (msg_id={msg.message_id}): '{text_prompt}'")
+        log.info(f"ℹ️ Игнорируем сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
         return
 
     # 2. Проверка дубликатов по SHA256 хэшу контента
     c_hash = compute_prompt_hash(text_prompt, img_bytes)
     if await is_hash_processed(c_hash):
-        log.warning(f"Аналогичное задание уже вычислялось в течение 24ч (hash={c_hash[:8]}). Пропускаем.")
+        log.warning(f"⚠️ Аналогичное задание уже вычислялось в течение 24ч (hash={c_hash[:8]}). Пропускаем.")
         return
 
     await mark_message_processed(target_msg.message_id)
@@ -163,6 +165,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     if target_msg.message_id != msg.message_id:
         await mark_message_processed(msg.message_id)
 
-    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, user_id={user_id})")
+    log.info(f"🚀 Запуск решения ДЗ (msg_id={msg.message_id}, target_id={target_msg.message_id})")
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
+
 
