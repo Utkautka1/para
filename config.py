@@ -62,3 +62,9 @@ PROXY_URL: str | None = os.getenv("PROXY_URL")
 
 # Файл с подписками
 SUBSCRIBERS_FILE_PATH: str = "data/subscribers.json"
+
+# Настройки Redis
+REDIS_HOST: str = os.getenv("REDIS_HOST")
+REDIS_PORT: int = int(os.getenv("REDIS_PORT"))
+REDIS_CACHE_TTL_SECONDS: int = int(os.getenv("REDIS_CACHE_TTL_SECONDS"))
+

@@ -21,6 +21,8 @@ from bot.templates.user.messages import format_day_schedule, format_week_schedul
 
 from core.logger import get_logger
 
+from services.redis_cache import cache_flush, cache_get, cache_set
+
 log = get_logger("user_schedule")
 
 router = Router()
@@ -64,62 +66,93 @@ async def cmd_start(message: Message) -> None:
     await message.answer(text, reply_markup=get_schedule_inline_kb(lessons))
 
 
-
 @router.callback_query(F.data == "sched:today")
 async def cb_today(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на сегодня.
+    Заменяет сообщение на расписание на сегодня с мгновенным Redis-кэшированием.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Сегодня")
     now = datetime.now(TIMEZONE).date()
+    cache_key = f"sched:today:{now.isoformat()}"
+    cached_text = await cache_get(cache_key)
     lessons = await get_schedule_for_date(now)
+
+    if cached_text:
+        await edit_or_answer(callback, cached_text, lessons)
+        return
+
     text = format_day_schedule(now, lessons)
+    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, lessons)
 
 
 @router.callback_query(F.data == "sched:tomorrow")
 async def cb_tomorrow(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на завтра.
+    Заменяет сообщение на расписание на завтра с мгновенным Redis-кэшированием.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Завтра")
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
+    cache_key = f"sched:tomorrow:{tomorrow.isoformat()}"
+    cached_text = await cache_get(cache_key)
     lessons = await get_schedule_for_date(tomorrow)
+
+    if cached_text:
+        await edit_or_answer(callback, cached_text, lessons)
+        return
+
     text = format_day_schedule(tomorrow, lessons)
+    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, lessons)
 
 
 @router.callback_query(F.data == "sched:week")
 async def cb_week(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на текущую неделю.
+    Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Эта неделя")
     today = datetime.now(TIMEZONE).date()
     monday = today - timedelta(days=today.weekday())
+    cache_key = f"sched:week:{monday.isoformat()}"
+    cached_text = await cache_get(cache_key)
+
+    if cached_text:
+        await edit_or_answer(callback, cached_text, week_offset=0)
+        return
+
     days_data = await get_week_schedule(monday)
     text = format_week_schedule(days_data)
+    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, week_offset=0)
 
 
 @router.callback_query(F.data == "sched:week_next")
 async def cb_week_next(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на следующую неделю.
+    Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Следующая неделя")
     today = datetime.now(TIMEZONE).date()
     next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
+    cache_key = f"sched:week_next:{next_monday.isoformat()}"
+    cached_text = await cache_get(cache_key)
+
+    if cached_text:
+        await edit_or_answer(callback, cached_text, week_offset=1)
+        return
+
     days_data = await get_week_schedule(next_monday)
     text = format_week_schedule(days_data)
+    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, week_offset=1)
 
 
@@ -138,15 +171,17 @@ async def cb_copy_value(callback: CallbackQuery) -> None:
 @router.callback_query(F.data == "sched:refresh")
 async def cb_refresh(callback: CallbackQuery) -> None:
     """
-    Принудительно скачивает свежее расписание с сайта и ссылки с Яндекс Диска.
+    Принудительно скачивает расписание, очищает Redis-кэш и обновляет экран.
 
     :param callback: CallbackQuery
     """
-    log.info("Нажата инлайн-кнопка: Обновить расписание")
+    log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
+    await cache_flush()
     links = await get_teacher_links(force_refresh=True)
     now = datetime.now(TIMEZONE).date()
     lessons = await get_schedule_for_date(now, force_refresh=True)
     text = format_day_schedule(now, lessons)
-    text += f"\n\n<i>✅ Расписание КТМУ и контакты преподавателей ({len(links)}) сверены и обновлены!</i>"
+    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({len(links)}) сверены, Redis очищен!</i>"
     await edit_or_answer(callback, text, lessons)
+
 
