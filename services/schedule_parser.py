@@ -18,95 +18,171 @@ from services.docx_parser import TeacherData, get_teacher_links
 
 log = get_logger("schedule_parser")
 
-import json
-import os
-
 _DATA_CACHE: Tuple[float, Optional[Dict[str, Any]]] = (0.0, None)
 _LAST_PUBLISHED_AT: Optional[str] = None
-SCHEDULE_DISK_CACHE_FILE = "data/schedule_cache.json"
 
 
-def load_schedule_from_disk() -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+class Lesson(BaseModel):
+    """Модель данных одного занятия в расписании."""
+    period: int
+    time_str: str
+    subject: str
+    lesson_type: str
+    teacher: str
+    is_remote: bool
+    room: str
+    address: str
+    subgroup: int = 0
+    remote_link: Optional[str] = None
+    remote_passcode: Optional[str] = None
+    remote_meeting_id: Optional[str] = None
+
+
+def resolve_room_address(room_name: str, is_remote: bool) -> str:
     """
-    Загружает с диска кэшированный JSON расписания и метку времени публикации.
+    Определяет адрес корпуса КТМУ по номеру кабинета.
 
-    :return: Кортеж (published_at, snapshot)
+    :param room_name: Кабинет
+    :param is_remote: Флаг дистанта
+    :return: Адрес корпуса
     """
-    if os.path.exists(SCHEDULE_DISK_CACHE_FILE):
-        try:
-            with open(SCHEDULE_DISK_CACHE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data.get("published_at"), data.get("snapshot")
-        except Exception as e:
-            log.error(f"Ошибка чтения schedule_cache.json: {e}")
-    return None, None
+    if is_remote:
+        return "Дистанционно"
+    if room_name.lower().startswith("в-"):
+        return "Вознесенский пр., 44"
+    return "ул. Цветочная, д. 8"
 
 
-def save_schedule_to_disk(published_at: Optional[str], snapshot: Dict[str, Any]) -> None:
+def extract_zoom_creds(text: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Сохраняет расписание КТМУ на диск для мгновенного восстановления после рестарта.
+    Извлекает URL, ID конференции и пароль Zoom/Телемоста.
 
-    :param published_at: Метка времени публикации
-    :param snapshot: Данные расписания
+    :param text: Текст из таблицы преподавателя
+    :return: Кортеж (url, meeting_id, passcode)
     """
-    os.makedirs(os.path.dirname(SCHEDULE_DISK_CACHE_FILE), exist_ok=True)
-    try:
-        with open(SCHEDULE_DISK_CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump({"published_at": published_at, "snapshot": snapshot}, f, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Ошибка записи schedule_cache.json: {e}")
+    if not text:
+        return None, None, None
+    url_m = re.search(r"https?://[^\s<>\"\'\`]+", text)
+    id_m = re.search(r"(?:Идентификатор(?:\s+конференции)?|Meeting\s+ID)[:\s]+([0-9\s]{8,15})", text, re.IGNORECASE)
+    pass_m = re.search(r"(?:Код(?:\s+доступа)?|Passcode)[:\s]+([A-Za-z0-9]+)", text, re.IGNORECASE)
+    url = url_m.group(0) if url_m else (text if text.startswith("http") else None)
+    mid = id_m.group(1).strip() if id_m else None
+    code = pass_m.group(1).strip() if pass_m else None
+    return url, mid, code
 
 
-def _init_cache_if_empty() -> Optional[Dict[str, Any]]:
-    """Инициализирует кэш в памяти данными с диска при старте."""
-    global _DATA_CACHE, _LAST_PUBLISHED_AT
-    if _DATA_CACHE[1] is None:
-        pub_at, snapshot = load_schedule_from_disk()
-        if snapshot:
-            _LAST_PUBLISHED_AT = pub_at
-            _DATA_CACHE = (time.time(), snapshot)
-            log.info("Расписание успешно восстановлено из локального дискового кэша")
-    return _DATA_CACHE[1]
+def clean_subject_title(subject: str) -> str:
+    """
+    Очищает дублирующиеся названия предметов.
+
+    :param subject: Название предмета
+    :return: Чистое название
+    """
+    parts = [p.strip() for p in subject.split("/") if p.strip()]
+    if len(parts) == 2 and parts[0].lower() in parts[1].lower():
+        return parts[1]
+    return subject
+
+
+def calculate_week_number(target_date: date, semester_start_str: str) -> int:
+    """
+    Вычисляет порядковый номер учебной недели.
+
+    :param target_date: Целевая дата
+    :param semester_start_str: Старт семестра
+    :return: Номер недели
+    """
+    start_date = datetime.strptime(semester_start_str, "%Y-%m-%d").date()
+    start_monday = start_date - timedelta(days=start_date.weekday())
+    days_diff = (target_date - start_monday).days
+    if days_diff < 0:
+        return 1
+    return (days_diff // 7) + 1
+
+
+def is_instance_active_for_week(inst: Dict[str, Any], week_num: int) -> bool:
+    """
+    Проверяет проведение пары на неделе.
+
+    :param inst: Занятие
+    :param week_num: Номер недели
+    :return: True, если проводится
+    """
+    pattern = inst.get("weekPattern", "all")
+    if pattern == "custom":
+        return week_num in inst.get("customWeeks", [])
+    if pattern == "even":
+        return week_num % 2 == 0
+    if pattern == "odd":
+        return week_num % 2 == 1
+    return True
+
+
+def get_period_time_str(
+    group_data: Dict[str, Any],
+    day_idx: int,
+    period_idx: int,
+    week_num: int,
+    global_config: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Определяет интервал времени пары строго из API КТМУ без сомнительных угадываний.
+
+    :param group_data: Метаданные группы
+    :param day_idx: День недели (0-6)
+    :param period_idx: Номер пары (0-indexed)
+    :param week_num: Номер недели
+    :param global_config: Глобальный конфиг API КТМУ
+    :return: Точная строка времени или бейдж "Время уточняется"
+    """
+    parity = "even" if week_num % 2 == 0 else "odd"
+    # 1. Проверяем измененные звонки по четности недели группы
+    by_parity = group_data.get("dayPeriodTimesByParity", {}).get(parity, {}).get(str(day_idx), [])
+    if period_idx < len(by_parity) and by_parity[period_idx]:
+        return by_parity[period_idx]
+
+    # 2. Проверяем стандартные звонки группы
+    period_times = group_data.get("dayPeriodTimes", {}).get(str(day_idx), [])
+    if period_idx < len(period_times) and period_times[period_idx]:
+        return period_times[period_idx]
+
+    # 3. Проверяем общие звонки КТМУ из config.periodTimes
+    if global_config and "periodTimes" in global_config:
+        g_times = global_config["periodTimes"]
+        if period_idx < len(g_times) and g_times[period_idx]:
+            return g_times[period_idx]
+
+    return "Время уточняется"
 
 
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
     """
-    Скачивает JSON расписания КТМУ с использованием HTTP заголовков и дискового кэша.
+    Скачивает JSON расписания КТМУ с отслеживанием времени публикации.
 
     :param force_refresh: Принудительно запросить свежие данные
     :return: Словарь данных или None
     """
     global _DATA_CACHE, _LAST_PUBLISHED_AT
-    cached_data = _init_cache_if_empty()
     now = time.time()
-    if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and cached_data:
-        return cached_data
-
-    headers = {}
-    if _LAST_PUBLISHED_AT:
-        headers["If-Modified-Since"] = _LAST_PUBLISHED_AT
-
+    if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and _DATA_CACHE[1]:
+        return _DATA_CACHE[1]
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            res = await client.get(SCHEDULE_API_URL, headers=headers)
-            if res.status_code == 304:
-                _DATA_CACHE = (now, cached_data)
-                return cached_data
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(SCHEDULE_API_URL)
             if res.status_code != 200:
                 log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
-                return cached_data
+                return _DATA_CACHE[1]
             val = res.json().get("value", {})
             snapshot = val.get("publishedSnapshot") or val
             pub_at = snapshot.get("publishedAt")
-            _LAST_PUBLISHED_AT = pub_at
+            if pub_at and pub_at != _LAST_PUBLISHED_AT:
+                log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
+                _LAST_PUBLISHED_AT = pub_at
             _DATA_CACHE = (now, snapshot)
-            save_schedule_to_disk(pub_at, snapshot)
-            log.info(f"Обновлено расписание КТМУ от: {pub_at}")
             return snapshot
     except Exception as e:
-        log.warning(f"Ошибка запроса к API КТМУ: {e}. Используем кэш.")
-        return cached_data
-
+        log.error(f"Исключение при запросе к API КТМУ: {e}", exc_info=True)
+        return _DATA_CACHE[1]
 
 
 def extract_entity_maps(data: Dict[str, Any]) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
