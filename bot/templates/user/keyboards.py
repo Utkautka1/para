@@ -26,6 +26,17 @@ def build_zoom_copy_row(lessons: List[Lesson]) -> List[InlineKeyboardButton]:
     return row
 
 
+def format_lesson_button_text(lesson: Lesson) -> str:
+    """
+    Формирует лаконичный текст кнопки подключения к дистанционной паре.
+
+    :param lesson: Объект занятия
+    :return: Текст для Inline-кнопки
+    """
+    sg = f" (П/Г {lesson.subgroup})" if lesson.subgroup > 0 else ""
+    return f"🔗 {lesson.period + 1}-я пара{sg}"
+
+
 def get_schedule_inline_kb(
     lessons: Optional[List[Lesson]] = None,
     week_offset: int = 0
@@ -45,7 +56,7 @@ def get_schedule_inline_kb(
             if l.is_remote and l.remote_link:
                 url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
                 if url:
-                    link_btns.append(InlineKeyboardButton(text=f"🔗 {l.period + 1}-я пара", url=url, style="success"))
+                    link_btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
         if link_btns:
             rows.append(link_btns)
 
@@ -85,9 +96,9 @@ def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> InlineKeyboar
             if l.is_remote and l.remote_link:
                 url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
                 if url:
-                    sg = f" (Подгруппа {l.subgroup})" if l.subgroup > 0 else ""
-                    link_btns.append(InlineKeyboardButton(text=f"🔗 {l.period + 1}-я пара{sg}", url=url, style="success"))
+                    link_btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
         if link_btns:
             rows.append(link_btns)
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
