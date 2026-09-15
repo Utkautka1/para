@@ -8,4 +8,4 @@ python-dotenv>=1.0.1
 aiohttp-socks>=0.8.4
 redis>=5.0.1
 openai>=1.12.0
-fpdf2>=2.7.8
+pypdf>=4.0.0

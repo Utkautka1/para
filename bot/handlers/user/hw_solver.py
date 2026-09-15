@@ -1,7 +1,7 @@
 """
 Хэндлер обработки новых ДЗ в целевом топике (ID 405).
 
-Отлавливает фото, документы (.docx, .txt, картинки) и тексты, отправляет в DeepSeek Vision,
+Отлавливает фото, документы (.docx, .pdf, .txt, исходный код) и тексты, отправляет в DeepSeek Vision,
 сохраняет ID обработанных сообщений в Redis и отправляет готовый файл в топик "Готовое ДЗ" (ID 3951).
 """
 
@@ -74,32 +74,62 @@ def extract_docx_content(doc_bytes: bytes) -> Tuple[str, List[bytes]]:
     return "\n".join(full_text), images
 
 
+def extract_pdf_content(doc_bytes: bytes) -> str:
+    """
+    Извлекает весь текст из PDF документа.
+    """
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(doc_bytes))
+        pages = [page.extract_text() for page in reader.pages if page.extract_text()]
+        return "\n\n".join(pages)
+    except Exception as e:
+        log.error(f"Ошибка парсинга PDF: {e}")
+        return ""
+
+
 def parse_document_bytes(doc_bytes: bytes, fname: str, mime: Optional[str], prompt: str) -> Tuple[Optional[bytes], Optional[str]]:
     """
-    Разбирает байты документа (изображение, docx или текст).
+    Разбирает байты документа (изображение, docx, pdf или текст).
     """
     fn = fname.lower()
-    if (mime and mime.startswith("image")) or fn.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+    if (mime and mime.startswith("image")) or fn.endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp')):
         return doc_bytes, prompt or None
 
     if fn.endswith('.docx'):
         d_text, d_imgs = extract_docx_content(doc_bytes)
-        combined = f"{prompt}\n\n[Текст из файла {fname}]:\n{d_text}".strip()
+        combined = f"{prompt}\n\n[Текст из {fname}]:\n{d_text}".strip()
         return (d_imgs[0] if d_imgs else None), combined or None
 
-    if fn.endswith(('.txt', '.md', '.py', '.json', '.csv')):
+    if fn.endswith('.pdf'):
+        pdf_text = extract_pdf_content(doc_bytes)
+        combined = f"{prompt}\n\n[Текст из PDF {fname}]:\n{pdf_text}".strip()
+        return None, combined or None
+
+    if fn.endswith(('.txt', '.md', '.py', '.json', '.csv', '.c', '.cpp', '.js', '.pas', '.java')):
         d_text = doc_bytes.decode('utf-8', errors='ignore')
-        return None, f"{prompt}\n\n[Содержимое файла {fname}]:\n{d_text}".strip()
+        return None, f"{prompt}\n\n[Содержимое {fname}]:\n{d_text}".strip()
 
     return None, prompt or None
 
 
+def combine_prompt_and_instructions(msg: Message, target_msg: Message) -> str:
+    """
+    Объединяет инструкцию из подписи/текста реплая и основное задание.
+    """
+    u_text = msg.text or msg.caption or ""
+    t_text = target_msg.caption or target_msg.text or ""
+    if u_text and t_text and u_text != t_text:
+        return f"Инструкция пользователя: {u_text}\nТекст задания: {t_text}"
+    return u_text or t_text or ""
+
+
 async def extract_homework_payload(bot: Bot, msg: Message, target_msg: Message) -> Tuple[Optional[bytes], Optional[str]]:
     """
-    Извлекает байты картинки и текст задания из сообщения любого формата.
+    Извлекает картинку и полный промпт с пользовательскими инструкциями.
     """
     m = msg if (msg.photo or msg.document) else target_msg
-    prompt = msg.text or msg.caption or target_msg.caption or target_msg.text or ""
+    prompt = combine_prompt_and_instructions(msg, target_msg)
 
     if m.photo:
         p_bytes = await download_image_bytes(bot, m.photo[-1].file_id, m.photo[-1].file_size)
