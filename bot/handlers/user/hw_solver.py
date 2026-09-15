@@ -1,12 +1,13 @@
 """
 Хэндлер обработки новых ДЗ в целевом топике (ID 405).
 
-Отлавливает фото, документы-картинки и тексты, отправляет в DeepSeek Vision,
+Отлавливает фото, документы (.docx, .txt, картинки) и тексты, отправляет в DeepSeek Vision,
 сохраняет ID обработанных сообщений в Redis и отправляет готовый файл в топик "Готовое ДЗ" (ID 3951).
 """
 
+import io
 import os
-from typing import Optional
+from typing import Optional, List, Tuple
 from aiogram import Router, F, Bot
 from aiogram.types import Message, FSInputFile
 import config
@@ -37,7 +38,7 @@ def build_original_post_link(chat_id: int, message_id: int) -> str:
 
 async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int]) -> Optional[bytes]:
     """
-    Безопасно скачивает байты файла изображения с ограничением по размеру.
+    Безопасно скачивает байты файла с ограничением по размеру.
     """
     if file_size and file_size > MAX_FILE_SIZE_BYTES:
         log.warning(f"Файл превышает лимит {MAX_FILE_SIZE_BYTES} байт. Пропускаем.")
@@ -51,18 +52,67 @@ async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int])
         return None
 
 
-async def extract_image_bytes(bot: Bot, msg: Message, target_msg: Message) -> Optional[bytes]:
+def extract_docx_content(doc_bytes: bytes) -> Tuple[str, List[bytes]]:
     """
-    Извлекает байты картинки из текущего или цитируемого сообщения.
+    Извлекает весь текст и картинки из .docx файла.
     """
-    m = msg if (msg.photo or (msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image"))) else target_msg
+    import docx
+    doc = docx.Document(io.BytesIO(doc_bytes))
+    full_text = []
+    for p in doc.paragraphs:
+        if p.text.strip():
+            full_text.append(p.text.strip())
+    for table in doc.tables:
+        for row in table.rows:
+            full_text.append(" | ".join(cell.text.strip() for cell in row.cells if cell.text.strip()))
+
+    images = []
+    for rel in doc.part.rels.values():
+        if "image" in rel.target_ref and hasattr(rel.target_part, 'blob'):
+            images.append(rel.target_part.blob)
+
+    return "\n".join(full_text), images
+
+
+def parse_document_bytes(doc_bytes: bytes, fname: str, mime: Optional[str], prompt: str) -> Tuple[Optional[bytes], Optional[str]]:
+    """
+    Разбирает байты документа (изображение, docx или текст).
+    """
+    fn = fname.lower()
+    if (mime and mime.startswith("image")) or fn.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        return doc_bytes, prompt or None
+
+    if fn.endswith('.docx'):
+        d_text, d_imgs = extract_docx_content(doc_bytes)
+        combined = f"{prompt}\n\n[Текст из файла {fname}]:\n{d_text}".strip()
+        return (d_imgs[0] if d_imgs else None), combined or None
+
+    if fn.endswith(('.txt', '.md', '.py', '.json', '.csv')):
+        d_text = doc_bytes.decode('utf-8', errors='ignore')
+        return None, f"{prompt}\n\n[Содержимое файла {fname}]:\n{d_text}".strip()
+
+    return None, prompt or None
+
+
+async def extract_homework_payload(bot: Bot, msg: Message, target_msg: Message) -> Tuple[Optional[bytes], Optional[str]]:
+    """
+    Извлекает байты картинки и текст задания из сообщения любого формата.
+    """
+    m = msg if (msg.photo or msg.document) else target_msg
+    prompt = msg.text or msg.caption or target_msg.caption or target_msg.text or ""
+
     if m.photo:
-        photo = m.photo[-1]
-        return await download_image_bytes(bot, photo.file_id, photo.file_size)
-    elif m.document and m.document.mime_type and m.document.mime_type.startswith("image"):
+        p_bytes = await download_image_bytes(bot, m.photo[-1].file_id, m.photo[-1].file_size)
+        return p_bytes, prompt or None
+
+    if m.document:
         doc = m.document
-        return await download_image_bytes(bot, doc.file_id, doc.file_size)
-    return None
+        doc_b = await download_image_bytes(bot, doc.file_id, doc.file_size)
+        if not doc_b:
+            return None, prompt or None
+        return parse_document_bytes(doc_b, doc.file_name or "doc", doc.mime_type, prompt)
+
+    return None, prompt or None
 
 
 async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[bytes], prompt: Optional[str]) -> None:
@@ -92,11 +142,11 @@ async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[byt
             os.remove(doc_path)
 
 
-def is_valid_homework_prompt(text: Optional[str], has_image: bool) -> bool:
+def is_valid_homework_prompt(text: Optional[str], has_media: bool) -> bool:
     """
-    Проверяет, содержит ли сообщение реальную учебную задачу или картинку.
+    Проверяет, содержит ли сообщение учебную задачу, картинку или документ.
     """
-    if has_image:
+    if has_media:
         return True
     if not text:
         return False
@@ -136,7 +186,7 @@ async def check_and_mark_duplicate_hash(text: Optional[str], img_bytes: Optional
 
 async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: int) -> bool:
     """
-    Проверяет рат-лимит, статус обработки и валидность бытового текста.
+    Проверяет рат-лимит, статус обработки и валидность медиа/текста.
     """
     if not await check_user_rate_limit(user_id):
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
@@ -145,16 +195,11 @@ async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: in
     if await is_message_processed(target_msg.message_id) or await is_message_processed(msg.message_id):
         return False
 
-    has_photo = bool(msg.photo or target_msg.photo)
-    has_doc_img = bool(
-        (msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image")) or
-        (target_msg.document and target_msg.document.mime_type and target_msg.document.mime_type.startswith("image"))
-    )
-    has_image = has_photo or has_doc_img
+    has_media = bool(msg.photo or msg.document or target_msg.photo or target_msg.document)
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
 
-    if not is_valid_homework_prompt(text_prompt, has_image):
-        log.info(f"ℹ️ Игнорируем обычное текстовое сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
+    if not is_valid_homework_prompt(text_prompt, has_media):
+        log.info(f"ℹ️ Игнорируем бытовое текстовое сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
         return False
 
     return True
@@ -163,7 +208,7 @@ async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: in
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает новое ДЗ с поддержкой защиты от спама (до 25 строк).
+    Отлавливает новое ДЗ (фото, docx, файлы, текст) с защитой от спама.
     """
     user_id = msg.from_user.id if msg.from_user else 0
     target_msg = msg.reply_to_message if msg.reply_to_message else msg
@@ -171,8 +216,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     if not await is_homework_msg_allowed(msg, target_msg, user_id):
         return
 
-    img_bytes = await extract_image_bytes(bot, msg, target_msg)
-    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
+    img_bytes, text_prompt = await extract_homework_payload(bot, msg, target_msg)
 
     if await check_and_mark_duplicate_hash(text_prompt, img_bytes):
         log.warning(f"⚠️ Повтор ДЗ по SHA256 хэшу (msg_id={msg.message_id}). Пропуск.")
