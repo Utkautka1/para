@@ -192,7 +192,8 @@ async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: in
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
         return False
 
-    if await is_message_processed(target_msg.message_id) or await is_message_processed(msg.message_id):
+    if await is_message_processed(msg.message_id):
+        log.debug(f"Сообщение {msg.message_id} уже обработано. Пропуск.")
         return False
 
     has_media = bool(msg.photo or msg.document or target_msg.photo or target_msg.document)
@@ -222,9 +223,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
         log.warning(f"⚠️ Повтор ДЗ по SHA256 хэшу (msg_id={msg.message_id}). Пропуск.")
         return
 
-    await mark_message_processed(target_msg.message_id)
-    if target_msg.message_id != msg.message_id:
-        await mark_message_processed(msg.message_id)
+    await mark_message_processed(msg.message_id)
 
     log.info(f"🚀 Запуск авторешения ДЗ в DeepSeek (msg_id={msg.message_id})")
     await process_homework_media(bot, msg, img_bytes, text_prompt)
