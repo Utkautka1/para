@@ -35,3 +35,28 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  para-hw-solver:
+    build: .
+    container_name: para-hw-solver
+    restart: always
+    command: python hw_solver_service.py
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+        reservations:
+          memory: 96M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
