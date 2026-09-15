@@ -80,6 +80,48 @@ async def mark_message_processed(message_id: int) -> None:
     :param message_id: Telegram ID сообщения
     """
     key = f"hw_processed:{message_id}"
-    # Сохраняем на 30 дней (2592000 сек)
     await cache_set(key, "1", ttl=2592000)
+
+
+async def check_user_rate_limit(user_id: int) -> bool:
+    """
+    Проверяет лимит запросов пользователя (максимум 3 запроса в минуту).
+
+    :param user_id: Telegram ID пользователя
+    :return: True если лимит не превышен, иначе False
+    """
+    key = f"hw_rate:{user_id}"
+    try:
+        client = await init_redis()
+        if client:
+            count = await client.incr(key)
+            if count == 1:
+                await client.expire(key, 60)
+            return count <= 3
+    except Exception as e:
+        log.error(f"Ошибка проверки rate-limit в Redis ({user_id}): {e}")
+    return True
+
+
+async def is_hash_processed(content_hash: str) -> bool:
+    """
+    Проверяет, отправлялось ли аналогичное задание (хэш текста/картинки) в последние 24 часа.
+
+    :param content_hash: SHA256 хэш контента
+    :return: True если такой контент уже решен
+    """
+    key = f"hw_hash:{content_hash}"
+    val = await cache_get(key)
+    return val == "1"
+
+
+async def mark_hash_processed(content_hash: str) -> None:
+    """
+    Сохраняет хэш выполненного задания на 24 часа.
+
+    :param content_hash: SHA256 хэш
+    """
+    key = f"hw_hash:{content_hash}"
+    await cache_set(key, "1", ttl=86400)
+
 

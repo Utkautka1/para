@@ -113,22 +113,37 @@ def is_valid_homework_prompt(text: Optional[str], has_image: bool) -> bool:
     return any(kw in t for kw in hw_keywords) or len(t) >= 25
 
 
+def compute_prompt_hash(text: Optional[str], img_bytes: Optional[bytes]) -> str:
+    """
+    Вычисляет SHA256 хэш промпта и картинки для защиты от абуза дубликатами.
+    """
+    import hashlib
+    hasher = hashlib.sha256()
+    if text:
+        hasher.update(text.encode('utf-8'))
+    if img_bytes:
+        hasher.update(img_bytes)
+    return hasher.hexdigest()
+
+
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Отлавливает новое входящее ДЗ в топике ДЗ с атомарной блокировкой Redis и фильтрацией флуда.
+    Отлавливает новое ДЗ с поддержкой защиты от спама и лимита запросов.
     """
-    target_msg = msg.reply_to_message if msg.reply_to_message else msg
+    user_id = msg.from_user.id if msg.from_user else 0
+    from services.redis_cache import check_user_rate_limit, is_hash_processed, mark_hash_processed
 
-    # Атомарная проверка до тяжелых скачиваний для исключения Race Condition
-    if await is_message_processed(target_msg.message_id):
-        log.debug(f"Задание {target_msg.message_id} уже обрабатывается или решено. Пропускаем.")
+    # 1. Проверка лимита частоты запросов от пользователя (max 3 в минуту)
+    if not await check_user_rate_limit(user_id):
+        log.warning(f"Превышен rate-limit для пользователя {user_id}. Пропускаем ДЗ.")
         return
 
-    # Захватываем ID атомарно до загрузки медиа
-    await mark_message_processed(target_msg.message_id)
-    if target_msg.message_id != msg.message_id:
-        await mark_message_processed(msg.message_id)
+    target_msg = msg.reply_to_message if msg.reply_to_message else msg
+
+    if await is_message_processed(target_msg.message_id):
+        log.debug(f"Задание {target_msg.message_id} уже обрабатывается. Пропускаем.")
+        return
 
     img_bytes = await extract_image_bytes(bot, target_msg)
     text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
@@ -137,5 +152,17 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
         log.debug(f"Игнорируем бытовое сообщение (msg_id={msg.message_id}): '{text_prompt}'")
         return
 
-    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, target_id={target_msg.message_id})")
+    # 2. Проверка дубликатов по SHA256 хэшу контента
+    c_hash = compute_prompt_hash(text_prompt, img_bytes)
+    if await is_hash_processed(c_hash):
+        log.warning(f"Аналогичное задание уже вычислялось в течение 24ч (hash={c_hash[:8]}). Пропускаем.")
+        return
+
+    await mark_message_processed(target_msg.message_id)
+    await mark_hash_processed(c_hash)
+    if target_msg.message_id != msg.message_id:
+        await mark_message_processed(msg.message_id)
+
+    log.info(f"Получено ДЗ в топике {msg.message_thread_id} (msg_id={msg.message_id}, user_id={user_id})")
     await process_homework_media(bot, target_msg, img_bytes, text_prompt)
+
