@@ -26,7 +26,7 @@ def clean_math_text(text: str) -> str:
 
 def add_formatted_paragraph(doc: Document, line: str) -> None:
     """
-    Добавляет форматированный параграф в DOCX документ.
+    Добавляет форматированный параграф в DOCX документ с поддержкой **жирного** текста.
 
     :param doc: Объект документа Word
     :param line: Текстовая строка
@@ -36,11 +36,15 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
         return
     
     p = doc.add_paragraph()
-    if line.startswith("**") and line.endswith("**"):
-        run = p.add_run(cleaned.replace("**", ""))
-        run.bold = True
-    else:
-        p.add_run(cleaned)
+    # Разбиваем строку по тегам **жирного текста**
+    parts = re.split(r'(\*\*.*?\*\*)', cleaned)
+    for part in parts:
+        if part.startswith("**") and part.endswith("**"):
+            run = p.add_run(part[2:-2])
+            run.bold = True
+        elif part:
+            p.add_run(part)
+
 
 
 def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.docx") -> str:
