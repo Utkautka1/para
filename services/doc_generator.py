@@ -1,21 +1,63 @@
 """
-Модуль генерации аккуратных документов DOCX с красивым форматированием математики и матриц.
+Модуль генерации отчетов в формате DOCX по ГОСТ 7.32-2017.
+
+Соблюдает государственные стандарты колледжа по оформлению учебных работ:
+- Поля: левое 30 мм, правое 15 мм, верхнее/нижнее 20 мм.
+- Шрифт: Times New Roman, 14 pt, цвет черный.
+- Межстрочный интервал: 1.5, абзацный отступ (красная строка): 1.25 см.
+- Выравнивание основного текста по ширине.
+- Указание информации об авторе (Группа 1-КПД-3, Иван Иванов) и преподавателе.
 """
 
 import re
+import io
 from docx import Document
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from core.logger import get_logger
 
 log = get_logger("doc_generator")
 
 
+def setup_gost_margins(doc: Document) -> None:
+    """
+    Настраивает размеры полей документа по стандарту ГОСТ 7.32-2017.
+    """
+    for section in doc.sections:
+        section.left_margin = Cm(3.0)
+        section.right_margin = Cm(1.5)
+        section.top_margin = Cm(2.0)
+        section.bottom_margin = Cm(2.0)
+
+
+def setup_gost_styles(doc: Document) -> None:
+    """
+    Настраивает параметры основного стиля (Times New Roman, 14pt, черный цвет).
+    """
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Times New Roman'
+    font.size = Pt(14)
+    font.color.rgb = RGBColor(0, 0, 0)
+
+
+def add_title_block(doc: Document) -> None:
+    """
+    Добавляет блок авторства по ГОСТ для группы 1-КПД-3.
+    """
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p.paragraph_format.line_spacing = 1.15
+    run1 = p.add_run("Выполнил: студент гр. 1-КПД-3\nИван Иванов\n\n")
+    run1.bold = True
+    run2 = p.add_run("Проверил: преподаватель\nИван Иванов\n")
+    run2.bold = True
+    doc.add_paragraph()
+
+
 def clean_math_text(text: str) -> str:
     """
-    Очищает LaTeX конструкции, превращая их в стандартный читаемый математический текст.
-
-    :param text: Исходная строка с LaTeX
-    :return: Читаемая строка
+    Очищает LaTeX конструкции, превращая их в читаемый форматированный текст.
     """
     t = text.replace("$$", "").replace("$", "")
     t = t.replace("\\cdot", "·").replace("\\Delta", "Δ")
@@ -24,19 +66,26 @@ def clean_math_text(text: str) -> str:
     return t.strip()
 
 
+def format_gost_paragraph(p, cleaned: str) -> None:
+    """
+    Применяет ГОСТ форматирование к абзацу (1.5 интервал, 1.25 см красная строка).
+    """
+    p.paragraph_format.line_spacing = 1.5
+    p.paragraph_format.first_line_indent = Cm(1.25)
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
 def add_formatted_paragraph(doc: Document, line: str) -> None:
     """
-    Добавляет форматированный параграф в DOCX документ с поддержкой **жирного** текста.
-
-    :param doc: Объект документа Word
-    :param line: Текстовая строка
+    Добавляет форматированный абзац по ГОСТ с поддержкой **жирного** текста.
     """
     cleaned = clean_math_text(line)
     if not cleaned:
         return
-    
     p = doc.add_paragraph()
-    # Разбиваем строку по тегам **жирного текста**
+    format_gost_paragraph(p, cleaned)
     parts = re.split(r'(\*\*.*?\*\*)', cleaned)
     for part in parts:
         if part.startswith("**") and part.endswith("**"):
@@ -46,29 +95,44 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
             p.add_run(part)
 
 
+def add_gost_heading(doc: Document, title: str, level: int) -> None:
+    """
+    Добавляет заголовок, выровненный по ГОСТ (Times New Roman 14pt, bold).
+    """
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.space_after = Pt(6)
+    p.paragraph_format.line_spacing = 1.5
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER if level <= 2 else WD_ALIGN_PARAGRAPH.LEFT
+    run = p.add_run(clean_math_text(title))
+    run.bold = True
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+
 
 def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.docx") -> str:
     """
-    Генерирует аккуратный Word DOCX документ с решением задания.
-
-    :param solution_text: Текст решения от DeepSeek
-    :param output_path: Путь для сохранения файла
-    :return: Путь к созданному файлу
+    Генерирует аккуратный Word DOCX документ по стандартам ГОСТ 7.32-2017.
     """
-    log.debug(f"Создание DOCX документа решения: {output_path}")
+    log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
     doc = Document()
-    doc.add_heading("Готовое решение домашнего задания", level=1)
-    
+    setup_gost_margins(doc)
+    setup_gost_styles(doc)
+
+    add_gost_heading(doc, "ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ", level=1)
+    add_title_block(doc)
+
     for line in solution_text.split("\n"):
         if line.startswith("# "):
-            doc.add_heading(clean_math_text(line.replace("# ", "")), level=2)
+            add_gost_heading(doc, line.replace("# ", "").upper(), level=2)
         elif line.startswith("## "):
-            doc.add_heading(clean_math_text(line.replace("## ", "")), level=3)
+            add_gost_heading(doc, line.replace("## ", ""), level=3)
         elif line.startswith("### "):
-            doc.add_heading(clean_math_text(line.replace("### ", "")), level=4)
+            add_gost_heading(doc, line.replace("### ", ""), level=4)
         else:
             add_formatted_paragraph(doc, line)
 
     doc.save(output_path)
-    log.info(f"DOCX файл с решением успешно создан: {output_path}")
+    log.info(f"DOCX файл с решением по ГОСТ успешно создан: {output_path}")
     return output_path
