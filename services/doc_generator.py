@@ -241,6 +241,31 @@ def parse_markdown_table_rows(table_lines: List[str]) -> List[List[str]]:
     return rows
 
 
+def fill_table_cell(cell, cell_text: str, is_header: bool) -> None:
+    """
+    Заполняет ячейку таблицы Word с очисткой и поддержкой жирного шрифта (**).
+    """
+    cell.text = ""
+    p = cell.paragraphs[0] if cell.paragraphs else cell.add_paragraph()
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(2)
+    p.paragraph_format.line_spacing = 1.15
+    cleaned = clean_math_text(cell_text)
+    parts = re.split(r'(\*\*.*?\*\*)', cleaned)
+    for part in parts:
+        if part.startswith("**") and part.endswith("**"):
+            run = p.add_run(part[2:-2])
+            run.bold = True
+        elif part:
+            run = p.add_run(part)
+            if is_header:
+                run.bold = True
+        else:
+            continue
+        run.font.name = 'Times New Roman'
+        run.font.size = Pt(12)
+
+
 def add_docx_table_from_markdown(doc: Document, table_lines: List[str]) -> None:
     """
     Создает настоящую аккуратную таблицу Word по ГОСТ из Markdown строк.
@@ -254,16 +279,7 @@ def add_docx_table_from_markdown(doc: Document, table_lines: List[str]) -> None:
         for c_idx, cell_text in enumerate(row):
             if c_idx < len(table.rows[r_idx].cells):
                 cell = table.rows[r_idx].cells[c_idx]
-                cell.text = clean_math_text(cell_text)
-                for p in cell.paragraphs:
-                    p.paragraph_format.space_before = Pt(2)
-                    p.paragraph_format.space_after = Pt(2)
-                    p.paragraph_format.line_spacing = 1.15
-                    for run in p.runs:
-                        run.font.name = 'Times New Roman'
-                        run.font.size = Pt(12)
-                        if r_idx == 0:
-                            run.bold = True
+                fill_table_cell(cell, cell_text, r_idx == 0)
 
 
 def process_document_content_lines(doc: Document, lines: List[str], heading_map: Dict) -> None:
