@@ -2,11 +2,14 @@
 Модуль генерации отчетов в формате DOCX по ГОСТ 7.32-2017.
 
 Соблюдает государственные стандарты колледжа по оформлению учебных работ:
-- Поля: левое 30 мм, правое 15 мм, верхнее/нижнее 20 мм.
-- Шрифт: Times New Roman, 14 pt, цвет черный.
-- Межстрочный интервал: 1.5, абзацный отступ (красная строка): 1.25 см.
-- Выравнивание основного текста по ширине.
-- Указание информации об авторе (Группа 1-КПД-3, Иван Иванов) и преподавателе.
+- Поля: левое 30 мм (3.0 см), правое 15 мм (1.5 см), верхнее и нижнее 20 мм (2.0 см).
+- Шрифт: Times New Roman, обычный, цвет черный, размер 14 pt.
+- Выравнивание основного текста по ширине (Justified).
+- Межстрочный интервал: полуторный (1.5).
+- Красная строка (абзацный отступ): 1.25 см для всех параграфов и заголовков.
+- Заголовки без точек в конце, с полужирным выделением и пустой строкой после.
+- Нижний колонтитул с центрированным шрифтом Times New Roman 14 pt.
+- Шапка выполения: Иван Иванов, Группа 1-КПД-3, преподаватель Иван Иванов.
 """
 
 import re
@@ -28,6 +31,18 @@ def setup_gost_margins(doc: Document) -> None:
         section.right_margin = Cm(1.5)
         section.top_margin = Cm(2.0)
         section.bottom_margin = Cm(2.0)
+
+
+def setup_page_numbering(doc: Document) -> None:
+    """
+    Настраивает параметры нижнего колонтитула по ГОСТ.
+    """
+    for section in doc.sections:
+        footer = section.footer
+        p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
 
 
 def setup_gost_styles(doc: Document) -> None:
@@ -52,21 +67,21 @@ def add_title_block(doc: Document) -> None:
     run1.bold = True
     run2 = p.add_run("Проверил: преподаватель\nИван Иванов\n")
     run2.bold = True
-    doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(12)
 
 
 def clean_math_text(text: str) -> str:
     """
-    Очищает LaTeX конструкции, превращая их в читаемый форматированный текст.
+    Очищает LaTeX конструкции и лишние точки в конце заголовков по ГОСТ.
     """
     t = text.replace("$$", "").replace("$", "")
     t = t.replace("\\cdot", "·").replace("\\Delta", "Δ")
     t = t.replace("\\begin{vmatrix}", "| ").replace("\\end{vmatrix}", " |")
     t = re.sub(r'\\([a-zA-Z]+)', r'\1', t)
-    return t.strip()
+    return t.strip().rstrip(".")
 
 
-def format_gost_paragraph(p, cleaned: str) -> None:
+def format_gost_paragraph(p) -> None:
     """
     Применяет ГОСТ форматирование к абзацу (1.5 интервал, 1.25 см красная строка).
     """
@@ -85,7 +100,7 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
     if not cleaned:
         return
     p = doc.add_paragraph()
-    format_gost_paragraph(p, cleaned)
+    format_gost_paragraph(p)
     parts = re.split(r'(\*\*.*?\*\*)', cleaned)
     for part in parts:
         if part.startswith("**") and part.endswith("**"):
@@ -97,14 +112,16 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
 
 def add_gost_heading(doc: Document, title: str, level: int) -> None:
     """
-    Добавляет заголовок, выровненный по ГОСТ (Times New Roman 14pt, bold).
+    Добавляет заголовок раздела с красной строкой 1.25 см по ГОСТ 7.32-2017.
     """
     p = doc.add_paragraph()
+    p.paragraph_format.first_line_indent = Cm(1.25)
     p.paragraph_format.space_before = Pt(12)
-    p.paragraph_format.space_after = Pt(6)
+    p.paragraph_format.space_after = Pt(12)
     p.paragraph_format.line_spacing = 1.5
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER if level <= 2 else WD_ALIGN_PARAGRAPH.LEFT
-    run = p.add_run(clean_math_text(title))
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    clean_t = clean_math_text(title)
+    run = p.add_run(clean_t.upper() if level == 1 else clean_t)
     run.bold = True
     run.font.name = 'Times New Roman'
     run.font.size = Pt(14)
@@ -119,20 +136,21 @@ def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.d
     doc = Document()
     setup_gost_margins(doc)
     setup_gost_styles(doc)
+    setup_page_numbering(doc)
 
     add_gost_heading(doc, "ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ", level=1)
     add_title_block(doc)
 
     for line in solution_text.split("\n"):
         if line.startswith("# "):
-            add_gost_heading(doc, line.replace("# ", "").upper(), level=2)
+            add_gost_heading(doc, line.replace("# ", ""), level=1)
         elif line.startswith("## "):
-            add_gost_heading(doc, line.replace("## ", ""), level=3)
+            add_gost_heading(doc, line.replace("## ", ""), level=2)
         elif line.startswith("### "):
-            add_gost_heading(doc, line.replace("### ", ""), level=4)
+            add_gost_heading(doc, line.replace("### ", ""), level=3)
         else:
             add_formatted_paragraph(doc, line)
 
     doc.save(output_path)
-    log.info(f"DOCX файл с решением по ГОСТ успешно создан: {output_path}")
+    log.info(f"DOCX файл с решением по ГОСТ создан: {output_path}")
     return output_path
