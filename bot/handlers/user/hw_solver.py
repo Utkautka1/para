@@ -145,30 +145,35 @@ async def extract_homework_payload(bot: Bot, msg: Message, target_msg: Message) 
     return None, prompt or None
 
 
+async def send_solution_document(bot: Bot, msg: Message, doc_path: str) -> None:
+    """
+    Отправляет готовый файл решения в Telegram топик решений.
+    """
+    orig_link = build_original_post_link(msg.chat.id, msg.message_id)
+    caption = f"✅ <b>Готовое решение ДЗ</b>\n\n📌 Ссылка на оригинальное задание: {orig_link}"
+    await bot.send_document(
+        chat_id=config.TOPIC_CHAT_ID,
+        message_thread_id=config.HW_OUTPUT_TOPIC_THREAD_ID,
+        document=FSInputFile(doc_path, filename=f"Решение_ДЗ_{msg.message_id}.docx"),
+        caption=caption,
+        parse_mode="HTML"
+    )
+
+
 async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[bytes], prompt: Optional[str]) -> None:
     """
     Обрабатывает медиа ДЗ: решает в DeepSeek, создает документ и отправляет в топик решений.
     """
+    doc_path = f"/tmp/solution_{msg.message_id}.docx"
     try:
         solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
-        doc_path = f"/tmp/solution_{msg.message_id}.docx"
         create_solution_docx(solution, output_path=doc_path)
-
-        orig_link = build_original_post_link(msg.chat.id, msg.message_id)
-        caption = f"✅ <b>Готовое решение ДЗ</b>\n\n📌 Ссылка на оригинальное задание: {orig_link}"
-
-        await bot.send_document(
-            chat_id=config.TOPIC_CHAT_ID,
-            message_thread_id=config.HW_OUTPUT_TOPIC_THREAD_ID,
-            document=FSInputFile(doc_path, filename=f"Решение_ДЗ_{msg.message_id}.docx"),
-            caption=caption,
-            parse_mode="HTML"
-        )
+        await send_solution_document(bot, msg, doc_path)
         log.info(f"✅ Документ решения успешно отправлен в топик решений (msg_id={msg.message_id})")
     except Exception as e:
-        log.error(f"❌ Ошибка отправки документа решения в Telegram: {e}")
+        log.error(f"❌ Ошибка решения/отправки ДЗ (например, нет баланса API): {e}")
     finally:
-        if 'doc_path' in locals() and os.path.exists(doc_path):
+        if os.path.exists(doc_path):
             os.remove(doc_path)
 
 

@@ -41,46 +41,31 @@ def encode_image_bytes(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode('utf-8')
 
 
-async def solve_homework(
-    image_bytes: Optional[bytes] = None,
-    text_prompt: Optional[str] = None
-) -> str:
+def build_deepseek_messages(image_bytes: Optional[bytes], text_prompt: Optional[str]) -> List[dict]:
     """
-    Вызывает DeepSeek Vision API для решения ДЗ без контекста.
-
-    :param image_bytes: Байты картинки с ДЗ (если есть)
-    :param text_prompt: Текстовое дополнение к задаче
-    :return: Текст решения
+    Формирует список сообщений для отправки в DeepSeek API.
     """
-    log.info("Отправка запроса на авторешение в DeepSeek Vision API...")
-    content: List[dict] = []
-
-    if text_prompt:
-        content.append({"type": "text", "text": text_prompt})
-    else:
-        content.append({"type": "text", "text": "Реши все задания с этого рукописного листа аккуратно и пошагово."})
-
+    content: List[dict] = [{"type": "text", "text": text_prompt or "Реши все задания с листа."}]
     if image_bytes:
         b64 = encode_image_bytes(image_bytes)
-        content.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
-        })
+        content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
+    return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}]
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": content}
-    ]
 
+async def solve_homework(image_bytes: Optional[bytes] = None, text_prompt: Optional[str] = None) -> str:
+    """
+    Вызывает DeepSeek Vision API для решения ДЗ без контекста.
+    """
+    log.info("Отправка запроса на авторешение в DeepSeek Vision API...")
+    messages = build_deepseek_messages(image_bytes, text_prompt)
     try:
         response = await client.chat.completions.create(
             model=config.DEEPSEEK_MODEL_NAME,
             messages=messages,
             temperature=0.0
         )
-        solution = response.choices[0].message.content or "Не удалось получить ответ от модели."
         log.info("Решение от DeepSeek успешно получено!")
-        return solution
+        return response.choices[0].message.content or "Не удалось получить ответ от модели."
     except Exception as e:
         log.error(f"Ошибка при вызове DeepSeek API: {e}")
-        return f"❌ Ошибка при авторешении ДЗ через DeepSeek: {e}"
+        raise e
