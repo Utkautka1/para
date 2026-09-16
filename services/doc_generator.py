@@ -1,12 +1,13 @@
 """
-Модуль генерации отчетов в формате DOCX с полным соблюдением ГОСТ 7.32-2017.
+Модуль генерации отчетов в формате DOCX по точному образцу файла ГОСТ.
 
-Обеспечивает строгое ГОСТ-структурирование:
-1. Отдельный официальный ТИТУЛЬНЫЙ ЛИСТ (Стр. 1) с реквизитами колледжа, автором (1-КПД-3, Иван Иванов).
-2. Отдельная страница СОДЕРЖАНИЕ (Стр. 2) с интерактивными гиперссылками на все главы.
-3. Разделение всех структурных элементов (ВВЕДЕНИЕ, РЕШЕНИЕ, ЗАКЛЮЧЕНИЕ) на новые страницы.
-4. Преобразование сырых таблицы Markdown в настоящие таблицы Word ('Table Grid').
-5. Красная строка 1.25 см, 1.5 межстрочный интервал, Times New Roman 14 pt, поля 30/15/20/20 мм.
+Обеспечивает 100% соответствие эталону:
+1. Официальный титульный лист (Стр. 1) с шапкой Министерства и Колледжа, по центру 'ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ'.
+2. Таблица подписей 'Выполнил студент группы 1-КПД-3: Иван Иванов' / 'Проверил преподаватель: Иван Иванов' с датой.
+3. Отдельная страница 'СОДЕРЖАНИЕ' (Стр. 2) с интерактивными кликабельными гиперссылками на разделы.
+4. Разделение главных структурных элементов на новые страницы (Page Break).
+5. Преобразование таблиц Markdown в настоящие таблицы Word ('Table Grid') с оформлением ячеек.
+6. Выравнивание основного текста по ширине (Justified), Times New Roman 14 pt, 1.5 интервал, красная строка 1.25 см.
 """
 
 import re
@@ -24,7 +25,7 @@ log = get_logger("doc_generator")
 
 def setup_gost_margins(doc: Document) -> None:
     """
-    Настраивает размеры полей документа по стандарту ГОСТ 7.32-2017.
+    Настраивает размеры полей документа по эталону ГОСТ (левое 3см, правое 1.5см, верх/низ 2см).
     """
     for section in doc.sections:
         section.left_margin = Cm(3.0)
@@ -35,7 +36,7 @@ def setup_gost_margins(doc: Document) -> None:
 
 def setup_page_numbering(doc: Document) -> None:
     """
-    Настраивает нумерацию страниц внизу по центру (без отображения на титульном листе).
+    Настраивает нумерацию страниц внизу по центру Times New Roman 14pt (скрывает на 1 странице).
     """
     section = doc.sections[0]
     section.different_first_page_header_footer = True
@@ -48,7 +49,7 @@ def setup_page_numbering(doc: Document) -> None:
 
 def setup_gost_styles(doc: Document) -> None:
     """
-    Настраивает параметры основного стиля (Times New Roman, 14pt, черный цвет).
+    Настраивает стиль по умолчанию (Times New Roman, 14pt, обычный, черный цвет).
     """
     style = doc.styles['Normal']
     font = style.font
@@ -57,52 +58,57 @@ def setup_gost_styles(doc: Document) -> None:
     font.color.rgb = RGBColor(0, 0, 0)
 
 
-def add_title_block(doc: Document) -> None:
+def add_title_signature_table(doc: Document) -> None:
     """
-    Добавляет блок авторства по ГОСТ для группы 1-КПД-3.
+    Добавляет аккуратную таблицу подписей Выполнил/Проверил по образцу ГОСТ.
     """
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p.paragraph_format.line_spacing = 1.15
-    run1 = p.add_run("Выполнил: студент гр. 1-КПД-3\nИван Иванов\n\n")
-    run1.bold = True
-    run2 = p.add_run("Проверил: преподаватель\nИван Иванов\n")
-    run2.bold = True
+    tbl = doc.add_table(rows=2, cols=2)
+    tbl.style = 'Normal Table'
+    cell_data = [
+        ("Выполнил студент группы 1-КПД-3:", "______________ Иван Иванов\n«___» ____________ 2026 г."),
+        ("Проверил преподаватель:", "______________ Иван Иванов\n«___» ____________ 2026 г.")
+    ]
+    for r_idx, (left_txt, right_txt) in enumerate(cell_data):
+        row = tbl.rows[r_idx]
+        row.cells[0].text = left_txt
+        row.cells[1].text = right_txt
+        for cell in row.cells:
+            for p in cell.paragraphs:
+                p.paragraph_format.line_spacing = 1.15
+                for run in p.runs:
+                    run.font.name = 'Times New Roman'
+                    run.font.size = Pt(14)
 
 
 def create_title_page(doc: Document) -> None:
     """
-    Создает официальный титульный лист по ГОСТ колледжа (Страница 1).
+    Создает официальный титульный лист по образцу ГОСТ (Страница 1).
     """
-    p_header = doc.add_paragraph()
-    p_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_header.paragraph_format.line_spacing = 1.15
-    r1 = p_header.add_run(
-        "МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ\n"
-        "КГБПОУ «КОМСОМОЛЬСКИЙ-НА-АМУРЕ ТЕХНОЛОГИЧЕСКИЙ КОЛЛЕДЖ»\n\n\n\n"
-    )
+    p_hdr = doc.add_paragraph()
+    p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_hdr.paragraph_format.line_spacing = 1.15
+    r1 = p_hdr.add_run("МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ РОССИЙСКОЙ ФЕДЕРАЦИИ\n")
     r1.bold = True
-    r1.font.size = Pt(12)
+    r2 = p_hdr.add_run("КГБПОУ «КОМСОМОЛЬСКИЙ-НА-АМУРЕ ТЕХНОЛОГИЧЕСКИЙ КОЛЛЕДЖ»\n\n\n")
+    r2.bold = True
 
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r2 = p_title.add_run("ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ\n\n\n")
-    r2.bold = True
-    r2.font.size = Pt(18)
+    r3 = p_title.add_run("ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ\n\n")
+    r3.bold = True
 
-    add_title_block(doc)
+    add_title_signature_table(doc)
 
-    p_footer = doc.add_paragraph()
-    p_footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_footer.paragraph_format.space_before = Pt(120)
-    r3 = p_footer.add_run("Комсомольск-на-Амуре, 2026")
-    r3.font.size = Pt(12)
+    p_ftr = doc.add_paragraph()
+    p_ftr.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_ftr.paragraph_format.space_before = Pt(100)
+    p_ftr.add_run("Комсомольск-на-Амуре – 2026")
     doc.add_page_break()
 
 
 def clean_math_text(text: str) -> str:
     """
-    Очищает LaTeX конструкции и точки в конце заголовков по ГОСТ.
+    Очищает LaTeX конструкции и лишние точки в конце заголовков по ГОСТ.
     """
     t = text.replace("$$", "").replace("$", "")
     t = t.replace("\\cdot", "·").replace("\\Delta", "Δ")
@@ -189,11 +195,11 @@ def add_gost_heading(doc: Document, title: str, level: int, page_break: bool = F
     if page_break:
         doc.add_page_break()
     p = doc.add_paragraph()
-    p.paragraph_format.first_line_indent = Cm(1.25)
+    p.paragraph_format.first_line_indent = Cm(1.25 if level > 1 else 0)
     p.paragraph_format.space_before = Pt(12)
     p.paragraph_format.space_after = Pt(12)
     p.paragraph_format.line_spacing = 1.5
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER if level == 1 else WD_ALIGN_PARAGRAPH.LEFT
     clean_t = clean_math_text(title)
     run = p.add_run(clean_t.upper() if level == 1 else clean_t)
     run.bold = True
@@ -209,11 +215,11 @@ def add_gost_heading_with_bookmark(doc: Document, title: str, level: int, bm_id:
     if level == 1:
         doc.add_page_break()
     p = doc.add_paragraph()
-    p.paragraph_format.first_line_indent = Cm(1.25)
+    p.paragraph_format.first_line_indent = Cm(1.25 if level > 1 else 0)
     p.paragraph_format.space_before = Pt(12)
     p.paragraph_format.space_after = Pt(12)
     p.paragraph_format.line_spacing = 1.5
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER if level == 1 else WD_ALIGN_PARAGRAPH.LEFT
     clean_t = clean_math_text(title)
     run = p.add_run(clean_t.upper() if level == 1 else clean_t)
     run.bold = True
@@ -304,7 +310,7 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
 
 def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.docx") -> str:
     """
-    Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ.
+    Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ по образцу.
     """
     log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
     doc = Document()
@@ -321,5 +327,5 @@ def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.d
     process_document_content_lines(doc, lines, heading_map)
 
     doc.save(output_path)
-    log.info(f"DOCX файл решения по ГОСТ 7.32-2017 создан: {output_path}")
+    log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {output_path}")
     return output_path
