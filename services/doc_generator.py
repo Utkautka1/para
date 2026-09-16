@@ -1,22 +1,21 @@
 """
-Модуль генерации отчетов в формате DOCX по ГОСТ 7.32-2017.
+Модуль генерации отчетов в формате DOCX по ГОСТ 7.32-2017 с интерактивным Содержанием.
 
-Соблюдает государственные стандарты колледжа по оформлению учебных работ:
-- Поля: левое 30 мм (3.0 см), правое 15 мм (1.5 см), верхнее и нижнее 20 мм (2.0 см).
-- Шрифт: Times New Roman, обычный, цвет черный, размер 14 pt.
-- Выравнивание основного текста по ширине (Justified).
-- Межстрочный интервал: полуторный (1.5).
-- Красная строка (абзацный отступ): 1.25 см для всех параграфов и заголовков.
-- Заголовки без точек в конце, с полужирным выделением и пустой строкой после.
-- Нижний колонтитул с центрированным шрифтом Times New Roman 14 pt.
-- Шапка выполения: Иван Иванов, Группа 1-КПД-3, преподаватель Иван Иванов.
+Создает кликабельное Содержание (гиперссылки на разделы) по стандарту ГОСТ:
+- Поля: левое 30 мм, правое 15 мм, верхнее и нижнее 20 мм.
+- Шрифт: Times New Roman 14 pt, полуторный интервал, красная строка 1.25 см.
+- Раздел "СОДЕРЖАНИЕ" с внутренними гиперссылками на соответствующие заглавные разделы.
+- Соблюдение персональных метаданных авторов (1-КПД-3, Иван Иванов).
 """
 
 import re
 import io
+from typing import List, Tuple, Dict
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls
 from core.logger import get_logger
 
 log = get_logger("doc_generator")
@@ -72,7 +71,7 @@ def add_title_block(doc: Document) -> None:
 
 def clean_math_text(text: str) -> str:
     """
-    Очищает LaTeX конструкции и лишние точки в конце заголовков по ГОСТ.
+    Очищает LaTeX конструкции и точки в конце заголовков по ГОСТ.
     """
     t = text.replace("$$", "").replace("$", "")
     t = t.replace("\\cdot", "·").replace("\\Delta", "Δ")
@@ -90,6 +89,103 @@ def format_gost_paragraph(p) -> None:
     p.paragraph_format.space_before = Pt(0)
     p.paragraph_format.space_after = Pt(0)
     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
+def add_bookmark_to_paragraph(p, bookmark_name: str, bookmark_id: int) -> None:
+    """
+    Добавляет внутреннюю закладку Word к параграфу заголовка для гиперссылок.
+    """
+    bm_start = parse_xml(f'<w:bookmarkStart {nsdecls("w")} w:id="{bookmark_id}" w:name="{bookmark_name}"/>')
+    bm_end = parse_xml(f'<w:bookmarkEnd {nsdecls("w")} w:id="{bookmark_id}"/>')
+    p._p.insert(0, bm_start)
+    p._p.append(bm_end)
+
+
+def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None:
+    """
+    Добавляет пункт СОДЕРЖАНИЯ с кликабельной гиперссылкой по ГОСТ.
+    """
+    p = doc.add_paragraph()
+    p.paragraph_format.line_spacing = 1.5
+    p.paragraph_format.first_line_indent = Cm(0)
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(2)
+    h_xml = parse_xml(f'<w:hyperlink {nsdecls("w")} w:anchor="{bookmark_name}"/>')
+    r_xml = parse_xml(
+        f'<w:r {nsdecls("w")}><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
+        f'<w:sz w:val="28"/><w:color w:val="000000"/><w:u w:val="none"/></w:rPr>'
+        f'<w:t>{text}</w:t></w:r>'
+    )
+    h_xml.append(r_xml)
+    p._p.append(h_xml)
+
+
+def extract_headings_from_text(solution_text: str) -> List[Tuple[str, str, int, int]]:
+    """
+    Извлекает все заголовки из текста решения для построения Содержания.
+    """
+    headings = []
+    idx = 1
+    for line in solution_text.split("\n"):
+        if line.startswith("# "):
+            title = clean_math_text(line.replace("# ", "")).upper()
+            headings.append((line, title, 1, idx))
+            idx += 1
+        elif line.startswith("## "):
+            title = clean_math_text(line.replace("## ", ""))
+            headings.append((line, title, 2, idx))
+            idx += 1
+    return headings
+
+
+def build_table_of_contents(doc: Document, headings: List[Tuple[str, str, int, int]]) -> None:
+    """
+    Создает интерактивный блок СОДЕРЖАНИЕ с гиперссылками на все разделы.
+    """
+    if not headings:
+        return
+    add_gost_heading(doc, "СОДЕРЖАНИЕ", level=1)
+    for _, title, _, idx in headings:
+        bm_name = f"sec_bm_{idx}"
+        add_toc_hyperlink(doc, title, bm_name)
+    doc.add_page_break()
+
+
+def add_gost_heading(doc: Document, title: str, level: int) -> None:
+    """
+    Добавляет базовый заголовок раздела по ГОСТ.
+    """
+    p = doc.add_paragraph()
+    p.paragraph_format.first_line_indent = Cm(1.25)
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.space_after = Pt(12)
+    p.paragraph_format.line_spacing = 1.5
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    clean_t = clean_math_text(title)
+    run = p.add_run(clean_t.upper() if level == 1 else clean_t)
+    run.bold = True
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+
+
+def add_gost_heading_with_bookmark(doc: Document, title: str, level: int, bm_id: int) -> None:
+    """
+    Добавляет заголовок с привязаной закладкой для гиперссылок из Содержания.
+    """
+    p = doc.add_paragraph()
+    p.paragraph_format.first_line_indent = Cm(1.25)
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.space_after = Pt(12)
+    p.paragraph_format.line_spacing = 1.5
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    clean_t = clean_math_text(title)
+    run = p.add_run(clean_t.upper() if level == 1 else clean_t)
+    run.bold = True
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    add_bookmark_to_paragraph(p, f"sec_bm_{bm_id}", bm_id)
 
 
 def add_formatted_paragraph(doc: Document, line: str) -> None:
@@ -110,47 +206,29 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
             p.add_run(part)
 
 
-def add_gost_heading(doc: Document, title: str, level: int) -> None:
-    """
-    Добавляет заголовок раздела с красной строкой 1.25 см по ГОСТ 7.32-2017.
-    """
-    p = doc.add_paragraph()
-    p.paragraph_format.first_line_indent = Cm(1.25)
-    p.paragraph_format.space_before = Pt(12)
-    p.paragraph_format.space_after = Pt(12)
-    p.paragraph_format.line_spacing = 1.5
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    clean_t = clean_math_text(title)
-    run = p.add_run(clean_t.upper() if level == 1 else clean_t)
-    run.bold = True
-    run.font.name = 'Times New Roman'
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(0, 0, 0)
-
-
 def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.docx") -> str:
     """
-    Генерирует аккуратный Word DOCX документ по стандартам ГОСТ 7.32-2017.
+    Генерирует аккуратный Word DOCX документ с интерактивным Содержанием по ГОСТ.
     """
-    log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
+    log.debug(f"Создание DOCX документа решения с гиперссылками в Содержании: {output_path}")
     doc = Document()
     setup_gost_margins(doc)
     setup_gost_styles(doc)
     setup_page_numbering(doc)
 
+    headings = extract_headings_from_text(solution_text)
     add_gost_heading(doc, "ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ", level=1)
     add_title_block(doc)
+    build_table_of_contents(doc, headings)
 
+    heading_map = {h[0]: (h[1], h[2], h[3]) for h in headings}
     for line in solution_text.split("\n"):
-        if line.startswith("# "):
-            add_gost_heading(doc, line.replace("# ", ""), level=1)
-        elif line.startswith("## "):
-            add_gost_heading(doc, line.replace("## ", ""), level=2)
-        elif line.startswith("### "):
-            add_gost_heading(doc, line.replace("### ", ""), level=3)
+        if line in heading_map:
+            title, level, bm_id = heading_map[line]
+            add_gost_heading_with_bookmark(doc, title, level, bm_id)
         else:
             add_formatted_paragraph(doc, line)
 
     doc.save(output_path)
-    log.info(f"DOCX файл с решением по ГОСТ создан: {output_path}")
+    log.info(f"DOCX файл с кликабельным Содержанием успешно создан: {output_path}")
     return output_path
