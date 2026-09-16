@@ -184,7 +184,6 @@ def build_table_of_contents(doc: Document, headings: List[Tuple[str, str, int, i
     for _, title, _, idx in headings:
         bm_name = f"sec_bm_{idx}"
         add_toc_hyperlink(doc, title, bm_name)
-    doc.add_page_break()
 
 
 def add_gost_heading(doc: Document, title: str, level: int, page_break: bool = False) -> None:
