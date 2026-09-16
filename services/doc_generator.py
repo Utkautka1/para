@@ -87,8 +87,10 @@ def create_title_page(doc: Document) -> None:
     p_hdr = doc.add_paragraph()
     p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_hdr.paragraph_format.line_spacing = 1.15
-    p_hdr.add_run("МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ РОССИЙСКОЙ ФЕДЕРАЦИИ\n").bold = True
-    p_hdr.add_run("КГБПОУ «КОМСОМОЛЬСКИЙ-НА-АМУРЕ ТЕХНОЛОГИЧЕСКИЙ КОЛЛЕДЖ»\n\n\n").bold = True
+    p_hdr.add_run("МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ\n").bold = True
+    p_hdr.add_run("ПРОМТЕХДИЗАЙН\n").bold = True
+    p_hdr.add_run("Санкт-Петербургский государственный университет промышленных технологий и дизайна\n").bold = True
+    p_hdr.add_run("Направление: Разработка и управление программным обеспечением\n\n").bold = True
 
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -98,7 +100,7 @@ def create_title_page(doc: Document) -> None:
 
     p_ftr = doc.add_paragraph()
     p_ftr.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_ftr.paragraph_format.space_before = Pt(100)
+    p_ftr.paragraph_format.space_before = Pt(80)
     p_ftr.add_run("Санкт-Петербург – 2026")
     doc.add_page_break()
 
@@ -299,8 +301,7 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
     parts = re.split(r'(\*\*.*?\*\*)', cleaned)
     for part in parts:
         if part.startswith("**") and part.endswith("**"):
-            run = p.add_run(part[2:-2])
-            run.bold = True
+            p.add_run(part[2:-2]).bold = True
         elif part:
             p.add_run(part)
 
