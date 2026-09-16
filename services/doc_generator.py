@@ -87,22 +87,19 @@ def create_title_page(doc: Document) -> None:
     p_hdr = doc.add_paragraph()
     p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_hdr.paragraph_format.line_spacing = 1.15
-    r1 = p_hdr.add_run("МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ РОССИЙСКОЙ ФЕДЕРАЦИИ\n")
-    r1.bold = True
-    r2 = p_hdr.add_run("КГБПОУ «КОМСОМОЛЬСКИЙ-НА-АМУРЕ ТЕХНОЛОГИЧЕСКИЙ КОЛЛЕДЖ»\n\n\n")
-    r2.bold = True
+    p_hdr.add_run("МИНИСТЕРСТВО ОБРАЗОВАНИЯ И НАУКИ РОССИЙСКОЙ ФЕДЕРАЦИИ\n").bold = True
+    p_hdr.add_run("КГБПОУ «КОМСОМОЛЬСКИЙ-НА-АМУРЕ ТЕХНОЛОГИЧЕСКИЙ КОЛЛЕДЖ»\n\n\n").bold = True
 
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r3 = p_title.add_run("ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ\n\n")
-    r3.bold = True
+    p_title.add_run("ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ\n\n").bold = True
 
     add_title_signature_table(doc)
 
     p_ftr = doc.add_paragraph()
     p_ftr.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_ftr.paragraph_format.space_before = Pt(100)
-    p_ftr.add_run("Комсомольск-на-Амуре – 2026")
+    p_ftr.add_run("Санкт-Петербург – 2026")
     doc.add_page_break()
 
 
