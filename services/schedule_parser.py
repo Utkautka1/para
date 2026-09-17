@@ -185,12 +185,9 @@ def update_cache_headers(headers: httpx.Headers) -> None:
 
 
 def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
-    """
-    Обрабатывает HTTP-ответ от API КТМУ (включая HTTP 304 Not Modified).
-    """
+    """Обрабатывает HTTP-ответ от API КТМУ (304 Not Modified или 200 OK)."""
     global _DATA_CACHE, _LAST_PUBLISHED_AT
     if res.status_code == 304:
-        log.debug("API КТМУ вернул 304 Not Modified. Данные не изменились.")
         _DATA_CACHE = (now, _DATA_CACHE[1])
         return _DATA_CACHE[1]
     if res.status_code != 200:
@@ -207,10 +204,17 @@ def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, 
     return snapshot
 
 
+_IS_REFRESHING: bool = False
+
+
 async def refresh_schedule_in_background() -> None:
     """
     Асинхронно обновляет расписание КТМУ в фоне без блокировки вызывающего потока.
     """
+    global _IS_REFRESHING
+    if _IS_REFRESHING:
+        return
+    _IS_REFRESHING = True
     now = time.time()
     try:
         client = get_http_client()
@@ -222,7 +226,10 @@ async def refresh_schedule_in_background() -> None:
         res = await client.get(SCHEDULE_API_URL, headers=headers)
         process_api_response(res, now)
     except Exception as e:
-        log.warning(f"Фоновое обновление API КТМУ не удалось: {e}. Используется свежий кэш.")
+        err_msg = repr(e) if str(e) == "" else f"{type(e).__name__}: {e}"
+        log.warning(f"Фоновое обновление API КТМУ не удалось ({err_msg}). Используется свежий кэш.")
+    finally:
+        _IS_REFRESHING = False
 
 
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
