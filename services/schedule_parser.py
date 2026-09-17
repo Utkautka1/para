@@ -155,14 +155,49 @@ def get_period_time_str(
     return "Время уточняется"
 
 
+_HTTP_CLIENT: Optional[httpx.AsyncClient] = None
+_LAST_ETAG: Optional[str] = None
+_LAST_MODIFIED: Optional[str] = None
+
+
+def get_http_client() -> httpx.AsyncClient:
+    """
+    Возвращает или создает глобальный персистентный HTTP клиент с поддержкой gzip/deflate.
+    """
+    global _HTTP_CLIENT
+    if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
+        headers = {
+            "Accept-Encoding": "gzip, deflate, br",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        _HTTP_CLIENT = httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True)
+    return _HTTP_CLIENT
+
+
+def update_cache_headers(headers: httpx.Headers) -> None:
+    """
+    Обновляет локальные ETag и Last-Modified заголовки.
+    """
+    global _LAST_ETAG, _LAST_MODIFIED
+    if "etag" in headers:
+        _LAST_ETAG = headers["etag"]
+    if "last-modified" in headers:
+        _LAST_MODIFIED = headers["last-modified"]
+
+
 def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
     """
-    Обрабатывает успешный HTTP-ответ от API КТМУ.
+    Обрабатывает HTTP-ответ от API КТМУ (включая HTTP 304 Not Modified).
     """
     global _DATA_CACHE, _LAST_PUBLISHED_AT
+    if res.status_code == 304:
+        log.debug("API КТМУ вернул 304 Not Modified. Данные не изменились.")
+        _DATA_CACHE = (now, _DATA_CACHE[1])
+        return _DATA_CACHE[1]
     if res.status_code != 200:
         log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
         return _DATA_CACHE[1]
+    update_cache_headers(res.headers)
     val = res.json().get("value", {})
     snapshot = val.get("publishedSnapshot") or val
     pub_at = snapshot.get("publishedAt")
@@ -175,15 +210,20 @@ def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, 
 
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
     """
-    Скачивает JSON расписания КТМУ с отслеживанием времени публикации.
+    Скачивает JSON расписания КТМУ с использованием HTTP заголовков кэширования.
     """
     now = time.time()
     if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and _DATA_CACHE[1]:
         return _DATA_CACHE[1]
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            res = await client.get(SCHEDULE_API_URL)
-            return process_api_response(res, now)
+        client = get_http_client()
+        headers = {}
+        if _LAST_ETAG:
+            headers["If-None-Match"] = _LAST_ETAG
+        if _LAST_MODIFIED:
+            headers["If-Modified-Since"] = _LAST_MODIFIED
+        res = await client.get(SCHEDULE_API_URL, headers=headers)
+        return process_api_response(res, now)
     except httpx.TimeoutException:
         log.warning("⚠️ Превышено время ожидания ответа от API КТМУ (15 сек). Используется кэш.")
         return _DATA_CACHE[1]
