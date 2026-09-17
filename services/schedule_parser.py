@@ -62,7 +62,7 @@ def extract_zoom_creds(text: str) -> Tuple[Optional[str], Optional[str], Optiona
     """
     if not text:
         return None, None, None
-    clean_text = re.sub(r"https?\s+://", "https://", text)
+    clean_text = re.sub(r"https?\s+://|http\s+s://", "https://", text, flags=re.IGNORECASE)
     url_m = re.search(r"https?://[^\s<>\"\'\`]+", clean_text)
     id_m = re.search(r"(?:Идентификатор(?:\s+конференции)?|Meeting\s+ID)[:\s]+([0-9\s]{8,15})", text, re.IGNORECASE)
     pass_m = re.search(r"(?:Код(?:\s+доступа)?|Passcode)[:\s]+([A-Za-z0-9]+)", text, re.IGNORECASE)
