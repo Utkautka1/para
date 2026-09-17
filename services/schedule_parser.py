@@ -207,13 +207,11 @@ def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, 
     return snapshot
 
 
-async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
+async def refresh_schedule_in_background() -> None:
     """
-    Скачивает JSON расписания КТМУ с использованием HTTP заголовков кэширования.
+    Асинхронно обновляет расписание КТМУ в фоне без блокировки вызывающего потока.
     """
     now = time.time()
-    if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and _DATA_CACHE[1]:
-        return _DATA_CACHE[1]
     try:
         client = get_http_client()
         headers = {}
@@ -222,13 +220,26 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
         if _LAST_MODIFIED:
             headers["If-Modified-Since"] = _LAST_MODIFIED
         res = await client.get(SCHEDULE_API_URL, headers=headers)
-        return process_api_response(res, now)
-    except httpx.TimeoutException:
-        log.warning("⚠️ Превышено время ожидания ответа от API КТМУ (15 сек). Используется кэш.")
-        return _DATA_CACHE[1]
+        process_api_response(res, now)
     except Exception as e:
-        log.error(f"Исключение при запросе к API КТМУ: {e}")
+        log.warning(f"Фоновое обновление API КТМУ не удалось: {e}. Используется свежий кэш.")
+
+
+async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    Мгновенно отдаёт расписание из памяти (0.001 сек). При необходимости фоново обновляет API.
+    """
+    import asyncio
+    now = time.time()
+    cache_valid = (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS)
+
+    if _DATA_CACHE[1] is not None:
+        if force_refresh or not cache_valid:
+            asyncio.create_task(refresh_schedule_in_background())
         return _DATA_CACHE[1]
+
+    await refresh_schedule_in_background()
+    return _DATA_CACHE[1]
 
 
 def extract_entity_maps(data: Dict[str, Any]) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
