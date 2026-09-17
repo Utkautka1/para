@@ -106,7 +106,10 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
     note = "📢 Сообщение в топике группы принудительно отправлено/обновлено!"
     text = format_admin_panel_text(note)
     if callback.message:
-        await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+        try:
+            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+        except TelegramBadRequest:
+            pass
     await callback.answer("Топик обновлен!")
 
 
