@@ -47,7 +47,7 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
     btns = []
     for l in lessons:
         if l.is_remote and l.remote_link:
-            url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
+            url = next((w for w in l.remote_link.split() if w.startswith("http://") or w.startswith("https://")), None)
             if url:
                 btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
 
