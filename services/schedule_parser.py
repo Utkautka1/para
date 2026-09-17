@@ -251,14 +251,18 @@ async def refresh_schedule_in_background() -> None:
 
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
     """
-    Мгновенно отдаёт расписание из памяти (0.001 сек). При необходимости фоново обновляет API.
+    Отдаёт расписание из памяти или принудительно обновляет данные при force_refresh.
     """
     import asyncio
     now = time.time()
     cache_valid = (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS)
 
+    if force_refresh:
+        await refresh_schedule_in_background()
+        return _DATA_CACHE[1]
+
     if _DATA_CACHE[1] is not None:
-        if force_refresh or not cache_valid:
+        if not cache_valid:
             asyncio.create_task(refresh_schedule_in_background())
         return _DATA_CACHE[1]
 
