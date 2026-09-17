@@ -59,6 +59,30 @@ def format_minutes(total_minutes: int) -> str:
     return f"{mins} мин"
 
 
+def _check_single_lesson_status(lesson: Lesson, n_min: int) -> Tuple[bool, str]:
+    """
+    Проверяет статус одной пары относительно текущего времени в минутах.
+
+    :param lesson: Объект пары
+    :param n_min: Текущее время в минутах от начала суток
+    :return: Кортеж (найдено_ли_состояние, HTML_баннер)
+    """
+    try:
+        parts = lesson.time_str.split("–")
+        sh, sm = map(int, parts[0].strip().split(":"))
+        eh, em = map(int, parts[1].strip().split(":"))
+        s_min, e_min = sh * 60 + sm, eh * 60 + em
+        if s_min <= n_min <= e_min:
+            left_str = format_minutes(e_min - n_min)
+            return True, f"⏳ <b>СЕЙЧАС ИДЁТ {lesson.period + 1} ПАРА</b> (осталось {left_str})\n\n"
+        if n_min < s_min:
+            before_str = format_minutes(s_min - n_min)
+            return True, f"🔜 <b>СЛЕДУЮЩАЯ {lesson.period + 1} ПАРА</b> (через {before_str})\n\n"
+    except Exception:
+        pass
+    return False, ""
+
+
 def get_lesson_status_banner(lessons: List[Lesson], target_date: date) -> str:
     """
     Рассчитывает и формирует статусный баннер пары для текущего дня.
@@ -73,23 +97,11 @@ def get_lesson_status_banner(lessons: List[Lesson], target_date: date) -> str:
     if target_date != now_dt.date() or not lessons:
         return ""
 
-    now_t = now_dt.time()
+    n_min = now_dt.time().hour * 60 + now_dt.time().minute
     for l in lessons:
-        try:
-            parts = l.time_str.split("–")
-            sh, sm = map(int, parts[0].strip().split(":"))
-            eh, em = map(int, parts[1].strip().split(":"))
-            s_min = sh * 60 + sm
-            e_min = eh * 60 + em
-            n_min = now_t.hour * 60 + now_t.minute
-            if s_min <= n_min <= e_min:
-                left_str = format_minutes(e_min - n_min)
-                return f"⏳ <b>СЕЙЧАС ИДЁТ {l.period + 1} ПАРА</b> (осталось {left_str})\n\n"
-            if n_min < s_min:
-                before_str = format_minutes(s_min - n_min)
-                return f"🔜 <b>СЛЕДУЮЩАЯ {l.period + 1} ПАРА</b> (через {before_str})\n\n"
-        except Exception:
-            continue
+        found, banner = _check_single_lesson_status(l, n_min)
+        if found:
+            return banner
     return "✅ <b>Все пары на сегодня завершены!</b>\n\n"
 
 

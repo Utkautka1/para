@@ -45,9 +45,11 @@ async def edit_or_answer(
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
+            await callback.answer()
+            return
     except TelegramBadRequest:
         pass
-    await callback.answer()
+    await callback.answer("Расписание актуально!")
 
 
 @router.message(CommandStart())
@@ -69,44 +71,28 @@ async def cmd_start(message: Message) -> None:
 @router.callback_query(F.data == "sched:today")
 async def cb_today(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на сегодня с мгновенным Redis-кэшированием.
+    Заменяет сообщение на расписание на сегодня.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Сегодня")
     now = datetime.now(TIMEZONE).date()
-    cache_key = f"sched:today:{now.isoformat()}"
-    cached_text = await cache_get(cache_key)
     lessons = await get_schedule_for_date(now)
-
-    if cached_text:
-        await edit_or_answer(callback, cached_text, lessons)
-        return
-
     text = format_day_schedule(now, lessons)
-    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, lessons)
 
 
 @router.callback_query(F.data == "sched:tomorrow")
 async def cb_tomorrow(callback: CallbackQuery) -> None:
     """
-    Заменяет сообщение на расписание на завтра с мгновенным Redis-кэшированием.
+    Заменяет сообщение на расписание на завтра.
 
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Завтра")
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
-    cache_key = f"sched:tomorrow:{tomorrow.isoformat()}"
-    cached_text = await cache_get(cache_key)
     lessons = await get_schedule_for_date(tomorrow)
-
-    if cached_text:
-        await edit_or_answer(callback, cached_text, lessons)
-        return
-
     text = format_day_schedule(tomorrow, lessons)
-    await cache_set(cache_key, text)
     await edit_or_answer(callback, text, lessons)
 
 
