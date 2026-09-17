@@ -130,13 +130,14 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Opt
             return None
         return today + timedelta(days=1)
     today_lessons = await get_schedule_for_date(today)
-    if today_lessons:
-        last_lesson = max(today_lessons, key=lambda x: x.period)
-        end_t = parse_lesson_end_time(last_lesson.time_str)
-        if end_t:
-            last_end_dt = datetime.combine(today, end_t, tzinfo=TIMEZONE)
-            if now_dt >= last_end_dt:
-                return get_next_working_day(today)
+    if not today_lessons:
+        return today
+    last_lesson = max(today_lessons, key=lambda x: x.period)
+    end_t = parse_lesson_end_time(last_lesson.time_str)
+    if end_t:
+        last_end_dt = datetime.combine(today, end_t, tzinfo=TIMEZONE)
+        if now_dt >= last_end_dt:
+            return get_next_working_day(today)
     return today
 
 
