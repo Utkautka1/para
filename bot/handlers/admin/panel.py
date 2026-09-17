@@ -66,9 +66,11 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
+    try:
+        await callback.answer("⏳ Синхронизация данных...", show_alert=False)
+    except Exception:
+        pass
     log.info("Запущена принудительная синхронизация данных из админки")
-    await callback.answer("⏳ Синхронизация данных...", show_alert=False)
-
     links = await get_teacher_links(force_refresh=True)
     await fetch_schedule_data(force_refresh=True)
     await sync_topic_main_message()
