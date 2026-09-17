@@ -45,11 +45,12 @@ async def edit_or_answer(
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
-            await callback.answer()
-            return
     except TelegramBadRequest:
         pass
-    await callback.answer("Расписание актуально!")
+    try:
+        await callback.answer("Расписание обновлено!")
+    except TelegramBadRequest:
+        pass
 
 
 @router.message(CommandStart())
@@ -162,6 +163,10 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
+    try:
+        await callback.answer("Синхронизация с API КТМУ...")
+    except TelegramBadRequest:
+        pass
     await cache_flush()
     links = await get_teacher_links(force_refresh=True)
     now = datetime.now(TIMEZONE).date()
