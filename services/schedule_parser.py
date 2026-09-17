@@ -155,33 +155,40 @@ def get_period_time_str(
     return "Время уточняется"
 
 
+def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
+    """
+    Обрабатывает успешный HTTP-ответ от API КТМУ.
+    """
+    global _DATA_CACHE, _LAST_PUBLISHED_AT
+    if res.status_code != 200:
+        log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
+        return _DATA_CACHE[1]
+    val = res.json().get("value", {})
+    snapshot = val.get("publishedSnapshot") or val
+    pub_at = snapshot.get("publishedAt")
+    if pub_at and pub_at != _LAST_PUBLISHED_AT:
+        log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
+        _LAST_PUBLISHED_AT = pub_at
+    _DATA_CACHE = (now, snapshot)
+    return snapshot
+
+
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
     """
     Скачивает JSON расписания КТМУ с отслеживанием времени публикации.
-
-    :param force_refresh: Принудительно запросить свежие данные
-    :return: Словарь данных или None
     """
-    global _DATA_CACHE, _LAST_PUBLISHED_AT
     now = time.time()
     if not force_refresh and (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS) and _DATA_CACHE[1]:
         return _DATA_CACHE[1]
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(SCHEDULE_API_URL)
-            if res.status_code != 200:
-                log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
-                return _DATA_CACHE[1]
-            val = res.json().get("value", {})
-            snapshot = val.get("publishedSnapshot") or val
-            pub_at = snapshot.get("publishedAt")
-            if pub_at and pub_at != _LAST_PUBLISHED_AT:
-                log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
-                _LAST_PUBLISHED_AT = pub_at
-            _DATA_CACHE = (now, snapshot)
-            return snapshot
+            return process_api_response(res, now)
+    except httpx.TimeoutException:
+        log.warning("⚠️ Превышено время ожидания ответа от API КТМУ (15 сек). Используется кэш.")
+        return _DATA_CACHE[1]
     except Exception as e:
-        log.error(f"Исключение при запросе к API КТМУ: {e}", exc_info=True)
+        log.error(f"Исключение при запросе к API КТМУ: {e}")
         return _DATA_CACHE[1]
 
 
