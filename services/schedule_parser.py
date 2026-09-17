@@ -162,15 +162,14 @@ _LAST_MODIFIED: Optional[str] = None
 
 def get_http_client() -> httpx.AsyncClient:
     """
-    Возвращает или создает глобальный персистентный HTTP клиент с поддержкой gzip/deflate.
+    Возвращает или создает глобальный персистентный HTTP клиент.
     """
     global _HTTP_CLIENT
     if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
         headers = {
-            "Accept-Encoding": "gzip, deflate, br",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        _HTTP_CLIENT = httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True)
+        _HTTP_CLIENT = httpx.AsyncClient(timeout=20.0, headers=headers, follow_redirects=True)
     return _HTTP_CLIENT
 
 
