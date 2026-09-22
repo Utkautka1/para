@@ -176,14 +176,15 @@ async def update_topic_message_payload(text: str, kb: Any) -> None:
             await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=_TOPIC_MAIN_MSG_ID, text=text, reply_markup=kb)
             log.debug(f"Сообщение расписания в топике обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
     except TelegramBadRequest as e:
-        if "message to edit not found" in str(e).lower():
-            _TOPIC_MAIN_MSG_ID = None
-            save_topic_state(None)
+        err = str(e).lower()
+        if "not modified" in err:
+            return
+        log.warning(f"Ошибка редактирования топика ({e}), создаём новое сообщение...")
+        _TOPIC_MAIN_MSG_ID = None
+        save_topic_state(None)
+        await update_topic_message_payload(text, kb)
     except Exception as e:
-        if "network" in str(e).lower() or "timeout" in str(e).lower():
-            log.warning(f"Сетевая задержка при обновлении топика Telegram: {e}")
-        else:
-            log.error(f"Ошибка обновления топика: {e}")
+        log.error(f"Ошибка обновления топика: {e}")
 
 
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None:
@@ -202,7 +203,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
         return
 
     lessons = await get_schedule_for_date(target_date)
-    if not lessons or is_too_early_to_publish(lessons, now_dt, now_dt.date(), ignore_time_restriction):
+    if not lessons or is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
         return
 
     if now_dt.date() == target_date:
