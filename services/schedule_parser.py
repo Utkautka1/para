@@ -192,11 +192,15 @@ def filter_snapshot_for_target_group(snapshot: Dict[str, Any]) -> Dict[str, Any]
     group_ids = set(i["instId"] for i in group_insts if "instId" in i)
     group_assigns = {k: v for k, v in sched.get("assignment", {}).items() if k in group_ids}
 
+    # loads — нагрузки (аттестации/экзамены), фильтруем по GROUP_ID
+    group_loads = [l for l in snapshot.get("loads", []) if isinstance(l, dict) and l.get("groupId") == GROUP_ID]
+
     return {
         "config": snapshot.get("config", {}), "publishedAt": snapshot.get("publishedAt"),
         "subjects": snapshot.get("subjects", []), "teachers": snapshot.get("teachers", []),
         "rooms": snapshot.get("rooms", []), "groups": snapshot.get("groups", []),
         "lessonTypes": snapshot.get("lessonTypes", []),
+        "loads": group_loads,
         "schedule": {"instances": group_insts, "assignment": group_assigns}
     }
 
