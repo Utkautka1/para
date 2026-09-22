@@ -158,40 +158,73 @@ def is_too_early_to_publish(lessons: List[Lesson], now_dt: datetime, today: date
     return False
 
 
-async def update_topic_message_payload(text: str, kb: Any) -> None:
+async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False) -> bool:
     """
     Атомарно отправляет новое или редактирует существующее сообщение топика.
 
-    :param text: Текст HTML
-    :param kb: Инлайн-клавиатура
+    При ошибке редактирования (сообщение удалено/недоступно) — пересоздаёт.
+    _retry=True предотвращает бесконечную рекурсию.
+
+    :return: True если сообщение обновлено/создано, False при ошибке
     """
     global _TOPIC_MAIN_MSG_ID
     try:
         if _TOPIC_MAIN_MSG_ID is None:
-            msg = await bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID, text=text, reply_markup=kb)
-            _TOPIC_MAIN_MSG_ID = msg.message_id
-            save_topic_state(_TOPIC_MAIN_MSG_ID)
-            log.info(f"Главное сообщение расписания создано в топике: MSG_ID={_TOPIC_MAIN_MSG_ID}")
-        else:
-            await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=_TOPIC_MAIN_MSG_ID, text=text, reply_markup=kb)
-            log.debug(f"Сообщение расписания в топике обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+            return await _send_new_topic_message(text, kb)
+        await bot.edit_message_text(
+            chat_id=TOPIC_CHAT_ID, message_id=_TOPIC_MAIN_MSG_ID,
+            text=text, reply_markup=kb
+        )
+        log.debug(f"Сообщение топика обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+        return True
     except TelegramBadRequest as e:
-        err = str(e).lower()
-        if "not modified" in err:
-            return
-        log.warning(f"Ошибка редактирования топика ({e}), создаём новое сообщение...")
-        _TOPIC_MAIN_MSG_ID = None
-        save_topic_state(None)
-        await update_topic_message_payload(text, kb)
+        return await _handle_edit_failure(e, text, kb, _retry)
     except Exception as e:
-        log.error(f"Ошибка обновления топика: {e}")
+        log.error(f"❌ Ошибка обновления топика: {type(e).__name__}: {e}")
+        return False
 
 
-async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None:
+async def _send_new_topic_message(text: str, kb: Any) -> bool:
+    """Создаёт новое сообщение расписания в топике."""
+    global _TOPIC_MAIN_MSG_ID
+    msg = await bot.send_message(
+        chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID,
+        text=text, reply_markup=kb
+    )
+    _TOPIC_MAIN_MSG_ID = msg.message_id
+    save_topic_state(_TOPIC_MAIN_MSG_ID)
+    log.info(f"Главное сообщение создано в топике: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+    return True
+
+
+async def _handle_edit_failure(
+    e: TelegramBadRequest, text: str, kb: Any, is_retry: bool
+) -> bool:
+    """
+    Обрабатывает ошибку редактирования: "not modified" — штатно,
+    остальные — пересоздаёт сообщение (один раз, без рекурсии).
+    """
+    global _TOPIC_MAIN_MSG_ID
+    err = str(e).lower()
+    if "not modified" in err:
+        return True
+    if is_retry:
+        log.error(f"❌ Повторная ошибка создания сообщения топика: {e}")
+        return False
+    log.warning(f"⚠️ Ошибка редактирования MSG_ID={_TOPIC_MAIN_MSG_ID} ({e}), пересоздаём...")
+    _TOPIC_MAIN_MSG_ID = None
+    save_topic_state(None)
+    return await update_topic_message_payload(text, kb, _retry=True)
+
+
+async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool:
     """
     Атомарно обновляет главное сообщение расписания в топике.
 
+    Обновляет даже при пустом расписании — показывает "свободный день".
+
     :param ignore_time_restriction: Флаг принудительной отправки
+    :return: True если топик был обновлён
     """
     global _TOPIC_MAIN_MSG_ID
     if _TOPIC_MAIN_MSG_ID is None:
@@ -200,19 +233,23 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> None
     now_dt = datetime.now(TIMEZONE)
     target_date = await resolve_target_date(now_dt, ignore_time_restriction)
     if not target_date:
-        return
+        return False
 
     lessons = await get_schedule_for_date(target_date)
-    if not lessons or is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
-        return
 
-    if now_dt.date() == target_date:
+    # Если пары есть, но ещё рано публиковать — ждём
+    if lessons and is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
+        return False
+
+    # Напоминания — только для текущего дня и реальных пар
+    if lessons and now_dt.date() == target_date:
         for l in lessons:
             check_and_trigger_reminder(l, now_dt, now_dt.date())
 
+    # format_day_schedule корректно обрабатывает пустой список пар
     text = format_day_schedule(target_date, lessons)
-    kb = get_topic_inline_kb(lessons)
-    await update_topic_message_payload(text, kb)
+    kb = get_topic_inline_kb(lessons) if lessons else None
+    return await update_topic_message_payload(text, kb)
 
 
 _API_FAIL_START_TIME: Optional[datetime] = None

@@ -101,17 +101,23 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
     """
     Принудительно публикует или обновляет сообщение в топике без утренних задержек.
 
+    Сначала отвечаем на callback (Telegram даёт 30 сек), потом синхронизируем.
+
     :param callback: CallbackQuery
     """
-    await sync_topic_main_message(ignore_time_restriction=True)
-    note = "📢 Сообщение в топике группы принудительно отправлено/обновлено!"
+    # Отвечаем СРАЗУ, иначе при медленной сети callback устареет
+    try:
+        await callback.answer("⏳ Обновляю топик...", show_alert=False)
+    except TelegramBadRequest:
+        pass
+    success = await sync_topic_main_message(ignore_time_restriction=True)
+    note = "📢 Топик обновлён!" if success else "⚠️ Не удалось обновить топик. Проверьте логи."
     text = format_admin_panel_text(note)
     if callback.message:
         try:
             await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
         except TelegramBadRequest:
             pass
-    await callback.answer("Топик обновлен!")
 
 
 from aiogram.fsm.context import FSMContext
