@@ -197,6 +197,33 @@ async def _send_new_topic_message(text: str, kb: Any) -> bool:
     return True
 
 
+async def recreate_topic_message() -> bool:
+    """
+    Удаляет текущее сообщение и создаёт новое (одноразовый сброс MSG_ID).
+
+    Используется когда MSG_ID в state указывает на призрачное/невидимое сообщение.
+    После вызова — дальнейшие sync будут редактировать уже правильное сообщение.
+
+    :return: True если пересоздание прошло
+    """
+    global _TOPIC_MAIN_MSG_ID
+    old_id = _TOPIC_MAIN_MSG_ID or load_topic_state()
+
+    # Пытаемся удалить старое призрачное сообщение
+    if old_id:
+        try:
+            await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=old_id)
+            log.info(f"Старое сообщение MSG_ID={old_id} удалено")
+        except Exception as e:
+            log.warning(f"Не удалось удалить MSG_ID={old_id}: {e}")
+
+    # Сбрасываем state — sync создаст новое сообщение
+    _TOPIC_MAIN_MSG_ID = None
+    save_topic_state(None)
+    log.info("State сброшен — следующий sync создаст новое сообщение")
+    return await sync_topic_main_message(ignore_time_restriction=True)
+
+
 async def _handle_edit_failure(
     e: TelegramBadRequest, text: str, kb: Any, is_retry: bool
 ) -> bool:

@@ -21,7 +21,8 @@ def get_admin_main_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="👨‍🏫 Ручные ссылки преподавателей", callback_data="admin:list_custom")
             ],
             [
-                InlineKeyboardButton(text="📢 Обновить топик сейчас", callback_data="admin:force_topic")
+                InlineKeyboardButton(text="📢 Обновить топик сейчас", callback_data="admin:force_topic"),
+                InlineKeyboardButton(text="🔁 Пересоздать", callback_data="admin:recreate_topic")
             ],
             [
                 InlineKeyboardButton(text="◀️ Вернуться к расписанию", callback_data="sched:today")

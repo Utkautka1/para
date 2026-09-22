@@ -120,6 +120,31 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
             pass
 
 
+@router.callback_query(F.data == "admin:recreate_topic")
+async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
+    """
+    Удаляет текущее сообщение топика и создаёт новое с правильным MSG_ID.
+
+    Одноразовый сброс — исправляет ситуацию когда state указывает
+    на призрачное/невидимое сообщение. После этого — обычное редактирование.
+
+    :param callback: CallbackQuery
+    """
+    try:
+        await callback.answer("🔁 Пересоздаю сообщение...", show_alert=False)
+    except TelegramBadRequest:
+        pass
+    from services.topic_updater import recreate_topic_message
+    success = await recreate_topic_message()
+    note = "🔁 Сообщение пересоздано!" if success else "⚠️ Ошибка пересоздания. Проверьте логи."
+    text = format_admin_panel_text(note)
+    if callback.message:
+        try:
+            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+        except TelegramBadRequest:
+            pass
+
+
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
