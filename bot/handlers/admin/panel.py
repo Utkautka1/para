@@ -145,6 +145,50 @@ async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
             pass
 
 
+@router.callback_query(F.data == "admin:force_exam")
+async def cb_admin_force_exam(callback: CallbackQuery) -> None:
+    """
+    Принудительно обновляет сообщение экзаменов в топике.
+
+    :param callback: CallbackQuery
+    """
+    try:
+        await callback.answer("⏳ Обновляю экзамены...", show_alert=False)
+    except TelegramBadRequest:
+        pass
+    from services.exam_topic_updater import sync_exam_topic_message
+    success = await sync_exam_topic_message()
+    note = "📑 Экзамены обновлены!" if success else "⚠️ Не удалось обновить экзамены."
+    text = format_admin_panel_text(note)
+    if callback.message:
+        try:
+            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+        except TelegramBadRequest:
+            pass
+
+
+@router.callback_query(F.data == "admin:recreate_exam")
+async def cb_admin_recreate_exam(callback: CallbackQuery) -> None:
+    """
+    Удаляет текущее сообщение экзаменов и создаёт новое (сброс MSG_ID).
+
+    :param callback: CallbackQuery
+    """
+    try:
+        await callback.answer("🔁 Пересоздаю экзамены...", show_alert=False)
+    except TelegramBadRequest:
+        pass
+    from services.exam_topic_updater import recreate_exam_topic_message
+    success = await recreate_exam_topic_message()
+    note = "🔁 Сообщение экзаменов пересоздано!" if success else "⚠️ Ошибка пересоздания."
+    text = format_admin_panel_text(note)
+    if callback.message:
+        try:
+            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+        except TelegramBadRequest:
+            pass
+
+
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup

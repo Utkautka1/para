@@ -185,7 +185,7 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
 
 
 async def _send_new_topic_message(text: str, kb: Any) -> bool:
-    """Создаёт новое сообщение расписания в топике."""
+    """Создаёт новое сообщение расписания в топике и закрепляет его."""
     global _TOPIC_MAIN_MSG_ID
     msg = await bot.send_message(
         chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID,
@@ -193,8 +193,20 @@ async def _send_new_topic_message(text: str, kb: Any) -> bool:
     )
     _TOPIC_MAIN_MSG_ID = msg.message_id
     save_topic_state(_TOPIC_MAIN_MSG_ID)
-    log.info(f"Главное сообщение создано в топике: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+    await _pin_silently(TOPIC_CHAT_ID, _TOPIC_MAIN_MSG_ID)
+    log.info(f"Главное сообщение создано и закреплено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
     return True
+
+
+async def _pin_silently(chat_id: int, message_id: int) -> None:
+    """Закрепляет сообщение без уведомления участникам."""
+    try:
+        await bot.pin_chat_message(
+            chat_id=chat_id, message_id=message_id,
+            disable_notification=True
+        )
+    except Exception as e:
+        log.warning(f"Не удалось закрепить MSG_ID={message_id}: {e}")
 
 
 async def recreate_topic_message() -> bool:

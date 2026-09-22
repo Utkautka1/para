@@ -96,9 +96,25 @@ def format_exams_schedule_message(exams: List[ExamItem]) -> str:
     return header + "\n\n".join(blocks)
 
 
-async def send_or_edit_exam_msg(text: str) -> None:
+async def _pin_exam_silently(message_id: int) -> None:
+    """Закрепляет сообщение экзаменов без уведомления."""
+    try:
+        await bot.pin_chat_message(
+            chat_id=TOPIC_CHAT_ID, message_id=message_id,
+            disable_notification=True
+        )
+    except Exception as e:
+        log.warning(f"Не удалось закрепить exam MSG_ID={message_id}: {e}")
+
+
+async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool:
     """
     Отправляет или редактирует главное сообщение в топике экзаменов.
+
+    При создании — автоматически закрепляет.
+    При ошибке редактирования — пересоздаёт (один раз).
+
+    :return: True если сообщение обновлено/создано
     """
     global _EXAM_MAIN_MSG_ID
     try:
@@ -108,21 +124,55 @@ async def send_or_edit_exam_msg(text: str) -> None:
             )
             _EXAM_MAIN_MSG_ID = msg.message_id
             save_exam_topic_state(_EXAM_MAIN_MSG_ID)
-            log.info(f"Главное сообщение создано в топике Экзамены: MSG_ID={_EXAM_MAIN_MSG_ID}")
-        else:
-            await bot.edit_message_text(
-                chat_id=TOPIC_CHAT_ID, message_id=_EXAM_MAIN_MSG_ID, text=text
-            )
-            log.debug(f"Сообщение в топике Экзамены обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+            await _pin_exam_silently(_EXAM_MAIN_MSG_ID)
+            log.info(f"Сообщение экзаменов создано и закреплено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+            return True
+        await bot.edit_message_text(
+            chat_id=TOPIC_CHAT_ID, message_id=_EXAM_MAIN_MSG_ID, text=text
+        )
+        log.info(f"✅ Сообщение экзаменов обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+        return True
     except TelegramBadRequest as e:
-        if "message to edit not found" in str(e).lower():
-            _EXAM_MAIN_MSG_ID = None
-            save_exam_topic_state(None)
+        err = str(e).lower()
+        if "not modified" in err:
+            log.info(f"exam_topic: 'not modified' (MSG_ID={_EXAM_MAIN_MSG_ID})")
+            return True
+        if _retry:
+            log.error(f"❌ Повторная ошибка создания exam-сообщения: {e}")
+            return False
+        log.warning(f"⚠️ Ошибка редактирования exam MSG_ID={_EXAM_MAIN_MSG_ID} ({e}), пересоздаём...")
+        _EXAM_MAIN_MSG_ID = None
+        save_exam_topic_state(None)
+        return await send_or_edit_exam_msg(text, _retry=True)
+    except Exception as e:
+        log.error(f"❌ Ошибка обновления топика экзаменов: {type(e).__name__}: {e}")
+        return False
 
 
-async def sync_exam_topic_message() -> None:
+async def recreate_exam_topic_message() -> bool:
+    """
+    Удаляет текущее сообщение экзаменов и создаёт новое (сброс MSG_ID).
+
+    :return: True если пересоздание прошло
+    """
+    global _EXAM_MAIN_MSG_ID
+    old_id = _EXAM_MAIN_MSG_ID or load_exam_topic_state()
+    if old_id:
+        try:
+            await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=old_id)
+            log.info(f"Старое exam-сообщение MSG_ID={old_id} удалено")
+        except Exception as e:
+            log.warning(f"Не удалось удалить exam MSG_ID={old_id}: {e}")
+    _EXAM_MAIN_MSG_ID = None
+    save_exam_topic_state(None)
+    return await sync_exam_topic_message()
+
+
+async def sync_exam_topic_message() -> bool:
     """
     Атомарно публикует или обновляет расписание экзаменов в топике.
+
+    :return: True если обновлено
     """
     global _EXAM_MAIN_MSG_ID
     if _EXAM_MAIN_MSG_ID is None:
@@ -131,9 +181,10 @@ async def sync_exam_topic_message() -> None:
     exams = await get_group_exams()
     text = format_exams_schedule_message(exams)
     try:
-        await send_or_edit_exam_msg(text)
+        return await send_or_edit_exam_msg(text)
     except Exception as e:
         log.error(f"Ошибка обновления топика экзаменов: {e}")
+        return False
 
 
 async def exam_topic_sync_loop() -> None:
