@@ -231,14 +231,19 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
         _TOPIC_MAIN_MSG_ID = load_topic_state()
 
     now_dt = datetime.now(TIMEZONE)
+    log.info(f"--- sync_topic: MSG_ID={_TOPIC_MAIN_MSG_ID}, now={now_dt.strftime('%H:%M:%S')}, force={ignore_time_restriction}")
+
     target_date = await resolve_target_date(now_dt, ignore_time_restriction)
     if not target_date:
+        log.info("sync_topic: target_date=None (воскресенье до 18:00?), пропуск")
         return False
 
     lessons = await get_schedule_for_date(target_date)
+    log.info(f"sync_topic: target_date={target_date}, lessons_count={len(lessons)}")
 
     # Если пары есть, но ещё рано публиковать — ждём
     if lessons and is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
+        log.info("sync_topic: too_early_to_publish, пропуск")
         return False
 
     # Напоминания — только для текущего дня и реальных пар
@@ -249,6 +254,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
     # format_day_schedule корректно обрабатывает пустой список пар
     text = format_day_schedule(target_date, lessons)
     kb = get_topic_inline_kb(lessons) if lessons else None
+    log.info(f"sync_topic: text_len={len(text)}, has_kb={kb is not None}")
     return await update_topic_message_payload(text, kb)
 
 
