@@ -175,7 +175,7 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
             chat_id=TOPIC_CHAT_ID, message_id=_TOPIC_MAIN_MSG_ID,
             text=text, reply_markup=kb
         )
-        log.debug(f"Сообщение топика обновлено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+        log.info(f"✅ Сообщение топика ОТРЕДАКТИРОВАНО: MSG_ID={_TOPIC_MAIN_MSG_ID}, chat={TOPIC_CHAT_ID}")
         return True
     except TelegramBadRequest as e:
         return await _handle_edit_failure(e, text, kb, _retry)
@@ -207,6 +207,7 @@ async def _handle_edit_failure(
     global _TOPIC_MAIN_MSG_ID
     err = str(e).lower()
     if "not modified" in err:
+        log.info(f"sync_topic: 'not modified' — текст уже актуален (MSG_ID={_TOPIC_MAIN_MSG_ID})")
         return True
     if is_retry:
         log.error(f"❌ Повторная ошибка создания сообщения топика: {e}")
