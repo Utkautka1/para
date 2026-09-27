@@ -77,9 +77,5 @@ DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-v4-flash-v
 HW_INPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_INPUT_TOPIC_THREAD_ID"))
 HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID"))
 
-# Настройки MongoDB
-MONGO_URL: str = os.getenv("MONGO_URL", "mongodb://mongo:27017")
-MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "para_db")
-
 
 

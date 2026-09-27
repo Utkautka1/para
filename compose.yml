@@ -1,21 +1,4 @@
 services:
-  mongo:
-    image: mongo:7.0
-    container_name: para-mongo
-    restart: always
-    command: mongod --wiredTigerCacheSizeGB 0.25
-    ports:
-      - "27018:27017"
-    volumes:
-      - ./data/mongo:/data/db
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.50'
-        reservations:
-          memory: 128M
-
   redis:
     image: redis:7-alpine
     container_name: para-redis
@@ -39,7 +22,6 @@ services:
     restart: always
     depends_on:
       - redis
-      - mongo
     env_file:
       - .env
     volumes:
@@ -58,15 +40,14 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  parser:
+  worker:
     build:
       context: .
-      dockerfile: parser.dockerfile
-    container_name: para-parser
+      dockerfile: worker.dockerfile
+    container_name: para-worker
     restart: always
     depends_on:
       - redis
-      - mongo
     env_file:
       - .env
     volumes:
@@ -85,33 +66,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  scheduler:
-    build:
-      context: .
-      dockerfile: scheduler.dockerfile
-    container_name: para-scheduler
-    restart: always
-    depends_on:
-      - redis
-      - mongo
-    env_file:
-      - .env
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.50'
-        reservations:
-          memory: 96M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   solver:
     build:
       context: .
@@ -120,7 +74,6 @@ services:
     restart: always
     depends_on:
       - redis
-      - mongo
     env_file:
       - .env
     volumes:
@@ -138,73 +91,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: para-dozzle
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "8888:8080"
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: para-redis-commander
-    restart: always
-    depends_on:
-      - redis
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-    ports:
-      - "8081:8081"
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-
-  mongo-express:
-    image: mongo-express:latest
-    container_name: para-mongo-express
-    restart: always
-    depends_on:
-      - mongo
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_PORT=27017
-      - ME_CONFIG_BASICAUTH=false
-    ports:
-      - "8082:8081"
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.25'
-
-  backup:
-    image: mongo:7.0
-    container_name: para-backup
-    restart: always
-    depends_on:
-      - mongo
-    volumes:
-      - ./data/backups:/backups
-    command: >
-      bash -c 'while true; do
-        sleep 86400;
-        TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
-        echo "[BACKUP] Создание дампа MongoDB: $$TIMESTAMP";
-        mongodump --host mongo:27017 --db para_db --out /backups/dump_$$TIMESTAMP;
-        find /backups -maxdepth 2 -type d -mtime +7 -exec rm -rf {} +;
-      done'
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
