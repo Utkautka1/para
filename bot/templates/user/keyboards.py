@@ -12,13 +12,13 @@ from services.schedule_parser import Lesson
 
 def format_lesson_button_text(lesson: Lesson) -> str:
     """
-    Формирует лаконичный текст кнопки подключения к дистанционной паре.
+    Формирует лаконичный текст кнопки подключения с зеленым акцентом.
 
     :param lesson: Объект занятия
     :return: Текст для Inline-кнопки
     """
     sg = f" (П/Г {lesson.subgroup})" if lesson.subgroup > 0 else ""
-    return f"🔗 {lesson.period + 1}-я пара{sg}"
+    return f"🟢 {lesson.period + 1}-я пара{sg}"
 
 
 def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]]:
@@ -33,7 +33,11 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
         if l.is_remote and l.remote_link:
             url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
             if url:
-                btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url))
+                btns.append(InlineKeyboardButton(
+                    text=format_lesson_button_text(l),
+                    url=url,
+                    style="success"
+                ))
     return [btns[i:i + 2] for i in range(0, len(btns), 2)]
 
 
