@@ -13,9 +13,10 @@ from typing import Any, List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
 from config import TIMEZONE, TOPIC_CHAT_ID, TOPIC_THREAD_ID
+from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
-from services.schedule_parser import Lesson, get_schedule_for_date
+from services.models import Lesson
 from bot.templates.user.keyboards import get_topic_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
 from services.notifier import parse_lesson_end_time, parse_lesson_start_time
@@ -121,7 +122,7 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Opt
         if now_dt.hour < 18 and not ignore_restriction:
             return None
         return today + timedelta(days=1)
-    today_lessons = await get_schedule_for_date(today)
+    today_lessons = await get_api_schedule_for_date(today)
     if not today_lessons:
         return today
     last_lesson = max(today_lessons, key=lambda x: x.period)
@@ -284,7 +285,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
         log.info("sync_topic: target_date=None, пропуск")
         return False
 
-    lessons = await get_schedule_for_date(target_date)
+    lessons = await get_api_schedule_for_date(target_date)
     if should_skip_topic_update(lessons, now_dt, target_date, ignore_time_restriction):
         return False
 

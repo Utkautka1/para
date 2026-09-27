@@ -8,6 +8,7 @@
 """
 
 import asyncio
+from core.api_client import close_api_client
 from core.bot import bot, dp
 from core.logger import get_logger
 from core.redis import init_redis, redis_client
@@ -32,12 +33,14 @@ def register_all_routers() -> None:
 
 
 async def shutdown_bot() -> None:
-    """Корректно закрывает сессию бота и подключение к Redis."""
+    """Корректно закрывает сессию бота, HTTP-клиент API и подключение к Redis."""
     log.info("Остановка бота: закрытие сессий...")
+    await close_api_client()
     if redis_client:
         await redis_client.aclose()
     await bot.session.close()
-    log.info("Сессии Telegram и Redis закрыты. Бот остановлен.")
+    log.info("Сессии Telegram, API и Redis закрыты. Бот остановлен.")
+
 
 
 async def main() -> None:

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from config import GROUP_ID
 from core.logger import get_logger
+from services.models import ExamItem
 from services.schedule_parser import (
     clean_subject_title,
     extract_entity_maps,
@@ -31,17 +32,6 @@ EXAM_TYPE_MAPPING = {
     "8p7q22hc": "Контрольная работа",
 }
 
-
-class ExamItem(BaseModel):
-    """Модель контрольного мероприятия/экзамена."""
-    subject: str
-    exam_type: str
-    teacher: str
-    room: str
-    address: str
-    weeks: List[int]
-    subgroup: int = 0
-    format_str: str = "Очно"
 
 
 def is_assessment_type(type_id: str, l_types: Dict[str, str]) -> Tuple[bool, str]:

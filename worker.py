@@ -11,13 +11,13 @@
 import asyncio
 from datetime import datetime
 from config import TIMEZONE
+from core.api_client import close_api_client, get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import init_redis, redis_client
 from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
 from services.notifier import schedule_lesson_reminder, setup_scheduler, scheduler
-from services.schedule_parser import get_schedule_for_date
 from services.topic_updater import topic_sync_loop
 
 log = get_logger("worker_main")
@@ -28,7 +28,7 @@ async def schedule_today_reminders() -> None:
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
     log.info(f"Проверка сегодняшних пар на момент запуска воркера: {now_dt.strftime('%H:%M:%S')}")
-    lessons = await get_schedule_for_date(today)
+    lessons = await get_api_schedule_for_date(today)
     for lesson in lessons:
         schedule_lesson_reminder(today, lesson, now_dt)
 
@@ -40,11 +40,10 @@ async def shutdown_worker() -> None:
         scheduler.shutdown(wait=False)
     if redis_client:
         await redis_client.aclose()
-    from services.schedule_parser import _HTTP_CLIENT
-    if _HTTP_CLIENT and not _HTTP_CLIENT.is_closed:
-        await _HTTP_CLIENT.aclose()
+    await close_api_client()
     await bot.session.close()
     log.info("Воркер para-worker успешно остановлен.")
+
 
 
 async def main() -> None:

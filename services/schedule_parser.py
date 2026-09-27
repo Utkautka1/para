@@ -15,28 +15,13 @@ from pydantic import BaseModel
 from config import GROUP_ID, SCHEDULE_API_URL, SCHEDULE_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from services.docx_parser import TeacherData, get_teacher_links
+from services.models import Lesson
 
 log = get_logger("schedule_parser")
 
 _DATA_CACHE: Tuple[float, Optional[Dict[str, Any]]] = (0.0, None)
 _LAST_PUBLISHED_AT: Optional[str] = None
 
-
-class Lesson(BaseModel):
-    """Модель данных одного занятия в расписании."""
-    period: int
-    time_str: str
-    subject: str
-    lesson_type: str
-    teacher: str
-    is_remote: bool
-    room: str
-    address: str
-    subgroup: int = 0
-    is_stream: bool = False
-    remote_link: Optional[str] = None
-    remote_passcode: Optional[str] = None
-    remote_meeting_id: Optional[str] = None
 
 
 def resolve_room_address(room_name: str, is_remote: bool) -> str:
