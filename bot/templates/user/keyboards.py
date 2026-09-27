@@ -51,13 +51,13 @@ def _build_nav_rows(week_offset: int) -> List[List[InlineKeyboardButton]]:
     return [
         [
             InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
-            InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="primary")
+            InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success")
         ],
         [
             week_btn,
-            InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="success")
+            InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary")
         ],
-        [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="primary")]
+        [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")]
     ]
 
 
