@@ -8,7 +8,7 @@
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
