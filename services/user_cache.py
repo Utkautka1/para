@@ -5,20 +5,12 @@
 чтобы при перезапуске бота кэш не сбрасывался.
 """
 
-import json
-import os
 from typing import Dict, Optional
 from core.logger import get_logger
+from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("user_cache")
 CACHE_FILE_PATH = "data/user_cache.json"
-
-
-def ensure_data_dir_exists() -> None:
-    """
-    Создает директорию data/, если она отсутствует.
-    """
-    os.makedirs(os.path.dirname(CACHE_FILE_PATH), exist_ok=True)
 
 
 def load_user_cache() -> Dict[str, int]:
@@ -27,29 +19,16 @@ def load_user_cache() -> Dict[str, int]:
 
     :return: Словарь username -> user_id
     """
-    ensure_data_dir_exists()
-    if not os.path.exists(CACHE_FILE_PATH):
-        return {}
-    try:
-        with open(CACHE_FILE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        log.error(f"Ошибка при загрузке user_cache.json: {e}")
-        return {}
+    return sync_load_json(CACHE_FILE_PATH, default={})
 
 
 def save_user_cache(cache: Dict[str, int]) -> None:
     """
-    Сохраняет словарь кэша пользователей на диск.
+    Атомарно сохраняет словарь кэша пользователей на диск.
 
     :param cache: Словарь username -> user_id
     """
-    ensure_data_dir_exists()
-    try:
-        with open(CACHE_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(cache, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        log.error(f"Ошибка при сохранении user_cache.json: {e}")
+    sync_atomic_save_json(CACHE_FILE_PATH, cache)
 
 
 def get_cached_user_id(username: str) -> Optional[int]:

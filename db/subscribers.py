@@ -2,14 +2,13 @@
 Модуль локального хранения подписчиков бота.
 
 Сохраняет и считывает список Telegram chat_id из файла data/subscribers.json.
-Обеспечивает атомарную запись и обработку возможных ошибок ввода-вывода.
+Обеспечивает атомарную запись через временный файл и fsync.
 """
 
-import json
-import os
-from typing import List, Set
+from typing import Set
 from config import SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
+from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("subscribers")
 
@@ -20,33 +19,21 @@ def load_subscribers() -> Set[int]:
 
     :return: Сет с Telegram chat_id
     """
-    if not os.path.exists(SUBSCRIBERS_FILE_PATH):
-        return set()
-    try:
-        with open(SUBSCRIBERS_FILE_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return set(data)
-    except Exception as e:
-        log.error(f"Ошибка чтения файла подписчиков {SUBSCRIBERS_FILE_PATH}: {e}")
-        return set()
+    data = sync_load_json(SUBSCRIBERS_FILE_PATH, default=[])
+    return set(data) if isinstance(data, list) else set()
 
 
 def save_subscribers(subs: Set[int]) -> bool:
     """
-    Сохраняет актуальное множество подписчиков в JSON файл.
+    Атомарно сохраняет актуальное множество подписчиков в JSON файл.
 
     :param subs: Множество ID подписчиков
     :return: True в случае успеха
     """
-    try:
-        os.makedirs(os.path.dirname(SUBSCRIBERS_FILE_PATH), exist_ok=True)
-        with open(SUBSCRIBERS_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(list(subs), f, ensure_ascii=False, indent=2)
+    ok = sync_atomic_save_json(SUBSCRIBERS_FILE_PATH, list(subs))
+    if ok:
         log.debug(f"Сохранено {len(subs)} подписчиков в {SUBSCRIBERS_FILE_PATH}")
-        return True
-    except Exception as e:
-        log.error(f"Ошибка сохранения файла подписчиков: {e}")
-        return False
+    return ok
 
 
 def add_subscriber(chat_id: int) -> bool:

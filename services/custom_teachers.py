@@ -2,10 +2,9 @@
 Модуль локального хранения персональных контактов преподавателей.
 """
 
-import json
-import os
 from typing import Dict
 from services.docx_parser import TeacherData
+from utils.storage import sync_atomic_save_json, sync_load_json
 
 CUSTOM_TEACHERS_FILE = "data/custom_teachers.json"
 
@@ -16,13 +15,7 @@ def load_custom_teachers() -> Dict[str, TeacherData]:
 
     :return: Словарь преподавателей
     """
-    if os.path.exists(CUSTOM_TEACHERS_FILE):
-        try:
-            with open(CUSTOM_TEACHERS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    return sync_load_json(CUSTOM_TEACHERS_FILE, default={})
 
 
 def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
@@ -38,9 +31,7 @@ def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
         "full_name": full_name,
         "link_info": link_info
     }
-    os.makedirs("data", exist_ok=True)
-    with open(CUSTOM_TEACHERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    sync_atomic_save_json(CUSTOM_TEACHERS_FILE, data)
 
 
 def delete_custom_teacher(last_name: str) -> None:
@@ -52,6 +43,4 @@ def delete_custom_teacher(last_name: str) -> None:
     data = load_custom_teachers()
     if last_name.lower() in data:
         data.pop(last_name.lower())
-        with open(CUSTOM_TEACHERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
+        sync_atomic_save_json(CUSTOM_TEACHERS_FILE, data)

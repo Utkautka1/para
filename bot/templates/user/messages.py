@@ -57,6 +57,17 @@ def format_minutes(total_minutes: int) -> str:
     return f"{mins} мин"
 
 
+def _parse_time_interval_minutes(time_str: str) -> Optional[Tuple[int, int]]:
+    """Извлекает время начала и конца пары в минутах от начала суток."""
+    import re
+    matches = re.findall(r"(\d{1,2})[:\.](\d{2})", time_str)
+    if len(matches) >= 2:
+        s_min = int(matches[0][0]) * 60 + int(matches[0][1])
+        e_min = int(matches[1][0]) * 60 + int(matches[1][1])
+        return s_min, e_min
+    return None
+
+
 def _check_single_lesson_status(lesson: Lesson, n_min: int) -> Tuple[bool, str]:
     """
     Проверяет статус одной пары относительно текущего времени в минутах.
@@ -65,19 +76,16 @@ def _check_single_lesson_status(lesson: Lesson, n_min: int) -> Tuple[bool, str]:
     :param n_min: Текущее время в минутах от начала суток
     :return: Кортеж (найдено_ли_состояние, HTML_баннер)
     """
-    try:
-        parts = lesson.time_str.split("–")
-        sh, sm = map(int, parts[0].strip().split(":"))
-        eh, em = map(int, parts[1].strip().split(":"))
-        s_min, e_min = sh * 60 + sm, eh * 60 + em
-        if s_min <= n_min <= e_min:
-            left_str = format_minutes(e_min - n_min)
-            return True, f"⏳ <b>СЕЙЧАС ИДЁТ {lesson.period + 1} ПАРА</b> (осталось {left_str})\n\n"
-        if n_min < s_min:
-            before_str = format_minutes(s_min - n_min)
-            return True, f"🔜 <b>СЛЕДУЮЩАЯ {lesson.period + 1} ПАРА</b> (через {before_str})\n\n"
-    except Exception:
-        pass
+    interval = _parse_time_interval_minutes(lesson.time_str)
+    if not interval:
+        return False, ""
+    s_min, e_min = interval
+    if s_min <= n_min <= e_min:
+        left_str = format_minutes(e_min - n_min)
+        return True, f"⏳ <b>СЕЙЧАС ИДЁТ {lesson.period + 1} ПАРА</b> (осталось {left_str})\n\n"
+    if n_min < s_min:
+        before_str = format_minutes(s_min - n_min)
+        return True, f"🔜 <b>СЛЕДУЮЩАЯ {lesson.period + 1} ПАРА</b> (через {before_str})\n\n"
     return False, ""
 
 

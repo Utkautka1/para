@@ -48,17 +48,27 @@ async def cache_set(key: str, value: str, ttl: int = REDIS_CACHE_TTL_SECONDS) ->
         log.error(f"Ошибка записи в Redis ({key}): {e}")
 
 
-async def cache_flush() -> None:
+async def cache_flush(pattern: str = "sched:*") -> int:
     """
-    Очищает весь кэш в Redis при принудительном обновлении.
+    Безопасно удаляет из Redis только ключи расписания.
+
+    Используем scan_iter вместо flushdb, чтобы не затереть хэши
+    решённых ДЗ и антиспам счётчики пользователей.
+
+    :param pattern: Паттерн удаляемых ключей
+    :return: Количество удалённых ключей
     """
+    deleted = 0
     try:
         client = await init_redis()
         if client:
-            await client.flushdb()
-            log.info("Кэш Redis полностью очищен!")
+            keys = [k async for k in client.scan_iter(match=pattern)]
+            if keys:
+                deleted = await client.delete(*keys)
+            log.info(f"Очищен кэш расписания ({deleted} ключей по {pattern})")
     except Exception as e:
-        log.error(f"Ошибка очистки Redis: {e}")
+        log.error(f"Ошибка точечной очистки кэша Redis ({pattern}): {e}")
+    return deleted
 
 
 async def is_message_processed(message_id: int) -> bool:
