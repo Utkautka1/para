@@ -77,22 +77,34 @@ def calculate_days_and_age(item: Dict[str, Any], today: date) -> Dict[str, Any]:
     return {**item, "days_until": days, "turning_age": age, "is_today": is_today}
 
 
-def get_person_mention(item: Dict[str, Any]) -> str:
-    """Формирует кликабельное упоминание по username или telegram ID."""
+SEASONS_INFO = [
+    ("🍂 ОСЕНЬ", [9, 10, 11]),
+    ("❄️ ЗИМА", [12, 1, 2]),
+    ("🌸 ВЕСНА", [3, 4, 5]),
+    ("☀️ ЛЕТО", [6, 7, 8]),
+]
+
+
+def format_person_tag(item: Dict[str, Any]) -> str:
+    """
+    Формирует кликабельное имя человека (через username или tg://user?id).
+    """
     name = item["full_name"]
     username = item.get("username")
     tg_id = item.get("tg_id")
     if username:
-        return f"@{username}"
+        return f"{name} (@{username})"
     if tg_id:
         return f'<a href="tg://user?id={tg_id}">{name}</a>'
     return name
 
 
 def format_days_left_badge(days: int) -> str:
-    """Формирует человекочитаемый бейдж оставшихся дней."""
+    """
+    Формирует человекочитаемый бейдж оставшихся дней.
+    """
     if days == 0:
-        return "🎉 <b>СЕГОДНЯ!</b>"
+        return "сегодня"
     if days == 1:
         return "завтра"
     last_two = days % 100
@@ -106,35 +118,83 @@ def format_days_left_badge(days: int) -> str:
     return f"через {days} дней"
 
 
-def format_single_birthday_row(item: Dict[str, Any]) -> str:
-    """Форматирует одну строку в списке дней рождения."""
-    d_str = f"{item['day']:02d}.{item['month']:02d}"
-    mention = get_person_mention(item)
-    badge = format_days_left_badge(item["days_until"])
-    age = item["turning_age"]
-    name = item["full_name"]
-    tag_part = f" ({mention})" if mention != name else ""
-    return f"▫️ <b>{d_str}</b> • {name}{tag_part} — <b>{badge}</b> (исполнится {age})"
+def format_today_block(today_items: List[Dict[str, Any]]) -> List[str]:
+    """
+    Формирует праздничный блок для именинников сегодняшнего дня.
+    """
+    if not today_items:
+        return []
+    lines = ["🎉 <b>СЕГОДНЯ ДЕНЬ РОЖДЕНИЯ!</b>", "<blockquote>"]
+    for i in today_items:
+        tag = format_person_tag(i)
+        lines.append(f"🎂 <b>{tag}</b> — исполняется <b>{i['turning_age']} лет!</b> 🥳")
+    lines.append("</blockquote>\n")
+    return lines
+
+
+def format_upcoming_block(items: List[Dict[str, Any]]) -> List[str]:
+    """
+    Формирует блок ближайших именинников в цитате.
+    """
+    upcoming = [i for i in items if not i.get("is_today")]
+    near = [i for i in upcoming if i["days_until"] <= 45]
+    if len(near) < 3:
+        near = upcoming[:3]
+    if not near:
+        return []
+
+    lines = ["<blockquote>⏳ <b>БЛИЖАЙШИЕ ПРАЗДНИКИ:</b>"]
+    for i in near:
+        d_str = f"{i['day']:02d}.{i['month']:02d}"
+        tag = format_person_tag(i)
+        badge = format_days_left_badge(i["days_until"])
+        lines.append(f"▫️ <b>{d_str}</b> • {tag} — <b>{i['turning_age']} лет</b> ({badge})")
+    lines.append("</blockquote>\n")
+    return lines
+
+
+def season_sort_key(item: Dict[str, Any], months: List[int]) -> int:
+    """
+    Вычисляет индекс сортировки даты внутри сезона.
+    """
+    return months.index(item["month"]) * 100 + item["day"]
+
+
+def format_season_block(title: str, months: List[int], all_items: List[Dict[str, Any]]) -> List[str]:
+    """
+    Форматирует список именинников для одного сезона.
+    """
+    s_items = [i for i in all_items if i["month"] in months]
+    s_items.sort(key=lambda x: season_sort_key(x, months))
+    if not s_items:
+        return []
+
+    lines = [f"<b>{title}</b>"]
+    for i in s_items:
+        d_str = f"{i['day']:02d}.{i['month']:02d}"
+        tag = format_person_tag(i)
+        lines.append(f"▫️ <b>{d_str}</b> • {tag}")
+    lines.append("")
+    return lines
 
 
 def format_birthday_registry_text(items: List[Dict[str, Any]]) -> str:
-    """Формирует красивый реестр дней рождения для закрепленного сообщения."""
+    """
+    Формирует двухуровневый реестр дней рождения с сезонами и ближайшими.
+    """
     lines = [
         "🎂 <b>ДНИ РОЖДЕНИЯ ГРУППЫ 1-КПД-3</b>",
         "────────────────────────────"
     ]
-    today_items = [i for i in items if i.get("is_today")]
-    if today_items:
-        lines.append("🎉 <b>СЕГОДНЯ ПРАЗДНУЮТ:</b>")
-        for i in today_items:
-            mention = get_person_mention(i)
-            lines.append(f"▪️ <b>{i['full_name']}</b> ({mention}) — <b>{i['turning_age']} лет!</b> 🥳")
-        lines.append("")
-    lines.append("⏳ <b>БЛИЖАЙШИЕ ПРАЗДНИКИ:</b>")
-    upcoming = [i for i in items if not i.get("is_today")]
-    lines.extend(format_single_birthday_row(i) for i in upcoming)
-    lines.append("\n<i>Бот ежедневно обновляет список и поздравляет в день праздника!</i>")
-    return "\n".join(lines)
+    lines.extend(format_today_block([i for i in items if i.get("is_today")]))
+    lines.extend(format_upcoming_block(items))
+
+    for title, months in SEASONS_INFO:
+        lines.extend(format_season_block(title, months, items))
+
+    lines.append("────────────────────────────")
+    lines.append("<i>🔄 Бот ежедневно обновляет реестр и поздравляет в 09:00</i>")
+    return "\n".join(lines).strip()
 
 
 def pick_unique_wish(person_key: str, wishes: List[str]) -> str:
@@ -154,8 +214,23 @@ def pick_unique_wish(person_key: str, wishes: List[str]) -> str:
     return wishes[choice_idx]
 
 
+def get_person_mention(item: Dict[str, Any]) -> str:
+    """
+    Формирует кликабельное упоминание для персонального поздравления.
+    """
+    username = item.get("username")
+    tg_id = item.get("tg_id")
+    if username:
+        return f"@{username}"
+    if tg_id:
+        return f'<a href="tg://user?id={tg_id}">{item["full_name"]}</a>'
+    return item["full_name"]
+
+
 def format_congrats_message(item: Dict[str, Any], wish_text: str) -> str:
-    """Формирует HTML-текст поздравления с Днем Рождения."""
+    """
+    Формирует HTML-текст поздравления с Днем Рождения.
+    """
     mention = get_person_mention(item)
     age = item.get("turning_age", 18)
     return (
