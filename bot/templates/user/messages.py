@@ -6,7 +6,7 @@
 """
 
 from datetime import date
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from config import GROUP_NAME
 from services.schedule_parser import Lesson
 
