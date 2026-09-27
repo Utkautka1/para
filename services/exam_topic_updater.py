@@ -13,9 +13,10 @@ from typing import List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
 from config import EXAM_TOPIC_THREAD_ID, TOPIC_CHAT_ID
+from core.api_client import get_api_exams
 from core.bot import bot
 from core.logger import get_logger
-from services.exam_parser import ExamItem, get_group_exams
+from services.models import ExamItem
 
 log = get_logger("exam_topic_updater")
 STATE_FILE = "data/exam_topic_state.json"
@@ -179,7 +180,7 @@ async def sync_exam_topic_message() -> bool:
     if _EXAM_MAIN_MSG_ID is None:
         _EXAM_MAIN_MSG_ID = load_exam_topic_state()
 
-    exams = await get_group_exams()
+    exams = await get_api_exams()
     text = format_exams_schedule_message(exams)
     try:
         return await send_or_edit_exam_msg(text)

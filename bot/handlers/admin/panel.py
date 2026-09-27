@@ -8,10 +8,9 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from bot.filters.auth import AuthFilter
-from services.docx_parser import get_teacher_links
-from services.schedule_parser import fetch_schedule_data
-from services.topic_updater import sync_topic_main_message
 from bot.templates.admin.keyboards import get_admin_main_kb
+from core.api_client import fetch_day_schedule, fetch_teachers
+from services.topic_updater import sync_topic_main_message
 
 from core.logger import get_logger
 
@@ -72,10 +71,11 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
     except Exception:
         pass
     log.info("Запущена принудительная синхронизация данных из админки")
-    links = await get_teacher_links(force_refresh=True)
-    await fetch_schedule_data(force_refresh=True)
+    res_t = await fetch_teachers(force_refresh=True)
+    await fetch_day_schedule(force_refresh=True)
     await sync_topic_main_message()
-    note = f"✅ Кэш очищен! Распаршено {len(links)} преподавателей docx и топик обновлен."
+    count = res_t.get("count", 0)
+    note = f"✅ Кэш очищен! Распаршено {count} преподавателей docx и топик обновлен."
     text = format_admin_panel_text(note)
     if callback.message:
         await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
@@ -88,12 +88,14 @@ async def cb_admin_status(callback: CallbackQuery) -> None:
 
     :param callback: CallbackQuery
     """
-    links = await get_teacher_links(force_refresh=False)
-    note = f"📊 В памяти загружено: {len(links)} контактов преподавателей."
+    res_t = await fetch_teachers(force_refresh=False)
+    count = res_t.get("count", 0)
+    note = f"📊 В памяти API загружено: {count} контактов преподавателей."
     text = format_admin_panel_text(note)
     if callback.message:
         await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
     await callback.answer()
+
 
 
 @router.callback_query(F.data == "admin:force_topic")
@@ -243,7 +245,7 @@ async def cb_admin_delete_teacher(callback: CallbackQuery) -> None:
     from services.custom_teachers import delete_custom_teacher
     last_name = callback.data.split(":")[-1]
     delete_custom_teacher(last_name)
-    await get_teacher_links(force_refresh=True)
+    await fetch_teachers(force_refresh=True)
     await callback.answer("❌ Запись удалена!")
     await cb_admin_list_custom(callback)
 
@@ -328,7 +330,7 @@ async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> Non
     last_name = full_name.split()[0].lower() if full_name else data.get("suggested_key", "custom")
 
     save_custom_teacher(last_name, full_name, link_info)
-    await get_teacher_links(force_refresh=True)
+    await fetch_teachers(force_refresh=True)
     await state.clear()
 
     res_text = (

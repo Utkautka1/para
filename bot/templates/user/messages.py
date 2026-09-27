@@ -8,7 +8,7 @@
 from datetime import date
 from typing import List, Optional, Tuple
 from config import GROUP_NAME
-from services.schedule_parser import Lesson
+from services.models import Lesson
 
 WEEKDAYS_RU = [
     "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"

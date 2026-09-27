@@ -11,9 +11,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import ALLOWED_USER_ID, DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE, REMINDER_OFFSET_MINUTES, TIMEZONE
+from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
-from services.schedule_parser import Lesson, get_schedule_for_date
+from services.models import Lesson
 from bot.templates.user.keyboards import get_schedule_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
 
@@ -156,7 +157,7 @@ async def daily_schedule_dispatch() -> None:
         log.info("Сегодня Воскресенье — фоновый расчет рассылок пропущен.")
         return
     log.info(f"=== ЕЖЕДНЕВНЫЙ ФОНОВЫЙ РАСЧЁТ ТАЙМЕРОВ ({today}) ===")
-    lessons = await get_schedule_for_date(today, force_refresh=True)
+    lessons = await get_api_schedule_for_date(today, force_refresh=True)
     for lesson in lessons:
         schedule_lesson_reminder(today, lesson, now_dt)
 

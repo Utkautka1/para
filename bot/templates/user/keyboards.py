@@ -7,7 +7,7 @@
 
 from typing import List, Optional
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from services.schedule_parser import Lesson
+from services.models import Lesson
 
 
 def format_lesson_button_text(lesson: Lesson) -> str:

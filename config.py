@@ -77,5 +77,6 @@ DEEPSEEK_MODEL_NAME: str = os.getenv("DEEPSEEK_MODEL_NAME", "deepseek-v4-flash-v
 HW_INPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_INPUT_TOPIC_THREAD_ID"))
 HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID"))
 
-
-
+# Настройки внутреннего API (para-api)
+API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
+API_BASE_URL: str = os.getenv("API_BASE_URL", "http://api:8000")

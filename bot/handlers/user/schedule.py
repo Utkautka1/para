@@ -14,13 +14,15 @@ from aiogram.types import CallbackQuery, Message
 
 from config import TIMEZONE
 from bot.filters.auth import AuthFilter
-from services.docx_parser import get_teacher_links
-from services.schedule_parser import Lesson, get_schedule_for_date, get_week_schedule
 from bot.templates.user.keyboards import get_schedule_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_week_schedule
-
+from core.api_client import (
+    fetch_teachers,
+    get_api_schedule_for_date,
+    get_api_week_schedule,
+)
 from core.logger import get_logger
-
+from services.models import Lesson
 from services.redis_cache import cache_flush, cache_get, cache_set
 
 log = get_logger("user_schedule")
@@ -64,7 +66,7 @@ async def cmd_start(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else "unknown"
     log.info(f"Получена команда /start или /today от user_id={user_id}")
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_schedule_for_date(now)
+    lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
     await message.answer(text, reply_markup=get_schedule_inline_kb(lessons))
 
@@ -78,7 +80,7 @@ async def cb_today(callback: CallbackQuery) -> None:
     """
     log.info("Нажата инлайн-кнопка: Сегодня")
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_schedule_for_date(now)
+    lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
     await edit_or_answer(callback, text, lessons)
 
@@ -92,7 +94,7 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
     """
     log.info("Нажата инлайн-кнопка: Завтра")
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
-    lessons = await get_schedule_for_date(tomorrow)
+    lessons = await get_api_schedule_for_date(tomorrow)
     text = format_day_schedule(tomorrow, lessons)
     await edit_or_answer(callback, text, lessons)
 
@@ -114,7 +116,7 @@ async def cb_week(callback: CallbackQuery) -> None:
         await edit_or_answer(callback, cached_text, week_offset=0)
         return
 
-    days_data = await get_week_schedule(monday)
+    days_data = await get_api_week_schedule(monday)
     text = format_week_schedule(days_data)
     await cache_set(cache_key, text)
     await edit_or_answer(callback, text, week_offset=0)
@@ -137,7 +139,7 @@ async def cb_week_next(callback: CallbackQuery) -> None:
         await edit_or_answer(callback, cached_text, week_offset=1)
         return
 
-    days_data = await get_week_schedule(next_monday)
+    days_data = await get_api_week_schedule(next_monday)
     text = format_week_schedule(days_data)
     await cache_set(cache_key, text)
     await edit_or_answer(callback, text, week_offset=1)
@@ -168,11 +170,13 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     except TelegramBadRequest:
         pass
     await cache_flush()
-    links = await get_teacher_links(force_refresh=True)
+    teachers_res = await fetch_teachers(force_refresh=True)
+    count = teachers_res.get("count", 0)
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_schedule_for_date(now, force_refresh=True)
+    lessons = await get_api_schedule_for_date(now, force_refresh=True)
     text = format_day_schedule(now, lessons)
-    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({len(links)}) сверены, Redis очищен!</i>"
+    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis очищен!</i>"
     await edit_or_answer(callback, text, lessons)
+
 
 
