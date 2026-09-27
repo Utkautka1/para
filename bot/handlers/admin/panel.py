@@ -201,6 +201,22 @@ class AddTeacherState(StatesGroup):
 
 
 @router.callback_query(F.data.startswith("admin:list_custom"))
+def _build_custom_teachers_view(custom: dict) -> tuple[str, list]:
+    """Формирует текст списка кастомных преподавателей и ряды кнопок."""
+    if not custom:
+        return "👨‍🏫 <b>Ручных записей преподавателей пока нет.</b>", []
+    text = "👨‍🏫 <b>Добавленные вручную контакты:</b>\n\n"
+    kb_rows = []
+    for key, val in custom.items():
+        text += f"🔹 <b>{val['full_name']}</b> (код: <code>{key}</code>):\n<code>{val['link_info']}</code>\n\n"
+        kb_rows.append([
+            InlineKeyboardButton(text=f"✏️ {val['full_name'].split()[0]}", callback_data=f"admin:edit_t:{key}"),
+            InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"admin:del_t:{key}")
+        ])
+    return text, kb_rows
+
+
+@router.callback_query(F.data.startswith("admin:list_custom"))
 async def cb_admin_list_custom(callback: CallbackQuery) -> None:
     """
     Выводит список кастомных преподавателей с кнопками ред/удал и навигацией.
@@ -208,22 +224,9 @@ async def cb_admin_list_custom(callback: CallbackQuery) -> None:
     :param callback: CallbackQuery
     """
     custom = load_custom_teachers()
-    if not custom:
-        text = "👨‍🏫 <b>Ручных записей преподавателей пока нет.</b>"
-        kb_rows = []
-    else:
-        text = "👨‍🏫 <b>Добавленные вручную контакты:</b>\n\n"
-        kb_rows = []
-        for key, val in custom.items():
-            text += f"🔹 <b>{val['full_name']}</b> (код: <code>{key}</code>):\n<code>{val['link_info']}</code>\n\n"
-            kb_rows.append([
-                InlineKeyboardButton(text=f"✏️ {val['full_name'].split()[0]}", callback_data=f"admin:edit_t:{key}"),
-                InlineKeyboardButton(text=f"🗑️ Удалить", callback_data=f"admin:del_t:{key}")
-            ])
-
+    text, kb_rows = _build_custom_teachers_view(custom)
     kb_rows.append([InlineKeyboardButton(text="➕ Добавить нового", callback_data="admin:add_t:manual")])
     kb_rows.append([InlineKeyboardButton(text="◀️ В главную панель", callback_data="admin:menu")])
-
     kb = InlineKeyboardMarkup(inline_keyboard=kb_rows)
     if callback.message:
         await callback.message.edit_text(text, reply_markup=kb)

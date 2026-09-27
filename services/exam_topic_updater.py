@@ -24,29 +24,22 @@ SEMESTER_START = datetime.strptime("2026-09-01", "%Y-%m-%d").date()
 _EXAM_MAIN_MSG_ID: Optional[int] = None
 
 
+from utils.storage import sync_atomic_save_json, sync_load_json
+
+
 def load_exam_topic_state() -> Optional[int]:
     """
     Загружает ID главного сообщения топика экзаменов.
     """
-    if os.path.exists(STATE_FILE):
-        try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f).get("main_msg_id")
-        except Exception as e:
-            log.error(f"Ошибка чтения exam_topic_state.json: {e}")
-    return None
+    data = sync_load_json(STATE_FILE, default={})
+    return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
 def save_exam_topic_state(msg_id: Optional[int]) -> None:
     """
-    Сохраняет ID главного сообщения топика экзаменов.
+    Атомарно сохраняет ID главного сообщения топика экзаменов.
     """
-    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-    try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump({"main_msg_id": msg_id}, f)
-    except Exception as e:
-        log.error(f"Ошибка записи exam_topic_state.json: {e}")
+    sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
 
 def get_week_date_range_str(week_num: int) -> str:

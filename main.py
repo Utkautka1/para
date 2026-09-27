@@ -56,6 +56,22 @@ def start_background_services() -> None:
     asyncio.create_task(birthday_sync_loop())
 
 
+async def shutdown_resources() -> None:
+    """Корректно закрывает активные сессии, шедулер и подключения."""
+    log.info("Остановка бота: освобождение сетевых ресурсов...")
+    from services.notifier import scheduler
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
+    from core.redis import redis_client
+    if redis_client:
+        await redis_client.aclose()
+    from services.schedule_parser import _HTTP_CLIENT
+    if _HTTP_CLIENT and not _HTTP_CLIENT.is_closed:
+        await _HTTP_CLIENT.aclose()
+    await bot.session.close()
+    log.info("Все соединения закрыты. Остановка завершена.")
+
+
 async def main() -> None:
     """Основная асинхронная функция инициализации и запуска бота."""
     log.info("=" * 60)
@@ -72,7 +88,7 @@ async def main() -> None:
     except Exception as e:
         log.error(f"❌ Критическая ошибка при работе бота: {e}")
     finally:
-        await bot.session.close()
+        await shutdown_resources()
 
 
 if __name__ == "__main__":

@@ -160,18 +160,30 @@ async def send_solution_document(bot: Bot, msg: Message, doc_path: str) -> None:
     )
 
 
+async def _send_hw_error_feedback(msg: Message) -> None:
+    """Уведомляет пользователя об ошибке обработки ДЗ в топике."""
+    try:
+        err_text = "⚠️ <b>Не удалось решить ДЗ.</b>\nПроверьте читаемость файла или повторите попытку позже."
+        await msg.reply(err_text)
+    except Exception:
+        pass
+
+
 async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[bytes], prompt: Optional[str]) -> None:
     """
     Обрабатывает медиа ДЗ: решает в DeepSeek, создает документ и отправляет в топик решений.
     """
-    doc_path = f"/tmp/solution_{msg.message_id}.docx"
+    import uuid
+    doc_path = f"/tmp/solution_{uuid.uuid4().hex[:8]}_{msg.message_id}.docx"
     try:
+        await bot.send_chat_action(msg.chat.id, "upload_document", message_thread_id=msg.message_thread_id)
         solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
         create_solution_docx(solution, output_path=doc_path)
         await send_solution_document(bot, msg, doc_path)
         log.info(f"✅ Документ решения успешно отправлен в топик решений (msg_id={msg.message_id})")
     except Exception as e:
-        log.error(f"❌ Ошибка решения/отправки ДЗ (например, нет баланса API): {e}")
+        log.error(f"❌ Ошибка решения/отправки ДЗ (msg_id={msg.message_id}): {e}")
+        await _send_hw_error_feedback(msg)
     finally:
         if os.path.exists(doc_path):
             os.remove(doc_path)

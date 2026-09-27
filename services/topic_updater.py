@@ -27,34 +27,26 @@ _TOPIC_MAIN_MSG_ID: Optional[int] = None
 _SENT_REMINDERS: set = set()
 
 
+from utils.storage import sync_atomic_save_json, sync_load_json
+
+
 def load_topic_state() -> Optional[int]:
     """
     Загружает сохраненный ID главного сообщения из JSON файла.
 
     :return: ID сообщения или None
     """
-    if os.path.exists(STATE_FILE):
-        try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data.get("main_msg_id")
-        except Exception as e:
-            log.error(f"Ошибка чтения topic_state.json: {e}")
-    return None
+    data = sync_load_json(STATE_FILE, default={})
+    return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
 def save_topic_state(msg_id: Optional[int]) -> None:
     """
-    Сохраняет ID главного сообщения в JSON файл.
+    Атомарно сохраняет ID главного сообщения в JSON файл.
 
     :param msg_id: ID сообщения
     """
-    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-    try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump({"main_msg_id": msg_id}, f)
-    except Exception as e:
-        log.error(f"Ошибка записи topic_state.json: {e}")
+    sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
 
 async def send_temp_topic_reminder(lesson: Lesson) -> None:

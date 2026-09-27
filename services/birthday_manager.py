@@ -33,26 +33,7 @@ HISTORY_FILE = "data/birthday_history.json"
 CONGRATS_STATE_FILE = "data/birthday_congrats_state.json"
 
 
-def load_json_file(file_path: str, default: Any) -> Any:
-    """Безопасно загружает данные из JSON файла."""
-    if not os.path.exists(file_path):
-        return default
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        log.error(f"Ошибка чтения {file_path}: {e}")
-        return default
-
-
-def save_json_file(file_path: str, data: Any) -> None:
-    """Безопасно сохраняет данные в JSON файл с созданием директории."""
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        log.error(f"Ошибка записи в {file_path}: {e}")
+from utils.storage import sync_atomic_save_json as save_json_file, sync_load_json as load_json_file
 
 
 def calculate_days_and_age(item: Dict[str, Any], today: date) -> Dict[str, Any]:
