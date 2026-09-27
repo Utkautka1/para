@@ -57,12 +57,14 @@ async def main() -> None:
 
     from services.topic_updater import topic_sync_loop
     from services.exam_topic_updater import exam_topic_sync_loop
+    from services.birthday_manager import birthday_sync_loop
     from core.redis import init_redis
     await init_redis()
     setup_scheduler()
     await schedule_today_reminders_on_startup()
     asyncio.create_task(topic_sync_loop())
     asyncio.create_task(exam_topic_sync_loop())
+    asyncio.create_task(birthday_sync_loop())
 
 
     try:

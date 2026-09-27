@@ -22,6 +22,9 @@ logs/*
 # Local data storage
 data/*
 !data/.gitkeep
+!data/birthdays.json
+!data/birthday_wishes.json
+!data/custom_teachers.json
 
 # IDE files
 .idea/
