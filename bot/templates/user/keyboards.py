@@ -42,19 +42,22 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
 
 
 def _build_nav_rows(week_offset: int) -> List[List[InlineKeyboardButton]]:
-    """Формирует основные кнопки навигации по календарю и неделям."""
+    """Формирует основные кнопки навигации по календарю и неделям со стилями."""
     week_btn = (
-        InlineKeyboardButton(text="⏭ Неделя (След.)", callback_data="sched:week_next")
+        InlineKeyboardButton(text="⏭ Неделя (След.)", callback_data="sched:week_next", style="primary")
         if week_offset == 0
-        else InlineKeyboardButton(text="⏮ Неделя (Тек.)", callback_data="sched:week")
+        else InlineKeyboardButton(text="⏮ Неделя (Тек.)", callback_data="sched:week", style="primary")
     )
     return [
         [
-            InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today"),
-            InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow")
+            InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
+            InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="primary")
         ],
-        [week_btn, InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh")],
-        [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu")]
+        [
+            week_btn,
+            InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="success")
+        ],
+        [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="primary")]
     ]
 
 
