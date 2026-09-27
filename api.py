@@ -43,4 +43,5 @@ if __name__ == "__main__":
     log.info("ЗАПУСК Internal API (para-api)")
     log.info("  Порт: 8000 | Docs: отключены | Auth: X-API-Key")
     log.info("=" * 60)
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, log_level="warning")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
+
