@@ -1,276 +1,143 @@
 """
-Хэндлер обработки новых ДЗ в целевом топике (ID 405).
+Хэндлер перехвата новых ДЗ в целевом топике (ID 405).
 
-Отлавливает фото, документы (.docx, .pdf, .txt, исходный код) и тексты, отправляет в DeepSeek Vision,
-сохраняет ID обработанных сообщений в Redis и отправляет готовый файл в топик "Готовое ДЗ" (ID 3951).
+Отлавливает фото, документы (.docx, .pdf, .txt, код) и текстовые задачи,
+валидирует их, проверяет антиспам и ставит задачу в очередь Redis (hw:tasks:queue)
+для фонового воркера para-solver.
 """
 
-import io
-import os
-from typing import Optional, List, Tuple
+import hashlib
+from typing import Optional, Tuple
 from aiogram import Router, F, Bot
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, ReactionTypeEmoji
 import config
 from core.logger import get_logger
 from services.redis_cache import (
-    is_message_processed,
-    mark_message_processed,
     check_user_rate_limit,
     is_hash_processed,
-    mark_hash_processed
+    is_message_processed,
+    mark_hash_processed,
+    mark_message_processed,
+    push_hw_task
 )
-from services.deepseek_solver import solve_homework
-from services.doc_generator import create_solution_docx
 
 log = get_logger("hw_handler")
 router = Router()
 
-MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
-
-def build_original_post_link(chat_id: int, message_id: int) -> str:
-    """
-    Формирует прямую ссылку на оригинальное сообщение в Telegram.
-    """
-    clean_id = str(chat_id).replace("-100", "")
-    return f"https://t.me/c/{clean_id}/{message_id}"
-
-
-async def download_image_bytes(bot: Bot, file_id: str, file_size: Optional[int]) -> Optional[bytes]:
-    """
-    Безопасно скачивает байты файла с ограничением по размеру.
-    """
-    if file_size and file_size > MAX_FILE_SIZE_BYTES:
-        log.warning(f"Файл превышает лимит {MAX_FILE_SIZE_BYTES} байт. Пропускаем.")
-        return None
-    try:
-        file = await bot.get_file(file_id)
-        file_io = await bot.download_file(file.file_path)
-        return file_io.read()
-    except Exception as e:
-        log.error(f"Ошибка скачивания файла {file_id}: {e}")
-        return None
-
-
-def extract_docx_content(doc_bytes: bytes) -> Tuple[str, List[bytes]]:
-    """
-    Извлекает весь текст и картинки из .docx файла.
-    """
-    import docx
-    doc = docx.Document(io.BytesIO(doc_bytes))
-    full_text = []
-    for p in doc.paragraphs:
-        if p.text.strip():
-            full_text.append(p.text.strip())
-    for table in doc.tables:
-        for row in table.rows:
-            full_text.append(" | ".join(cell.text.strip() for cell in row.cells if cell.text.strip()))
-
-    images = []
-    for rel in doc.part.rels.values():
-        if "image" in rel.target_ref and hasattr(rel.target_part, 'blob'):
-            images.append(rel.target_part.blob)
-
-    return "\n".join(full_text), images
-
-
-def extract_pdf_content(doc_bytes: bytes) -> str:
-    """
-    Извлекает весь текст из PDF документа.
-    """
-    try:
-        import pypdf
-        reader = pypdf.PdfReader(io.BytesIO(doc_bytes))
-        pages = [page.extract_text() for page in reader.pages if page.extract_text()]
-        return "\n\n".join(pages)
-    except Exception as e:
-        log.error(f"Ошибка парсинга PDF: {e}")
-        return ""
-
-
-def parse_document_bytes(doc_bytes: bytes, fname: str, mime: Optional[str], prompt: str) -> Tuple[Optional[bytes], Optional[str]]:
-    """
-    Разбирает байты документа (изображение, docx, pdf или текст).
-    """
-    fn = fname.lower()
-    if (mime and mime.startswith("image")) or fn.endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp')):
-        return doc_bytes, prompt or None
-
-    if fn.endswith('.docx'):
-        d_text, d_imgs = extract_docx_content(doc_bytes)
-        combined = f"{prompt}\n\n[Текст из {fname}]:\n{d_text}".strip()
-        return (d_imgs[0] if d_imgs else None), combined or None
-
-    if fn.endswith('.pdf'):
-        pdf_text = extract_pdf_content(doc_bytes)
-        combined = f"{prompt}\n\n[Текст из PDF {fname}]:\n{pdf_text}".strip()
-        return None, combined or None
-
-    if fn.endswith(('.txt', '.md', '.py', '.json', '.csv', '.c', '.cpp', '.js', '.pas', '.java')):
-        d_text = doc_bytes.decode('utf-8', errors='ignore')
-        return None, f"{prompt}\n\n[Содержимое {fname}]:\n{d_text}".strip()
-
-    return None, prompt or None
-
-
-def combine_prompt_and_instructions(msg: Message, target_msg: Message) -> str:
-    """
-    Объединяет инструкцию из подписи/текста реплая и основное задание.
-    """
+def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
+    """Объединяет инструкцию из подписи/текста реплая и основное задание."""
     u_text = msg.text or msg.caption or ""
-    t_text = target_msg.caption or target_msg.text or ""
+    t_text = target.caption or target.text or ""
     if u_text and t_text and u_text != t_text:
-        return f"Инструкция пользователя: {u_text}\nТекст задания: {t_text}"
+        return f"Инструкция: {u_text}\nЗадание: {t_text}"
     return u_text or t_text or ""
 
 
-async def extract_homework_payload(bot: Bot, msg: Message, target_msg: Message) -> Tuple[Optional[bytes], Optional[str]]:
-    """
-    Извлекает картинку и полный промпт с пользовательскими инструкциями.
-    """
-    m = msg if (msg.photo or msg.document) else target_msg
-    prompt = combine_prompt_and_instructions(msg, target_msg)
-
-    if m.photo:
-        p_bytes = await download_image_bytes(bot, m.photo[-1].file_id, m.photo[-1].file_size)
-        return p_bytes, prompt or None
-
-    if m.document:
-        doc = m.document
-        doc_b = await download_image_bytes(bot, doc.file_id, doc.file_size)
-        if not doc_b:
-            return None, prompt or None
-        return parse_document_bytes(doc_b, doc.file_name or "doc", doc.mime_type, prompt)
-
-    return None, prompt or None
-
-
-async def send_solution_document(bot: Bot, msg: Message, doc_path: str) -> None:
-    """
-    Отправляет готовый файл решения в Telegram топик решений.
-    """
-    orig_link = build_original_post_link(msg.chat.id, msg.message_id)
-    caption = f"✅ <b>Готовое решение ДЗ</b>\n\n📌 Ссылка на оригинальное задание: {orig_link}"
-    await bot.send_document(
-        chat_id=config.TOPIC_CHAT_ID,
-        message_thread_id=config.HW_OUTPUT_TOPIC_THREAD_ID,
-        document=FSInputFile(doc_path, filename=f"Решение_ДЗ_{msg.message_id}.docx"),
-        caption=caption,
-        parse_mode="HTML"
-    )
-
-
-async def _send_hw_error_feedback(msg: Message) -> None:
-    """Уведомляет пользователя об ошибке обработки ДЗ в топике."""
-    try:
-        err_text = "⚠️ <b>Не удалось решить ДЗ.</b>\nПроверьте читаемость файла или повторите попытку позже."
-        await msg.reply(err_text)
-    except Exception:
-        pass
-
-
-async def process_homework_media(bot: Bot, msg: Message, img_bytes: Optional[bytes], prompt: Optional[str]) -> None:
-    """
-    Обрабатывает медиа ДЗ: решает в DeepSeek, создает документ и отправляет в топик решений.
-    """
-    import uuid
-    doc_path = f"/tmp/solution_{uuid.uuid4().hex[:8]}_{msg.message_id}.docx"
-    try:
-        await bot.send_chat_action(msg.chat.id, "upload_document", message_thread_id=msg.message_thread_id)
-        solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
-        create_solution_docx(solution, output_path=doc_path)
-        await send_solution_document(bot, msg, doc_path)
-        log.info(f"✅ Документ решения успешно отправлен в топик решений (msg_id={msg.message_id})")
-    except Exception as e:
-        log.error(f"❌ Ошибка решения/отправки ДЗ (msg_id={msg.message_id}): {e}")
-        await _send_hw_error_feedback(msg)
-    finally:
-        if os.path.exists(doc_path):
-            os.remove(doc_path)
-
-
 def is_valid_homework_prompt(text: Optional[str], has_media: bool) -> bool:
-    """
-    Проверяет, содержит ли сообщение учебную задачу, картинку или документ.
-    """
+    """Проверяет, содержит ли сообщение учебную задачу, картинку или документ."""
     if has_media:
         return True
     if not text:
         return False
-
     t = text.lower().strip()
     flood_words = {"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"}
     if t in flood_words or len(t) < 5:
         return False
+    kw_list = ["реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача", "задание", "номер", "№", "=", "+", "-"]
+    return any(kw in t for kw in kw_list) or len(t) >= 25
 
-    hw_keywords = ["реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача", "задание", "номер", "№", "=", "+", "-"]
-    return any(kw in t for kw in hw_keywords) or len(t) >= 25
+
+def extract_media_meta(msg: Message, target: Message) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], int]:
+    """Извлекает идентификаторы и метаданные медиафайла (фото или документа)."""
+    m = msg if (msg.photo or msg.document) else target
+    if m.photo:
+        p = m.photo[-1]
+        return p.file_id, p.file_unique_id, "image.jpg", "image/jpeg", p.file_size or 0
+    if m.document:
+        d = m.document
+        return d.file_id, d.file_unique_id, d.file_name or "doc", d.mime_type, d.file_size or 0
+    return None, None, None, None, 0
 
 
-def compute_prompt_hash(text: Optional[str], img_bytes: Optional[bytes]) -> str:
-    """
-    Вычисляет SHA256 хэш промпта и картинки для защиты от абуза дубликатами.
-    """
-    import hashlib
+def compute_content_hash(text: Optional[str], unique_id: Optional[str]) -> str:
+    """Вычисляет SHA256 хэш промпта и уникального ID файла для защиты от дубликатов."""
     hasher = hashlib.sha256()
     if text:
-        hasher.update(text.encode('utf-8'))
-    if img_bytes:
-        hasher.update(img_bytes)
+        hasher.update(text.encode("utf-8"))
+    if unique_id:
+        hasher.update(unique_id.encode("utf-8"))
     return hasher.hexdigest()
 
 
-async def check_and_mark_duplicate_hash(text: Optional[str], img_bytes: Optional[bytes]) -> bool:
-    """
-    Проверяет и маркирует SHA256 хэш контента. Возвращает True если это дубликат.
-    """
-    c_hash = compute_prompt_hash(text, img_bytes)
-    if await is_hash_processed(c_hash):
-        return True
-    await mark_hash_processed(c_hash)
-    return False
-
-
-async def is_homework_msg_allowed(msg: Message, target_msg: Message, user_id: int) -> bool:
-    """
-    Проверяет рат-лимит, статус обработки и валидность медиа/текста.
-    """
+async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
+    """Проверяет лимиты пользователя, статус обработки и наличие учебного содержимого."""
     if not await check_user_rate_limit(user_id):
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
         return False
-
     if await is_message_processed(msg.message_id):
         log.debug(f"Сообщение {msg.message_id} уже обработано. Пропуск.")
         return False
-
-    has_media = bool(msg.photo or msg.document or target_msg.photo or target_msg.document)
-    text_prompt = msg.text or msg.caption or target_msg.caption or target_msg.text
-
-    if not is_valid_homework_prompt(text_prompt, has_media):
-        log.info(f"ℹ️ Игнорируем бытовое текстовое сообщение без задания (msg_id={msg.message_id}): '{text_prompt}'")
+    has_media = bool(msg.photo or msg.document or target.photo or target.document)
+    prompt = combine_prompt_and_instructions(msg, target)
+    if not is_valid_homework_prompt(prompt, has_media):
+        log.info(f"ℹ️ Пропуск сообщения без задания (msg_id={msg.message_id}): '{prompt}'")
         return False
-
     return True
+
+
+async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
+    """Ставит реакцию-подтверждение о принятии задачи в очередь нейросети."""
+    try:
+        await bot.set_message_reaction(
+            chat_id=msg.chat.id,
+            message_id=msg.message_id,
+            reaction=[ReactionTypeEmoji(emoji="👀")]
+        )
+    except Exception as e:
+        log.debug(f"Не удалось поставить реакцию на msg_id={msg.message_id}: {e}")
+
+
+async def dispatch_hw_task(
+    bot: Bot,
+    msg: Message,
+    user_id: int,
+    prompt: str,
+    meta: Tuple[Optional[str], Optional[str], Optional[str], int]
+) -> None:
+    """Формирует payload и отправляет задачу в очередь воркера para-solver."""
+    f_id, f_name, mime, f_size = meta
+    task = {
+        "chat_id": msg.chat.id,
+        "message_id": msg.message_id,
+        "message_thread_id": msg.message_thread_id,
+        "user_id": user_id,
+        "prompt": prompt,
+        "file_id": f_id,
+        "file_name": f_name,
+        "mime_type": mime,
+        "file_size": f_size
+    }
+    await push_hw_task(task)
+    await acknowledge_hw_task(bot, msg)
 
 
 @router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
-    """
-    Отлавливает новое ДЗ (фото, docx, файлы, текст) с защитой от спама.
-    """
+    """Перехватывает сообщение с ДЗ и отправляет в очередь воркера solver."""
     user_id = msg.from_user.id if msg.from_user else 0
-    target_msg = msg.reply_to_message if msg.reply_to_message else msg
-
-    if not await is_homework_msg_allowed(msg, target_msg, user_id):
+    target = msg.reply_to_message if msg.reply_to_message else msg
+    if not await is_hw_allowed(msg, target, user_id):
         return
 
-    img_bytes, text_prompt = await extract_homework_payload(bot, msg, target_msg)
-
-    if await check_and_mark_duplicate_hash(text_prompt, img_bytes):
-        log.warning(f"⚠️ Повтор ДЗ по SHA256 хэшу (msg_id={msg.message_id}). Пропуск.")
+    prompt = combine_prompt_and_instructions(msg, target)
+    f_id, u_id, f_name, mime, f_size = extract_media_meta(msg, target)
+    c_hash = compute_content_hash(prompt, u_id)
+    if await is_hash_processed(c_hash):
+        log.warning(f"⚠️ Повтор ДЗ по SHA256 (msg_id={msg.message_id}). Пропуск.")
         return
 
+    await mark_hash_processed(c_hash)
     await mark_message_processed(msg.message_id)
-
-    log.info(f"🚀 Запуск авторешения ДЗ в DeepSeek (msg_id={msg.message_id})")
-    await process_homework_media(bot, msg, img_bytes, text_prompt)
+    meta = (f_id, f_name, mime, f_size)
+    await dispatch_hw_task(bot, msg, user_id, prompt, meta)
