@@ -12,13 +12,13 @@ from services.schedule_parser import Lesson
 
 def format_lesson_button_text(lesson: Lesson) -> str:
     """
-    Формирует лаконичный текст кнопки подключения с зеленым акцентом.
+    Формирует лаконичный текст кнопки подключения к дистанционной паре.
 
     :param lesson: Объект занятия
     :return: Текст для Inline-кнопки
     """
     sg = f" (П/Г {lesson.subgroup})" if lesson.subgroup > 0 else ""
-    return f"🟢 {lesson.period + 1}-я пара{sg}"
+    return f"🔗 {lesson.period + 1}-я пара{sg}"
 
 
 def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]]:
