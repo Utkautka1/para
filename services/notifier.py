@@ -6,7 +6,8 @@
 """
 
 from datetime import datetime, timedelta, time as dtime
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import ALLOWED_USER_ID, DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE, REMINDER_OFFSET_MINUTES, TIMEZONE
@@ -23,12 +24,10 @@ scheduler = AsyncIOScheduler(timezone=TIMEZONE)
 _NOTIFIED_MISSING_TEACHERS: set = set()
 
 
-def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, Any]:
+def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> Tuple[str, InlineKeyboardMarkup]:
     """
     Формирует текст и клавиатуру предупреждения об отсутствии преподавателя.
     """
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
     text = (
         f"⚠️ <b>Преподаватель не найден в таблице!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
