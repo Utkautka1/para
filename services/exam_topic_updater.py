@@ -107,25 +107,43 @@ async def _pin_exam_silently(message_id: int) -> None:
         log.warning(f"Не удалось закрепить exam MSG_ID={message_id}: {e}")
 
 
+async def create_exam_message(text: str) -> int:
+    """
+    Создает и закрепляет главное сообщение в топике экзаменов.
+    """
+    msg = await bot.send_message(
+        chat_id=TOPIC_CHAT_ID, message_thread_id=EXAM_TOPIC_THREAD_ID, text=text
+    )
+    save_exam_topic_state(msg.message_id)
+    await _pin_exam_silently(msg.message_id)
+    log.info(f"Сообщение экзаменов создано и закреплено: MSG_ID={msg.message_id}")
+    return msg.message_id
+
+
+async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool:
+    """
+    Обрабатывает ошибку редактирования сообщения топика экзаменов.
+    """
+    global _EXAM_MAIN_MSG_ID
+    if "not modified" in err_str:
+        return True
+    if retry:
+        log.error("❌ Повторная ошибка создания exam-сообщения")
+        return False
+    log.warning(f"⚠️ Ошибка редактирования exam MSG_ID={_EXAM_MAIN_MSG_ID}, пересоздаём...")
+    _EXAM_MAIN_MSG_ID = None
+    save_exam_topic_state(None)
+    return await send_or_edit_exam_msg(text, _retry=True)
+
+
 async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool:
     """
     Отправляет или редактирует главное сообщение в топике экзаменов.
-
-    При создании — автоматически закрепляет.
-    При ошибке редактирования — пересоздаёт (один раз).
-
-    :return: True если сообщение обновлено/создано
     """
     global _EXAM_MAIN_MSG_ID
     try:
         if _EXAM_MAIN_MSG_ID is None:
-            msg = await bot.send_message(
-                chat_id=TOPIC_CHAT_ID, message_thread_id=EXAM_TOPIC_THREAD_ID, text=text
-            )
-            _EXAM_MAIN_MSG_ID = msg.message_id
-            save_exam_topic_state(_EXAM_MAIN_MSG_ID)
-            await _pin_exam_silently(_EXAM_MAIN_MSG_ID)
-            log.info(f"Сообщение экзаменов создано и закреплено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+            _EXAM_MAIN_MSG_ID = await create_exam_message(text)
             return True
         await bot.edit_message_text(
             chat_id=TOPIC_CHAT_ID, message_id=_EXAM_MAIN_MSG_ID, text=text
@@ -133,17 +151,7 @@ async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool:
         log.info(f"✅ Сообщение экзаменов обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
         return True
     except TelegramBadRequest as e:
-        err = str(e).lower()
-        if "not modified" in err:
-            log.info(f"exam_topic: 'not modified' (MSG_ID={_EXAM_MAIN_MSG_ID})")
-            return True
-        if _retry:
-            log.error(f"❌ Повторная ошибка создания exam-сообщения: {e}")
-            return False
-        log.warning(f"⚠️ Ошибка редактирования exam MSG_ID={_EXAM_MAIN_MSG_ID} ({e}), пересоздаём...")
-        _EXAM_MAIN_MSG_ID = None
-        save_exam_topic_state(None)
-        return await send_or_edit_exam_msg(text, _retry=True)
+        return await handle_exam_edit_error(text, str(e).lower(), _retry)
     except Exception as e:
         log.error(f"❌ Ошибка обновления топика экзаменов: {type(e).__name__}: {e}")
         return False

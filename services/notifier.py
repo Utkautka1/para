@@ -23,32 +23,35 @@ scheduler = AsyncIOScheduler(timezone=TIMEZONE)
 _NOTIFIED_MISSING_TEACHERS: set = set()
 
 
-async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None:
+def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, Any]:
     """
-    Уведомляет администратора в ЛС, если преподаватель дистанционной пары не найден.
-
-    :param raw_teacher: Сырые ФИО преподавателя из API
-    :param subj_name: Название предмета
+    Формирует текст и клавиатуру предупреждения об отсутствии преподавателя.
     """
-    if not raw_teacher or raw_teacher in _NOTIFIED_MISSING_TEACHERS:
-        return
-    _NOTIFIED_MISSING_TEACHERS.add(raw_teacher)
-
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
     text = (
         f"⚠️ <b>Преподаватель не найден в таблице!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📚 <b>Предмет:</b> {subj_name}\n"
         f"👨‍🏫 <b>Преподаватель:</b> {raw_teacher}\n\n"
-        f"<i>Пара проходит в дистанционном формате, но ссылки на Zoom/Телемост нет в документе Яндекс Диска.</i>"
+        f"<i>Пара проходит в дистанционном формате, но ссылки нет в документе Яндекс Диска.</i>"
     )
     last_name = raw_teacher.split()[0].lower()
     kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(
-            text="➕ Добавить контакты",
-            callback_data=f"admin:add_t:{last_name}"
-        )
+        InlineKeyboardButton(text="➕ Добавить контакты", callback_data=f"admin:add_t:{last_name}")
     ]])
+    return text, kb
+
+
+async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None:
+    """
+    Уведомляет администратора в ЛС, если преподаватель дистанционной пары не найден.
+    """
+    if not raw_teacher or raw_teacher in _NOTIFIED_MISSING_TEACHERS:
+        return
+    _NOTIFIED_MISSING_TEACHERS.add(raw_teacher)
+
+    text, kb = build_missing_teacher_alert(raw_teacher, subj_name)
     log.warning(f"Уведомление админа о fehlющем преподавателе: {raw_teacher}")
     await send_to_user(text, reply_markup=kb)
 
