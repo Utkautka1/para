@@ -124,46 +124,46 @@ def format_day_schedule(target_date: date, lessons: List[Lesson]) -> str:
     return header + "\n\n".join(cards)
 
 
-def format_week_day_block(day_date: date, lessons: List[Lesson]) -> str:
-    """
-    Формирует красивый блок одного дня для недельного просмотра.
+def format_week_lesson_loc(lesson: Lesson) -> str:
+    """Формирует компактную строку локации для недельного обзора."""
+    if lesson.is_remote:
+        return "🌐 Дистанционно"
+    if "вознесен" in lesson.address.lower():
+        campus = "Вознесенский"
+    else:
+        campus = "Цветочная"
+    return f"📍 Каб. {lesson.room} ({campus})"
 
-    :param day_date: Дата дня
-    :param lessons: Список пар на этот день
-    :return: HTML фрагмент дня
-    """
+
+def format_week_lesson_card(lesson: Lesson) -> str:
+    """Формирует отдельную карточку пары в блоке цитаты blockquote."""
+    type_suffix = f" ({lesson.lesson_type})" if lesson.lesson_type else ""
+    stream_badge = " • 🔗 поток" if lesson.is_stream else ""
+    sg_badge = f" • 👥 {lesson.subgroup} п/г" if lesson.subgroup > 0 else ""
+    loc = format_week_lesson_loc(lesson)
+    return (
+        f"<blockquote>▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){stream_badge}{sg_badge}\n"
+        f"<b>{lesson.subject}</b>{type_suffix}\n"
+        f"🏛 <i>{lesson.teacher}</i> • {loc}</blockquote>"
+    )
+
+
+def format_week_day_block(day_date: date, lessons: List[Lesson]) -> str:
+    """Формирует блок одного учебного дня для недельного расписания."""
     w_str = WEEKDAYS_RU[day_date.weekday()]
     d_str = day_date.strftime("%d.%m")
-    day_block = f"🗓 <b>{w_str}, {d_str}</b>\n"
+    header = f"🗓 <b>{w_str}, {d_str}</b>\n"
     if not lessons:
-        return day_block + "  <i>Пар нет</i>\n"
-
-    cards = []
-    for l in lessons:
-        type_str = f" ({l.lesson_type})" if l.lesson_type else ""
-        if l.is_remote:
-            loc = "🌐 <i>Дистанционно</i>"
-        else:
-            loc = f"📍 <i>{l.address}</i> (Каб. {l.room})"
-        card = (
-            f"  ▪️ <b>{l.period + 1} пара</b> (<code>{l.time_str}</code>) • {loc}\n"
-            f"  <b>{l.subject}</b>{type_str}\n"
-            f"  👨‍🏫 <i>{l.teacher}</i>"
-        )
-        cards.append(card)
-    return day_block + "\n\n".join(cards) + "\n"
+        return f"{header}<blockquote><i>Занятий нет — свободный день! ☕️</i></blockquote>"
+    cards = [format_week_lesson_card(l) for l in lessons]
+    return f"{header}" + "\n".join(cards)
 
 
 def format_week_schedule(days_data: List[Tuple[date, List[Lesson]]]) -> str:
-    """
-    Формирует наглядное, красиво сверстанное расписание на неделю.
-
-    :param days_data: Список кортежей (дата, пары)
-    :return: Сводный HTML текст
-    """
-    header = f"🎓 <b>РАСПИСАНИЕ НА НЕДЕЛЮ ({GROUP_NAME})</b>\n{'━' * 28}\n\n"
+    """Формирует аккуратное, структурированное расписание на неделю."""
+    header = f"🎓 <b>РАСПИСАНИЕ НА НЕДЕЛЮ ({GROUP_NAME})</b>\n────────────────────────────\n\n"
     day_blocks = [format_week_day_block(d, l) for d, l in days_data]
-    return header + "\n".join(day_blocks)
+    return header + "\n\n".join(day_blocks)
 
 
 def format_reminder_text(lesson: Lesson) -> str:

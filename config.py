@@ -55,6 +55,8 @@ TOPIC_CHAT_ID: int = int(get_required_env("TOPIC_CHAT_ID"))
 TOPIC_THREAD_ID: int = int(get_required_env("TOPIC_THREAD_ID"))
 EXAM_TOPIC_THREAD_ID: int = int(get_required_env("EXAM_TOPIC_THREAD_ID"))
 FLOOD_TOPIC_THREAD_ID: int = int(os.getenv("FLOOD_TOPIC_THREAD_ID", "4"))
+BIRTHDAY_TOPIC_THREAD_ID: int = int(os.getenv("BIRTHDAY_TOPIC_THREAD_ID", "6269"))
+IMPORTANT_TOPIC_THREAD_ID: int = int(os.getenv("IMPORTANT_TOPIC_THREAD_ID", "2"))
 EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
 
 # Настройки прокси (опционально)
