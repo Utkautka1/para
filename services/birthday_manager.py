@@ -132,6 +132,21 @@ def format_today_block(today_items: List[Dict[str, Any]]) -> List[str]:
     return lines
 
 
+def format_age_badge(age: int) -> str:
+    """
+    Формирует строку возраста с правильным склонением (лет/год/года).
+    """
+    last_two = age % 100
+    last_one = age % 10
+    if 11 <= last_two <= 14:
+        return f"{age} лет"
+    if last_one == 1:
+        return f"{age} год"
+    if 2 <= last_one <= 4:
+        return f"{age} года"
+    return f"{age} лет"
+
+
 def format_upcoming_block(items: List[Dict[str, Any]]) -> List[str]:
     """
     Формирует блок ближайших именинников в цитате.
@@ -148,7 +163,8 @@ def format_upcoming_block(items: List[Dict[str, Any]]) -> List[str]:
         d_str = f"{i['day']:02d}.{i['month']:02d}"
         tag = format_person_tag(i)
         badge = format_days_left_badge(i["days_until"])
-        lines.append(f"▫️ <b>{d_str}</b> • {tag} — <b>{i['turning_age']} лет</b> ({badge})")
+        age_str = format_age_badge(i["turning_age"])
+        lines.append(f"▫️ <b>{d_str}</b> • {tag} — <b>{age_str}</b> ({badge})")
     lines.append("</blockquote>\n")
     return lines
 
@@ -162,7 +178,7 @@ def season_sort_key(item: Dict[str, Any], months: List[int]) -> int:
 
 def format_season_block(title: str, months: List[int], all_items: List[Dict[str, Any]]) -> List[str]:
     """
-    Форматирует список именинников для одного сезона.
+    Форматирует список именинников для одного сезона с указанием возраста.
     """
     s_items = [i for i in all_items if i["month"] in months]
     s_items.sort(key=lambda x: season_sort_key(x, months))
@@ -173,7 +189,8 @@ def format_season_block(title: str, months: List[int], all_items: List[Dict[str,
     for i in s_items:
         d_str = f"{i['day']:02d}.{i['month']:02d}"
         tag = format_person_tag(i)
-        lines.append(f"▫️ <b>{d_str}</b> • {tag}")
+        age_str = format_age_badge(i["turning_age"])
+        lines.append(f"▫️ <b>{d_str}</b> • {tag} — {age_str}")
     lines.append("")
     return lines
 
