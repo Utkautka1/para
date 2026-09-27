@@ -5,6 +5,7 @@
 (Цветочная ул., 8 / Вознесенский пр., 44) и реквизитами подключений.
 """
 
+import html
 from datetime import date
 from typing import List, Optional, Tuple
 from config import GROUP_NAME
@@ -16,29 +17,31 @@ WEEKDAYS_RU = [
 
 
 def format_lesson_card(lesson: Lesson) -> str:
-    """
-    Формирует подробную карточку пары с подгруппой и бейджем потока.
-
-    :param lesson: Объект пары
-    :return: HTML-текст карточки
-    """
-    type_suffix = f" ({lesson.lesson_type})" if lesson.lesson_type else ""
-    stream_suffix = " • 🔗 <b>поток</b>" if lesson.is_stream else ""
-    sg_suffix = f" • 👥 <b>Подгруппа {lesson.subgroup}</b>" if lesson.subgroup > 0 else ""
-    loc_str = "🌐 Дистанционно" if lesson.is_remote else f"📍 🏢 {lesson.address} (Каб. {lesson.room})"
+    """Формирует подробную карточку пары с безопасным HTML-экранированием."""
+    subj = html.escape(lesson.subject)
+    teacher = html.escape(lesson.teacher)
+    l_type = f" ({html.escape(lesson.lesson_type)})" if lesson.lesson_type else ""
+    stream = " • 🔗 <b>поток</b>" if lesson.is_stream else ""
+    sg = f" • 👥 <b>Подгруппа {lesson.subgroup}</b>" if lesson.subgroup > 0 else ""
+    addr = html.escape(lesson.address)
+    room = html.escape(lesson.room)
+    loc = "🌐 Дистанционно" if lesson.is_remote else f"📍 🏢 {addr} (Каб. {room})"
 
     card = (
-        f"▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){sg_suffix}{stream_suffix}\n"
-        f"<b>{lesson.subject}</b>{type_suffix}\n"
-        f"🏛 <i>{lesson.teacher}</i>\n"
-        f"{loc_str}"
+        f"▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){sg}{stream}\n"
+        f"<b>{subj}</b>{l_type}\n"
+        f"🏛 <i>{teacher}</i>\n"
+        f"{loc}"
     )
     if lesson.is_remote and (lesson.remote_passcode or lesson.remote_meeting_id):
         if lesson.remote_meeting_id:
-            card += f"\n🆔 <b>Идентификатор Zoom:</b> <code>{lesson.remote_meeting_id}</code>"
+            m_id = html.escape(lesson.remote_meeting_id)
+            card += f"\n🆔 <b>Идентификатор Zoom:</b> <code>{m_id}</code>"
         if lesson.remote_passcode:
-            card += f"\n🔐 <b>Код доступа:</b> <code>{lesson.remote_passcode}</code>"
+            p_code = html.escape(lesson.remote_passcode)
+            card += f"\n🔐 <b>Код доступа:</b> <code>{p_code}</code>"
     return card
+
 
 
 def format_minutes(total_minutes: int) -> str:
@@ -140,20 +143,23 @@ def format_week_lesson_loc(lesson: Lesson) -> str:
         campus = "Вознесенский"
     else:
         campus = "Цветочная"
-    return f"📍 Каб. {lesson.room} ({campus})"
+    return f"📍 Каб. {html.escape(lesson.room)} ({campus})"
 
 
 def format_week_lesson_card(lesson: Lesson) -> str:
-    """Формирует отдельную карточку пары в блоке цитаты blockquote."""
-    type_suffix = f" ({lesson.lesson_type})" if lesson.lesson_type else ""
+    """Формирует отдельную карточку пары в цитате с HTML-экранированием."""
+    subj = html.escape(lesson.subject)
+    teacher = html.escape(lesson.teacher)
+    type_suffix = f" ({html.escape(lesson.lesson_type)})" if lesson.lesson_type else ""
     stream_badge = " • 🔗 поток" if lesson.is_stream else ""
     sg_badge = f" • 👥 {lesson.subgroup} п/г" if lesson.subgroup > 0 else ""
     loc = format_week_lesson_loc(lesson)
     return (
         f"<blockquote>▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){stream_badge}{sg_badge}\n"
-        f"<b>{lesson.subject}</b>{type_suffix}\n"
-        f"🏛 <i>{lesson.teacher}</i> • {loc}</blockquote>"
+        f"<b>{subj}</b>{type_suffix}\n"
+        f"🏛 <i>{teacher}</i> • {loc}</blockquote>"
     )
+
 
 
 def format_week_day_block(day_date: date, lessons: List[Lesson]) -> str:

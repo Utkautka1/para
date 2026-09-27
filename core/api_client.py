@@ -5,6 +5,7 @@ HTTP-клиент для обращения к внутреннему API (para-
 Клиент персистентный — переиспользует TCP-соединение через keep-alive.
 """
 
+import asyncio
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -39,63 +40,56 @@ async def close_api_client() -> None:
         _CLIENT = None
 
 
+async def _api_get(path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Выполняет GET-запрос к para-api с retry при временном сетевом сбое."""
+    for attempt in range(2):
+        try:
+            res = await _get_client().get(path, params=params)
+            res.raise_for_status()
+            return res.json()
+        except (httpx.TransportError, httpx.HTTPStatusError) as e:
+            if attempt == 0:
+                log.warning(f"⚠️ Сбой запроса к {path} ({e}), повтор через 1 сек...")
+                await asyncio.sleep(1.0)
+            else:
+                log.error(f"❌ Ошибка запроса к {path} после повтора: {e}")
+                raise
+
+
 async def fetch_day_schedule(
     target_date: Optional[date] = None,
     force_refresh: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Запрашивает расписание на день через GET /schedule/day.
-
-    :return: {"date": "...", "lessons": [...]}
-    """
+    """Запрашивает расписание на день через GET /schedule/day."""
     params: Dict[str, Any] = {"force_refresh": force_refresh}
     if target_date:
         params["target_date"] = target_date.isoformat()
-    res = await _get_client().get("/schedule/day", params=params)
-    res.raise_for_status()
-    return res.json()
+    return await _api_get("/schedule/day", params=params)
 
 
 async def fetch_week_schedule(
     monday: Optional[date] = None,
     force_refresh: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Запрашивает расписание на неделю через GET /schedule/week.
-
-    :return: {"monday": "...", "days": [...]}
-    """
+    """Запрашивает расписание на неделю через GET /schedule/week."""
     params: Dict[str, Any] = {"force_refresh": force_refresh}
     if monday:
         params["monday"] = monday.isoformat()
-    res = await _get_client().get("/schedule/week", params=params)
-    res.raise_for_status()
-    return res.json()
+    return await _api_get("/schedule/week", params=params)
 
 
 async def fetch_exams() -> Dict[str, Any]:
-    """
-    Запрашивает список экзаменов через GET /exams.
-
-    :return: {"count": N, "exams": [...]}
-    """
-    res = await _get_client().get("/exams")
-    res.raise_for_status()
-    return res.json()
+    """Запрашивает список экзаменов через GET /exams."""
+    return await _api_get("/exams")
 
 
 async def fetch_teachers(
     force_refresh: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Запрашивает контакты преподавателей через GET /teachers.
-
-    :return: {"count": N, "teachers": {...}}
-    """
+    """Запрашивает контакты преподавателей через GET /teachers."""
     params = {"force_refresh": force_refresh}
-    res = await _get_client().get("/teachers", params=params)
-    res.raise_for_status()
-    return res.json()
+    return await _api_get("/teachers", params=params)
+
 
 
 async def get_api_schedule_for_date(

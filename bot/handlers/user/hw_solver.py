@@ -122,8 +122,12 @@ async def dispatch_hw_task(
     await acknowledge_hw_task(bot, msg)
 
 
-@router.message(F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
+@router.message(
+    (F.chat.id == config.TOPIC_CHAT_ID) &
+    (F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
+)
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
+
     """Перехватывает сообщение с ДЗ и отправляет в очередь воркера solver."""
     user_id = msg.from_user.id if msg.from_user else 0
     target = msg.reply_to_message if msg.reply_to_message else msg
