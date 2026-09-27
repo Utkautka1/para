@@ -28,8 +28,10 @@ log = get_logger("birthday_manager")
 
 BIRTHDAYS_FILE = "data/birthdays.json"
 WISHES_FILE = "data/birthday_wishes.json"
+STAROSTA_WISHES_FILE = "data/starosta_wishes.json"
 STATE_FILE = "data/birthday_topic_state.json"
 HISTORY_FILE = "data/birthday_history.json"
+STAROSTA_HISTORY_FILE = "data/starosta_history.json"
 CONGRATS_STATE_FILE = "data/birthday_congrats_state.json"
 
 
@@ -195,11 +197,11 @@ def format_birthday_registry_text(items: List[Dict[str, Any]]) -> str:
     return "\n".join(lines).strip()
 
 
-def pick_unique_wish(person_key: str, wishes: List[str]) -> str:
+def pick_unique_wish(person_key: str, wishes: List[str], history_file: str = HISTORY_FILE) -> str:
     """Выбирает случайное неповторяющееся поздравление для участника."""
     if not wishes:
         return "Желаем счастья, здоровья, успехов в учёбе и исполнения всех желаний!"
-    history: Dict[str, List[int]] = load_json_file(HISTORY_FILE, {})
+    history: Dict[str, List[int]] = load_json_file(history_file, {})
     used_indices = set(history.get(person_key, []))
     available = [idx for idx in range(len(wishes)) if idx not in used_indices]
     if not available:
@@ -208,7 +210,7 @@ def pick_unique_wish(person_key: str, wishes: List[str]) -> str:
     choice_idx = random.choice(available)
     used_indices.add(choice_idx)
     history[person_key] = list(used_indices)
-    save_json_file(HISTORY_FILE, history)
+    save_json_file(history_file, history)
     return wishes[choice_idx]
 
 
@@ -225,50 +227,49 @@ def get_person_mention(item: Dict[str, Any]) -> str:
     return item["full_name"]
 
 
-STAROSTA_CONGRATS_TEMPLATE = (
-    "👑 <b>Слово старосты:</b>\n"
-    "<blockquote>«От лица всей группы 1-КПД-3 и от себя лично поздравляю тебя с днём рождения! 🎉\n\n"
-    "Мы учимся плечом к плечу: делим общие пары, завалы по лабам, дедлайны и сессии. "
-    "Я искренне рад, что в нашем коллективе есть такие надёжные, классные и целеустремлённые люди. "
-    "Желаю железобетонного здоровья, неиссякаемого запаса энергии, ясной головы и лёгкой учёбы без лишней нервотрёпки. "
-    "Пусть любые сложные предметы и зачёты сдаются с первого раза, а всё задуманное в жизни получается легко и на максимум.\n\n"
-    "Помни: мы не просто группа по журналу, а сплочённая команда. В любой ситуации прикроем и поддержим, "
-    "ты всегда можешь рассчитывать на каждого из нас. Уверенно двигайся вперёд к своим целям. Крепко жму руку! 🤝»</blockquote>"
-)
-
-GROUP_TO_STAROSTA_TEMPLATE = (
-    "👑 <b>От всей группы 1-КПД-3 нашему старосте:</b>\n"
-    "<blockquote>«Дима, от всей души поздравляем тебя с днём рождения! 🎂🚀\n\n"
-    "Быть старостой в технической группе — это колоссальный труд: разруливать расписание, "
-    "держать связь с преподами, вовремя предупреждать о дедлайнах и сохранять порядок в чатах. "
-    "Спасибо тебе за железное терпение, лидерство, поддержку и вклад в каждого из нас!\n\n"
-    "Желаем тебе богатырского здоровья, стальных нервов, не знать выгорания и кайфовать от молодости. "
-    "Пусть учёба не напрягает, сессии закрываются на автоматах, а впереди ждут масштабные проекты и сочные офферы. "
-    "Веди нас к диплому — мы всегда с тобой! 👑💪»</blockquote>"
-)
+def format_starosta_block(starosta_text: Optional[str]) -> str:
+    """Формирует блок слова старосты, если он задан."""
+    if not starosta_text:
+        return ""
+    return (
+        "👑 <b>Слово старосты:</b>\n"
+        f"<blockquote>«{starosta_text}»</blockquote>"
+    )
 
 
-def format_starosta_block(is_starosta: bool) -> str:
-    """Формирует развернутое поздравление старосты или поздравление старосте."""
-    return GROUP_TO_STAROSTA_TEMPLATE if is_starosta else STAROSTA_CONGRATS_TEMPLATE
-
-
-def format_congrats_message(item: Dict[str, Any], wish_text: str) -> str:
-    """
-    Формирует праздничное персональное поздравление от группы и старосты.
-    """
+def format_congrats_message(
+    item: Dict[str, Any], wish_text: str, starosta_text: Optional[str] = None
+) -> str:
+    """Формирует праздничное персональное поздравление от группы и старосты."""
     mention = get_person_mention(item)
     name = item["full_name"]
     age = item.get("turning_age", 18)
     is_starosta = name == "Стрыгин Дмитрий"
-    starosta_block = format_starosta_block(is_starosta)
+    s_block = format_starosta_block(None if is_starosta else starosta_text)
+    mid = f"{s_block}\n\n" if s_block else ""
+    call = "нашего старосту" if is_starosta else "виновника торжества"
     return (
         f"🥳 <b>Внимание, 1-КПД-3! Сегодня особенный день!</b>\n\n"
         f"Свой {age}-й день рождения отмечает <b>{name}</b> ({mention})! 🔥\n\n"
         f"<blockquote>{wish_text}</blockquote>\n\n"
-        f"{starosta_block}\n\n"
-        f"💬 <i>Ребята, переходим в топик <b>Флудилка</b> и от души поздравляем виновника торжества!</i> 🎉"
+        f"{mid}"
+        f"💬 <i>Ребята, переходим в топик <b>Флудилка</b> и от души поздравляем {call}!</i> 🎉"
     )
+
+
+async def _send_congrats_telegram(
+    text: str, person_key: str, key: str, state: Dict[str, bool]
+) -> None:
+    """Отправляет поздравление в Telegram и фиксирует статус."""
+    try:
+        await bot.send_message(
+            chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text
+        )
+        state[key] = True
+        save_json_file(CONGRATS_STATE_FILE, state)
+        log.info(f"✅ Отправлено поздравление для {person_key} в топик {IMPORTANT_TOPIC_THREAD_ID}")
+    except Exception as e:
+        log.error(f"❌ Ошибка отправки поздравления для {person_key}: {e}")
 
 
 async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
@@ -279,16 +280,11 @@ async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
     if congrats_state.get(congrats_key):
         return
     wishes = load_json_file(WISHES_FILE, [])
-    text = format_congrats_message(item, pick_unique_wish(person_key, wishes))
-    try:
-        await bot.send_message(
-            chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text
-        )
-        congrats_state[congrats_key] = True
-        save_json_file(CONGRATS_STATE_FILE, congrats_state)
-        log.info(f"✅ Отправлено поздравление для {person_key} в топик {IMPORTANT_TOPIC_THREAD_ID}")
-    except Exception as e:
-        log.error(f"❌ Ошибка отправки поздравления для {person_key}: {e}")
+    s_wishes = load_json_file(STAROSTA_WISHES_FILE, [])
+    wish = pick_unique_wish(person_key, wishes, HISTORY_FILE)
+    s_wish = pick_unique_wish(person_key, s_wishes, STAROSTA_HISTORY_FILE)
+    text = format_congrats_message(item, wish, s_wish)
+    await _send_congrats_telegram(text, person_key, congrats_key, congrats_state)
 
 
 async def check_and_send_birthday_congratulations(items: List[Dict[str, Any]], today: date) -> None:

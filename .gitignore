@@ -24,6 +24,7 @@ data/*
 !data/.gitkeep
 !data/birthdays.json
 !data/birthday_wishes.json
+!data/starosta_wishes.json
 !data/custom_teachers.json
 
 # IDE files
