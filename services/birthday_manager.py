@@ -225,17 +225,36 @@ def get_person_mention(item: Dict[str, Any]) -> str:
     return item["full_name"]
 
 
+def format_starosta_block(is_starosta: bool) -> str:
+    """Формирует блок поздравления старосты или поздравление старосте от группы."""
+    if is_starosta:
+        return (
+            "👑 <b>От всей группы 1-КПД-3 нашему старосте:</b>\n"
+            "<blockquote>«Дима, спасибо за порядок в группе, терпение и лидерство! "
+            "Желаем не знать выгорания, уверенно вести нас к диплому и достигать любых целей! 🚀»</blockquote>"
+        )
+    return (
+        "👑 <b>Слово старосты (Дмитрий Стрыгин):</b>\n"
+        "<blockquote>«От лица группы и от себя лично желаю крепкого здоровья, лёгких сессий и уверенности в каждом шаге. "
+        "Мы одна банда — в любой ситуации прикроем и поддержим. Крепко жму руку! 🤝»</blockquote>"
+    )
+
+
 def format_congrats_message(item: Dict[str, Any], wish_text: str) -> str:
     """
-    Формирует HTML-текст поздравления с Днем Рождения.
+    Формирует праздничное персональное поздравление от группы и старосты.
     """
     mention = get_person_mention(item)
+    name = item["full_name"]
     age = item.get("turning_age", 18)
+    is_starosta = name == "Стрыгин Дмитрий"
+    starosta_block = format_starosta_block(is_starosta)
     return (
-        f"🎉 {mention}, <b>с Днём Рождения!</b> 🎂\n"
-        f"Тебе сегодня исполняется <b>{age} лет</b>!\n\n"
+        f"🥳 <b>Внимание, 1-КПД-3! Сегодня особенный день!</b>\n\n"
+        f"Свой {age}-й день рождения отмечает <b>{name}</b> ({mention})! 🔥\n\n"
         f"<blockquote>{wish_text}</blockquote>\n\n"
-        f"<i>Присоединяйтесь к поздравлениям в комментариях!</i> ✨"
+        f"{starosta_block}\n\n"
+        f"💬 <i>Ребята, переходим в топик <b>Флудилка</b> и от души поздравляем виновника торжества!</i> 🎉"
     )
 
 
