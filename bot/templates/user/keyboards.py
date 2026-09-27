@@ -2,38 +2,12 @@
 Модуль аккуратных Inline-клавиатур навигации.
 
 Создает компактные кнопки управления и ссылки для подключения к парам.
-Использует нативный CopyTextButton для мгновенного копирования ID/паролей в буфер обмена.
+Ссылки группируются максимум по 2 в ряд для аккуратного отображения в топике.
 """
 
 from typing import List, Optional
-from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from services.schedule_parser import Lesson
-
-
-def build_zoom_copy_row(lessons: List[Lesson]) -> List[InlineKeyboardButton]:
-    """
-    Создает кнопки нативного копирования ID и пароля встречи в буфер обмена.
-
-    :param lessons: Список пар
-    :return: Ряд кнопок
-    """
-    row = []
-    for l in lessons:
-        if not l.is_remote:
-            continue
-        if l.remote_meeting_id:
-            btn = InlineKeyboardButton(
-                text=f"📋 ID: {l.remote_meeting_id}",
-                copy_text=CopyTextButton(text=str(l.remote_meeting_id))
-            )
-            row.append(btn)
-        if l.remote_passcode:
-            btn = InlineKeyboardButton(
-                text=f"🔑 Код: {l.remote_passcode}",
-                copy_text=CopyTextButton(text=str(l.remote_passcode))
-            )
-            row.append(btn)
-    return row
 
 
 def format_lesson_button_text(lesson: Lesson) -> str:
@@ -98,17 +72,16 @@ def get_schedule_inline_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> InlineKeyboardMarkup:
+def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> Optional[InlineKeyboardMarkup]:
     """
     Генерирует чистую инлайн-клавиатуру исключительно для топика группы.
 
+    Содержит только ссылки на дистанционные пары без громоздких кнопок копирования.
+
     :param lessons: Список пар на день
-    :return: InlineKeyboardMarkup
+    :return: InlineKeyboardMarkup или None
     """
-    rows = []
-    if lessons:
-        rows.extend(chunk_link_buttons(lessons))
-        copy_row = build_zoom_copy_row(lessons)
-        if copy_row:
-            rows.append(copy_row)
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    if not lessons:
+        return None
+    rows = chunk_link_buttons(lessons)
+    return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
