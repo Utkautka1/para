@@ -4,12 +4,14 @@
 Отвечает за сохранение и извлечение кэшированных данных кнопок бота.
 """
 
+import json
 from typing import Optional
 from config import REDIS_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from core.redis import init_redis
 
 log = get_logger("redis_cache")
+HW_QUEUE_KEY = "hw:tasks:queue"
 
 
 async def cache_get(key: str) -> Optional[str]:
@@ -133,5 +135,44 @@ async def mark_hash_processed(content_hash: str) -> None:
     """
     key = f"hw_hash:{content_hash}"
     await cache_set(key, "1", ttl=86400)
+
+
+async def push_hw_task(task_data: dict) -> bool:
+    """
+    Помещает задачу на решение ДЗ в конец очереди Redis.
+
+    :param task_data: Словарь с параметрами сообщения и задания
+    :return: True в случае успешной вставки
+    """
+    try:
+        client = await init_redis()
+        if client:
+            payload = json.dumps(task_data, ensure_ascii=False)
+            await client.rpush(HW_QUEUE_KEY, payload)
+            msg_id = task_data.get("message_id")
+            log.info(f"Задача ДЗ (msg_id={msg_id}) добавлена в очередь {HW_QUEUE_KEY}")
+            return True
+    except Exception as e:
+        log.error(f"Ошибка добавления задачи ДЗ в Redis: {e}")
+    return False
+
+
+async def pop_hw_task(timeout: int = 2) -> Optional[dict]:
+    """
+    Атомарно извлекает задачу решения ДЗ из начала очереди Redis.
+
+    :param timeout: Время ожидания в секундах
+    :return: Словарь задачи или None
+    """
+    try:
+        client = await init_redis()
+        if client:
+            res = await client.blpop(HW_QUEUE_KEY, timeout=timeout)
+            if res:
+                _, data_str = res
+                return json.loads(data_str)
+    except Exception as e:
+        log.error(f"Ошибка извлечения задачи ДЗ из Redis: {e}")
+    return None
 
 

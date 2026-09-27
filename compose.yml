@@ -12,8 +12,10 @@ services:
           memory: 64M
           cpus: '0.25'
 
-  para-bot:
-    build: .
+  bot:
+    build:
+      context: .
+      dockerfile: bot.dockerfile
     container_name: para-bot
     restart: always
     depends_on:
@@ -26,8 +28,60 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
           cpus: '0.50'
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker.dockerfile
+    container_name: para-worker
+    restart: always
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.50'
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  solver:
+    build:
+      context: .
+      dockerfile: solver.dockerfile
+    container_name: para-solver
+    restart: always
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.75'
         reservations:
           memory: 96M
     logging:
