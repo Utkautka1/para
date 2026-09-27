@@ -17,20 +17,18 @@ WEEKDAYS_RU = [
 
 def format_lesson_card(lesson: Lesson) -> str:
     """
-    Формирует подробную карточку пары с подгруппой.
+    Формирует подробную карточку пары с подгруппой и бейджем потока.
 
     :param lesson: Объект пары
     :return: HTML-текст карточки
     """
     type_suffix = f" ({lesson.lesson_type})" if lesson.lesson_type else ""
+    stream_suffix = " • 🔗 <b>поток</b>" if lesson.is_stream else ""
     sg_suffix = f" • 👥 <b>Подгруппа {lesson.subgroup}</b>" if lesson.subgroup > 0 else ""
-    if lesson.is_remote:
-        loc_str = "🌐 Дистанционно"
-    else:
-        loc_str = f"📍 🏢 {lesson.address} (Каб. {lesson.room})"
+    loc_str = "🌐 Дистанционно" if lesson.is_remote else f"📍 🏢 {lesson.address} (Каб. {lesson.room})"
 
     card = (
-        f"▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){sg_suffix}\n"
+        f"▪️ <b>{lesson.period + 1} пара</b> (<code>{lesson.time_str}</code>){sg_suffix}{stream_suffix}\n"
         f"<b>{lesson.subject}</b>{type_suffix}\n"
         f"🏛 <i>{lesson.teacher}</i>\n"
         f"{loc_str}"

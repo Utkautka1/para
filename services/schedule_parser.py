@@ -33,6 +33,7 @@ class Lesson(BaseModel):
     room: str
     address: str
     subgroup: int = 0
+    is_stream: bool = False
     remote_link: Optional[str] = None
     remote_passcode: Optional[str] = None
     remote_meeting_id: Optional[str] = None
@@ -119,6 +120,58 @@ def is_instance_active_for_week(inst: Dict[str, Any], week_num: int) -> bool:
     return True
 
 
+def is_item_for_group(item: Dict[str, Any], group_id: str) -> bool:
+    """
+    Проверяет принадлежность занятия или нагрузки к целевой группе, включая потоки.
+
+    :param item: Словарь занятия или нагрузки
+    :param group_id: ID целевой группы
+    :return: True если занятие предназначено для группы
+    """
+    if not isinstance(item, dict):
+        return False
+    if item.get("groupId") == group_id or group_id in item.get("groupIds", []):
+        return True
+    if group_id in item.get("streamGroupIds", []):
+        return True
+    participants = item.get("streamParticipants", [])
+    return any(p.get("groupId") == group_id for p in participants if isinstance(p, dict))
+
+
+def is_stream_lesson(inst: Dict[str, Any]) -> bool:
+    """
+    Определяет, является ли занятие потоковым (объединяет несколько групп).
+
+    :param inst: Экземпляр занятия
+    :return: True если пара потоковая
+    """
+    if not isinstance(inst, dict):
+        return False
+    if len(inst.get("streamGroupIds", [])) > 0:
+        return True
+    if len(inst.get("streamParticipants", [])) > 0:
+        return True
+    return bool(inst.get("streamId"))
+
+
+def extract_subgroup(inst: Dict[str, Any], group_id: str) -> int:
+    """
+    Извлекает номер подгруппы для целевой группы с учетом участия в потоке.
+
+    :param inst: Экземпляр занятия
+    :param group_id: ID целевой группы
+    :return: Номер подгруппы (0 если общая)
+    """
+    if not isinstance(inst, dict):
+        return 0
+    if inst.get("groupId") == group_id:
+        return int(inst.get("subgroup", 0) or 0)
+    for sp in inst.get("streamParticipants", []):
+        if isinstance(sp, dict) and sp.get("groupId") == group_id:
+            return int(sp.get("subgroup", 0) or 0)
+    return int(inst.get("subgroup", 0) or 0)
+
+
 def get_period_time_str(
     group_data: Dict[str, Any],
     day_idx: int,
@@ -186,14 +239,14 @@ def update_cache_headers(headers: httpx.Headers) -> None:
 
 
 def filter_snapshot_for_target_group(snapshot: Dict[str, Any]) -> Dict[str, Any]:
-    """Очищает сырой 40 МБ JSON от чужих групп, снижая память в 100 раз до ~0.3 МБ."""
+    """Очищает сырой 40 МБ JSON от чужих групп с сохранением потоковых пар."""
     sched = snapshot.get("schedule", {})
-    group_insts = [i for i in sched.get("instances", []) if isinstance(i, dict) and i.get("groupId") == GROUP_ID]
+    group_insts = [i for i in sched.get("instances", []) if is_item_for_group(i, GROUP_ID)]
     group_ids = set(i["instId"] for i in group_insts if "instId" in i)
     group_assigns = {k: v for k, v in sched.get("assignment", {}).items() if k in group_ids}
 
-    # loads — нагрузки (аттестации/экзамены), фильтруем по GROUP_ID
-    group_loads = [l for l in snapshot.get("loads", []) if isinstance(l, dict) and l.get("groupId") == GROUP_ID]
+    # loads — нагрузки (аттестации/экзамены), сохраняем с учетом потоков
+    group_loads = [l for l in snapshot.get("loads", []) if is_item_for_group(l, GROUP_ID)]
 
     return {
         "config": snapshot.get("config", {}), "publishedAt": snapshot.get("publishedAt"),
@@ -290,6 +343,30 @@ def extract_entity_maps(data: Dict[str, Any]) -> Tuple[Dict, Dict, Dict, Dict, D
     return (subjs, teachs, rms, groups.get(GROUP_ID, {}), l_types)
 
 
+def resolve_teacher_contact_info(
+    raw_teacher: str,
+    teacher_data_map: Dict[str, TeacherData],
+    is_remote: bool,
+    subj_name: str
+) -> Tuple[str, Optional[str], Optional[str], Optional[str]]:
+    """
+    Получает актуальные ФИО преподавателя и ссылки на видеоконференцию.
+    """
+    if not raw_teacher:
+        return "Преподаватель", None, None, None
+    last_name = raw_teacher.split()[0].lower()
+    t_info = teacher_data_map.get(last_name)
+    if t_info:
+        name = t_info.get("full_name") or raw_teacher
+        creds = extract_zoom_creds(t_info["link_info"]) if (is_remote and t_info.get("link_info")) else (None, None, None)
+        return (name, *creds)
+    if is_remote:
+        import asyncio
+        from services.notifier import notify_missing_teacher
+        asyncio.create_task(notify_missing_teacher(raw_teacher, subj_name))
+    return raw_teacher, None, None, None
+
+
 def build_lesson_object(
     inst: Dict[str, Any],
     asgn: Dict[str, Any],
@@ -300,51 +377,31 @@ def build_lesson_object(
     global_config: Optional[Dict[str, Any]] = None
 ) -> Lesson:
     """
-    Собирает объект Lesson с точным расписанием звонков по четности недели.
-
-    :return: Объект Lesson
+    Собирает объект Lesson с точным расписанием звонков и признаком потока.
     """
     subjs, teachs, rms, group_data, l_types = entity_maps
     period = asgn.get("period", 0)
     time_str = get_period_time_str(group_data, day_idx, period, week_num, global_config)
     subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Занятие"))
-    raw_type = l_types.get(inst.get("typeId"), "")
-    lesson_type = raw_type if raw_type else "Пара"
-    raw_teacher = teachs.get(inst.get("teacherId"), "Преподаватель")
+    lesson_type = l_types.get(inst.get("typeId"), "") or "Пара"
     is_remote = inst.get("format") == "remote"
     room_id = asgn.get("roomId") or (inst.get("preferredRoomIds") or [""])[0]
     room_name = rms.get(room_id, room_id) if not is_remote else "Дистанционно"
-    address = resolve_room_address(room_name, is_remote)
-
-    teacher_name, remote_link, meeting_id, passcode = raw_teacher, None, None, None
-    if raw_teacher:
-        last_name = raw_teacher.split()[0].lower()
-        t_info = teacher_data_map.get(last_name)
-        if t_info:
-            teacher_name = t_info.get("full_name") or raw_teacher
-            if is_remote and t_info.get("link_info"):
-                remote_link, meeting_id, passcode = extract_zoom_creds(t_info["link_info"])
-        elif is_remote:
-            import asyncio
-            from services.notifier import notify_missing_teacher
-            asyncio.create_task(notify_missing_teacher(raw_teacher, subj_name))
-
-    subgroup = inst.get("subgroup", 0)
+    t_name, link, mid, passc = resolve_teacher_contact_info(
+        teachs.get(inst.get("teacherId"), ""), teacher_data_map, is_remote, subj_name
+    )
     return Lesson(
         period=period, time_str=time_str, subject=subj_name,
-        lesson_type=lesson_type, teacher=teacher_name, is_remote=is_remote,
-        room=room_name, address=address, subgroup=subgroup, remote_link=remote_link,
-        remote_passcode=passcode, remote_meeting_id=meeting_id
+        lesson_type=lesson_type, teacher=t_name, is_remote=is_remote,
+        room=room_name, address=resolve_room_address(room_name, is_remote),
+        subgroup=extract_subgroup(inst, GROUP_ID), is_stream=is_stream_lesson(inst),
+        remote_link=link, remote_passcode=passc, remote_meeting_id=mid
     )
 
 
 async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> List[Lesson]:
     """
-    Формирует список пар для группы на указанную дату.
-
-    :param target_date: Целевая дата
-    :param force_refresh: Принудительный запрос свежих данных
-    :return: Список объектов Lesson
+    Формирует список пар для группы на указанную дату с учетом потоков.
     """
     data = await fetch_schedule_data(force_refresh=force_refresh)
     if not data:
@@ -353,13 +410,12 @@ async def get_schedule_for_date(target_date: date, force_refresh: bool = False) 
     week_num = calculate_week_number(target_date, sem_start)
     day_idx = target_date.weekday()
     sched = data.get("schedule", {})
-    instances = sched.get("instances", [])
-    assignment = sched.get("assignment", {})
+    instances, assignment = sched.get("instances", []), sched.get("assignment", {})
     entity_maps = extract_entity_maps(data)
     teacher_links = await get_teacher_links(force_refresh=force_refresh)
     lessons: List[Lesson] = []
     for inst in instances:
-        if not isinstance(inst, dict) or inst.get("groupId") != GROUP_ID:
+        if not is_item_for_group(inst, GROUP_ID):
             continue
         inst_id = inst.get("instId")
         if not inst_id or inst_id not in assignment:

@@ -14,6 +14,7 @@ from services.schedule_parser import (
     clean_subject_title,
     extract_entity_maps,
     fetch_schedule_data,
+    is_item_for_group,
     resolve_room_address,
 )
 from services.docx_parser import get_teacher_links
@@ -64,7 +65,7 @@ def parse_exam_from_load(
     """
     subjs, teachs, _, _, l_types = entity_maps
     valid, type_name = is_assessment_type(load.get("typeId", ""), l_types)
-    if not valid or load.get("groupId") != GROUP_ID:
+    if not valid or not is_item_for_group(load, GROUP_ID):
         return None
 
     subj_name = clean_subject_title(subjs.get(load.get("subjectId"), "Аттестация"))
@@ -97,7 +98,7 @@ def enrich_exam_from_instance(
     """
     subjs, _, rms, _, l_types = entity_maps
     valid, type_name = is_assessment_type(inst.get("typeId", ""), l_types)
-    if not valid or inst.get("groupId") != GROUP_ID:
+    if not valid or not is_item_for_group(inst, GROUP_ID):
         return
 
     subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Аттестация"))
