@@ -30,19 +30,14 @@ async def schedule_today_reminders_on_startup() -> None:
         schedule_lesson_reminder(today, lesson, now_dt)
 
 
-async def main() -> None:
-    """
-    Основная асинхронная функция инициализации и запуска бота.
-    """
-    log.info("=" * 60)
-    log.info("ЗАПУСК Персонального Telegram Бота КТМУ (Группа 1-КПД-3)")
-    log.info("=" * 60)
-
-    from bot.handlers.user.public_copy import public_router
-    from bot.handlers.admin.panel import router as admin_router
+def register_all_routers() -> None:
+    """Регистрирует все хэндлеры и роутеры в диспетчере aiogram."""
     from bot.handlers.admin.mute import router as mute_router
+    from bot.handlers.admin.panel import router as admin_router
+    from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
-    # Порядок подключения: модерация/админка, авторешалка ДЗ, публичные команды, авторизованные, затем fallback
+    from bot.handlers.user.public_copy import public_router
+    from bot.handlers.user.schedule import router as user_router
     dp.include_router(mute_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
@@ -51,22 +46,27 @@ async def main() -> None:
     dp.include_router(fallback_router)
 
 
-
-
-
-
-    from services.topic_updater import topic_sync_loop
-    from services.exam_topic_updater import exam_topic_sync_loop
+def start_background_services() -> None:
+    """Запускает фоновые сервисы обновления топиков и напоминаний."""
     from services.birthday_manager import birthday_sync_loop
-    from core.redis import init_redis
-    await init_redis()
-    setup_scheduler()
-    await schedule_today_reminders_on_startup()
+    from services.exam_topic_updater import exam_topic_sync_loop
+    from services.topic_updater import topic_sync_loop
     asyncio.create_task(topic_sync_loop())
     asyncio.create_task(exam_topic_sync_loop())
     asyncio.create_task(birthday_sync_loop())
 
 
+async def main() -> None:
+    """Основная асинхронная функция инициализации и запуска бота."""
+    log.info("=" * 60)
+    log.info("ЗАПУСК Персонального Telegram Бота КТМУ (Группа 1-КПД-3)")
+    log.info("=" * 60)
+    register_all_routers()
+    from core.redis import init_redis
+    await init_redis()
+    setup_scheduler()
+    await schedule_today_reminders_on_startup()
+    start_background_services()
     try:
         await dp.start_polling(bot)
     except Exception as e:

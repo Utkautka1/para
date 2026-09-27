@@ -257,44 +257,48 @@ async def _handle_edit_failure(
     return await update_topic_message_payload(text, kb, _retry=True)
 
 
+def should_skip_topic_update(
+    lessons: list, now_dt: datetime, target_date: date, ignore_time_restriction: bool
+) -> bool:
+    """
+    Проверяет, нужно ли пропустить публикацию расписания из-за раннего времени.
+    """
+    if lessons and is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
+        log.info("sync_topic: too_early_to_publish, пропуск")
+        return True
+    return False
+
+
+def process_today_reminders(lessons: list, now_dt: datetime, target_date: date) -> None:
+    """
+    Запускает проверку напоминаний для пар текущего дня.
+    """
+    if lessons and now_dt.date() == target_date:
+        for l in lessons:
+            check_and_trigger_reminder(l, now_dt, now_dt.date())
+
+
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool:
     """
     Атомарно обновляет главное сообщение расписания в топике.
-
-    Обновляет даже при пустом расписании — показывает "свободный день".
-
-    :param ignore_time_restriction: Флаг принудительной отправки
-    :return: True если топик был обновлён
     """
     global _TOPIC_MAIN_MSG_ID
     if _TOPIC_MAIN_MSG_ID is None:
         _TOPIC_MAIN_MSG_ID = load_topic_state()
 
     now_dt = datetime.now(TIMEZONE)
-    log.info(f"--- sync_topic: MSG_ID={_TOPIC_MAIN_MSG_ID}, now={now_dt.strftime('%H:%M:%S')}, force={ignore_time_restriction}")
-
     target_date = await resolve_target_date(now_dt, ignore_time_restriction)
     if not target_date:
-        log.info("sync_topic: target_date=None (воскресенье до 18:00?), пропуск")
+        log.info("sync_topic: target_date=None, пропуск")
         return False
 
     lessons = await get_schedule_for_date(target_date)
-    log.info(f"sync_topic: target_date={target_date}, lessons_count={len(lessons)}")
-
-    # Если пары есть, но ещё рано публиковать — ждём
-    if lessons and is_too_early_to_publish(lessons, now_dt, target_date, ignore_time_restriction):
-        log.info("sync_topic: too_early_to_publish, пропуск")
+    if should_skip_topic_update(lessons, now_dt, target_date, ignore_time_restriction):
         return False
 
-    # Напоминания — только для текущего дня и реальных пар
-    if lessons and now_dt.date() == target_date:
-        for l in lessons:
-            check_and_trigger_reminder(l, now_dt, now_dt.date())
-
-    # format_day_schedule корректно обрабатывает пустой список пар
+    process_today_reminders(lessons, now_dt, target_date)
     text = format_day_schedule(target_date, lessons)
     kb = get_topic_inline_kb(lessons) if lessons else None
-    log.info(f"sync_topic: text_len={len(text)}, has_kb={kb is not None}")
     return await update_topic_message_payload(text, kb)
 
 

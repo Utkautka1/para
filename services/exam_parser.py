@@ -55,13 +55,29 @@ def is_assessment_type(type_id: str, l_types: Dict[str, str]) -> Tuple[bool, str
     return is_valid, t_name
 
 
+def resolve_teacher_name(raw_teacher: str, teacher_links: Dict[str, Any]) -> str:
+    """
+    Определяет полное имя преподавателя с учетом ссылок.
+    """
+    last_name = raw_teacher.split()[0].lower() if raw_teacher else ""
+    t_info = teacher_links.get(last_name)
+    return t_info.get("full_name") if t_info else raw_teacher
+
+
+def extract_load_weeks(load: Dict[str, Any]) -> List[int]:
+    """
+    Извлекает и сортирует номера учебных недель из нагрузки.
+    """
+    weeks_keys = list(load.get("weeklyPairs", {}).keys())
+    weeks = [int(w) for w in weeks_keys if w.isdigit()] if weeks_keys else load.get("customWeeks", [])
+    return sorted(weeks)
+
+
 def parse_exam_from_load(
     load: Dict[str, Any], entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict], teacher_links: Dict[str, Any]
 ) -> Optional[Tuple[str, ExamItem]]:
     """
     Создает элемент ExamItem из нагрузки (loads) учебного плана.
-
-    :return: Кортеж (ключ, ExamItem) или None
     """
     subjs, teachs, _, _, l_types = entity_maps
     valid, type_name = is_assessment_type(load.get("typeId", ""), l_types)
@@ -69,22 +85,15 @@ def parse_exam_from_load(
         return None
 
     subj_name = clean_subject_title(subjs.get(load.get("subjectId"), "Аттестация"))
-    raw_teacher = teachs.get(load.get("teacherId"), "Преподаватель")
+    teacher_name = resolve_teacher_name(teachs.get(load.get("teacherId"), "Преподаватель"), teacher_links)
     is_remote = load.get("format") == "remote"
-
-    last_name = raw_teacher.split()[0].lower() if raw_teacher else ""
-    t_info = teacher_links.get(last_name)
-    teacher_name = t_info.get("full_name") if t_info else raw_teacher
-
-    weeks_keys = list(load.get("weeklyPairs", {}).keys())
-    weeks = [int(w) for w in weeks_keys if w.isdigit()] if weeks_keys else load.get("customWeeks", [])
     subgroup = load.get("subgroup", 0)
 
     item = ExamItem(
         subject=subj_name, exam_type=type_name, teacher=teacher_name,
         room="Дистанционно" if is_remote else "Кабинет уточняется",
         address=resolve_room_address("Дистанционно" if is_remote else "", is_remote),
-        weeks=sorted(weeks), subgroup=subgroup,
+        weeks=extract_load_weeks(load), subgroup=subgroup,
         format_str="🌐 Дистанционно" if is_remote else "📍 Очно",
     )
     return f"{subj_name}_{type_name}_{subgroup}", item

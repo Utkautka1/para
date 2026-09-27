@@ -172,6 +172,13 @@ def extract_subgroup(inst: Dict[str, Any], group_id: str) -> int:
     return int(inst.get("subgroup", 0) or 0)
 
 
+def _lookup_period_time(times_list: List[str], period_idx: int) -> Optional[str]:
+    """Извлекает время пары по индексу, если оно задано в списке звонков."""
+    if period_idx < len(times_list) and times_list[period_idx]:
+        return times_list[period_idx]
+    return None
+
+
 def get_period_time_str(
     group_data: Dict[str, Any],
     day_idx: int,
@@ -179,33 +186,18 @@ def get_period_time_str(
     week_num: int,
     global_config: Optional[Dict[str, Any]] = None
 ) -> str:
-    """
-    Определяет интервал времени пары строго из API КТМУ без сомнительных угадываний.
-
-    :param group_data: Метаданные группы
-    :param day_idx: День недели (0-6)
-    :param period_idx: Номер пары (0-indexed)
-    :param week_num: Номер недели
-    :param global_config: Глобальный конфиг API КТМУ
-    :return: Точная строка времени или бейдж "Время уточняется"
-    """
+    """Определяет интервал времени пары строго из API КТМУ."""
     parity = "even" if week_num % 2 == 0 else "odd"
-    # 1. Проверяем измененные звонки по четности недели группы
     by_parity = group_data.get("dayPeriodTimesByParity", {}).get(parity, {}).get(str(day_idx), [])
-    if period_idx < len(by_parity) and by_parity[period_idx]:
-        return by_parity[period_idx]
-
-    # 2. Проверяем стандартные звонки группы
-    period_times = group_data.get("dayPeriodTimes", {}).get(str(day_idx), [])
-    if period_idx < len(period_times) and period_times[period_idx]:
-        return period_times[period_idx]
-
-    # 3. Проверяем общие звонки КТМУ из config.periodTimes
-    if global_config and "periodTimes" in global_config:
-        g_times = global_config["periodTimes"]
-        if period_idx < len(g_times) and g_times[period_idx]:
-            return g_times[period_idx]
-
+    res = _lookup_period_time(by_parity, period_idx) or _lookup_period_time(
+        group_data.get("dayPeriodTimes", {}).get(str(day_idx), []), period_idx
+    )
+    if res:
+        return res
+    if global_config:
+        res = _lookup_period_time(global_config.get("periodTimes", []), period_idx)
+        if res:
+            return res
     return "Время уточняется"
 
 
@@ -367,64 +359,58 @@ def resolve_teacher_contact_info(
     return raw_teacher, None, None, None
 
 
-def build_lesson_object(
-    inst: Dict[str, Any],
-    asgn: Dict[str, Any],
-    entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict],
-    day_idx: int,
-    week_num: int,
-    teacher_data_map: Dict[str, TeacherData],
-    global_config: Optional[Dict[str, Any]] = None
-) -> Lesson:
-    """
-    Собирает объект Lesson с точным расписанием звонков и признаком потока.
-    """
-    subjs, teachs, rms, group_data, l_types = entity_maps
-    period = asgn.get("period", 0)
-    time_str = get_period_time_str(group_data, day_idx, period, week_num, global_config)
-    subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Занятие"))
-    lesson_type = l_types.get(inst.get("typeId"), "") or "Пара"
-    is_remote = inst.get("format") == "remote"
+def resolve_room_name(asgn: Dict[str, Any], inst: Dict[str, Any], rms: Dict[str, str], is_remote: bool) -> str:
+    """Определяет наименование аудитории или бейдж дистанта."""
+    if is_remote:
+        return "Дистанционно"
     room_id = asgn.get("roomId") or (inst.get("preferredRoomIds") or [""])[0]
-    room_name = rms.get(room_id, room_id) if not is_remote else "Дистанционно"
-    t_name, link, mid, passc = resolve_teacher_contact_info(
-        teachs.get(inst.get("teacherId"), ""), teacher_data_map, is_remote, subj_name
-    )
+    return rms.get(room_id, room_id)
+
+
+def build_lesson_object(
+    inst: Dict[str, Any], asgn: Dict[str, Any], maps: Tuple[Dict, Dict, Dict, Dict, Dict],
+    day_idx: int, week_num: int, teacher_map: Dict[str, TeacherData], cfg: Optional[Dict[str, Any]] = None
+) -> Lesson:
+    """Собирает объект Lesson с точным расписанием звонков и признаком потока."""
+    subjs, teachs, rms, group_data, l_types = maps
+    period = asgn.get("period", 0)
+    time_str = get_period_time_str(group_data, day_idx, period, week_num, cfg)
+    subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Занятие"))
+    is_remote = inst.get("format") == "remote"
+    r_name = resolve_room_name(asgn, inst, rms, is_remote)
+    t_name, link, mid, passc = resolve_teacher_contact_info(teachs.get(inst.get("teacherId"), ""), teacher_map, is_remote, subj_name)
     return Lesson(
-        period=period, time_str=time_str, subject=subj_name,
-        lesson_type=lesson_type, teacher=t_name, is_remote=is_remote,
-        room=room_name, address=resolve_room_address(room_name, is_remote),
+        period=period, time_str=time_str, subject=subj_name, lesson_type=l_types.get(inst.get("typeId"), "") or "Пара",
+        teacher=t_name, is_remote=is_remote, room=r_name, address=resolve_room_address(r_name, is_remote),
         subgroup=extract_subgroup(inst, GROUP_ID), is_stream=is_stream_lesson(inst),
         remote_link=link, remote_passcode=passc, remote_meeting_id=mid
     )
 
 
+def is_placed_lesson_active(inst: Dict[str, Any], asgn: Optional[Dict[str, Any]], day_idx: int, week_num: int) -> bool:
+    """Проверяет, размещено ли занятие в сетке на указанный день и неделю."""
+    if not asgn:
+        return False
+    return asgn.get("day") == day_idx and is_instance_active_for_week(inst, week_num)
+
+
 async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> List[Lesson]:
-    """
-    Формирует список пар для группы на указанную дату с учетом потоков.
-    """
+    """Формирует список пар для группы на указанную дату с учетом потоков."""
     data = await fetch_schedule_data(force_refresh=force_refresh)
     if not data:
         return []
     sem_start = data.get("config", {}).get("semesterStart", "2026-09-01")
-    week_num = calculate_week_number(target_date, sem_start)
-    day_idx = target_date.weekday()
+    week_num, day_idx = calculate_week_number(target_date, sem_start), target_date.weekday()
     sched = data.get("schedule", {})
-    instances, assignment = sched.get("instances", []), sched.get("assignment", {})
-    entity_maps = extract_entity_maps(data)
-    teacher_links = await get_teacher_links(force_refresh=force_refresh)
+    insts, asgns = sched.get("instances", []), sched.get("assignment", {})
+    maps, links, cfg = extract_entity_maps(data), await get_teacher_links(force_refresh=force_refresh), data.get("config", {})
     lessons: List[Lesson] = []
-    for inst in instances:
+    for inst in insts:
         if not is_item_for_group(inst, GROUP_ID):
             continue
-        inst_id = inst.get("instId")
-        if not inst_id or inst_id not in assignment:
-            continue
-        asgn = assignment[inst_id]
-        if asgn.get("day") == day_idx and is_instance_active_for_week(inst, week_num):
-            cfg = data.get("config", {})
-            lesson = build_lesson_object(inst, asgn, entity_maps, day_idx, week_num, teacher_links, cfg)
-            lessons.append(lesson)
+        asgn = asgns.get(inst.get("instId", ""))
+        if is_placed_lesson_active(inst, asgn, day_idx, week_num):
+            lessons.append(build_lesson_object(inst, asgn, maps, day_idx, week_num, links, cfg))
     lessons.sort(key=lambda x: x.period)
     return lessons
 

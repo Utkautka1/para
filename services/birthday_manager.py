@@ -154,6 +154,18 @@ def pick_unique_wish(person_key: str, wishes: List[str]) -> str:
     return wishes[choice_idx]
 
 
+def format_congrats_message(item: Dict[str, Any], wish_text: str) -> str:
+    """Формирует HTML-текст поздравления с Днем Рождения."""
+    mention = get_person_mention(item)
+    age = item.get("turning_age", 18)
+    return (
+        f"🎉 {mention}, <b>с Днём Рождения!</b> 🎂\n"
+        f"Тебе сегодня исполняется <b>{age} лет</b>!\n\n"
+        f"<blockquote>{wish_text}</blockquote>\n\n"
+        f"<i>Присоединяйтесь к поздравлениям в комментариях!</i> ✨"
+    )
+
+
 async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
     """Отправляет персональное поздравление в топик 'Важное' (ID: 2)."""
     congrats_state: Dict[str, bool] = load_json_file(CONGRATS_STATE_FILE, {})
@@ -162,20 +174,10 @@ async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
     if congrats_state.get(congrats_key):
         return
     wishes = load_json_file(WISHES_FILE, [])
-    wish_text = pick_unique_wish(person_key, wishes)
-    mention = get_person_mention(item)
-    age = item.get("turning_age", 18)
-    text = (
-        f"🎉 {mention}, <b>с Днём Рождения!</b> 🎂\n"
-        f"Тебе сегодня исполняется <b>{age} лет</b>!\n\n"
-        f"<blockquote>{wish_text}</blockquote>\n\n"
-        f"<i>Присоединяйтесь к поздравлениям в комментариях!</i> ✨"
-    )
+    text = format_congrats_message(item, pick_unique_wish(person_key, wishes))
     try:
         await bot.send_message(
-            chat_id=TOPIC_CHAT_ID,
-            message_thread_id=IMPORTANT_TOPIC_THREAD_ID,
-            text=text
+            chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text
         )
         congrats_state[congrats_key] = True
         save_json_file(CONGRATS_STATE_FILE, congrats_state)
@@ -192,26 +194,24 @@ async def check_and_send_birthday_congratulations(items: List[Dict[str, Any]], t
             await send_congrats_for_item(item, today_str)
 
 
-async def update_birthday_pinned_message(text: str) -> bool:
-    """Обновляет или создает закрепленное сообщение в топике 'Дни рождения'."""
-    state = load_json_file(STATE_FILE, {})
-    main_msg_id = state.get("main_msg_id")
-    if main_msg_id:
-        try:
-            await bot.edit_message_text(
-                chat_id=TOPIC_CHAT_ID, message_id=main_msg_id, text=text
-            )
-            log.debug(f"Реестр дней рождения обновлен: MSG_ID={main_msg_id}")
+async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool:
+    """Пытается отредактировать существующее сообщение реестра ДР."""
+    try:
+        await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=msg_id, text=text)
+        log.debug(f"Реестр дней рождения обновлен: MSG_ID={msg_id}")
+        return True
+    except TelegramBadRequest as e:
+        if "not modified" in str(e).lower():
             return True
-        except TelegramBadRequest as e:
-            if "not modified" in str(e).lower():
-                return True
-            log.warning(f"Ошибка редактирования MSG_ID={main_msg_id} ({e}), пересоздаем...")
+        log.warning(f"Ошибка редактирования MSG_ID={msg_id} ({e}), пересоздаем...")
+        return False
+
+
+async def _create_new_birthday_message(text: str) -> bool:
+    """Создает новое сообщение реестра ДР и закрепляет его без звука."""
     try:
         msg = await bot.send_message(
-            chat_id=TOPIC_CHAT_ID,
-            message_thread_id=BIRTHDAY_TOPIC_THREAD_ID,
-            text=text
+            chat_id=TOPIC_CHAT_ID, message_thread_id=BIRTHDAY_TOPIC_THREAD_ID, text=text
         )
         save_json_file(STATE_FILE, {"main_msg_id": msg.message_id})
         try:
@@ -223,6 +223,15 @@ async def update_birthday_pinned_message(text: str) -> bool:
     except Exception as e:
         log.error(f"❌ Ошибка отправки главного сообщения ДР: {e}")
         return False
+
+
+async def update_birthday_pinned_message(text: str) -> bool:
+    """Обновляет существующее или создает новое закрепленное сообщение реестра ДР."""
+    state = load_json_file(STATE_FILE, {})
+    main_msg_id = state.get("main_msg_id")
+    if main_msg_id and await _edit_existing_birthday_message(main_msg_id, text):
+        return True
+    return await _create_new_birthday_message(text)
 
 
 async def sync_birthdays_topic() -> bool:
