@@ -1,15 +1,14 @@
 """
 Главный модуль запуска Telegram-бота расписания КТМУ.
 
-Инициализирует роутеры хэндлеров, подключение к Redis и запускает
-процесс получения обновлений (polling) от Telegram.
-Все фоновые задачи синхронизации вынесены в para-worker,
-а решение домашних заданий — в para-solver.
+Инициализирует роутеры хэндлеров, подключение к Redis и MongoDB
+и запускает процесс получения обновлений (polling) от Telegram.
 """
 
 import asyncio
 from core.bot import bot, dp
 from core.logger import get_logger
+from core.mongo import close_mongo, init_mongo
 from core.redis import init_redis, redis_client
 
 log = get_logger("bot_main")
@@ -32,12 +31,13 @@ def register_all_routers() -> None:
 
 
 async def shutdown_bot() -> None:
-    """Корректно закрывает сессию бота и подключение к Redis."""
+    """Корректно закрывает сессию бота, соединения с Redis и MongoDB."""
     log.info("Остановка бота: закрытие сессий...")
     if redis_client:
         await redis_client.aclose()
+    await close_mongo()
     await bot.session.close()
-    log.info("Сессии Telegram и Redis закрыты. Бот остановлен.")
+    log.info("Сессии Telegram, Redis и MongoDB закрыты. Бот остановлен.")
 
 
 async def main() -> None:
@@ -47,6 +47,7 @@ async def main() -> None:
     log.info("=" * 60)
     register_all_routers()
     await init_redis()
+    await init_mongo()
     try:
         await dp.start_polling(bot)
     except Exception as e:
