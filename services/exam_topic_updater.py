@@ -6,6 +6,7 @@
 """
 
 import asyncio
+import html
 import json
 import os
 from datetime import datetime, timedelta
@@ -57,9 +58,7 @@ def get_week_date_range_str(week_num: int) -> str:
 
 
 def format_exam_card(ex: ExamItem) -> str:
-    """
-    Формирует единичную карточку аттестации/экзамена.
-    """
+    """Формирует карточку аттестации/экзамена с HTML-экранированием."""
     if ex.weeks:
         date_ranges = [get_week_date_range_str(w) for w in ex.weeks]
         weeks_str = f"{', '.join(map(str, ex.weeks))} нед. (🗓 <b>{', '.join(date_ranges)}</b>)"
@@ -67,12 +66,18 @@ def format_exam_card(ex: ExamItem) -> str:
         weeks_str = "Дата уточняется"
 
     sg_str = f" • 👥 Подгруппа {ex.subgroup}" if ex.subgroup > 0 else ""
+    subj = html.escape(ex.subject)
+    e_type = html.escape(ex.exam_type)
+    teacher = html.escape(ex.teacher)
+    addr = html.escape(ex.address)
+    room = html.escape(ex.room)
     return (
-        f"📌 <b>{ex.subject}</b> ({ex.exam_type}){sg_str}\n"
+        f"📌 <b>{subj}</b> ({e_type}){sg_str}\n"
         f"⏳ <b>Период сдачи:</b> {weeks_str}\n"
-        f"👨‍🏫 <i>{ex.teacher}</i>\n"
-        f"{ex.format_str} • 🏢 {ex.address} ({ex.room})"
+        f"👨‍🏫 <i>{teacher}</i>\n"
+        f"{ex.format_str} • 🏢 {addr} ({room})"
     )
+
 
 
 def format_exams_schedule_message(exams: List[ExamItem]) -> str:
