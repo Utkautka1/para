@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-CMD ["python", "scheduler.py"]
+CMD ["python", "worker.py"]
