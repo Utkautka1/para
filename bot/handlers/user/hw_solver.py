@@ -35,16 +35,22 @@ def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
 
 
 def is_valid_homework_prompt(text: Optional[str], has_media: bool) -> bool:
-    """Проверяет, содержит ли сообщение учебную задачу, картинку или документ."""
-    if has_media:
-        return True
+    """
+    Проверяет, содержит ли сообщение запрос на решение учебной задачи.
+
+    'Голые' медиафайлы без промпта не берутся в обработку, чтобы бот не трогал
+    учебные материалы и конспекты, загружаемые в топик.
+    """
     if not text:
         return False
     t = text.lower().strip()
     flood_words = {"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"}
-    if t in flood_words or len(t) < 5:
+    if t in flood_words or len(t) < 4:
         return False
-    kw_list = ["реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача", "задание", "номер", "№", "=", "+", "-"]
+    kw_list = [
+        "реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача",
+        "задание", "номер", "№", "=", "+", "-", "?", "ответ"
+    ]
     return any(kw in t for kw in kw_list) or len(t) >= 25
 
 
@@ -72,7 +78,7 @@ def compute_content_hash(text: Optional[str], unique_id: Optional[str]) -> str:
 
 async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
     """Проверяет лимиты пользователя, статус обработки и наличие учебного содержимого."""
-    if not await check_user_rate_limit(user_id):
+    if user_id != config.ALLOWED_USER_ID and not await check_user_rate_limit(user_id):
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
         return False
     if await is_message_processed(msg.message_id):

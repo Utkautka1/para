@@ -51,7 +51,7 @@ async def main() -> None:
     register_all_routers()
     await init_redis()
     try:
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, drop_pending_updates=True)
     except Exception as e:
         log.error(f"❌ Критическая ошибка при работе бота: {e}")
     finally:
