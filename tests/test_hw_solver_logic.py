@@ -74,12 +74,28 @@ def test_is_valid_homework_prompt_accepts_keywords(homework_text: str) -> None:
     [
         ("", True),
         (None, True),
-        ("фото листочка", True),
         ("   ", True),
+        ("учебник по физике", True),
+        ("конспект лекции", True),
+        ("фото", True),
     ],
 )
-def test_is_valid_homework_prompt_accepts_media(text: str, has_media: bool) -> None:
-    """Проверяет, что при наличии медиа задание принимается независимо от текста."""
+def test_is_valid_homework_prompt_rejects_naked_media(text: str, has_media: bool) -> None:
+    """Проверяет, что 'голые' файлы без учебного промпта отклоняются."""
+    assert is_valid_homework_prompt(text, has_media=has_media) is False
+
+
+@pytest.mark.parametrize(
+    "text,has_media",
+    [
+        ("реши пожалуйста", True),
+        ("задание номер 4", True),
+        ("домашнее дз по физике с фото", True),
+        ("вариант 2 реши задачу", True),
+    ],
+)
+def test_is_valid_homework_prompt_accepts_media_with_prompt(text: str, has_media: bool) -> None:
+    """Проверяет, что файлы с явной учебной просьбой принимаются."""
     assert is_valid_homework_prompt(text, has_media=has_media) is True
 
 
@@ -119,3 +135,17 @@ def test_combine_prompt_and_instructions_captions() -> None:
     res = combine_prompt_and_instructions(reply_msg, target_msg)
     assert "Инструкция: Оформи в Word" in res
     assert "Задание: Билет № 4" in res
+
+
+@pytest.mark.asyncio
+async def test_is_hw_allowed_admin_rate_limit_bypass() -> None:
+    """Проверяет, что администратор игнорирует ограничения rate-limit."""
+    from unittest.mock import AsyncMock, patch
+    from config import ALLOWED_USER_ID
+    from bot.handlers.user.hw_solver import is_hw_allowed
+
+    msg = MagicMock(spec=Message, message_id=1, text="реши задачу 1", caption=None, photo=[], document=None)
+    with patch("bot.handlers.user.hw_solver.check_user_rate_limit", AsyncMock(return_value=False)), \
+         patch("bot.handlers.user.hw_solver.is_message_processed", AsyncMock(return_value=False)):
+        assert await is_hw_allowed(msg, msg, 999999) is False
+        assert await is_hw_allowed(msg, msg, ALLOWED_USER_ID) is True

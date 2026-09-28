@@ -6,7 +6,7 @@
 
 import json
 from typing import Optional
-from config import REDIS_CACHE_TTL_SECONDS
+from config import ALLOWED_USER_ID, REDIS_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from core.redis import init_redis
 
@@ -99,9 +99,12 @@ async def check_user_rate_limit(user_id: int) -> bool:
     """
     Проверяет лимит запросов пользователя (максимум 3 запроса в минуту).
 
+    Для администратора (ALLOWED_USER_ID) лимиты полностью отключены.
     :param user_id: Telegram ID пользователя
-    :return: True если лимит не превышен, иначе False
+    :return: True если лимит не превышен или пользователь — админ
     """
+    if user_id == ALLOWED_USER_ID:
+        return True
     key = f"hw_rate:{user_id}"
     try:
         client = await init_redis()
@@ -174,5 +177,22 @@ async def pop_hw_task(timeout: int = 2) -> Optional[dict]:
     except Exception as e:
         log.error(f"Ошибка извлечения задачи ДЗ из Redis: {e}")
     return None
+
+
+async def clear_hw_queue() -> int:
+    """
+    Очищает очередь задач ДЗ (hw:tasks:queue) в Redis.
+
+    :return: 1 если очередь существовала и была удалена, иначе 0
+    """
+    try:
+        client = await init_redis()
+        if client:
+            deleted = await client.delete(HW_QUEUE_KEY)
+            log.info(f"Очередь задач ДЗ {HW_QUEUE_KEY} очищена (deleted={deleted})")
+            return deleted
+    except Exception as e:
+        log.error(f"Ошибка очистки очереди ДЗ в Redis: {e}")
+    return 0
 
 
