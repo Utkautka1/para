@@ -39,7 +39,11 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
     success = await commit_session_to_table(session)
     if not success:
         if cb.message:
-            await cb.message.edit_text("❌ <b>Ошибка сохранения в таблицу!</b>")
+            await cb.message.edit_text(
+                "❌ <b>Не удалось сохранить в таблицу</b>\n\n"
+                "<i>Все попытки записи исчерпаны. "
+                "Данные сессии сохранены — попробуйте /attendance ещё раз.</i>"
+            )
         return
     text = format_summary_text(session, stats)
     if cb.message:
