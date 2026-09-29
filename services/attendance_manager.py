@@ -154,6 +154,23 @@ async def mark_all_remaining_present() -> Optional[AttendanceSession]:
     return session
 
 
+def ensure_summary_headers(sheet) -> None:
+    """
+    Гарантирует сохранение текстовых заголовков и кодов в сводных колонках.
+
+    Предотвращает сброс формул кросс-листовых ссылок в пустые строки openpyxl.
+    """
+    mc = sheet.max_column
+    if mc < 4:
+        return
+    sheet.cell(2, mc - 2, "Опоздавшие")
+    sheet.cell(3, mc - 2, "О")
+    sheet.cell(2, mc - 1, "отсутствие по уважительной причине")
+    sheet.cell(3, mc - 1, "У")
+    sheet.cell(2, mc, "отсутствие по неуважительной причине")
+    sheet.cell(3, mc, "Н")
+
+
 def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None:
     """Применяет все собранные отметки сессии к рабочему листу openpyxl."""
     for row_str, mark in session.marks.items():
@@ -175,6 +192,7 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
     if not col:
         raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
     apply_marks_to_sheet(sheet, session, col)
+    ensure_summary_headers(sheet)
     success = await upload_workbook(wopi, wb)
     if success:
         await clear_session()

@@ -22,8 +22,9 @@ from bot.templates.admin.attendance import (
 from config import ALLOWED_USER_ID, DEPUTY_USER_ID
 from services.attendance_manager import (
     AttendanceSession, apply_marks_to_sheet, calculate_summary_stats,
-    clear_session, get_active_session, mark_all_remaining_present,
-    record_student_mark, save_session_to_redis, step_back
+    clear_session, ensure_summary_headers, get_active_session,
+    mark_all_remaining_present, record_student_mark, save_session_to_redis,
+    step_back
 )
 from services.models import Lesson
 from services.yandex_docs import (
@@ -360,3 +361,18 @@ async def test_auto_close_attendance_session_protection():
          patch("services.notifier.clear_session", new_callable=AsyncMock) as mock_clear:
         await auto_close_attendance_session(2)
         mock_clear.assert_not_called()
+
+
+def test_ensure_summary_headers():
+    """Проверяет восстановление текстовых заголовков и кодов в сводных колонках."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    for c in range(1, 10):
+        ws.cell(1, c, f"Col{c}")
+    ensure_summary_headers(ws)
+    assert ws.cell(2, 7).value == "Опоздавшие"
+    assert ws.cell(3, 7).value == "О"
+    assert ws.cell(2, 8).value == "отсутствие по уважительной причине"
+    assert ws.cell(3, 8).value == "У"
+    assert ws.cell(2, 9).value == "отсутствие по неуважительной причине"
+    assert ws.cell(3, 9).value == "Н"
