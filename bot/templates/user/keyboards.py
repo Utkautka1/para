@@ -41,26 +41,27 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
     return [btns[i:i + 2] for i in range(0, len(btns), 2)]
 
 
-def _build_nav_rows(week_offset: int, is_admin: bool = False) -> List[List[InlineKeyboardButton]]:
+def _build_nav_rows(
+    week_offset: int, is_admin: bool = False, is_subscribed: bool = True
+) -> List[List[InlineKeyboardButton]]:
     """Формирует основные кнопки навигации по календарю и неделям со стилями."""
     week_btn = (
         InlineKeyboardButton(text="⏭ Неделя (След.)", callback_data="sched:week_next", style="primary")
         if week_offset == 0
         else InlineKeyboardButton(text="⏮ Неделя (Тек.)", callback_data="sched:week", style="primary")
     )
+    notify_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
+    notify_style = "success" if is_subscribed else "secondary"
     rows = [
         [
             InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
             InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success")
         ],
-        [
-            week_btn,
-            InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary")
-        ]
+        [week_btn, InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary")],
+        [InlineKeyboardButton(text=notify_text, callback_data="sched:toggle_notify", style=notify_style)],
     ]
     if is_admin:
-        admin_btn = InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")
-        rows.append([admin_btn])
+        rows.append([InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")])
     return rows
 
 
@@ -68,19 +69,13 @@ def get_schedule_inline_kb(
     lessons: Optional[List[Lesson]] = None,
     week_offset: int = 0,
     is_admin: bool = False,
+    is_subscribed: bool = True,
 ) -> InlineKeyboardMarkup:
-    """
-    Генерирует продвинутую инлайн-клавиатуру навигации.
-
-    :param lessons: Список пар на день
-    :param week_offset: Смещение недели (0 = текущая, 1 = следующая)
-    :param is_admin: Флаг отображения кнопки админ-панели
-    :return: InlineKeyboardMarkup
-    """
+    """Генерирует продвинутую инлайн-клавиатуру навигации с тумблером напоминаний."""
     rows = []
     if lessons:
         rows.extend(chunk_link_buttons(lessons))
-    rows.extend(_build_nav_rows(week_offset, is_admin=is_admin))
+    rows.extend(_build_nav_rows(week_offset, is_admin=is_admin, is_subscribed=is_subscribed))
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

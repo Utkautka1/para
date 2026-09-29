@@ -22,6 +22,7 @@ from core.api_client import (
     get_api_week_schedule,
 )
 from core.logger import get_logger
+from db.subscribers import add_subscriber, is_subscribed, toggle_subscriber
 from services.classmates_auth import process_user_auth
 from services.models import Lesson
 from services.redis_cache import cache_flush, cache_get, cache_set
@@ -35,13 +36,12 @@ router.callback_query.filter(ClassmateAuthFilter())
 async def edit_or_answer(
     callback: CallbackQuery, text: str, lessons: List[Lesson] = None, week_offset: int = 0
 ) -> None:
-    """
-    Безопасно обновляет содержимое текущего сообщения.
-
-    Кнопка админ-панели отображается исключительно Главному Администратору.
-    """
-    is_admin = bool(callback.from_user and callback.from_user.id == ALLOWED_USER_ID)
-    kb = get_schedule_inline_kb(lessons, week_offset=week_offset, is_admin=is_admin)
+    """Безопасно обновляет содержимое текущего сообщения с учетом прав и подписки."""
+    uid = callback.from_user.id if callback.from_user else 0
+    is_admin = bool(uid == ALLOWED_USER_ID)
+    kb = get_schedule_inline_kb(
+        lessons, week_offset=week_offset, is_admin=is_admin, is_subscribed=is_subscribed(uid)
+    )
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
@@ -65,26 +65,45 @@ async def _greet_new_student(message: Message, student: dict) -> None:
 @router.message(CommandStart())
 @router.message(Command("today"))
 async def cmd_start(message: Message) -> None:
-    """
-    Авторизует пользователя и отправляет расписание на сегодня.
-
-    При первом входе одногруппника разово привязывает его Telegram ID.
-    Посторонним пользователям доступ к расписанию блокируется.
-    """
-    is_auth, is_just_registered, student = process_user_auth(message.from_user)
+    """Авторизует пользователя и отправляет расписание на сегодня."""
+    is_auth, is_just_reg, student = process_user_auth(message.from_user)
     if not is_auth:
         await message.answer(
             "⛔ <b>Доступ ограничен.</b>\n"
             "Этот бот работает исключительно для студентов группы 1-КПД-3."
         )
         return
-    if is_just_registered and student:
+    if is_just_reg and student and message.from_user:
+        add_subscriber(message.from_user.id)
         await _greet_new_student(message, student)
-    is_admin = bool(message.from_user and message.from_user.id == ALLOWED_USER_ID)
+    uid = message.from_user.id if message.from_user else 0
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
-    await message.answer(text, reply_markup=get_schedule_inline_kb(lessons, is_admin=is_admin))
+    kb = get_schedule_inline_kb(
+        lessons, is_admin=(uid == ALLOWED_USER_ID), is_subscribed=is_subscribed(uid)
+    )
+    await message.answer(text, reply_markup=kb)
+
+
+@router.callback_query(F.data == "sched:toggle_notify")
+async def cb_toggle_notify(callback: CallbackQuery) -> None:
+    """Переключает статус подписки на 10-минутные напоминания о парах в ЛС."""
+    uid = callback.from_user.id if callback.from_user else 0
+    new_sub = toggle_subscriber(uid)
+    ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
+    try:
+        await callback.answer(ans_text)
+    except TelegramBadRequest:
+        pass
+    now = datetime.now(TIMEZONE).date()
+    lessons = await get_api_schedule_for_date(now)
+    kb = get_schedule_inline_kb(lessons, is_admin=(uid == ALLOWED_USER_ID), is_subscribed=new_sub)
+    try:
+        if callback.message:
+            await callback.message.edit_reply_markup(reply_markup=kb)
+    except TelegramBadRequest:
+        pass
 
 
 @router.callback_query(F.data == "sched:today")

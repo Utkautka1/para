@@ -152,3 +152,39 @@ async def test_classmate_auth_filter_blocks_stranger() -> None:
         cb = MagicMock(spec=CallbackQuery)
         cb.from_user = User(id=999888, is_bot=False, first_name="Stranger")
         assert await filt(cb) is False
+
+
+@pytest.mark.asyncio
+async def test_send_single_reminder_subscribers_only() -> None:
+    """Проверяет, что напоминание отправляется исключительно активным подписчикам."""
+    from unittest.mock import AsyncMock
+    from services.models import Lesson
+    from services.notifier import send_single_reminder
+    lesson = Lesson(
+        subject="Математика", teacher="Иванов И.И.", room="101",
+        time_str="10:00-11:30", period=0, is_remote=False,
+        lesson_type="Пр", address="Корпус 1"
+    )
+    with patch("db.subscribers.load_subscribers", return_value={1000965210}), \
+         patch("services.notifier.bot.send_message", new_callable=AsyncMock) as mock_send:
+        await send_single_reminder(lesson)
+        assert mock_send.call_count == 1
+        assert mock_send.call_args[0][0] == 1000965210
+
+
+@pytest.mark.asyncio
+async def test_cb_toggle_notify() -> None:
+    """Проверяет реакцию хэндлера cb_toggle_notify на переключение подписки."""
+    from unittest.mock import AsyncMock
+    from bot.handlers.user.schedule import cb_toggle_notify
+    cb = MagicMock(spec=CallbackQuery)
+    cb.from_user = User(id=12345, is_bot=False, first_name="User")
+    cb.answer = AsyncMock()
+    cb.message = MagicMock(spec=Message)
+    cb.message.edit_reply_markup = AsyncMock()
+    with patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True), \
+         patch("bot.handlers.user.schedule.get_api_schedule_for_date", return_value=[]):
+        await cb_toggle_notify(cb)
+        cb.answer.assert_called_once_with("🔔 Напоминания за 10 мин включены!")
+        cb.message.edit_reply_markup.assert_called_once()
+

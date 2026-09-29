@@ -130,8 +130,22 @@ def test_get_schedule_inline_kb_contains_navigation() -> None:
     assert "sched:tomorrow" in user_cbs
     assert "sched:week_next" in user_cbs
     assert "sched:refresh" in user_cbs
+    assert "sched:toggle_notify" in user_cbs
     assert "admin:menu" not in user_cbs
 
     kb_admin = get_schedule_inline_kb([], week_offset=0, is_admin=True)
     admin_cbs = [btn.callback_data for row in kb_admin.inline_keyboard for btn in row]
     assert "admin:menu" in admin_cbs
+
+
+def test_get_schedule_inline_kb_notify_toggle_states() -> None:
+    """Проверяет текст кнопки переключения напоминаний при разных статусах."""
+    kb_on = get_schedule_inline_kb([], is_subscribed=True)
+    btns_on = [btn for row in kb_on.inline_keyboard for btn in row]
+    toggle_on = next(b for b in btns_on if b.callback_data == "sched:toggle_notify")
+    assert "🔔 Напоминания: Вкл" in toggle_on.text
+
+    kb_off = get_schedule_inline_kb([], is_subscribed=False)
+    btns_off = [btn for row in kb_off.inline_keyboard for btn in row]
+    toggle_off = next(b for b in btns_off if b.callback_data == "sched:toggle_notify")
+    assert "🔕 Напоминания: Выкл" in toggle_off.text

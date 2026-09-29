@@ -66,3 +66,33 @@ def remove_subscriber(chat_id: int) -> bool:
         log.info(f"Удален подписчик: {chat_id}")
         return True
     return False
+
+
+def is_subscribed(chat_id: int) -> bool:
+    """
+    Проверяет, подписан ли пользователь на 10-минутные напоминания в ЛС.
+
+    :param chat_id: Telegram ID чата
+    :return: True, если напоминания включены
+    """
+    return chat_id in load_subscribers()
+
+
+def toggle_subscriber(chat_id: int) -> bool:
+    """
+    Инвертирует статус подписки пользователя на напоминания в ЛС.
+
+    :param chat_id: Telegram ID чата
+    :return: Новый статус (True = включено, False = выключено)
+    """
+    subs = load_subscribers()
+    if chat_id in subs:
+        subs.remove(chat_id)
+        save_subscribers(subs)
+        log.info(f"🔕 Пользователь отключил напоминания: {chat_id}")
+        return False
+    subs.add(chat_id)
+    save_subscribers(subs)
+    log.info(f"🔔 Пользователь включил напоминания: {chat_id}")
+    return True
+
