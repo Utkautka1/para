@@ -26,9 +26,10 @@ from services.attendance_manager import (
 from services.models import Lesson
 from services.yandex_docs import (
     extract_client_config, find_date_column_start, find_lesson_column,
-    find_student_row, get_month_sheet, get_students_list, normalize_fio,
-    parse_date_cell, write_student_mark
+    find_student_row, get_month_sheet, get_students_list, get_yandex_cookie_header,
+    normalize_fio, parse_date_cell, write_student_mark
 )
+from unittest.mock import patch
 
 
 def create_mock_workbook() -> openpyxl.Workbook:
@@ -43,6 +44,18 @@ def create_mock_workbook() -> openpyxl.Workbook:
     ws.cell(6, 2, "Петров Петр Петрович")
     ws.cell(7, 2, "Сидоров Сидор Сидорович")
     return wb
+
+
+def test_get_yandex_cookie_header_variants():
+    """Проверяет формирование заголовка Cookie из YANDEX_COOKIE или YANDEX_SESSION_ID."""
+    with patch("config.YANDEX_COOKIE", "foo=bar; baz=qux"), patch("config.YANDEX_SESSION_ID", "123"):
+        assert get_yandex_cookie_header() == "foo=bar; baz=qux"
+
+    with patch("config.YANDEX_COOKIE", ""), patch("config.YANDEX_SESSION_ID", "3:123456"):
+        assert get_yandex_cookie_header() == "Session_id=3:123456"
+
+    with patch("config.YANDEX_COOKIE", ""), patch("config.YANDEX_SESSION_ID", ""):
+        assert get_yandex_cookie_header() == ""
 
 
 def test_extract_client_config_success():

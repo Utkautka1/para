@@ -85,3 +85,5 @@ API_BASE_URL: str = os.getenv("API_BASE_URL", "http://api:8000")
 DEPUTY_USER_ID: int = int(get_required_env("DEPUTY_USER_ID"))
 ALLOWED_ATTENDANCE_USER_IDS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
 ATTENDANCE_DOC_URL: str = get_required_env("ATTENDANCE_DOC_URL")
+YANDEX_SESSION_ID: str = os.getenv("YANDEX_SESSION_ID", "")
+YANDEX_COOKIE: str = os.getenv("YANDEX_COOKIE", "")
