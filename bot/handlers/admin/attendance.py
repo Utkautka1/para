@@ -88,6 +88,7 @@ def parse_start_callback(data: str):
 @router.callback_query(F.data.startswith("att:start:"))
 async def cb_start_attendance(cb: CallbackQuery) -> None:
     """Инициализирует сессию отметки и выводит первого студента."""
+    await cb.answer()
     target_date, lesson_num = parse_start_callback(cb.data)
     lessons = await get_api_schedule_for_date(target_date)
     matched = [les for les in lessons if getattr(les, "number", getattr(les, "period", -1) + 1) == lesson_num]
@@ -105,7 +106,6 @@ async def cb_start_attendance(cb: CallbackQuery) -> None:
     kb = get_student_poll_kb(can_back=False)
     if cb.message:
         await cb.message.edit_text(card_text, reply_markup=kb)
-    await cb.answer()
 
 
 @router.callback_query(F.data.startswith("att:mark:"))
