@@ -26,6 +26,11 @@ class Lesson(BaseModel):
     remote_passcode: Optional[str] = None
     remote_meeting_id: Optional[str] = None
 
+    @property
+    def number(self) -> int:
+        """Номер пары от 1 до 6 (period + 1)."""
+        return self.period + 1
+
 
 class ExamItem(BaseModel):
     """Модель контрольного мероприятия/экзамена."""

@@ -237,11 +237,21 @@ def test_get_days_select_kb():
     assert kb.inline_keyboard[0][0].callback_data.startswith("att:day:")
 
 
-def test_get_lesson_select_kb():
-    """Проверяет список пар для ручного выбора /attendance."""
-    mock_l1 = MagicMock(number=1, subject="Информатика")
-    mock_l2 = MagicMock(number=2, subject="История")
-    kb = get_lesson_select_kb([mock_l1, mock_l2], chosen_date=date(2026, 9, 29))
+def test_lesson_model_number_property():
+    """Проверяет свойство number модели Lesson (period + 1)."""
+    l0 = Lesson(period=0, time_str="08:30", subject="Мат", lesson_type="Лек", teacher="", is_remote=False, room="", address="")
+    l2 = Lesson(period=2, time_str="12:00", subject="Физ", lesson_type="Прак", teacher="", is_remote=False, room="", address="")
+    assert l0.number == 1
+    assert l2.number == 3
+
+
+def test_get_lesson_select_kb_with_lesson_models():
+    """Проверяет генерацию кнопок с объектами Lesson и дедупликацию подгрупп."""
+    l1 = Lesson(period=0, time_str="08:30", subject="Информатика", lesson_type="Лаб", teacher="", is_remote=False, room="", address="", subgroup=1)
+    l2 = Lesson(period=0, time_str="08:30", subject="Информатика", lesson_type="Лаб", teacher="", is_remote=False, room="", address="", subgroup=2)
+    l3 = Lesson(period=1, time_str="10:00", subject="История", lesson_type="Лек", teacher="", is_remote=False, room="", address="")
+    kb = get_lesson_select_kb([l1, l2, l3], chosen_date=date(2026, 9, 29))
+    # 2 ряда пар (Пара 1 дедуплицирована, Пара 2) + 1 ряд навигации = 3 ряда
     assert len(kb.inline_keyboard) == 3
     assert kb.inline_keyboard[0][0].callback_data == "att:start:2026-09-29:1"
     assert kb.inline_keyboard[1][0].callback_data == "att:start:2026-09-29:2"

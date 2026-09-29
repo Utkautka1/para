@@ -90,7 +90,7 @@ async def cb_start_attendance(cb: CallbackQuery) -> None:
     """Инициализирует сессию отметки и выводит первого студента."""
     target_date, lesson_num = parse_start_callback(cb.data)
     lessons = await get_api_schedule_for_date(target_date)
-    matched = [les for les in lessons if les.number == lesson_num]
+    matched = [les for les in lessons if getattr(les, "number", getattr(les, "period", -1) + 1) == lesson_num]
     title = matched[0].subject if matched else f"Пара {lesson_num}"
     if cb.message:
         await cb.message.edit_text("⏳ <i>Загрузка списка группы из таблицы...</i>")
