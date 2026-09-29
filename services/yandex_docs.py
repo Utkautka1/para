@@ -175,18 +175,29 @@ def patch_sheet_xml_counts(xml_text: str, counts: Dict[Tuple[str, int], int]) ->
 
 
 def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None:
-    """Гарантирует текстовые заголовки и коды О, У, Н во всех листах месяцев."""
+    """Гарантирует заголовки, коды и COUNTIF формулы во всех листах месяцев."""
     for name in wb.sheetnames:
-        if name in MONTH_SHEET_MAP.values():
-            sheet = wb[name]
-            mc = sheet.max_column
-            if mc >= 4:
-                sheet.cell(2, mc - 2, "Опоздавшие")
-                sheet.cell(3, mc - 2, "О")
-                sheet.cell(2, mc - 1, "отсутствие по уважительной причине")
-                sheet.cell(3, mc - 1, "У")
-                sheet.cell(2, mc, "отсутствие по неуважительной причине")
-                sheet.cell(3, mc, "Н")
+        if name not in MONTH_SHEET_MAP.values():
+            continue
+        sheet = wb[name]
+        mc = sheet.max_column
+        if mc < 4:
+            continue
+        c_o, c_u, c_n = mc - 2, mc - 1, mc
+        l_o = openpyxl.utils.get_column_letter(c_o)
+        l_u = openpyxl.utils.get_column_letter(c_u)
+        l_n = openpyxl.utils.get_column_letter(c_n)
+        end_col = openpyxl.utils.get_column_letter(mc - 3)
+        sheet.cell(2, c_o, "Опоздавшие")
+        sheet.cell(3, c_o, "О")
+        sheet.cell(2, c_u, "отсутствие по уважительной причине")
+        sheet.cell(3, c_u, "У")
+        sheet.cell(2, c_n, "отсутствие по неуважительной причине")
+        sheet.cell(3, c_n, "Н")
+        for r in range(5, 37):
+            sheet.cell(r, c_o, f"=COUNTIF($C{r}:${end_col}{r},{l_o}$3)")
+            sheet.cell(r, c_u, f"=COUNTIF($C{r}:${end_col}{r},{l_u}$3)")
+            sheet.cell(r, c_n, f"=COUNTIF($C{r}:${end_col}{r},{l_n}$3)")
 
 
 def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
