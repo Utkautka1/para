@@ -164,11 +164,15 @@ async def send_attendance_prompt(lesson: Lesson) -> None:
 
 
 async def auto_close_attendance_session(lesson_num: int) -> None:
-    """Автоматически закрывает сессию отметки по окончании пары."""
+    """Автоматически закрывает неактивную сессию отметки по окончании пары."""
     session = await get_active_session()
-    if session and session.lesson_num == lesson_num:
-        await clear_session()
-        log.info(f"Сессия посещаемости пары {lesson_num} закрыта по окончании пары")
+    if not session or session.lesson_num != lesson_num:
+        return
+    if session.current_idx > 0:
+        log.debug(f"Сессия пары {lesson_num} не сброшена: идет активное заполнение ({session.current_idx})")
+        return
+    await clear_session()
+    log.info(f"Сессия посещаемости пары {lesson_num} закрыта по окончании пары")
 
 
 def schedule_attendance_poll(today: datetime.date, lesson: Lesson, now_dt: datetime) -> None:

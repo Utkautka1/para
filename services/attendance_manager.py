@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 from core.logger import get_logger
-from core.redis import redis_client
+from core.redis import get_redis
 from services.yandex_docs import (
     download_workbook, find_lesson_column, get_month_sheet,
     get_students_list, init_wopi_session, upload_workbook, write_student_mark
@@ -39,27 +39,37 @@ class AttendanceSession(BaseModel):
 
 async def save_session_to_redis(session: AttendanceSession) -> None:
     """Сохраняет состояние сессии в Redis с установленным TTL."""
-    if not redis_client:
+    client = await get_redis()
+    if not client:
+        log.error("Redis недоступен для сохранения сессии")
         return
     data = session.model_dump_json()
-    await redis_client.set(REDIS_SESSION_KEY, data, ex=SESSION_TTL_SECONDS)
-    log.debug(f"Сессия посещаемости сохранена (студент {session.current_idx}/{len(session.students)})")
+    await client.set(REDIS_SESSION_KEY, data, ex=SESSION_TTL_SECONDS)
+    log.info(f"Сессия посещаемости сохранена в Redis (пара {session.lesson_num}, студент {session.current_idx}/{len(session.students)})")
 
 
 async def get_active_session() -> Optional[AttendanceSession]:
     """Извлекает активную сессию посещаемости из Redis."""
-    if not redis_client:
+    client = await get_redis()
+    if not client:
+        log.error("Redis недоступен для чтения сессии")
         return None
-    data = await redis_client.get(REDIS_SESSION_KEY)
+    data = await client.get(REDIS_SESSION_KEY)
     if not data:
+        log.warning(f"Активная сессия не найдена по ключу '{REDIS_SESSION_KEY}'")
         return None
-    return AttendanceSession.model_validate_json(data)
+    try:
+        return AttendanceSession.model_validate_json(data)
+    except Exception as e:
+        log.error(f"Ошибка десериализации сессии: {e}")
+        return None
 
 
 async def clear_session() -> None:
     """Удаляет активную сессию посещаемости из Redis."""
-    if redis_client:
-        await redis_client.delete(REDIS_SESSION_KEY)
+    client = await get_redis()
+    if client:
+        await client.delete(REDIS_SESSION_KEY)
         log.info("Сессия посещаемости сброшена в Redis")
 
 
