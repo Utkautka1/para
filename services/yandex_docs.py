@@ -15,6 +15,7 @@ import re
 import zipfile
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
+import uuid
 import httpx
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
@@ -161,14 +162,14 @@ def patch_sheet_xml_counts(xml_text: str, counts: Dict[Tuple[str, int], int]) ->
             return m.group(0)
         count = counts[(col, r)]
         tag = m.group(0)
-        if re.search(r"<(?:\w+:)?v>", tag):
-            return re.sub(r"(<(?:\w+:)?v>)[^<]*(</(?:\w+:)?v>)", rf"\g<1>{count}\g<2>", tag)
+        if re.search(r"<(?:\w+:)?v[>/]", tag):
+            return re.sub(r"<(?:\w+:)?v[^>]*>.*?</(?:\w+:)?v>|<(?:\w+:)?v\s*/>", f"<v>{count}</v>", tag)
         return re.sub(r"</(?:\w+:)?c>", f"<v>{count}</v></c>", tag)
 
     pattern = (
         r"<(?:\w+:)?c\s+r=\"([A-Z]+)(\d+)\"[^>]*>"
         r"<(?:\w+:)?f[^>]*>[^<]+</(?:\w+:)?f>"
-        r"(?:<(?:\w+:)?v>[^<]*</(?:\w+:)?v>)?"
+        r"(?:<(?:\w+:)?v>[^<]*</(?:\w+:)?v>|<(?:\w+:)?v\s*/>)?"
         r"</(?:\w+:)?c>"
     )
     return re.sub(pattern, repl, xml_text)
@@ -219,6 +220,9 @@ def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
 def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes:
     """Синхронно сохраняет книгу openpyxl в байты с инжекцией кэша формул."""
     ensure_all_summary_headers(wb)
+    wb.calculation.calcMode = "auto"
+    wb.calculation.fullCalcOnLoad = True
+    wb.calculation.forceFullCalc = True
     buf = io.BytesIO()
     wb.save(buf)
     return inject_summary_cache(buf.getvalue(), wb)
@@ -240,25 +244,52 @@ async def download_workbook(session: WopiSession) -> openpyxl.Workbook:
         return wb
 
 
-async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool:
-    """
-    Сохраняет книгу openpyxl и выгружает байты на сервер по WOPI.
+async def acquire_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool:
+    """Блокирует файл в WOPI перед записью (HTTP 200)."""
+    url = f"{session.resource_url}?access_token={session.access_token}"
+    hdr = {"X-WOPI-Override": "LOCK", "X-WOPI-Lock": lock_id}
+    res = await client.post(url, headers=hdr)
+    return res.status_code == 200
 
-    Возвращает True в случае успешного сохранения (HTTP 200).
-    """
-    data = await asyncio.to_thread(save_workbook_to_bytes, wb)
+
+async def release_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool:
+    """Снимает блокировку с файла после записи (HTTP 200)."""
+    url = f"{session.resource_url}?access_token={session.access_token}"
+    hdr = {"X-WOPI-Override": "UNLOCK", "X-WOPI-Lock": lock_id}
+    res = await client.post(url, headers=hdr)
+    return res.status_code == 200
+
+
+async def put_wopi_contents(
+    session: WopiSession, client: httpx.AsyncClient, data: bytes, lock_id: str
+) -> httpx.Response:
+    """Отправляет бинарные данные таблицы методом PUT по протоколу WOPI."""
     url = f"{session.resource_url}/contents?access_token={session.access_token}"
-    headers = {
+    hdr = {
         "X-WOPI-Override": "PUT",
         "Content-Type": "application/octet-stream",
-        "X-WOPI-Lock": session.lock_id
+        "X-WOPI-Lock": lock_id,
     }
+    return await client.post(url, headers=hdr, content=data)
+
+
+async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool:
+    """Сохраняет книгу и выгружает её на сервер с надёжным управлением блокировками."""
+    data = await asyncio.to_thread(save_workbook_to_bytes, wb)
     async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.post(url, headers=headers, content=data)
-        if res.status_code == 200:
-            log.info(f"✅ Таблица успешно сохранена в Яндекс Документах ({len(data)} байт)")
-            return True
-        log.error(f"❌ Ошибка загрузки таблицы: HTTP {res.status_code} {res.text}")
+        if session.lock_id:
+            res = await put_wopi_contents(session, client, data, session.lock_id)
+            if res.status_code == 200:
+                log.info(f"✅ Таблица успешно сохранена ({len(data)} байт)")
+                return True
+        new_lock = str(uuid.uuid4())
+        if await acquire_wopi_lock(session, client, new_lock):
+            res = await put_wopi_contents(session, client, data, new_lock)
+            await release_wopi_lock(session, client, new_lock)
+            if res.status_code == 200:
+                log.info(f"✅ Таблица сохранена под новым lock ({len(data)} байт)")
+                return True
+        log.error("❌ Ошибка загрузки таблицы в WOPI")
         return False
 
 
