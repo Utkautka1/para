@@ -12,8 +12,8 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, Message
 
-from config import TIMEZONE
-from bot.filters.auth import AuthFilter
+from config import ALLOWED_USER_ID, TIMEZONE
+from bot.filters.auth import ClassmateAuthFilter
 from bot.templates.user.keyboards import get_schedule_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_week_schedule
 from core.api_client import (
@@ -22,14 +22,14 @@ from core.api_client import (
     get_api_week_schedule,
 )
 from core.logger import get_logger
+from services.classmates_auth import process_user_auth
 from services.models import Lesson
 from services.redis_cache import cache_flush, cache_get, cache_set
 
 log = get_logger("user_schedule")
 
 router = Router()
-router.message.filter(AuthFilter())
-router.callback_query.filter(AuthFilter())
+router.callback_query.filter(ClassmateAuthFilter())
 
 
 async def edit_or_answer(
@@ -38,12 +38,10 @@ async def edit_or_answer(
     """
     Безопасно обновляет содержимое текущего сообщения.
 
-    :param callback: Объект CallbackQuery
-    :param text: Новый HTML текст
-    :param lessons: Список пар для кнопок подключений
-    :param week_offset: Смещение недели
+    Кнопка админ-панели отображается исключительно Главному Администратору.
     """
-    kb = get_schedule_inline_kb(lessons, week_offset=week_offset)
+    is_admin = bool(callback.from_user and callback.from_user.id == ALLOWED_USER_ID)
+    kb = get_schedule_inline_kb(lessons, week_offset=week_offset, is_admin=is_admin)
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
@@ -55,20 +53,38 @@ async def edit_or_answer(
         pass
 
 
+async def _greet_new_student(message: Message, student: dict) -> None:
+    """Отправляет персональное приветствие новому зарегистрированному студенту."""
+    name = student.get("full_name", "Студент")
+    await message.answer(
+        f"🎉 <b>Добро пожаловать, {name}!</b>\n"
+        "Ты успешно авторизован(а) в боте группы 1-КПД-3."
+    )
+
+
 @router.message(CommandStart())
 @router.message(Command("today"))
 async def cmd_start(message: Message) -> None:
     """
-    Отправляет расписание с инлайн-меню и гарантированно скрывает Reply-кнопки.
+    Авторизует пользователя и отправляет расписание на сегодня.
 
-    :param message: Telegram сообщение
+    При первом входе одногруппника разово привязывает его Telegram ID.
+    Посторонним пользователям доступ к расписанию блокируется.
     """
-    user_id = message.from_user.id if message.from_user else "unknown"
-    log.info(f"Получена команда /start или /today от user_id={user_id}")
+    is_auth, is_just_registered, student = process_user_auth(message.from_user)
+    if not is_auth:
+        await message.answer(
+            "⛔ <b>Доступ ограничен.</b>\n"
+            "Этот бот работает исключительно для студентов группы 1-КПД-3."
+        )
+        return
+    if is_just_registered and student:
+        await _greet_new_student(message, student)
+    is_admin = bool(message.from_user and message.from_user.id == ALLOWED_USER_ID)
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
-    await message.answer(text, reply_markup=get_schedule_inline_kb(lessons))
+    await message.answer(text, reply_markup=get_schedule_inline_kb(lessons, is_admin=is_admin))
 
 
 @router.callback_query(F.data == "sched:today")

@@ -123,11 +123,15 @@ def test_get_topic_inline_kb_behavior() -> None:
 
 
 def test_get_schedule_inline_kb_contains_navigation() -> None:
-    """Проверяет присутствие навигационных кнопок в главной клавиатуре."""
-    kb = get_schedule_inline_kb([], week_offset=0)
-    all_callbacks = [btn.callback_data for row in kb.inline_keyboard for btn in row]
-    assert "sched:today" in all_callbacks
-    assert "sched:tomorrow" in all_callbacks
-    assert "sched:week_next" in all_callbacks
-    assert "sched:refresh" in all_callbacks
-    assert "admin:menu" in all_callbacks
+    """Проверяет навигационные кнопки и скрытие админки для студентов."""
+    kb_user = get_schedule_inline_kb([], week_offset=0, is_admin=False)
+    user_cbs = [btn.callback_data for row in kb_user.inline_keyboard for btn in row]
+    assert "sched:today" in user_cbs
+    assert "sched:tomorrow" in user_cbs
+    assert "sched:week_next" in user_cbs
+    assert "sched:refresh" in user_cbs
+    assert "admin:menu" not in user_cbs
+
+    kb_admin = get_schedule_inline_kb([], week_offset=0, is_admin=True)
+    admin_cbs = [btn.callback_data for row in kb_admin.inline_keyboard for btn in row]
+    assert "admin:menu" in admin_cbs

@@ -12,7 +12,7 @@ from config import ALLOWED_USER_ID
 
 
 class AuthFilter(Filter):
-    """Фильтр доступа по Telegram ID."""
+    """Фильтр доступа по Telegram ID исключительно для Главного Администратора."""
 
     async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
         """
@@ -25,4 +25,19 @@ class AuthFilter(Filter):
         if not user:
             return False
         return user.id == ALLOWED_USER_ID
+
+
+class ClassmateAuthFilter(Filter):
+    """Фильтр доступа для администратора и авторизованных студентов группы."""
+
+    async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
+        """
+        Проверяет, авторизован ли пользователь для доступа к расписанию.
+
+        :param event: Сообщение или callback Telegram
+        :return: True, если пользователь админ или подтвержденный одногруппник
+        """
+        from services.classmates_auth import is_authorized_user
+        user = getattr(event, "from_user", None)
+        return is_authorized_user(user)
 
