@@ -366,18 +366,27 @@ def _verify_marks_in_raw(
 def _extract_sheet_xml(raw: bytes, sheet_name: str) -> Optional[str]:
     """Извлекает XML нужного листа по имени из xlsx (zip-архива)."""
     with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        # workbook.xml содержит маппинг имён листов
         wb_xml = zf.read("xl/workbook.xml").decode("utf-8")
-        # Ищем sheet с нужным именем → sheetId/r:id
-        pattern = rf'<sheet[^>]*name="{re.escape(sheet_name)}"[^>]*/>'
-        match = re.search(pattern, wb_xml)
-        if not match:
+        rid = _find_sheet_rid(wb_xml, sheet_name)
+        if not rid:
             return None
-        # Извлекаем r:id → rels → target filename
-        rid_match = re.search(r'r:id="(\w+)"', match.group(0))
-        if not rid_match:
-            return None
-        return _resolve_sheet_by_rid(zf, rid_match.group(1))
+        return _resolve_sheet_by_rid(zf, rid)
+
+
+def _find_sheet_rid(wb_xml: str, sheet_name: str) -> Optional[str]:
+    """Находит r:id листа по имени в workbook.xml.
+
+    Парсит каждый тег <sheet ...> отдельно — устойчиво к xmlns,
+    порядку атрибутов и кавычкам внутри тегов.
+    """
+    # Захватываем весь тег <sheet ... /> или <sheet ...>...</sheet>
+    for tag in re.finditer(r'<(?:\w+:)?sheet\s([^/]*?)/>', wb_xml):
+        attrs = tag.group(1)
+        name_m = re.search(r'name="([^"]*)"', attrs)
+        rid_m = re.search(r'r:id="(\w+)"', attrs)
+        if name_m and name_m.group(1) == sheet_name and rid_m:
+            return rid_m.group(1)
+    return None
 
 
 def _resolve_sheet_by_rid(zf: zipfile.ZipFile, rid: str) -> Optional[str]:
