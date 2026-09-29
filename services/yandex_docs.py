@@ -126,6 +126,21 @@ async def init_wopi_session(doc_url: str = ATTENDANCE_DOC_URL) -> WopiSession:
     return WopiSession(res_url, token, lock_id)
 
 
+def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook:
+    """Синхронно парсит байты книги openpyxl в отдельном потоке без логов предупреждений."""
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        return openpyxl.load_workbook(io.BytesIO(content))
+
+
+def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes:
+    """Синхронно сохраняет книгу openpyxl в байты в отдельном потоке."""
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 async def download_workbook(session: WopiSession) -> openpyxl.Workbook:
     """
     Скачивает бинарный контент таблицы и загружает в openpyxl.
@@ -137,8 +152,7 @@ async def download_workbook(session: WopiSession) -> openpyxl.Workbook:
         res = await client.get(url)
         if res.status_code != 200:
             raise RuntimeError(f"Ошибка скачивания таблицы: HTTP {res.status_code}")
-        # Загружаем байты книги в память без записи на диск
-        wb = openpyxl.load_workbook(io.BytesIO(res.content))
+        wb = await asyncio.to_thread(load_workbook_from_bytes, res.content)
         log.info(f"Таблица успешно скачана ({len(res.content)} байт)")
         return wb
 
@@ -149,9 +163,7 @@ async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool:
 
     Возвращает True в случае успешного сохранения (HTTP 200).
     """
-    buf = io.BytesIO()
-    wb.save(buf)
-    data = buf.getvalue()
+    data = await asyncio.to_thread(save_workbook_to_bytes, wb)
     url = f"{session.resource_url}/contents?access_token={session.access_token}"
     headers = {
         "X-WOPI-Override": "PUT",
