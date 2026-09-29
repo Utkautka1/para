@@ -108,17 +108,16 @@ def parse_lesson_end_time(time_str: str) -> Optional[dtime]:
 
 async def send_single_reminder(lesson: Lesson) -> None:
     """
-    Отправляет 10-минутное напоминание о паре всем подписчикам и админу.
+    Отправляет 10-минутное напоминание о паре всем активным подписчикам в ЛС.
 
     :param lesson: Объект пары
     """
     log.info(f"Отправка напоминания для пары {lesson.period + 1}: {lesson.subject}")
     text = format_reminder_text(lesson)
-    kb = get_schedule_inline_kb([lesson])
     from db.subscribers import load_subscribers
     targets = load_subscribers()
-    targets.add(ALLOWED_USER_ID)
     for chat_id in targets:
+        kb = get_schedule_inline_kb([lesson], is_admin=(chat_id == ALLOWED_USER_ID), is_subscribed=True)
         try:
             await bot.send_message(chat_id, text, reply_markup=kb)
         except Exception as e:
