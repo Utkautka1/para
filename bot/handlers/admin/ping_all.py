@@ -20,6 +20,7 @@ import html
 import re
 from typing import Any, Dict, List, Optional
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import Message, User
 from bot.filters.auth import AuthFilter
@@ -124,10 +125,15 @@ async def safe_delete_command_message(message: Message) -> None:
     """
     Безопасно удаляет триггер-сообщение автора команды.
 
-    Использует try/except, чтобы отсутствие прав на удаление не ломало отправку поста.
+    Игнорирует ошибки, если сообщение уже удалено пользователем или таймером.
     """
     try:
         await message.delete()
+    except TelegramBadRequest as e:
+        if "not found" in str(e).lower():
+            log.debug("Сообщение с командой /all уже было удалено")
+            return
+        log.warning(f"Не удалось удалить команду /all: {e}")
     except Exception as e:
         log.warning(f"Не удалось удалить команду /all: {e}")
 
