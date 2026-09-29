@@ -157,11 +157,36 @@ def patch_sheet_xml_counts(xml_text: str, counts: Dict[Tuple[str, int], int]) ->
     """Заменяет пустые значения <v></v> на вычисленные количества в XML листа."""
     def repl(m):
         col, r = m.group(1), int(m.group(2))
-        count = counts.get((col, r), 0)
-        return re.sub(r"(<(?:\w+:)?v>)[^<]*(</(?:\w+:)?v>)", rf"\g<1>{count}\g<2>", m.group(0))
+        if (col, r) not in counts:
+            return m.group(0)
+        count = counts[(col, r)]
+        tag = m.group(0)
+        if re.search(r"<(?:\w+:)?v>", tag):
+            return re.sub(r"(<(?:\w+:)?v>)[^<]*(</(?:\w+:)?v>)", rf"\g<1>{count}\g<2>", tag)
+        return re.sub(r"</(?:\w+:)?c>", f"<v>{count}</v></c>", tag)
 
-    pattern = r"<(?:\w+:)?c\s+r=\"([A-Z]+)(\d+)\"[^>]*><(?:\w+:)?f[^>]*>[^<]+</(?:\w+:)?f><(?:\w+:)?v>[^<]*</(?:\w+:)?v></(?:\w+:)?c>"
+    pattern = (
+        r"<(?:\w+:)?c\s+r=\"([A-Z]+)(\d+)\"[^>]*>"
+        r"<(?:\w+:)?f[^>]*>[^<]+</(?:\w+:)?f>"
+        r"(?:<(?:\w+:)?v>[^<]*</(?:\w+:)?v>)?"
+        r"</(?:\w+:)?c>"
+    )
     return re.sub(pattern, repl, xml_text)
+
+
+def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None:
+    """Гарантирует текстовые заголовки и коды О, У, Н во всех листах месяцев."""
+    for name in wb.sheetnames:
+        if name in MONTH_SHEET_MAP.values():
+            sheet = wb[name]
+            mc = sheet.max_column
+            if mc >= 4:
+                sheet.cell(2, mc - 2, "Опоздавшие")
+                sheet.cell(3, mc - 2, "О")
+                sheet.cell(2, mc - 1, "отсутствие по уважительной причине")
+                sheet.cell(3, mc - 1, "У")
+                sheet.cell(2, mc, "отсутствие по неуважительной причине")
+                sheet.cell(3, mc, "Н")
 
 
 def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
@@ -182,6 +207,7 @@ def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
 
 def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes:
     """Синхронно сохраняет книгу openpyxl в байты с инжекцией кэша формул."""
+    ensure_all_summary_headers(wb)
     buf = io.BytesIO()
     wb.save(buf)
     return inject_summary_cache(buf.getvalue(), wb)
