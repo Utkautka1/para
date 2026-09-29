@@ -11,7 +11,7 @@ import asyncio
 from core.api_client import close_api_client
 from core.bot import bot, dp
 from core.logger import get_logger
-from core.redis import init_redis, redis_client
+from core.redis import close_redis, init_redis
 
 log = get_logger("bot_main")
 
@@ -40,8 +40,7 @@ async def shutdown_bot() -> None:
     """Корректно закрывает сессию бота, HTTP-клиент API и подключение к Redis."""
     log.info("Остановка бота: закрытие сессий...")
     await close_api_client()
-    if redis_client:
-        await redis_client.aclose()
+    await close_redis()
     await bot.session.close()
     log.info("Сессии Telegram, API и Redis закрыты. Бот остановлен.")
 

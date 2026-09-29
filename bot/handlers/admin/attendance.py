@@ -116,15 +116,14 @@ async def cb_mark_student(cb: CallbackQuery) -> None:
     if not session:
         await cb.answer("Сессия завершена или не найдена", show_alert=True)
         return
+    await cb.answer()
     if session.current_idx < len(session.students):
         text = format_student_card(session)
         kb = get_student_poll_kb(can_back=True)
         if cb.message:
             await cb.message.edit_text(text, reply_markup=kb)
-        await cb.answer()
         return
     await finish_and_notify(cb, session)
-    await cb.answer()
 
 
 @router.callback_query(F.data == "att:back")
@@ -149,8 +148,8 @@ async def cb_all_present(cb: CallbackQuery) -> None:
     if not session:
         await cb.answer("Сессия не найдена", show_alert=True)
         return
-    await finish_and_notify(cb, session)
     await cb.answer()
+    await finish_and_notify(cb, session)
 
 
 @router.callback_query(F.data.startswith("att:cancel:"))

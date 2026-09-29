@@ -12,7 +12,7 @@
 from datetime import date, datetime
 import openpyxl
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from bot.filters.auth import AttendanceAuthFilter
 from bot.templates.admin.attendance import (
@@ -21,7 +21,9 @@ from bot.templates.admin.attendance import (
 )
 from config import ALLOWED_USER_ID, DEPUTY_USER_ID
 from services.attendance_manager import (
-    AttendanceSession, apply_marks_to_sheet, calculate_summary_stats
+    AttendanceSession, apply_marks_to_sheet, calculate_summary_stats,
+    clear_session, get_active_session, mark_all_remaining_present,
+    record_student_mark, save_session_to_redis, step_back
 )
 from services.models import Lesson
 from services.yandex_docs import (
@@ -29,7 +31,6 @@ from services.yandex_docs import (
     find_student_row, get_month_sheet, get_students_list, get_yandex_cookie_header,
     normalize_fio, parse_date_cell, write_student_mark
 )
-from unittest.mock import patch
 
 
 def create_mock_workbook() -> openpyxl.Workbook:
@@ -285,3 +286,77 @@ async def test_attendance_auth_filter():
     user_stranger = MagicMock(id=999999999)
     msg_stranger = MagicMock(from_user=user_stranger)
     assert await filter_(msg_stranger) is False
+
+
+@pytest.mark.asyncio
+async def test_redis_session_crud():
+    """Проверяет сохранение, извлечение и удаление сессии посещаемости в Redis."""
+    store = {}
+    mock_redis = AsyncMock()
+    mock_redis.set.side_effect = lambda k, v, ex=None: store.update({k: v})
+    mock_redis.get.side_effect = lambda k: store.get(k)
+    mock_redis.delete.side_effect = lambda k: store.pop(k, None)
+
+    with patch("services.attendance_manager.get_redis", return_value=mock_redis):
+        session = AttendanceSession(
+            target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
+            students=[(5, "Иванов"), (6, "Петров")], initiator_id=123
+        )
+        await save_session_to_redis(session)
+        assert "attendance:session" in store
+
+        loaded = await get_active_session()
+        assert loaded is not None
+        assert loaded.lesson_num == 1
+        assert len(loaded.students) == 2
+
+        await clear_session()
+        assert "attendance:session" not in store
+
+
+@pytest.mark.asyncio
+async def test_record_student_mark_and_step_back():
+    """Проверяет выставление отметки студенту и шаг назад."""
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
+        students=[(5, "Иванов"), (6, "Петров")], initiator_id=123
+    )
+    with patch("services.attendance_manager.get_active_session", return_value=session), \
+         patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock):
+        res = await record_student_mark("П")
+        assert res.current_idx == 1
+        assert res.marks["5"] == "П"
+
+        back_res = await step_back()
+        assert back_res.current_idx == 0
+        assert "5" not in back_res.marks
+
+
+@pytest.mark.asyncio
+async def test_mark_all_remaining_present():
+    """Проверяет массовую отметку 'П' всем оставшимся студентам."""
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
+        students=[(5, "Иванов"), (6, "Петров"), (7, "Сидоров")], initiator_id=123,
+        current_idx=1, marks={"5": "Н"}
+    )
+    with patch("services.attendance_manager.get_active_session", return_value=session), \
+         patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock):
+        res = await mark_all_remaining_present()
+        assert res.current_idx == 3
+        assert res.marks == {"5": "Н", "6": "П", "7": "П"}
+
+
+@pytest.mark.asyncio
+async def test_auto_close_attendance_session_protection():
+    """Проверяет защиту активной сессии от удаления воркером."""
+    from services.notifier import auto_close_attendance_session
+
+    active_session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=2, lesson_title="Мат",
+        students=[(5, "Иванов")], initiator_id=123, current_idx=1
+    )
+    with patch("services.notifier.get_active_session", return_value=active_session), \
+         patch("services.notifier.clear_session", new_callable=AsyncMock) as mock_clear:
+        await auto_close_attendance_session(2)
+        mock_clear.assert_not_called()

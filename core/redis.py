@@ -29,3 +29,25 @@ async def init_redis() -> Redis:
             log.error(f"Ошибка подключения к Redis ({REDIS_HOST}:{REDIS_PORT}): {e}")
             redis_client = None
     return redis_client
+
+
+async def get_redis() -> Optional[Redis]:
+    """
+    Возвращает синглтон клиента Redis, подключаясь при необходимости.
+
+    Позволяет безопасно получать активное соединение из любых модулей
+    без риска захвата неинициализированной ссылки во время импорта.
+    """
+    global redis_client
+    if redis_client is None:
+        await init_redis()
+    return redis_client
+
+
+async def close_redis() -> None:
+    """Освобождает соединение с Redis при завершении работы сервиса."""
+    global redis_client
+    if redis_client:
+        await redis_client.aclose()
+        redis_client = None
+        log.info("Соединение с Redis успешно закрыто")

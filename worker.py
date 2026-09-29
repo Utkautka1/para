@@ -14,7 +14,7 @@ from config import TIMEZONE
 from core.api_client import close_api_client, get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
-from core.redis import init_redis, redis_client
+from core.redis import close_redis, init_redis
 from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
 from services.notifier import schedule_attendance_poll, schedule_lesson_reminder, setup_scheduler, scheduler
@@ -39,8 +39,7 @@ async def shutdown_worker() -> None:
     log.info("Остановка воркера: освобождение сетевых ресурсов...")
     if scheduler.running:
         scheduler.shutdown(wait=False)
-    if redis_client:
-        await redis_client.aclose()
+    await close_redis()
     await close_api_client()
     await bot.session.close()
     log.info("Воркер para-worker успешно остановлен.")
