@@ -26,7 +26,7 @@ from core.api_client import (
     get_api_week_schedule,
 )
 from core.logger import get_logger
-from db.subscribers import add_subscriber, is_subscribed, toggle_subscriber
+from db.subscribers import is_subscribed, toggle_subscriber
 from services.classmates_auth import is_authorized_user, process_user_auth
 from services.models import Lesson
 from services.redis_cache import cache_flush, cache_get, cache_set
@@ -62,7 +62,9 @@ async def _greet_new_student(message: Message, student: dict) -> None:
     name = student.get("full_name", "Студент")
     await message.answer(
         f"🎉 <b>Добро пожаловать, {name}!</b>\n"
-        "Ты успешно авторизован(а) в боте группы 1-КПД-3."
+        "Ты успешно авторизован(а) в боте группы 1-КПД-3.\n\n"
+        "🔕 <i>Напоминания о парах в ЛС по умолчанию выключены. "
+        "Включить их можно кнопкой под расписанием или через /notice.</i>"
     )
 
 
@@ -77,8 +79,7 @@ async def cmd_start(message: Message) -> None:
             "Этот бот работает исключительно для студентов группы 1-КПД-3."
         )
         return
-    if is_just_reg and student and message.from_user:
-        add_subscriber(message.from_user.id)
+    if is_just_reg and student:
         await _greet_new_student(message, student)
     uid = message.from_user.id if message.from_user else 0
     now = datetime.now(TIMEZONE).date()
