@@ -20,11 +20,13 @@ def register_all_routers() -> None:
     """Регистрирует все хэндлеры и роутеры в диспетчере aiogram."""
     from bot.handlers.admin.mute import router as mute_router
     from bot.handlers.admin.panel import router as admin_router
+    from bot.handlers.admin.ping_all import router as ping_all_router
     from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.user.schedule import router as user_router
     dp.include_router(mute_router)
+    dp.include_router(ping_all_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
     dp.include_router(admin_router)
