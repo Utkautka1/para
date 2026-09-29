@@ -80,3 +80,8 @@ HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID
 # Настройки внутреннего API (para-api)
 API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
 API_BASE_URL: str = os.getenv("API_BASE_URL", "http://api:8000")
+
+# Настройки отметки посещаемости (староста и замстаросты)
+DEPUTY_USER_ID: int = int(get_required_env("DEPUTY_USER_ID"))
+ALLOWED_ATTENDANCE_USER_IDS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
+ATTENDANCE_DOC_URL: str = get_required_env("ATTENDANCE_DOC_URL")

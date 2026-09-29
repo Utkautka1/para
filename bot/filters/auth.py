@@ -41,3 +41,15 @@ class ClassmateAuthFilter(Filter):
         user = getattr(event, "from_user", None)
         return is_authorized_user(user)
 
+
+class AttendanceAuthFilter(Filter):
+    """Фильтр доступа для старосты и замстаросты к отметке посещаемости."""
+
+    async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
+        """Проверяет принадлежность ID пользователя к списку старост."""
+        from config import ALLOWED_ATTENDANCE_USER_IDS
+        user = getattr(event, "from_user", None)
+        if not user:
+            return False
+        return user.id in ALLOWED_ATTENDANCE_USER_IDS
+
