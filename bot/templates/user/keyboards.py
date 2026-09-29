@@ -41,14 +41,14 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
     return [btns[i:i + 2] for i in range(0, len(btns), 2)]
 
 
-def _build_nav_rows(week_offset: int) -> List[List[InlineKeyboardButton]]:
+def _build_nav_rows(week_offset: int, is_admin: bool = False) -> List[List[InlineKeyboardButton]]:
     """Формирует основные кнопки навигации по календарю и неделям со стилями."""
     week_btn = (
         InlineKeyboardButton(text="⏭ Неделя (След.)", callback_data="sched:week_next", style="primary")
         if week_offset == 0
         else InlineKeyboardButton(text="⏮ Неделя (Тек.)", callback_data="sched:week", style="primary")
     )
-    return [
+    rows = [
         [
             InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
             InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success")
@@ -56,26 +56,31 @@ def _build_nav_rows(week_offset: int) -> List[List[InlineKeyboardButton]]:
         [
             week_btn,
             InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary")
-        ],
-        [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")]
+        ]
     ]
+    if is_admin:
+        admin_btn = InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")
+        rows.append([admin_btn])
+    return rows
 
 
 def get_schedule_inline_kb(
     lessons: Optional[List[Lesson]] = None,
-    week_offset: int = 0
+    week_offset: int = 0,
+    is_admin: bool = False,
 ) -> InlineKeyboardMarkup:
     """
     Генерирует продвинутую инлайн-клавиатуру навигации.
 
     :param lessons: Список пар на день
     :param week_offset: Смещение недели (0 = текущая, 1 = следующая)
+    :param is_admin: Флаг отображения кнопки админ-панели
     :return: InlineKeyboardMarkup
     """
     rows = []
     if lessons:
         rows.extend(chunk_link_buttons(lessons))
-    rows.extend(_build_nav_rows(week_offset))
+    rows.extend(_build_nav_rows(week_offset, is_admin=is_admin))
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
