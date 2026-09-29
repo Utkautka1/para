@@ -52,7 +52,7 @@ async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None:
     _NOTIFIED_MISSING_TEACHERS.add(raw_teacher)
 
     text, kb = build_missing_teacher_alert(raw_teacher, subj_name)
-    log.warning(f"Уведомление админа о fehlющем преподавателе: {raw_teacher}")
+    log.warning(f"Уведомление админа об отсутствующем преподавателе: {raw_teacher}")
     await send_to_user(text, reply_markup=kb)
 
 
