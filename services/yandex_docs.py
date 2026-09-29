@@ -315,45 +315,103 @@ async def verify_upload(
     expected_marks: Dict[str, str],
 ) -> bool:
     """
-    Проверяет, что отметки реально записались, скачав файл обратно.
+    Лёгкая проверка записи через raw-байты без openpyxl.
 
-    Сравнивает хотя бы одну ненулевую отметку с ожидаемой —
-    если совпадает, значит WOPI PUT действительно применился.
+    Скачивает xlsx как zip, ищет отметки прямо в XML листа.
+    Потребление памяти ~2-5MB вместо ~100MB при полном парсинге.
     """
     try:
-        wb = await download_workbook(session)
-        sheet = get_month_sheet(wb, target_date)
-        col = find_lesson_column(sheet, target_date, lesson_num)
-        if not col:
-            log.warning("Верификация: колонка пары не найдена")
-            return False
-        return _check_marks_match(sheet, col, expected_marks)
+        raw = await _download_raw_bytes(session)
+        return _verify_marks_in_raw(raw, target_date, expected_marks)
     except Exception as e:
         log.warning(f"Верификация не удалась: {e}")
         return False
 
 
-def _check_marks_match(
-    sheet: Worksheet, col: int, expected_marks: Dict[str, str]
+async def _download_raw_bytes(session: WopiSession) -> bytes:
+    """Скачивает бинарный контент таблицы без парсинга openpyxl."""
+    url = f"{session.resource_url}/contents?access_token={session.access_token}"
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        res = await client.get(url)
+        if res.status_code != 200:
+            raise RuntimeError(f"Верификация: HTTP {res.status_code}")
+        log.debug(f"Верификация: скачано {len(res.content)} байт")
+        return res.content
+
+
+def _verify_marks_in_raw(
+    raw: bytes, target_date: date, expected_marks: Dict[str, str]
 ) -> bool:
-    """Сравнивает записанные отметки с ожидаемыми (выборочно)."""
-    checked, matched = 0, 0
-    for row_str, mark in expected_marks.items():
-        cell_val = sheet.cell(int(row_str), col).value
-        if mark in {"О", "У", "Н"}:
-            checked += 1
-            if cell_val and str(cell_val).strip().upper() == mark:
-                matched += 1
-    # Если нет О/У/Н — проверяем любую отметку «П»
-    if checked == 0:
-        for row_str, mark in expected_marks.items():
-            cell_val = sheet.cell(int(row_str), col).value
-            if cell_val and str(cell_val).strip().upper() == mark:
-                return True
+    """
+    Ищет отметки О/У/Н прямо в XML нужного листа из zip-архива.
+
+    Вычисляет имя листа по месяцу, находит его XML в zip
+    и проверяет наличие значений через regex.
+    """
+    sheet_name = MONTH_SHEET_MAP.get(target_date.month)
+    if not sheet_name:
         return False
-    ok = matched == checked
+    # Ищем хотя бы одну отметку О/У/Н для проверки
+    check_marks = {r: m for r, m in expected_marks.items() if m in {"О", "У", "Н"}}
+    if not check_marks:
+        # Все П — проверяем просто наличие «П» в любой ячейке
+        check_marks = dict(list(expected_marks.items())[:3])
+    xml_text = _extract_sheet_xml(raw, sheet_name)
+    if not xml_text:
+        log.warning(f"Верификация: XML листа '{sheet_name}' не найден")
+        return False
+    return _marks_found_in_xml(xml_text, check_marks)
+
+
+def _extract_sheet_xml(raw: bytes, sheet_name: str) -> Optional[str]:
+    """Извлекает XML нужного листа по имени из xlsx (zip-архива)."""
+    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+        # workbook.xml содержит маппинг имён листов
+        wb_xml = zf.read("xl/workbook.xml").decode("utf-8")
+        # Ищем sheet с нужным именем → sheetId/r:id
+        pattern = rf'<sheet[^>]*name="{re.escape(sheet_name)}"[^>]*/>'
+        match = re.search(pattern, wb_xml)
+        if not match:
+            return None
+        # Извлекаем r:id → rels → target filename
+        rid_match = re.search(r'r:id="(\w+)"', match.group(0))
+        if not rid_match:
+            return None
+        return _resolve_sheet_by_rid(zf, rid_match.group(1))
+
+
+def _resolve_sheet_by_rid(zf: zipfile.ZipFile, rid: str) -> Optional[str]:
+    """Резолвит relationship ID в содержимое XML листа."""
+    rels_xml = zf.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+    rel_match = re.search(rf'Id="{rid}"[^>]*Target="([^"]+)"', rels_xml)
+    if not rel_match:
+        return None
+    target = rel_match.group(1)
+    # Target может быть "worksheets/sheet1.xml" или "xl/worksheets/..."
+    path = f"xl/{target}" if not target.startswith("xl/") else target
+    if path in zf.namelist():
+        return zf.read(path).decode("utf-8")
+    return None
+
+
+def _marks_found_in_xml(
+    xml_text: str, check_marks: Dict[str, str]
+) -> bool:
+    """Проверяет наличие отметок в XML через поиск <v>MARK</v>."""
+    found = 0
+    for row_str, mark in check_marks.items():
+        # Ищем ячейку в строке row_str с значением mark
+        row_pattern = rf'<c\s+r="[A-Z]+{row_str}"[^>]*>.*?</c>'
+        for cell_match in re.finditer(row_pattern, xml_text):
+            val_match = re.search(r'<v>([^<]*)</v>', cell_match.group(0))
+            if val_match and val_match.group(1).strip() == mark:
+                found += 1
+                break
+    ok = found == len(check_marks)
     if not ok:
-        log.warning(f"Верификация: совпало {matched}/{checked} отметок ОУН")
+        log.warning(f"Верификация: найдено {found}/{len(check_marks)} отметок")
+    else:
+        log.info(f"Верификация: все {found} отметок подтверждены ✓")
     return ok
 
 

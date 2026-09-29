@@ -198,9 +198,12 @@ async def _try_commit_once(
         raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
     apply_marks_to_sheet(sheet, session, col)
     ensure_summary_headers(sheet)
-    if not await upload_workbook(wopi, wb):
+    upload_ok = await upload_workbook(wopi, wb)
+    # Явно освобождаем ~50-100MB RAM от openpyxl перед верификацией
+    del wb, sheet
+    import gc; gc.collect()
+    if not upload_ok:
         return False
-    # Верификация: скачиваем обратно и проверяем, что отметки реально записались
     verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
     if not verified:
         log.warning("⚠️  WOPI PUT вернул 200, но верификация не прошла")
