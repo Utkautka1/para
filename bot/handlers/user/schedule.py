@@ -12,7 +12,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, Message
 
-from config import ALLOWED_USER_ID, TIMEZONE
+from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID, TIMEZONE
 from bot.filters.auth import ClassmateAuthFilter
 from bot.templates.user.keyboards import get_notice_settings_kb, get_schedule_inline_kb
 from bot.templates.user.messages import (
@@ -42,9 +42,10 @@ async def edit_or_answer(
 ) -> None:
     """Безопасно обновляет содержимое текущего сообщения с учетом прав и подписки."""
     uid = callback.from_user.id if callback.from_user else 0
-    is_admin = bool(uid == ALLOWED_USER_ID)
+    is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
     kb = get_schedule_inline_kb(
-        lessons, week_offset=week_offset, is_admin=is_admin, is_subscribed=is_subscribed(uid)
+        lessons, week_offset=week_offset, is_admin=(uid == ALLOWED_USER_ID),
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
     )
     try:
         if callback.message:
@@ -85,8 +86,10 @@ async def cmd_start(message: Message) -> None:
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
+    is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
     kb = get_schedule_inline_kb(
-        lessons, is_admin=(uid == ALLOWED_USER_ID), is_subscribed=is_subscribed(uid)
+        lessons, is_admin=(uid == ALLOWED_USER_ID),
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
     )
     await message.answer(text, reply_markup=kb)
 
@@ -103,7 +106,11 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
         pass
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
-    kb = get_schedule_inline_kb(lessons, is_admin=(uid == ALLOWED_USER_ID), is_subscribed=new_sub)
+    is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
+    kb = get_schedule_inline_kb(
+        lessons, is_admin=(uid == ALLOWED_USER_ID),
+        is_subscribed=new_sub, is_attendance_admin=is_att
+    )
     try:
         if callback.message:
             await callback.message.edit_reply_markup(reply_markup=kb)

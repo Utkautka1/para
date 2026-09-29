@@ -229,14 +229,22 @@ def test_format_summary_text():
     assert "Петров П. (Н)" in summary
 
 
+def test_get_days_select_kb():
+    """Проверяет генерацию кнопок выбора дней."""
+    from bot.templates.admin.attendance import get_days_select_kb
+    kb = get_days_select_kb()
+    assert len(kb.inline_keyboard) >= 2
+    assert kb.inline_keyboard[0][0].callback_data.startswith("att:day:")
+
+
 def test_get_lesson_select_kb():
     """Проверяет список пар для ручного выбора /attendance."""
     mock_l1 = MagicMock(number=1, subject="Информатика")
     mock_l2 = MagicMock(number=2, subject="История")
-    kb = get_lesson_select_kb([mock_l1, mock_l2])
+    kb = get_lesson_select_kb([mock_l1, mock_l2], chosen_date=date(2026, 9, 29))
     assert len(kb.inline_keyboard) == 3
-    assert kb.inline_keyboard[0][0].callback_data == "att:start:1"
-    assert kb.inline_keyboard[1][0].callback_data == "att:start:2"
+    assert kb.inline_keyboard[0][0].callback_data == "att:start:2026-09-29:1"
+    assert kb.inline_keyboard[1][0].callback_data == "att:start:2026-09-29:2"
 
 
 @pytest.mark.asyncio

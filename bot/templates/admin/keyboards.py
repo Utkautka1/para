@@ -9,6 +9,9 @@ def _build_action_rows() -> list:
     """Формирует основные кнопки управления топиками и синхронизацией со стилями."""
     return [
         [
+            InlineKeyboardButton(text="📝 Отметить посещаемость", callback_data="att:menu", style="success")
+        ],
+        [
             InlineKeyboardButton(text="🔄 Синхронизировать всё", callback_data="admin:sync", style="primary"),
             InlineKeyboardButton(text="📊 Статус и Кэш", callback_data="admin:status", style="primary")
         ],
