@@ -149,3 +149,17 @@ def test_get_schedule_inline_kb_notify_toggle_states() -> None:
     btns_off = [btn for row in kb_off.inline_keyboard for btn in row]
     toggle_off = next(b for b in btns_off if b.callback_data == "sched:toggle_notify")
     assert "🔕 Напоминания: Выкл" in toggle_off.text
+
+
+def test_get_notice_settings_kb_states() -> None:
+    """Проверяет генерацию инлайн-клавиатуры /notice для разных статусов."""
+    from bot.templates.user.keyboards import get_notice_settings_kb
+    kb_on = get_notice_settings_kb(is_subscribed=True)
+    cbs_on = [btn.callback_data for row in kb_on.inline_keyboard for btn in row]
+    assert "notice:toggle" in cbs_on
+    assert "sched:today" in cbs_on
+    assert any("Отключить" in btn.text for row in kb_on.inline_keyboard for btn in row)
+
+    kb_off = get_notice_settings_kb(is_subscribed=False)
+    assert any("Включить" in btn.text for row in kb_off.inline_keyboard for btn in row)
+

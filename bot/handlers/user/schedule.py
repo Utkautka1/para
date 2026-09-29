@@ -14,8 +14,12 @@ from aiogram.types import CallbackQuery, Message
 
 from config import ALLOWED_USER_ID, TIMEZONE
 from bot.filters.auth import ClassmateAuthFilter
-from bot.templates.user.keyboards import get_schedule_inline_kb
-from bot.templates.user.messages import format_day_schedule, format_week_schedule
+from bot.templates.user.keyboards import get_notice_settings_kb, get_schedule_inline_kb
+from bot.templates.user.messages import (
+    format_day_schedule,
+    format_notice_settings_text,
+    format_week_schedule,
+)
 from core.api_client import (
     fetch_teachers,
     get_api_schedule_for_date,
@@ -23,7 +27,7 @@ from core.api_client import (
 )
 from core.logger import get_logger
 from db.subscribers import add_subscriber, is_subscribed, toggle_subscriber
-from services.classmates_auth import process_user_auth
+from services.classmates_auth import is_authorized_user, process_user_auth
 from services.models import Lesson
 from services.redis_cache import cache_flush, cache_get, cache_set
 
@@ -102,6 +106,39 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     try:
         if callback.message:
             await callback.message.edit_reply_markup(reply_markup=kb)
+    except TelegramBadRequest:
+        pass
+
+
+@router.message(Command("notice"))
+async def cmd_notice(message: Message) -> None:
+    """Отображает экран настроек уведомлений /notice."""
+    if not is_authorized_user(message.from_user):
+        await message.answer(
+            "⛔ <b>Доступ ограничен.</b>\n"
+            "Этот бот работает исключительно для студентов группы 1-КПД-3."
+        )
+        return
+    uid = message.from_user.id if message.from_user else 0
+    is_sub = is_subscribed(uid)
+    text = format_notice_settings_text(is_sub)
+    await message.answer(text, reply_markup=get_notice_settings_kb(is_sub))
+
+
+@router.callback_query(F.data == "notice:toggle")
+async def cb_notice_toggle(callback: CallbackQuery) -> None:
+    """Переключает статус подписки в меню /notice с обновлением экрана."""
+    uid = callback.from_user.id if callback.from_user else 0
+    new_sub = toggle_subscriber(uid)
+    ans = "🔔 Уведомления включены!" if new_sub else "🔕 Уведомления отключены."
+    try:
+        await callback.answer(ans)
+    except TelegramBadRequest:
+        pass
+    text = format_notice_settings_text(new_sub)
+    try:
+        if callback.message:
+            await callback.message.edit_text(text, reply_markup=get_notice_settings_kb(new_sub))
     except TelegramBadRequest:
         pass
 

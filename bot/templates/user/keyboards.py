@@ -51,7 +51,7 @@ def _build_nav_rows(
         else InlineKeyboardButton(text="⏮ Неделя (Тек.)", callback_data="sched:week", style="primary")
     )
     notify_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
-    notify_style = "success" if is_subscribed else "secondary"
+    notify_style = "success" if is_subscribed else "danger"
     rows = [
         [
             InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
@@ -92,3 +92,20 @@ def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> Optional[Inli
         return None
     rows = chunk_link_buttons(lessons)
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
+
+
+def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup:
+    """
+    Генерирует инлайн-клавиатуру для меню управления уведомлениями /notice.
+
+    :param is_subscribed: Текущий статус подписки
+    :return: InlineKeyboardMarkup с динамическим тумблером
+    """
+    toggle_text = "🔕 Отключить уведомления" if is_subscribed else "🔔 Включить уведомления"
+    toggle_style = "danger" if is_subscribed else "success"
+    rows = [
+        [InlineKeyboardButton(text=toggle_text, callback_data="notice:toggle", style=toggle_style)],
+        [InlineKeyboardButton(text="📅 К расписанию", callback_data="sched:today", style="primary")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+

@@ -189,3 +189,27 @@ def format_reminder_text(lesson: Lesson) -> str:
     """
     card = format_lesson_card(lesson)
     return f"⏰ <b>Через 10 минут начинается пара!</b>\n\n{card}"
+
+
+def format_notice_settings_text(is_subscribed: bool) -> str:
+    """
+    Формирует информативный текст экрана настроек уведомлений.
+
+    :param is_subscribed: Статус подписки на напоминания
+    :return: HTML-сообщение
+    """
+    status_icon = "🔔" if is_subscribed else "🔕"
+    status_text = "<b>ВКЛЮЧЕНЫ</b>" if is_subscribed else "<b>ОТКЛЮЧЕНЫ</b>"
+    desc = (
+        "Ты получаешь напоминания в ЛС за 10 минут до начала каждой пары."
+        if is_subscribed
+        else "Напоминания в ЛС отключены. Ты не получаешь уведомления перед парами."
+    )
+    return (
+        f"⚙️ <b>НАСТРОЙКИ УВЕДОМЛЕНИЙ</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📌 <b>Текущий статус:</b> {status_icon} {status_text}\n\n"
+        f"<i>{desc}</i>\n\n"
+        f"💡 <i>Расписание в общем топике группы обновляется независимо от этих настроек.</i>"
+    )
+

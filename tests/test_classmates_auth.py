@@ -188,3 +188,49 @@ async def test_cb_toggle_notify() -> None:
         cb.answer.assert_called_once_with("🔔 Напоминания за 10 мин включены!")
         cb.message.edit_reply_markup.assert_called_once()
 
+
+@pytest.mark.asyncio
+async def test_cmd_notice_authorized() -> None:
+    """Проверяет команду /notice для авторизованного пользователя."""
+    from unittest.mock import AsyncMock
+    from bot.handlers.user.schedule import cmd_notice
+    msg = MagicMock(spec=Message)
+    msg.from_user = User(id=12345, is_bot=False, first_name="User")
+    msg.answer = AsyncMock()
+    with patch("bot.handlers.user.schedule.is_authorized_user", return_value=True), \
+         patch("bot.handlers.user.schedule.is_subscribed", return_value=True):
+        await cmd_notice(msg)
+        msg.answer.assert_called_once()
+        assert "НАСТРОЙКИ УВЕДОМЛЕНИЙ" in msg.answer.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_cmd_notice_stranger_rejected() -> None:
+    """Проверяет отказ на команду /notice для постороннего пользователя."""
+    from unittest.mock import AsyncMock
+    from bot.handlers.user.schedule import cmd_notice
+    msg = MagicMock(spec=Message)
+    msg.from_user = User(id=99999, is_bot=False, first_name="Stranger")
+    msg.answer = AsyncMock()
+    with patch("bot.handlers.user.schedule.is_authorized_user", return_value=False):
+        await cmd_notice(msg)
+        msg.answer.assert_called_once()
+        assert "Доступ ограничен" in msg.answer.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_cb_notice_toggle() -> None:
+    """Проверяет callback notice:toggle переключения подписки."""
+    from unittest.mock import AsyncMock
+    from bot.handlers.user.schedule import cb_notice_toggle
+    cb = MagicMock(spec=CallbackQuery)
+    cb.from_user = User(id=12345, is_bot=False, first_name="User")
+    cb.answer = AsyncMock()
+    cb.message = MagicMock(spec=Message)
+    cb.message.edit_text = AsyncMock()
+    with patch("bot.handlers.user.schedule.toggle_subscriber", return_value=False):
+        await cb_notice_toggle(cb)
+        cb.answer.assert_called_once_with("🔕 Уведомления отключены.")
+        cb.message.edit_text.assert_called_once()
+
+
