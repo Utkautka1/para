@@ -111,13 +111,14 @@ def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarku
     from config import TIMEZONE
     d_obj = chosen_date or datetime.now(TIMEZONE).date()
     d_str = d_obj.isoformat()
-    kb = []
-    if lessons:
-        for les in lessons:
-            num = les.number
-            title = les.subject[:22]
-            kb.append([InlineKeyboardButton(text=f"Пара {num}: {title}", callback_data=f"att:start:{d_str}:{num}")])
-    else:
+    kb, seen = [], set()
+    for les in lessons:
+        num = getattr(les, "number", getattr(les, "period", 0) + 1)
+        if num not in seen:
+            seen.add(num)
+            subj = getattr(les, "subject", "")[:20]
+            kb.append([InlineKeyboardButton(text=f"Пара {num}: {subj}", callback_data=f"att:start:{d_str}:{num}")])
+    if not kb:
         for num in range(1, 7):
             kb.append([InlineKeyboardButton(text=f"Пара {num}", callback_data=f"att:start:{d_str}:{num}")])
     kb.append([
