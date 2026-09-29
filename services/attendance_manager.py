@@ -8,6 +8,7 @@
   4. Сохраняет итоговые данные в Яндекс Документы через yandex_docs
 """
 
+import asyncio
 import json
 from datetime import date
 from typing import Dict, List, Optional, Tuple
@@ -17,12 +18,16 @@ from core.logger import get_logger
 from core.redis import get_redis
 from services.yandex_docs import (
     download_workbook, find_lesson_column, get_month_sheet,
-    get_students_list, init_wopi_session, upload_workbook, write_student_mark
+    get_students_list, init_wopi_session, upload_workbook,
+    verify_upload, write_student_mark
 )
 
 log = get_logger("attendance_manager")
 REDIS_SESSION_KEY = "attendance:session"
 SESSION_TTL_SECONDS = 7200  # 2 часа
+MAX_COMMIT_RETRIES = 3
+# Пауза между retry — даёт WOPI серверу время сбросить кэш блокировок
+RETRY_DELAY_SECONDS = 5
 
 
 class AttendanceSession(BaseModel):
@@ -177,26 +182,54 @@ def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None:
         write_student_mark(sheet, int(row_str), col, mark)
 
 
-async def commit_session_to_table(session: AttendanceSession) -> bool:
+async def _try_commit_once(
+    session: AttendanceSession, t_date: date
+) -> bool:
     """
-    Выгружает все зафиксированные отметки сессии в Яндекс Документы.
+    Одна попытка записи: скачать → применить отметки → загрузить → верифицировать.
 
-    Возвращает True в случае успешной записи и сбрасывает сессию.
+    Каждый вызов создаёт свежую WOPI-сессию, чтобы получить актуальный lock.
     """
-    log.info(f"Запись посещаемости пары {session.lesson_num} в таблицу...")
     wopi = await init_wopi_session()
     wb = await download_workbook(wopi)
-    t_date = date.fromisoformat(session.target_date)
     sheet = get_month_sheet(wb, t_date)
     col = find_lesson_column(sheet, t_date, session.lesson_num)
     if not col:
         raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
     apply_marks_to_sheet(sheet, session, col)
     ensure_summary_headers(sheet)
-    success = await upload_workbook(wopi, wb)
-    if success:
-        await clear_session()
-    return success
+    if not await upload_workbook(wopi, wb):
+        return False
+    # Верификация: скачиваем обратно и проверяем, что отметки реально записались
+    verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
+    if not verified:
+        log.warning("⚠️  WOPI PUT вернул 200, но верификация не прошла")
+    return verified
+
+
+async def commit_session_to_table(session: AttendanceSession) -> bool:
+    """
+    Выгружает все зафиксированные отметки сессии в Яндекс Документы.
+
+    До MAX_COMMIT_RETRIES попыток с пересозданием WOPI-сессии.
+    После каждой попытки — верификация через повторное скачивание.
+    Возвращает True в случае подтверждённой записи и сбрасывает сессию.
+    """
+    t_date = date.fromisoformat(session.target_date)
+    for attempt in range(1, MAX_COMMIT_RETRIES + 1):
+        log.info(f"Запись посещаемости пары {session.lesson_num} (попытка {attempt}/{MAX_COMMIT_RETRIES})...")
+        try:
+            if await _try_commit_once(session, t_date):
+                log.info(f"✅ Посещаемость пары {session.lesson_num} верифицирована")
+                await clear_session()
+                return True
+        except Exception as e:
+            log.error(f"Попытка {attempt} провалилась: {e}")
+        if attempt < MAX_COMMIT_RETRIES:
+            log.info(f"Повтор через {RETRY_DELAY_SECONDS} сек...")
+            await asyncio.sleep(RETRY_DELAY_SECONDS)
+    log.error(f"❌ Все {MAX_COMMIT_RETRIES} попытки записи пары {session.lesson_num} провалились")
+    return False
 
 
 def calculate_summary_stats(marks: Dict[str, str]) -> Dict[str, int]:

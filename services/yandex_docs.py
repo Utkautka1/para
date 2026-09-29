@@ -105,7 +105,7 @@ async def get_active_wopi_lock(resource_url: str, token: str) -> str:
     async with httpx.AsyncClient(timeout=15.0) as client:
         res = await client.post(url, headers=headers, content=b"")
         lock = res.headers.get("x-wopi-lock", "volga:prod-35")
-        log.debug(f"Получен активный WOPI lock: {lock}")
+        log.debug(f"Получен WOPI lock: {lock} (HTTP {res.status_code})")
         return lock
 
 
@@ -270,27 +270,91 @@ async def put_wopi_contents(
         "Content-Type": "application/octet-stream",
         "X-WOPI-Lock": lock_id,
     }
-    return await client.post(url, headers=hdr, content=data)
+    res = await client.post(url, headers=hdr, content=data)
+    log.debug(f"WOPI PUT: HTTP {res.status_code}, lock={lock_id[:16]}...")
+    if res.status_code != 200:
+        # Логируем заголовки для диагностики конфликтов блокировок
+        wopi_lock = res.headers.get("x-wopi-lock", "—")
+        log.warning(f"WOPI PUT отклонён: status={res.status_code}, server_lock={wopi_lock}")
+    return res
+
+
+async def _try_put_with_lock(
+    session: WopiSession, client: httpx.AsyncClient, data: bytes
+) -> bool:
+    """Пробует записать файл сначала с текущим lock, затем с новым."""
+    if session.lock_id:
+        res = await put_wopi_contents(session, client, data, session.lock_id)
+        if res.status_code == 200:
+            return True
+    # Fallback: создаём собственную блокировку
+    new_lock = str(uuid.uuid4())
+    if not await acquire_wopi_lock(session, client, new_lock):
+        log.warning("Не удалось захватить новый WOPI lock")
+        return False
+    res = await put_wopi_contents(session, client, data, new_lock)
+    await release_wopi_lock(session, client, new_lock)
+    return res.status_code == 200
 
 
 async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool:
-    """Сохраняет книгу и выгружает её на сервер с надёжным управлением блокировками."""
+    """Сохраняет книгу и выгружает на сервер с управлением блокировками."""
     data = await asyncio.to_thread(save_workbook_to_bytes, wb)
     async with httpx.AsyncClient(timeout=30.0) as client:
-        if session.lock_id:
-            res = await put_wopi_contents(session, client, data, session.lock_id)
-            if res.status_code == 200:
-                log.info(f"✅ Таблица успешно сохранена ({len(data)} байт)")
-                return True
-        new_lock = str(uuid.uuid4())
-        if await acquire_wopi_lock(session, client, new_lock):
-            res = await put_wopi_contents(session, client, data, new_lock)
-            await release_wopi_lock(session, client, new_lock)
-            if res.status_code == 200:
-                log.info(f"✅ Таблица сохранена под новым lock ({len(data)} байт)")
-                return True
-        log.error("❌ Ошибка загрузки таблицы в WOPI")
+        if await _try_put_with_lock(session, client, data):
+            log.info(f"✅ Таблица успешно сохранена ({len(data)} байт)")
+            return True
+    log.error("❌ Ошибка загрузки таблицы в WOPI")
+    return False
+
+
+async def verify_upload(
+    session: WopiSession,
+    target_date: date,
+    lesson_num: int,
+    expected_marks: Dict[str, str],
+) -> bool:
+    """
+    Проверяет, что отметки реально записались, скачав файл обратно.
+
+    Сравнивает хотя бы одну ненулевую отметку с ожидаемой —
+    если совпадает, значит WOPI PUT действительно применился.
+    """
+    try:
+        wb = await download_workbook(session)
+        sheet = get_month_sheet(wb, target_date)
+        col = find_lesson_column(sheet, target_date, lesson_num)
+        if not col:
+            log.warning("Верификация: колонка пары не найдена")
+            return False
+        return _check_marks_match(sheet, col, expected_marks)
+    except Exception as e:
+        log.warning(f"Верификация не удалась: {e}")
         return False
+
+
+def _check_marks_match(
+    sheet: Worksheet, col: int, expected_marks: Dict[str, str]
+) -> bool:
+    """Сравнивает записанные отметки с ожидаемыми (выборочно)."""
+    checked, matched = 0, 0
+    for row_str, mark in expected_marks.items():
+        cell_val = sheet.cell(int(row_str), col).value
+        if mark in {"О", "У", "Н"}:
+            checked += 1
+            if cell_val and str(cell_val).strip().upper() == mark:
+                matched += 1
+    # Если нет О/У/Н — проверяем любую отметку «П»
+    if checked == 0:
+        for row_str, mark in expected_marks.items():
+            cell_val = sheet.cell(int(row_str), col).value
+            if cell_val and str(cell_val).strip().upper() == mark:
+                return True
+        return False
+    ok = matched == checked
+    if not ok:
+        log.warning(f"Верификация: совпало {matched}/{checked} отметок ОУН")
+    return ok
 
 
 def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet:
