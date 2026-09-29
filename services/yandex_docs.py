@@ -12,6 +12,7 @@ import asyncio
 import io
 import json
 import re
+import zipfile
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
 import httpx
@@ -134,11 +135,56 @@ def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook:
         return openpyxl.load_workbook(io.BytesIO(content))
 
 
+def compute_sheet_summary_counts(sheet: Worksheet) -> Dict[Tuple[str, int], int]:
+    """Подсчитывает количество отметок О, У, Н для каждой строки студента."""
+    mc = sheet.max_column
+    if mc < 4:
+        return {}
+    c_o, c_u, c_n = mc - 2, mc - 1, mc
+    l_o = openpyxl.utils.get_column_letter(c_o)
+    l_u = openpyxl.utils.get_column_letter(c_u)
+    l_n = openpyxl.utils.get_column_letter(c_n)
+    counts = {}
+    for r in range(5, 37):
+        row_vals = [sheet.cell(r, c).value for c in range(3, mc - 2)]
+        counts[(l_o, r)] = sum(1 for v in row_vals if v == "О")
+        counts[(l_u, r)] = sum(1 for v in row_vals if v == "У")
+        counts[(l_n, r)] = sum(1 for v in row_vals if v == "Н")
+    return counts
+
+
+def patch_sheet_xml_counts(xml_text: str, counts: Dict[Tuple[str, int], int]) -> str:
+    """Заменяет пустые значения <v></v> на вычисленные количества в XML листа."""
+    def repl(m):
+        col, r = m.group(1), int(m.group(2))
+        count = counts.get((col, r), 0)
+        return re.sub(r"(<(?:\w+:)?v>)[^<]*(</(?:\w+:)?v>)", rf"\g<1>{count}\g<2>", m.group(0))
+
+    pattern = r"<(?:\w+:)?c\s+r=\"([A-Z]+)(\d+)\"[^>]*><(?:\w+:)?f[^>]*>[^<]+</(?:\w+:)?f><(?:\w+:)?v>[^<]*</(?:\w+:)?v></(?:\w+:)?c>"
+    return re.sub(pattern, repl, xml_text)
+
+
+def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
+    """Инжектирует кэшированные значения формул COUNTIF в zip-архив xlsx."""
+    sheet_map = {f"xl/worksheets/sheet{i+1}.xml": name for i, name in enumerate(wb.sheetnames)}
+    in_zip = zipfile.ZipFile(io.BytesIO(raw_bytes))
+    out_buf = io.BytesIO()
+    with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as out_zip:
+        for item in in_zip.infolist():
+            content = in_zip.read(item.filename)
+            sh_name = sheet_map.get(item.filename)
+            if sh_name and sh_name in MONTH_SHEET_MAP.values():
+                counts = compute_sheet_summary_counts(wb[sh_name])
+                content = patch_sheet_xml_counts(content.decode("utf-8"), counts).encode("utf-8")
+            out_zip.writestr(item, content)
+    return out_buf.getvalue()
+
+
 def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes:
-    """Синхронно сохраняет книгу openpyxl в байты в отдельном потоке."""
+    """Синхронно сохраняет книгу openpyxl в байты с инжекцией кэша формул."""
     buf = io.BytesIO()
     wb.save(buf)
-    return buf.getvalue()
+    return inject_summary_cache(buf.getvalue(), wb)
 
 
 async def download_workbook(session: WopiSession) -> openpyxl.Workbook:
