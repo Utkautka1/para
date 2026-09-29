@@ -87,12 +87,41 @@ def format_summary_text(session: AttendanceSession, stats: Dict[str, int]) -> st
     )
 
 
-def get_lesson_select_kb(lessons: list) -> InlineKeyboardMarkup:
-    """Формирует список пар на выбор при вызове /attendance."""
+def get_days_select_kb() -> InlineKeyboardMarkup:
+    """Генерирует инлайн-кнопки выбора учебных дней для отметки посещаемости."""
+    from datetime import datetime, timedelta
+    from config import TIMEZONE
+    today = datetime.now(TIMEZONE).date()
+    weekdays_ru = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     kb = []
-    for les in lessons:
-        num = les.number
-        title = les.subject[:25]
-        kb.append([InlineKeyboardButton(text=f"Пара {num}: {title}", callback_data=f"att:start:{num}")])
+    for offset in range(7):
+        d = today - timedelta(days=offset)
+        if d.weekday() == 6:
+            continue
+        wd = weekdays_ru[d.weekday()]
+        label = f"📅 Сегодня ({d.strftime('%d.%m')}, {wd})" if offset == 0 else f"📆 {d.strftime('%d.%m')} ({wd})"
+        kb.append([InlineKeyboardButton(text=label, callback_data=f"att:day:{d.isoformat()}")])
     kb.append([InlineKeyboardButton(text="❌ Закрыть", callback_data="att:close")])
+    return InlineKeyboardMarkup(inline_keyboard=kb)
+
+
+def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarkup:
+    """Формирует список пар на выбор для указанной даты."""
+    from datetime import datetime
+    from config import TIMEZONE
+    d_obj = chosen_date or datetime.now(TIMEZONE).date()
+    d_str = d_obj.isoformat()
+    kb = []
+    if lessons:
+        for les in lessons:
+            num = les.number
+            title = les.subject[:22]
+            kb.append([InlineKeyboardButton(text=f"Пара {num}: {title}", callback_data=f"att:start:{d_str}:{num}")])
+    else:
+        for num in range(1, 7):
+            kb.append([InlineKeyboardButton(text=f"Пара {num}", callback_data=f"att:start:{d_str}:{num}")])
+    kb.append([
+        InlineKeyboardButton(text="⬅️ Выбрать другой день", callback_data="att:menu"),
+        InlineKeyboardButton(text="❌ Закрыть", callback_data="att:close")
+    ])
     return InlineKeyboardMarkup(inline_keyboard=kb)

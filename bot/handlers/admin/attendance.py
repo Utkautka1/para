@@ -48,29 +48,54 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
 
 
 @router.message(Command("attendance"))
-async def cmd_attendance(msg: Message) -> None:
-    """Открывает меню ручного выбора пары для отметки посещаемости."""
-    today = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(today)
-    if not lessons:
-        await msg.answer("📅 На сегодня пар в расписании нет.")
-        return
-    kb = get_lesson_select_kb(lessons)
-    await msg.answer("📋 <b>Выберите пару для отметки посещаемости:</b>", reply_markup=kb)
+@router.callback_query(F.data == "att:menu")
+async def show_attendance_menu(event: Message | CallbackQuery) -> None:
+    """Открывает меню выбора даты для отметки посещаемости."""
+    from bot.templates.admin.attendance import get_days_select_kb
+    text = "📋 <b>Отметка посещаемости</b>\n\nВыберите учебный день для отметки пар:"
+    kb = get_days_select_kb()
+    if isinstance(event, CallbackQuery):
+        if event.message:
+            await event.message.edit_text(text, reply_markup=kb)
+        await event.answer()
+    else:
+        await event.answer(text, reply_markup=kb)
+
+
+@router.callback_query(F.data.startswith("att:day:"))
+async def cb_select_day(cb: CallbackQuery) -> None:
+    """Выводит список пар на выбранную дату."""
+    from datetime import date
+    day_str = cb.data.split(":")[2]
+    target_date = date.fromisoformat(day_str)
+    lessons = await get_api_schedule_for_date(target_date)
+    kb = get_lesson_select_kb(lessons, target_date)
+    text = f"📋 <b>Дата: {target_date.strftime('%d.%m.%Y')}</b>\nВыберите пару для отметки посещаемости:"
+    if cb.message:
+        await cb.message.edit_text(text, reply_markup=kb)
+    await cb.answer()
+
+
+def parse_start_callback(data: str):
+    """Извлекает целевую дату и номер пары из callback данных."""
+    from datetime import date
+    parts = data.split(":")
+    if len(parts) == 4:
+        return date.fromisoformat(parts[2]), int(parts[3])
+    return datetime.now(TIMEZONE).date(), int(parts[2])
 
 
 @router.callback_query(F.data.startswith("att:start:"))
 async def cb_start_attendance(cb: CallbackQuery) -> None:
     """Инициализирует сессию отметки и выводит первого студента."""
-    lesson_num = int(cb.data.split(":")[2])
-    today = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(today)
+    target_date, lesson_num = parse_start_callback(cb.data)
+    lessons = await get_api_schedule_for_date(target_date)
     matched = [les for les in lessons if les.number == lesson_num]
     title = matched[0].subject if matched else f"Пара {lesson_num}"
     if cb.message:
         await cb.message.edit_text("⏳ <i>Загрузка списка группы из таблицы...</i>")
     try:
-        session = await create_attendance_session(today, lesson_num, title, cb.from_user.id)
+        session = await create_attendance_session(target_date, lesson_num, title, cb.from_user.id)
     except Exception as e:
         log.error(f"Сбой инициализации сессии: {e}")
         if cb.message:
