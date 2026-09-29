@@ -10,13 +10,18 @@ from typing import Any, List, Optional, Tuple
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from config import ALLOWED_USER_ID, DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE, REMINDER_OFFSET_MINUTES, TIMEZONE
+from config import (
+    ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID,
+    DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE, REMINDER_OFFSET_MINUTES, TIMEZONE
+)
 from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
 from services.models import Lesson
+from bot.templates.admin.attendance import format_confirm_text, get_lesson_confirm_kb
 from bot.templates.user.keyboards import get_schedule_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
+from services.attendance_manager import clear_session, get_active_session
 
 log = get_logger("notifier")
 scheduler = AsyncIOScheduler(timezone=TIMEZONE)
@@ -146,6 +151,43 @@ def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datet
         log.info(f"Запланировано напоминание для пары {lesson.period + 1} на {remind_dt.strftime('%H:%M:%S')}")
 
 
+async def send_attendance_prompt(lesson: Lesson) -> None:
+    """Отправляет запрос подтверждения проведения пары старосте и замстаросты."""
+    text = format_confirm_text(lesson.number, lesson.subject, lesson.teacher or "Не указан")
+    kb = get_lesson_confirm_kb(lesson.number)
+    for user_id in ALLOWED_ATTENDANCE_USER_IDS:
+        try:
+            await bot.send_message(user_id, text, reply_markup=kb)
+            log.info(f"Запрос посещаемости пары {lesson.number} отправлен пользователю {user_id}")
+        except Exception as e:
+            log.warning(f"Не удалось доставить запрос посещаемости пользователю {user_id}: {e}")
+
+
+async def auto_close_attendance_session(lesson_num: int) -> None:
+    """Автоматически закрывает сессию отметки по окончании пары."""
+    session = await get_active_session()
+    if session and session.lesson_num == lesson_num:
+        await clear_session()
+        log.info(f"Сессия посещаемости пары {lesson_num} закрыта по окончании пары")
+
+
+def schedule_attendance_poll(today: datetime.date, lesson: Lesson, now_dt: datetime) -> None:
+    """Планирует опрос через 30 минут от старта пары и автозавершение в конце."""
+    start_t = parse_lesson_start_time(lesson.time_str)
+    end_t = parse_lesson_end_time(lesson.time_str)
+    if not start_t or not end_t:
+        return
+    poll_dt = datetime.combine(today, start_t, tzinfo=TIMEZONE) + timedelta(minutes=30)
+    end_dt = datetime.combine(today, end_t, tzinfo=TIMEZONE)
+    if poll_dt > now_dt:
+        job_id = f"att_poll_{today.isoformat()}_{lesson.number}"
+        scheduler.add_job(send_attendance_prompt, "date", run_date=poll_dt, args=[lesson], id=job_id, replace_existing=True)
+        log.info(f"Запланирован опрос посещаемости пары {lesson.number} на {poll_dt.strftime('%H:%M:%S')}")
+    if end_dt > now_dt:
+        close_id = f"att_close_{today.isoformat()}_{lesson.number}"
+        scheduler.add_job(auto_close_attendance_session, "date", run_date=end_dt, args=[lesson.number], id=close_id, replace_existing=True)
+
+
 async def daily_schedule_dispatch() -> None:
     """
     Ежедневный воркер расчёта таймеров (пропускает воскресенье).
@@ -159,6 +201,7 @@ async def daily_schedule_dispatch() -> None:
     lessons = await get_api_schedule_for_date(today, force_refresh=True)
     for lesson in lessons:
         schedule_lesson_reminder(today, lesson, now_dt)
+        schedule_attendance_poll(today, lesson, now_dt)
 
 
 def setup_scheduler() -> AsyncIOScheduler:

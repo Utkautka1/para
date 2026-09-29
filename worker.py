@@ -17,7 +17,7 @@ from core.logger import get_logger
 from core.redis import init_redis, redis_client
 from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
-from services.notifier import schedule_lesson_reminder, setup_scheduler, scheduler
+from services.notifier import schedule_attendance_poll, schedule_lesson_reminder, setup_scheduler, scheduler
 from services.topic_updater import topic_sync_loop
 
 log = get_logger("worker_main")
@@ -31,6 +31,7 @@ async def schedule_today_reminders() -> None:
     lessons = await get_api_schedule_for_date(today)
     for lesson in lessons:
         schedule_lesson_reminder(today, lesson, now_dt)
+        schedule_attendance_poll(today, lesson, now_dt)
 
 
 async def shutdown_worker() -> None:
