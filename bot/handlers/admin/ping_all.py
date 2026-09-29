@@ -25,6 +25,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, User
 from bot.filters.auth import AuthFilter
 from core.logger import get_logger
+from services.user_cache import get_cached_user_id
 from utils.storage import load_json
 
 log = get_logger("admin_ping_all")
@@ -44,20 +45,31 @@ async def load_classmates_list() -> List[Dict[str, Any]]:
     return await load_json(BIRTHDAYS_FILE_PATH, default=[])
 
 
+def resolve_person_tg_id(person: Dict[str, Any]) -> Optional[int]:
+    """
+    Извлекает tg_id из записи или постоянного кэша пользователей.
+    """
+    if person.get("tg_id"):
+        return person["tg_id"]
+    username = person.get("username")
+    return get_cached_user_id(username) if username else None
+
+
 def format_mention_tag(person: Dict[str, Any]) -> Optional[str]:
     """
-    Формирует тег упоминания для одного человека.
+    Формирует кликабельный тег упоминания.
 
-    Если есть username — используем @username (компактно и надежно).
-    Если username нет, но есть tg_id — используем tg://user?id= (иначе Telegram не уведомит).
+    Приоритет отдается tg_id: Telegram шлет пуш-уведомление ТОЛЬКО для
+    ссылок tg://user?id= (text_mention), а обычный @username ботом игнорирует.
     """
+    tg_id = resolve_person_tg_id(person)
     username = person.get("username")
-    tg_id = person.get("tg_id")
     name = html.escape(person.get("full_name", ""))
+    if tg_id:
+        label = f"@{username}" if username else name
+        return f'<a href="tg://user?id={tg_id}">{label}</a>'
     if username:
         return f"@{username}"
-    if tg_id:
-        return f'<a href="tg://user?id={tg_id}">{name}</a>'
     return None
 
 
@@ -75,11 +87,9 @@ def is_sender(person: Dict[str, Any], sender_id: Optional[int], sender_username:
     return False
 
 
-def build_mentions_spoiler(classmates: List[Dict[str, Any]], sender: Optional[User]) -> str:
+def build_mentions_block(classmates: List[Dict[str, Any]], sender: Optional[User]) -> str:
     """
-    Формирует скрытый блок спойлера с пингами всех участников без автора команды.
-
-    Блок оборачивается в <tg-spoiler>, чтобы скрыть длинный список в интерфейсе.
+    Формирует список тегов упоминаний участников чата без автора команды.
     """
     sender_id = sender.id if sender else None
     sender_user = sender.username if sender else None
@@ -89,7 +99,7 @@ def build_mentions_spoiler(classmates: List[Dict[str, Any]], sender: Optional[Us
         if not is_sender(p, sender_id, sender_user)
     ]
     valid_tags = [t for t in tags if t]
-    return f"<tg-spoiler>{' '.join(valid_tags)}</tg-spoiler>"
+    return " ".join(valid_tags)
 
 
 def extract_broadcast_text(html_text: str) -> str:
@@ -108,17 +118,15 @@ def extract_broadcast_text(html_text: str) -> str:
     ).strip()
 
 
-def build_broadcast_message(user_html: str, spoiler: str, has_reply: bool = False) -> str:
+def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str:
     """
-    Собирает итоговый HTML сообщения со спойлером пинга и текстом автора.
-
-    Если автор не передал текст, подставляется лаконичное дефолтное оповещение.
+    Собирает итоговый HTML: текст автора сверху, блок пингов в самом низу.
     """
     if user_html:
-        return f"{spoiler}\n\n{user_html}"
+        return f"{user_html}\n\n{mentions}"
     if has_reply:
-        return f"{spoiler}\n📢 <b>Внимание к сообщению выше!</b>"
-    return f"{spoiler}\n📢 <b>Общий сбор группы!</b>"
+        return f"📢 <b>Внимание к сообщению выше!</b>\n\n{mentions}"
+    return f"📢 <b>Общий сбор группы!</b>\n\n{mentions}"
 
 
 async def safe_delete_command_message(message: Message) -> None:
@@ -180,12 +188,12 @@ def compose_broadcast_content(
     """
     Формирует итоговый HTML рассылки и определяет ID реплая.
 
-    Объединяет теги скрытого пинга и форматированный текст автора.
+    Размещает текст автора вверху, а пинги одногруппников — внизу сообщения.
     """
-    spoiler = build_mentions_spoiler(classmates, message.from_user)
+    mentions = build_mentions_block(classmates, message.from_user)
     user_html = extract_broadcast_text(message.html_text or "")
     reply_id = message.reply_to_message.message_id if message.reply_to_message else None
-    final_text = build_broadcast_message(user_html, spoiler, has_reply=bool(reply_id))
+    final_text = build_broadcast_message(user_html, mentions, has_reply=bool(reply_id))
     return final_text, reply_id
 
 

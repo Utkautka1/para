@@ -15,7 +15,7 @@ from aiogram.types import Chat, Message, PhotoSize, User
 
 from bot.handlers.admin.ping_all import (
     build_broadcast_message,
-    build_mentions_spoiler,
+    build_mentions_block,
     cmd_ping_all,
     compose_broadcast_content,
     dispatch_broadcast,
@@ -29,10 +29,17 @@ from bot.handlers.admin.ping_all import (
 )
 
 
-def test_format_mention_tag_with_username() -> None:
-    """Проверяет форматирование тега при наличии юзернейма."""
+def test_format_mention_tag_with_username_and_tg_id() -> None:
+    """Проверяет оборачивание в tg://user?id при наличии и юзернейма, и tg_id."""
     person = {"full_name": "Мазур Арсений", "username": "Arseniymazur", "tg_id": 1859089085}
-    assert format_mention_tag(person) == "@Arseniymazur"
+    expected = '<a href="tg://user?id=1859089085">@Arseniymazur</a>'
+    assert format_mention_tag(person) == expected
+
+
+def test_format_mention_tag_only_username() -> None:
+    """Проверяет возврат чистого @username, если tg_id отсутствует."""
+    person = {"full_name": "Калинкевич Арсений", "username": "etow0ndes", "tg_id": None}
+    assert format_mention_tag(person) == "@etow0ndes"
 
 
 def test_format_mention_tag_without_username_with_tg_id() -> None:
@@ -73,19 +80,18 @@ def test_is_sender_no_match() -> None:
     assert is_sender(person, sender_id=200, sender_username="user2") is False
 
 
-def test_build_mentions_spoiler_excludes_sender() -> None:
-    """Проверяет исключение автора команды из результирующего блока спойлера."""
+def test_build_mentions_block_excludes_sender() -> None:
+    """Проверяет исключение автора команды из результирующего блока пингов."""
     classmates = [
         {"full_name": "Студент 1", "username": "user1", "tg_id": 1},
         {"full_name": "Автор", "username": "author_user", "tg_id": 2},
         {"full_name": "Студент 3", "username": None, "tg_id": 3},
     ]
     sender = User(id=2, is_bot=False, first_name="Author", username="author_user")
-    spoiler = build_mentions_spoiler(classmates, sender)
-    assert "@user1" in spoiler
-    assert '<a href="tg://user?id=3">Студент 3</a>' in spoiler
-    assert "author_user" not in spoiler
-    assert spoiler.startswith("<tg-spoiler>") and spoiler.endswith("</tg-spoiler>")
+    block = build_mentions_block(classmates, sender)
+    assert '<a href="tg://user?id=1">@user1</a>' in block
+    assert '<a href="tg://user?id=3">Студент 3</a>' in block
+    assert "author_user" not in block
 
 
 def test_extract_broadcast_text_various_prefixes() -> None:
@@ -97,24 +103,24 @@ def test_extract_broadcast_text_various_prefixes() -> None:
 
 
 def test_build_broadcast_message_with_text() -> None:
-    """Проверяет формирование сообщения при наличии пользовательского текста."""
-    spoiler = "<tg-spoiler>@user1</tg-spoiler>"
-    msg = build_broadcast_message("<b>Важное объявление!</b>", spoiler)
-    assert msg == "<tg-spoiler>@user1</tg-spoiler>\n\n<b>Важное объявление!</b>"
+    """Проверяет размещение текста автора вверху, а пингов внизу сообщения."""
+    mentions = "@user1 @user2"
+    msg = build_broadcast_message("<b>Важное объявление!</b>", mentions)
+    assert msg == "<b>Важное объявление!</b>\n\n@user1 @user2"
 
 
 def test_build_broadcast_message_empty_with_reply() -> None:
     """Проверяет формирование сообщения-заглушки при ответе на сообщение."""
-    spoiler = "<tg-spoiler>@user1</tg-spoiler>"
-    msg = build_broadcast_message("", spoiler, has_reply=True)
-    assert "Внимание к сообщению выше!" in msg
+    mentions = "@user1"
+    msg = build_broadcast_message("", mentions, has_reply=True)
+    assert msg == "📢 <b>Внимание к сообщению выше!</b>\n\n@user1"
 
 
 def test_build_broadcast_message_empty_without_reply() -> None:
     """Проверяет формирование сообщения по умолчанию при пустом тексте."""
-    spoiler = "<tg-spoiler>@user1</tg-spoiler>"
-    msg = build_broadcast_message("", spoiler, has_reply=False)
-    assert "Общий сбор группы!" in msg
+    mentions = "@user1"
+    msg = build_broadcast_message("", mentions, has_reply=False)
+    assert msg == "📢 <b>Общий сбор группы!</b>\n\n@user1"
 
 
 @pytest.mark.asyncio
