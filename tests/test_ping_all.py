@@ -36,7 +36,8 @@ def test_format_mention_tag_with_username_and_tg_id() -> None:
     assert format_mention_tag(person) == expected
 
 
-def test_format_mention_tag_only_username() -> None:
+@patch("bot.handlers.admin.ping_all.get_cached_user_id", return_value=None)
+def test_format_mention_tag_only_username(mock_cache: MagicMock) -> None:
     """Проверяет возврат чистого @username, если tg_id отсутствует."""
     person = {"full_name": "Калинкевич Арсений", "username": "etow0ndes", "tg_id": None}
     assert format_mention_tag(person) == "@etow0ndes"
@@ -270,5 +271,6 @@ async def test_load_classmates_list() -> None:
     """Проверяет считывание реального реестра одногруппников из birthdays.json."""
     classmates = await load_classmates_list()
     assert isinstance(classmates, list)
-    assert len(classmates) == 22
+    assert len(classmates) == 23
     assert any(c.get("username") == "Arseniymazur" for c in classmates)
+    assert any(c.get("username") == "illimitation" for c in classmates)
