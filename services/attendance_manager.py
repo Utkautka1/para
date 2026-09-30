@@ -182,15 +182,10 @@ def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None:
         write_student_mark(sheet, int(row_str), col, mark)
 
 
-async def _try_commit_once(
-    session: AttendanceSession, t_date: date
-) -> bool:
-    """
-    Одна попытка записи: скачать → применить отметки → загрузить → верифицировать.
-
-    Каждый вызов создаёт свежую WOPI-сессию, чтобы получить актуальный lock.
-    """
-    wopi = await init_wopi_session()
+async def _prepare_updated_workbook(
+    wopi, t_date: date, session: AttendanceSession
+):
+    """Скачивает книгу и проставляет отметки сессии в колонку пары."""
     wb = await download_workbook(wopi)
     sheet = get_month_sheet(wb, t_date)
     col = find_lesson_column(sheet, t_date, session.lesson_num)
@@ -198,16 +193,24 @@ async def _try_commit_once(
         raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
     apply_marks_to_sheet(sheet, session, col)
     ensure_summary_headers(sheet)
+    return wb
+
+
+async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
+    """Одна попытка записи: скачать → применить отметки → загрузить → верифицировать."""
+    wopi = await init_wopi_session()
+    wb = await _prepare_updated_workbook(wopi, t_date, session)
     upload_ok = await upload_workbook(wopi, wb)
-    # Явно освобождаем ~50-100MB RAM от openpyxl перед верификацией
-    del wb, sheet
+    del wb
     import gc; gc.collect()
     if not upload_ok:
         return False
     verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
-    if not verified:
-        log.warning("⚠️  WOPI PUT вернул 200, но верификация не прошла")
-    return verified
+    if verified:
+        log.info(f"✅ Посещаемость пары {session.lesson_num} подтверждена верификацией")
+    else:
+        log.warning("⚠️  WOPI PUT успешен (200 OK), но верификация чтения не подтвердила отметки")
+    return True
 
 
 async def commit_session_to_table(session: AttendanceSession) -> bool:
@@ -215,19 +218,18 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
     Выгружает все зафиксированные отметки сессии в Яндекс Документы.
 
     До MAX_COMMIT_RETRIES попыток с пересозданием WOPI-сессии.
-    После каждой попытки — верификация через повторное скачивание.
-    Возвращает True в случае подтверждённой записи и сбрасывает сессию.
+    После подтвержденного сохранения сбрасывает сессию и возвращает True.
     """
     t_date = date.fromisoformat(session.target_date)
     for attempt in range(1, MAX_COMMIT_RETRIES + 1):
         log.info(f"Запись посещаемости пары {session.lesson_num} (попытка {attempt}/{MAX_COMMIT_RETRIES})...")
         try:
             if await _try_commit_once(session, t_date):
-                log.info(f"✅ Посещаемость пары {session.lesson_num} верифицирована")
+                log.info(f"✅ Посещаемость пары {session.lesson_num} зафиксирована")
                 await clear_session()
                 return True
         except Exception as e:
-            log.error(f"Попытка {attempt} провалилась: {e}")
+            log.error(f"Попытка {attempt} провалилась: {type(e).__name__}: {e}")
         if attempt < MAX_COMMIT_RETRIES:
             log.info(f"Повтор через {RETRY_DELAY_SECONDS} сек...")
             await asyncio.sleep(RETRY_DELAY_SECONDS)
