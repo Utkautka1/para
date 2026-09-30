@@ -9,9 +9,11 @@
 """
 
 import asyncio
+import html
 import io
 import json
 import re
+import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
@@ -315,16 +317,16 @@ async def verify_upload(
     expected_marks: Dict[str, str],
 ) -> bool:
     """
-    Лёгкая проверка записи через raw-байты без openpyxl.
+    Выполняет легковесную валидацию сохранения через скачивание raw-байтов.
 
-    Скачивает xlsx как zip, ищет отметки прямо в XML листа.
-    Потребление памяти ~2-5MB вместо ~100MB при полном парсинге.
+    Извлекает только XML нужного листа без создания дерева openpyxl (~2MB RAM).
+    Возвращает True при подтверждении отметок на сервере.
     """
     try:
         raw = await _download_raw_bytes(session)
         return _verify_marks_in_raw(raw, target_date, expected_marks)
     except Exception as e:
-        log.warning(f"Верификация не удалась: {e}")
+        log.warning(f"Верификация не удалась ({type(e).__name__}): {e}")
         return False
 
 
@@ -339,81 +341,96 @@ async def _download_raw_bytes(session: WopiSession) -> bytes:
         return res.content
 
 
-def _verify_marks_in_raw(
-    raw: bytes, target_date: date, expected_marks: Dict[str, str]
-) -> bool:
+def _find_sheet_rid(wb_xml: str, sheet_name: str) -> Optional[str]:
     """
-    Ищет отметки О/У/Н прямо в XML нужного листа из zip-архива.
+    Находит relationship ID (r:id) листа по его имени в workbook.xml.
 
-    Вычисляет имя листа по месяцу, находит его XML в zip
-    и проверяет наличие значений через regex.
+    Используем ElementTree вместо хрупких регулярных выражений.
+    Возвращает строку вида 'rId1' или None.
     """
-    sheet_name = MONTH_SHEET_MAP.get(target_date.month)
-    if not sheet_name:
-        return False
-    # Ищем хотя бы одну отметку О/У/Н для проверки
-    check_marks = {r: m for r, m in expected_marks.items() if m in {"О", "У", "Н"}}
-    if not check_marks:
-        # Все П — проверяем просто наличие «П» в любой ячейке
-        check_marks = dict(list(expected_marks.items())[:3])
-    xml_text = _extract_sheet_xml(raw, sheet_name)
-    if not xml_text:
-        log.warning(f"Верификация: XML листа '{sheet_name}' не найден")
-        return False
-    return _marks_found_in_xml(xml_text, check_marks)
+    try:
+        root = ET.fromstring(wb_xml)
+        for sheet in root.iter("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheet"):
+            if sheet.attrib.get("name") == sheet_name:
+                for key, val in sheet.attrib.items():
+                    if key.endswith("id"):
+                        return val
+        return None
+    except Exception as e:
+        log.warning(f"Ошибка парсинга workbook.xml: {e}")
+        return None
+
+
+def _resolve_sheet_target_path(rels_xml: str, rid: str) -> Optional[str]:
+    """
+    Определяет относительный путь к XML листа в архиве по его r:id.
+
+    Нормализует префикс 'xl/' и ведущие слэши из rels-манифеста.
+    Возвращает путь в zip-архиве, например 'xl/worksheets/sheet1.xml'.
+    """
+    try:
+        root = ET.fromstring(rels_xml)
+        for rel in root.iter():
+            if rel.attrib.get("Id") == rid:
+                target = rel.attrib.get("Target", "").lstrip("/")
+                return target if target.startswith("xl/") else f"xl/{target}"
+        return None
+    except Exception as e:
+        log.warning(f"Ошибка парсинга workbook.xml.rels: {e}")
+        return None
 
 
 def _extract_sheet_xml(raw: bytes, sheet_name: str) -> Optional[str]:
-    """Извлекает XML нужного листа по имени из xlsx (zip-архива)."""
-    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        wb_xml = zf.read("xl/workbook.xml").decode("utf-8")
-        rid = _find_sheet_rid(wb_xml, sheet_name)
-        if not rid:
-            return None
-        return _resolve_sheet_by_rid(zf, rid)
-
-
-def _find_sheet_rid(wb_xml: str, sheet_name: str) -> Optional[str]:
-    """Находит r:id листа по имени в workbook.xml.
-
-    Парсит каждый тег <sheet ...> отдельно — устойчиво к xmlns,
-    порядку атрибутов и кавычкам внутри тегов.
     """
-    # Захватываем весь тег <sheet ... /> или <sheet ...>...</sheet>
-    for tag in re.finditer(r'<(?:\w+:)?sheet\s([^/]*?)/>', wb_xml):
-        attrs = tag.group(1)
-        name_m = re.search(r'name="([^"]*)"', attrs)
-        rid_m = re.search(r'r:id="(\w+)"', attrs)
-        if name_m and name_m.group(1) == sheet_name and rid_m:
-            return rid_m.group(1)
-    return None
+    Извлекает XML нужного листа по имени из xlsx zip-архива.
 
-
-def _resolve_sheet_by_rid(zf: zipfile.ZipFile, rid: str) -> Optional[str]:
-    """Резолвит relationship ID в содержимое XML листа."""
-    rels_xml = zf.read("xl/_rels/workbook.xml.rels").decode("utf-8")
-    rel_match = re.search(rf'Id="{rid}"[^>]*Target="([^"]+)"', rels_xml)
-    if not rel_match:
+    Использует связку workbook.xml -> workbook.xml.rels без загрузки openpyxl.
+    Возвращает XML-текст листа или None.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            if "xl/workbook.xml" not in zf.namelist() or "xl/_rels/workbook.xml.rels" not in zf.namelist():
+                return None
+            wb_xml = zf.read("xl/workbook.xml").decode("utf-8")
+            rid = _find_sheet_rid(wb_xml, sheet_name)
+            if not rid:
+                return None
+            rels_xml = zf.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+            path = _resolve_sheet_target_path(rels_xml, rid)
+            if path and path in zf.namelist():
+                return zf.read(path).decode("utf-8")
         return None
-    target = rel_match.group(1)
-    # Target может быть "worksheets/sheet1.xml" или "xl/worksheets/..."
-    path = f"xl/{target}" if not target.startswith("xl/") else target
-    if path in zf.namelist():
-        return zf.read(path).decode("utf-8")
-    return None
+    except Exception as e:
+        log.warning(f"Сбой распаковки листа '{sheet_name}': {e}")
+        return None
+
+
+def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool:
+    """
+    Проверяет совпадение отметки посещаемости в ячейке XML.
+
+    Распознает значения в <t> и <v>, декодируя HTML-сущности (например, &#1055;).
+    Возвращает True, если значение ячейки совпадает с ожидаемой отметкой.
+    """
+    unescaped = html.unescape(cell_xml)
+    match = re.search(r"<(?:\w+:)?(?:t|v)[^>]*>([^<]*)</(?:\w+:)?(?:t|v)>", unescaped)
+    return bool(match and match.group(1).strip().upper() == mark)
 
 
 def _marks_found_in_xml(
     xml_text: str, check_marks: Dict[str, str]
 ) -> bool:
-    """Проверяет наличие отметок в XML через поиск <v>MARK</v>."""
+    """
+    Проверяет наличие ожидаемых отметок посещаемости в XML листа.
+
+    Ищет ячейки соответствующих строк и проверяет совпадение меток.
+    Возвращает True, если все проверяемые отметки найдены.
+    """
     found = 0
     for row_str, mark in check_marks.items():
-        # Ищем ячейку в строке row_str с значением mark
-        row_pattern = rf'<c\s+r="[A-Z]+{row_str}"[^>]*>.*?</c>'
-        for cell_match in re.finditer(row_pattern, xml_text):
-            val_match = re.search(r'<v>([^<]*)</v>', cell_match.group(0))
-            if val_match and val_match.group(1).strip() == mark:
+        row_pat = rf'<c\s+r="[A-Z]+{row_str}"[^>]*>.*?</c>'
+        for cell_match in re.finditer(row_pat, xml_text):
+            if _cell_has_expected_mark(cell_match.group(0), mark):
                 found += 1
                 break
     ok = found == len(check_marks)
@@ -422,6 +439,28 @@ def _marks_found_in_xml(
     else:
         log.info(f"Верификация: все {found} отметок подтверждены ✓")
     return ok
+
+
+def _verify_marks_in_raw(
+    raw: bytes, target_date: date, expected_marks: Dict[str, str]
+) -> bool:
+    """
+    Проверяет наличие отметок в бинарном содержимом таблицы.
+
+    Выбирает лист месяца, извлекает его XML и валидирует метки.
+    Возвращает True при успешном подтверждении.
+    """
+    sheet_name = MONTH_SHEET_MAP.get(target_date.month)
+    if not sheet_name:
+        return False
+    check_marks = {r: m for r, m in expected_marks.items() if m in {"О", "У", "Н"}}
+    if not check_marks:
+        check_marks = dict(list(expected_marks.items())[:3])
+    xml_text = _extract_sheet_xml(raw, sheet_name)
+    if not xml_text:
+        log.warning(f"Верификация: XML листа '{sheet_name}' не найден")
+        return False
+    return _marks_found_in_xml(xml_text, check_marks)
 
 
 def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet:

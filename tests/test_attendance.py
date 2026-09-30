@@ -376,3 +376,100 @@ def test_ensure_summary_headers():
     assert ws.cell(3, 8).value == "У"
     assert ws.cell(2, 9).value == "отсутствие по неуважительной причине"
     assert ws.cell(3, 9).value == "Н"
+
+
+def test_find_sheet_rid():
+    """Проверяет извлечение r:id листа из workbook.xml даже с xmlns атрибутами."""
+    from services.yandex_docs import _find_sheet_rid
+    xml = (
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        '<sheets><sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+        'name="СЕНТ" sheetId="1" state="visible" r:id="rId1"/></sheets></workbook>'
+    )
+    assert _find_sheet_rid(xml, "СЕНТ") == "rId1"
+    assert _find_sheet_rid(xml, "ОКТ") is None
+
+
+def test_resolve_sheet_target_path():
+    """Проверяет корректное разрешение пути листа по r:id с очисткой слэшей."""
+    from services.yandex_docs import _resolve_sheet_target_path
+    xml = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Target="/xl/worksheets/sheet1.xml"/>'
+        '<Relationship Id="rId2" Target="worksheets/sheet2.xml"/>'
+        '</Relationships>'
+    )
+    assert _resolve_sheet_target_path(xml, "rId1") == "xl/worksheets/sheet1.xml"
+    assert _resolve_sheet_target_path(xml, "rId2") == "xl/worksheets/sheet2.xml"
+    assert _resolve_sheet_target_path(xml, "rId3") is None
+
+
+def test_cell_has_expected_mark_entities():
+    """Проверяет распознавание отметок с HTML-сущностями и тегами <t> и <v>."""
+    from services.yandex_docs import _cell_has_expected_mark
+    assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>&#1055;</t></is></c>', "П")
+    assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>О</t></is></c>', "О")
+    assert _cell_has_expected_mark('<c r="D5"><v>Н</v></c>', "Н")
+    assert not _cell_has_expected_mark('<c r="D5"><v>0</v></c>', "Н")
+    assert not _cell_has_expected_mark('<c r="D5"/>', "П")
+
+
+def test_extract_and_verify_marks_in_raw():
+    """Проверяет извлечение листа и проверку отметок из реального xlsx-архива."""
+    from services.yandex_docs import _extract_sheet_xml, _verify_marks_in_raw, save_workbook_to_bytes
+    wb = create_mock_workbook()
+    ws = wb["СЕНТ"]
+    ws.cell(5, 4, "П")
+    ws.cell(6, 4, "Н")
+    ws.cell(2, 20, "Опоздавшие")
+    raw = save_workbook_to_bytes(wb)
+    assert _extract_sheet_xml(raw, "СЕНТ") is not None
+    assert _extract_sheet_xml(raw, "ДЕК") is None
+    assert _verify_marks_in_raw(raw, date(2026, 9, 29), {"5": "П", "6": "Н"}) is True
+    assert _verify_marks_in_raw(raw, date(2026, 9, 29), {"5": "О"}) is False
+
+
+@pytest.mark.asyncio
+async def test_verify_upload_with_mock_bytes():
+    """Проверяет асинхронный вызов verify_upload при успешном скачивании байтов."""
+    from services.yandex_docs import verify_upload, WopiSession, save_workbook_to_bytes
+    wb = create_mock_workbook()
+    ws = wb["СЕНТ"]
+    ws.cell(5, 4, "П")
+    ws.cell(2, 20, "Опоздавшие")
+    raw = save_workbook_to_bytes(wb)
+    session = WopiSession("https://wopi.test/files/1", "token", "lock1")
+    with patch("services.yandex_docs._download_raw_bytes", new_callable=AsyncMock, return_value=raw):
+        res = await verify_upload(session, date(2026, 9, 29), 2, {"5": "П"})
+        assert res is True
+
+
+@pytest.mark.asyncio
+async def test_try_commit_once_success_handling():
+    """Проверяет успешное сохранение в _try_commit_once при HTTP 200 от WOPI."""
+    from services.attendance_manager import _try_commit_once
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=2, lesson_title="Тест",
+        students=[(5, "Иванов")], marks={"5": "П"}, initiator_id=123
+    )
+    with patch("services.attendance_manager.init_wopi_session", new_callable=AsyncMock), \
+         patch("services.attendance_manager.download_workbook", new_callable=AsyncMock, return_value=create_mock_workbook()), \
+         patch("services.attendance_manager.upload_workbook", new_callable=AsyncMock, return_value=True), \
+         patch("services.attendance_manager.verify_upload", new_callable=AsyncMock, return_value=True):
+        assert await _try_commit_once(session, date(2026, 9, 29)) is True
+
+
+@pytest.mark.asyncio
+async def test_commit_session_to_table_clears_on_success():
+    """Проверяет сброс активной сессии в Redis после успешного сохранения."""
+    from services.attendance_manager import commit_session_to_table
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=2, lesson_title="Тест",
+        students=[(5, "Иванов")], marks={"5": "П"}, initiator_id=123
+    )
+    with patch("services.attendance_manager._try_commit_once", new_callable=AsyncMock, return_value=True), \
+         patch("services.attendance_manager.clear_session", new_callable=AsyncMock) as mock_clear:
+        ok = await commit_session_to_table(session)
+        assert ok is True
+        mock_clear.assert_called_once()
+
