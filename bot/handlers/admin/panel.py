@@ -202,7 +202,6 @@ class AddTeacherState(StatesGroup):
     waiting_for_link_info = State()
 
 
-@router.callback_query(F.data.startswith("admin:list_custom"))
 def _build_custom_teachers_view(custom: dict) -> tuple[str, list]:
     """Формирует текст списка кастомных преподавателей и ряды кнопок."""
     if not custom:
