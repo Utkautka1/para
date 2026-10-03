@@ -6,6 +6,7 @@
   2. Синхронизацию расписания экзаменов (exam_topic_sync_loop, раз в 10 мин)
   3. Мониторинг и публикацию поздравлений с ДР (birthday_sync_loop, в 07:00)
   4. APScheduler для утренних дайджестов (06:00) и напоминаний за 10 мин до пар
+  5. Фоновый Keep-Alive сессии Яндекс Документов (раз в 6 часов)
 """
 
 import asyncio
@@ -19,6 +20,7 @@ from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
 from services.notifier import schedule_attendance_poll, schedule_lesson_reminder, setup_scheduler, scheduler
 from services.topic_updater import topic_sync_loop
+from services.yandex_keepalive import yandex_session_keepalive_loop
 
 log = get_logger("worker_main")
 
@@ -58,7 +60,8 @@ async def main() -> None:
         await asyncio.gather(
             topic_sync_loop(),
             exam_topic_sync_loop(),
-            birthday_sync_loop()
+            birthday_sync_loop(),
+            yandex_session_keepalive_loop()
         )
     except asyncio.CancelledError:
         log.info("Получен сигнал завершения работы воркера.")
