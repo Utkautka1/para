@@ -50,13 +50,15 @@ def extract_client_config(html_content: str) -> Dict:
     """
     Извлекает JSON конфигурации редактора из HTML страницы.
 
-    На странице docs.yandex.ru параметры сессии зашиты в тег
-    <script id="client-config">.
+    В валидной сессии параметры зашиты в тег <script id="client-config">.
+    При его отсутствии проверяем, не истекла ли сессия (экран логина).
     """
     match = re.search(r'<script[^>]*id="client-config"[^>]*>(.*?)</script>', html_content)
-    if not match:
-        raise ValueError("Тег client-config не найден в DOM Яндекс Документов")
-    return json.loads(match.group(1))
+    if match:
+        return json.loads(match.group(1))
+    if "<title>Авторизация</title>" in html_content or "passp-bg" in html_content:
+        raise ValueError("Сессия Яндекс Документов истекла (страница авторизации). Обновите YANDEX_COOKIE в .env")
+    raise ValueError("Тег client-config не найден в DOM Яндекс Документов")
 
 
 def get_yandex_cookie_header() -> str:
