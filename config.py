@@ -87,3 +87,7 @@ ALLOWED_ATTENDANCE_USER_IDS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
 ATTENDANCE_DOC_URL: str = get_required_env("ATTENDANCE_DOC_URL")
 YANDEX_SESSION_ID: str = os.getenv("YANDEX_SESSION_ID", "")
 YANDEX_COOKIE: str = os.getenv("YANDEX_COOKIE", "")
+
+# Ключ хранения актуальных Cookie в Redis и их TTL (60 дней)
+REDIS_YANDEX_COOKIE_KEY: str = "yandex:session_cookie"
+REDIS_COOKIE_TTL_SECONDS: int = 5184000

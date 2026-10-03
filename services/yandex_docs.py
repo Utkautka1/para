@@ -22,7 +22,7 @@ import httpx
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
-from config import ATTENDANCE_DOC_URL
+from config import ATTENDANCE_DOC_URL, REDIS_COOKIE_TTL_SECONDS, REDIS_YANDEX_COOKIE_KEY
 from core.logger import get_logger
 
 log = get_logger("yandex_docs")
@@ -61,8 +61,20 @@ def extract_client_config(html_content: str) -> Dict:
     raise ValueError("Тег client-config не найден в DOM Яндекс Документов")
 
 
+def merge_cookie_header(current_cookie: str, new_cookies: Dict[str, str]) -> str:
+    """Объединяет текущие Cookie с обновленными значениями из ответа сервера."""
+    cookie_map = {}
+    for part in current_cookie.split(";"):
+        if "=" in part:
+            k, v = part.strip().split("=", 1)
+            cookie_map[k] = v
+    for k, v in new_cookies.items():
+        cookie_map[k] = v
+    return "; ".join(f"{k}={v}" for k, v in cookie_map.items())
+
+
 def get_yandex_cookie_header() -> str:
-    """Формирует строку заголовка Cookie для авторизованного доступа к Яндекс Документам."""
+    """Формирует fallback строку заголовка Cookie из конфигурации .env."""
     from config import YANDEX_COOKIE, YANDEX_SESSION_ID
     if YANDEX_COOKIE:
         return YANDEX_COOKIE.strip()
@@ -71,14 +83,50 @@ def get_yandex_cookie_header() -> str:
     return ""
 
 
+async def get_effective_yandex_cookie() -> str:
+    """Возвращает актуальные Cookie из Redis, либо fallback из .env."""
+    try:
+        from core.redis import get_redis
+        r = await get_redis()
+        if r:
+            cached = await r.get(REDIS_YANDEX_COOKIE_KEY)
+            if cached:
+                return cached
+    except Exception as e:
+        log.warning(f"Не удалось прочитать Cookie из Redis: {e}")
+    return get_yandex_cookie_header()
+
+
+async def save_effective_yandex_cookie(cookie_str: str) -> None:
+    """Атомарно сохраняет актуальную строку Cookie в Redis с TTL."""
+    try:
+        from core.redis import get_redis
+        r = await get_redis()
+        if r and cookie_str:
+            await r.set(REDIS_YANDEX_COOKIE_KEY, cookie_str, ex=REDIS_COOKIE_TTL_SECONDS)
+            log.debug("Актуальные Cookie Яндекс Документов обновлены в Redis")
+    except Exception as e:
+        log.warning(f"Не удалось сохранить Cookie в Redis: {e}")
+
+
+async def update_cookies_from_response(res: httpx.Response, current_cookie: str) -> None:
+    """Извлекает Set-Cookie из ответа и при наличии обновлений сохраняет в Redis."""
+    if not res.cookies:
+        return
+    new_cookies = dict(res.cookies)
+    merged = merge_cookie_header(current_cookie, new_cookies)
+    if merged != current_cookie:
+        await save_effective_yandex_cookie(merged)
+
+
 async def fetch_page_dom(doc_url: str) -> str:
     """
-    Загружает HTML страницы редактора через HTTP с авторизационной сессией.
+    Загружает HTML страницы редактора через HTTP с актуальной сессией.
 
-    Используем прямой HTTP-запрос с Cookie вместо тяжелого Chromium,
-    что исключает смарт-капчу и обеспечивает мгновенный ответ за 0.1 сек.
+    Используем HTTP с Cookie из Redis/.env, автоматически обновляя
+    Set-Cookie при получении свежих заголовков от сервера.
     """
-    cookie_hdr = get_yandex_cookie_header()
+    cookie_hdr = await get_effective_yandex_cookie()
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -89,12 +137,11 @@ async def fetch_page_dom(doc_url: str) -> str:
     }
     if cookie_hdr:
         headers["Cookie"] = cookie_hdr
-    else:
-        log.warning("YANDEX_SESSION_ID не задан в .env — возможна смарт-капча Яндекса")
     async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
         res = await client.get(doc_url, headers=headers)
         if res.status_code != 200:
             raise RuntimeError(f"Ошибка загрузки страницы документа: HTTP {res.status_code}")
+        await update_cookies_from_response(res, cookie_hdr)
         return res.text
 
 
