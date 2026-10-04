@@ -34,3 +34,4 @@ data/*
 .DS_Store
 .pytest_cache/
 .agents/
+skills-logs.json
