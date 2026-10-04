@@ -34,5 +34,6 @@ data/*
 .DS_Store
 .pytest_cache/
 .agents/
+skills-lock.json
 skills-logs.json
 implementation-notes.md
