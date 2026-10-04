@@ -266,12 +266,14 @@ async def process_api_response(res: httpx.Response, now: float) -> Optional[Dict
 
     Возвращает очищенный срез расписания или текущий кэш при ошибке.
     """
-    global _DATA_CACHE, _LAST_PUBLISHED_AT
+    global _DATA_CACHE, _LAST_PUBLISHED_AT, _COOLDOWN_UNTIL
     if res.status_code == 304:
         _DATA_CACHE = (now, _DATA_CACHE[1])
+        _COOLDOWN_UNTIL = 0.0
         return _DATA_CACHE[1]
     if res.status_code != 200:
-        log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
+        _COOLDOWN_UNTIL = now + _COOLDOWN_SECONDS
+        log.error(f"Ошибка API КТМУ: HTTP {res.status_code} (кулдаун 5 мин)")
         return _DATA_CACHE[1]
     update_cache_headers(res.headers)
     pub_at, cleaned = await asyncio.to_thread(_parse_and_clean_payload, res.content)
@@ -279,6 +281,7 @@ async def process_api_response(res: httpx.Response, now: float) -> Optional[Dict
         log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
         _LAST_PUBLISHED_AT = pub_at
     _DATA_CACHE = (now, cleaned)
+    _COOLDOWN_UNTIL = 0.0
     _persist_snapshot_to_redis(cleaned)
     return cleaned
 
@@ -311,7 +314,6 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
     try:
         res = await _fetch_remote_schedule()
         await process_api_response(res, now)
-        _COOLDOWN_UNTIL = 0.0
     except Exception as e:
         _COOLDOWN_UNTIL = now + _COOLDOWN_SECONDS
         err_msg = repr(e) if str(e) == "" else f"{type(e).__name__}: {e}"

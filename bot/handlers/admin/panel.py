@@ -2,10 +2,11 @@
 Хэндлеры управления панелью администратора (только для ALLOWED_USER_ID).
 """
 
+from typing import Optional
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from bot.filters.auth import AuthFilter
 from bot.templates.admin.keyboards import get_admin_main_kb
@@ -19,6 +20,19 @@ log = get_logger("admin_panel")
 router = Router()
 router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
+
+
+async def _safe_edit_admin_message(
+    message: Optional[Message], text: str, reply_markup: Optional[InlineKeyboardMarkup] = None
+) -> None:
+    """Безопасно обновляет сообщение админки, перехватывая 'not modified'."""
+    if not message:
+        return
+    try:
+        await message.edit_text(text, reply_markup=reply_markup)
+    except TelegramBadRequest as e:
+        if "not modified" not in str(e).lower():
+            raise
 
 
 def format_admin_panel_text(status_note: str = "") -> str:
@@ -52,8 +66,7 @@ async def cb_admin_menu(event: Message | CallbackQuery) -> None:
     kb = get_admin_main_kb()
 
     if isinstance(event, CallbackQuery):
-        if event.message:
-            await event.message.edit_text(text, reply_markup=kb)
+        await _safe_edit_admin_message(event.message, text, kb)
         await event.answer()
     else:
         await event.answer(text, reply_markup=kb)
@@ -77,8 +90,7 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
     count = res_t.get("count", 0)
     note = f"✅ Кэш очищен! Распаршено {count} преподавателей docx и топик обновлен."
     text = format_admin_panel_text(note)
-    if callback.message:
-        await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
 @router.callback_query(F.data == "admin:status")
@@ -92,8 +104,7 @@ async def cb_admin_status(callback: CallbackQuery) -> None:
     count = res_t.get("count", 0)
     note = f"📊 В памяти API загружено: {count} контактов преподавателей."
     text = format_admin_panel_text(note)
-    if callback.message:
-        await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
     await callback.answer()
 
 
@@ -115,11 +126,7 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
     success = await sync_topic_main_message(ignore_time_restriction=True)
     note = "📢 Топик обновлён!" if success else "⚠️ Не удалось обновить топик. Проверьте логи."
     text = format_admin_panel_text(note)
-    if callback.message:
-        try:
-            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
-        except TelegramBadRequest:
-            pass
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
 @router.callback_query(F.data == "admin:recreate_topic")
@@ -140,11 +147,7 @@ async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
     success = await recreate_topic_message()
     note = "🔁 Сообщение пересоздано!" if success else "⚠️ Ошибка пересоздания. Проверьте логи."
     text = format_admin_panel_text(note)
-    if callback.message:
-        try:
-            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
-        except TelegramBadRequest:
-            pass
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
 @router.callback_query(F.data == "admin:force_exam")
@@ -162,11 +165,7 @@ async def cb_admin_force_exam(callback: CallbackQuery) -> None:
     success = await sync_exam_topic_message()
     note = "📑 Экзамены обновлены!" if success else "⚠️ Не удалось обновить экзамены."
     text = format_admin_panel_text(note)
-    if callback.message:
-        try:
-            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
-        except TelegramBadRequest:
-            pass
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
 @router.callback_query(F.data == "admin:recreate_exam")
@@ -184,11 +183,7 @@ async def cb_admin_recreate_exam(callback: CallbackQuery) -> None:
     success = await recreate_exam_topic_message()
     note = "🔁 Сообщение экзаменов пересоздано!" if success else "⚠️ Ошибка пересоздания."
     text = format_admin_panel_text(note)
-    if callback.message:
-        try:
-            await callback.message.edit_text(text, reply_markup=get_admin_main_kb())
-        except TelegramBadRequest:
-            pass
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
 from aiogram.fsm.context import FSMContext
@@ -229,8 +224,7 @@ async def cb_admin_list_custom(callback: CallbackQuery) -> None:
     kb_rows.append([InlineKeyboardButton(text="➕ Добавить нового", callback_data="admin:add_t:manual")])
     kb_rows.append([InlineKeyboardButton(text="◀️ В главную панель", callback_data="admin:menu")])
     kb = InlineKeyboardMarkup(inline_keyboard=kb_rows)
-    if callback.message:
-        await callback.message.edit_text(text, reply_markup=kb)
+    await _safe_edit_admin_message(callback.message, text, kb)
     await callback.answer()
 
 
@@ -270,8 +264,7 @@ async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> N
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"Отправьте НОВУЮ ссылку на Zoom/Телемост или полные реквизиты встречи:"
     )
-    if callback.message:
-        await callback.message.edit_text(prompt)
+    await _safe_edit_admin_message(callback.message, prompt)
     await callback.answer()
 
 
@@ -291,8 +284,7 @@ async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext)
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "Шаг 1/2: Отправьте полные ФИО преподавателя (например, <code>Валуев Константин Владимирович</code>):"
     )
-    if callback.message:
-        await callback.message.edit_text(prompt)
+    await _safe_edit_admin_message(callback.message, prompt)
     await callback.answer()
 
 
