@@ -5,6 +5,7 @@
 и планирования индивидуальных напоминаний за 10 минут до каждой пары.
 """
 
+import asyncio
 from datetime import datetime, timedelta, time as dtime
 from typing import Any, List, Optional, Tuple
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -111,22 +112,29 @@ def parse_lesson_end_time(time_str: str) -> Optional[dtime]:
     return None
 
 
-async def send_single_reminder(lesson: Lesson) -> None:
-    """
-    Отправляет 10-минутное напоминание о паре всем активным подписчикам в ЛС.
-
-    :param lesson: Объект пары
-    """
-    log.info(f"Отправка напоминания для пары {lesson.period + 1}: {lesson.subject}")
-    text = format_reminder_text(lesson)
-    from db.subscribers import load_subscribers
-    targets = load_subscribers()
-    for chat_id in targets:
-        kb = get_schedule_inline_kb([lesson], is_admin=(chat_id == ALLOWED_USER_ID), is_subscribed=True)
+async def _send_reminder_to_chat(
+    chat_id: int, text: str, lesson: Lesson, sem: asyncio.Semaphore
+) -> None:
+    """Отправляет персональное напоминание одному подписчику под контролем семафора."""
+    kb = get_schedule_inline_kb([lesson], is_admin=(chat_id == ALLOWED_USER_ID), is_subscribed=True)
+    async with sem:
         try:
             await bot.send_message(chat_id, text, reply_markup=kb)
         except Exception as e:
             log.warning(f"Не удалось доставить напоминание {chat_id}: {e}")
+
+
+async def send_single_reminder(lesson: Lesson) -> None:
+    """Отправляет 10-минутное напоминание о паре всем активным подписчикам конкурентно."""
+    log.info(f"Отправка напоминания для пары {lesson.period + 1}: {lesson.subject}")
+    text = format_reminder_text(lesson)
+    from db.subscribers import load_subscribers
+    targets = load_subscribers()
+    if not targets:
+        return
+    sem = asyncio.Semaphore(10)
+    tasks = [_send_reminder_to_chat(cid, text, lesson, sem) for cid in targets]
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datetime) -> None:
@@ -151,16 +159,25 @@ def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datet
         log.info(f"Запланировано напоминание для пары {lesson.period + 1} на {remind_dt.strftime('%H:%M:%S')}")
 
 
-async def send_attendance_prompt(lesson: Lesson) -> None:
-    """Отправляет запрос подтверждения проведения пары старосте и замстаросты."""
-    text = format_confirm_text(lesson.number, lesson.subject, lesson.teacher or "Не указан")
-    kb = get_lesson_confirm_kb(lesson.number)
-    for user_id in ALLOWED_ATTENDANCE_USER_IDS:
+async def _send_attendance_to_admin(
+    user_id: int, text: str, kb: Any, sem: asyncio.Semaphore
+) -> None:
+    """Отправляет запрос подтверждения пары старосте или замстаросты."""
+    async with sem:
         try:
             await bot.send_message(user_id, text, reply_markup=kb)
-            log.info(f"Запрос посещаемости пары {lesson.number} отправлен пользователю {user_id}")
+            log.info(f"Запрос посещаемости пары отправлен пользователю {user_id}")
         except Exception as e:
             log.warning(f"Не удалось доставить запрос посещаемости пользователю {user_id}: {e}")
+
+
+async def send_attendance_prompt(lesson: Lesson) -> None:
+    """Отправляет запрос подтверждения проведения пары старосте и замстаросты параллельно."""
+    text = format_confirm_text(lesson.number, lesson.subject, lesson.teacher or "Не указан")
+    kb = get_lesson_confirm_kb(lesson.number)
+    sem = asyncio.Semaphore(5)
+    tasks = [_send_attendance_to_admin(uid, text, kb, sem) for uid in ALLOWED_ATTENDANCE_USER_IDS]
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 async def auto_close_attendance_session(lesson_num: int) -> None:

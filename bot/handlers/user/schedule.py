@@ -5,8 +5,9 @@
 sched:week, sched:refresh с редактированием существующего сообщения.
 """
 
-from datetime import datetime, timedelta
-from typing import List, Optional
+import json
+from datetime import date, datetime, timedelta
+from typing import List, Optional, Tuple
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
@@ -35,6 +36,24 @@ log = get_logger("user_schedule")
 
 router = Router()
 router.callback_query.filter(ClassmateAuthFilter())
+
+
+async def get_day_schedule_cached(target_date: date) -> Tuple[str, List[Lesson]]:
+    """Возвращает отформатированный текст и пары с Redis-кэшированием на 180с."""
+    cache_key = f"sched:day_pack:{target_date.isoformat()}"
+    cached = await cache_get(cache_key)
+    if cached:
+        try:
+            data = json.loads(cached)
+            lessons = [Lesson(**item) for item in data.get("lessons", [])]
+            return data["text"], lessons
+        except Exception as e:
+            log.warning(f"Ошибка десериализации кэша дня ({cache_key}): {e}")
+    lessons = await get_api_schedule_for_date(target_date)
+    text = format_day_schedule(target_date, lessons)
+    payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
+    await cache_set(cache_key, payload, ttl=180)
+    return text, lessons
 
 
 async def _ack_callback(callback: CallbackQuery, text: Optional[str] = None) -> None:
@@ -94,8 +113,7 @@ async def cmd_start(message: Message) -> None:
         await _greet_new_student(message, student)
     uid = message.from_user.id if message.from_user else 0
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(now)
-    text = format_day_schedule(now, lessons)
+    text, lessons = await get_day_schedule_cached(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
     kb = get_schedule_inline_kb(
         lessons, is_admin=(uid == ALLOWED_USER_ID),
@@ -163,23 +181,21 @@ async def cb_notice_toggle(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:today")
 async def cb_today(callback: CallbackQuery) -> None:
-    """Заменяет сообщение на расписание на сегодня."""
+    """Заменяет сообщение на расписание на сегодня с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Сегодня")
     await _ack_callback(callback)
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(now)
-    text = format_day_schedule(now, lessons)
+    text, lessons = await get_day_schedule_cached(now)
     await edit_or_answer(callback, text, lessons)
 
 
 @router.callback_query(F.data == "sched:tomorrow")
 async def cb_tomorrow(callback: CallbackQuery) -> None:
-    """Заменяет сообщение на расписание на завтра."""
+    """Заменяет сообщение на расписание на завтра с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Завтра")
     await _ack_callback(callback)
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
-    lessons = await get_api_schedule_for_date(tomorrow)
-    text = format_day_schedule(tomorrow, lessons)
+    text, lessons = await get_day_schedule_cached(tomorrow)
     await edit_or_answer(callback, text, lessons)
 
 

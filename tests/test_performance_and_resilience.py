@@ -137,3 +137,66 @@ async def test_schedule_parser_cold_start_from_redis() -> None:
     with patch("services.redis_cache.load_schedule_snapshot", AsyncMock(return_value=(snap, meta))):
         success = await init_schedule_cache_from_redis(1000.0)
         assert success is True
+
+
+@pytest.mark.asyncio
+async def test_get_day_schedule_cached_hit_and_miss() -> None:
+    """Проверяет работу L1 Redis-кэша для расписания дня (hit и miss)."""
+    from datetime import date
+    from bot.handlers.user.schedule import get_day_schedule_cached
+    from services.models import Lesson
+    test_d = date(2026, 10, 5)
+    sample_lessons = [
+        Lesson(
+            subject="Физика", teacher="Сидоров С.С.", room="202",
+            time_str="08:30-10:00", period=0, is_remote=False,
+            lesson_type="Лек", address="Корпус 2"
+        )
+    ]
+    with patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=None)), \
+         patch("bot.handlers.user.schedule.cache_set", AsyncMock()) as mock_set, \
+         patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock(return_value=sample_lessons)):
+        text, lessons = await get_day_schedule_cached(test_d)
+        assert len(lessons) == 1
+        assert "Физика" in text
+        mock_set.assert_called_once()
+
+    cached_payload = json.dumps({"text": "Кэшированный текст", "lessons": [sample_lessons[0].model_dump()]})
+    with patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=cached_payload)), \
+         patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock()) as mock_api:
+        text, lessons = await get_day_schedule_cached(test_d)
+        assert text == "Кэшированный текст"
+        assert len(lessons) == 1
+        mock_api.assert_not_called()
+
+
+def test_classmates_registry_in_memory_mtime_cache() -> None:
+    """Проверяет in-memory кэширование реестра студентов по mtime файла."""
+    from services.classmates_auth import clear_registry_cache, load_classmates_registry
+    clear_registry_cache()
+    mock_data = [{"full_name": "Тест Студент", "tg_id": 111222}]
+    with patch("os.path.getmtime", return_value=12345.0), \
+         patch("services.classmates_auth.sync_load_json", return_value=mock_data) as mock_load:
+        reg1 = load_classmates_registry()
+        reg2 = load_classmates_registry()
+        assert reg1 == mock_data
+        assert reg2 == mock_data
+        assert mock_load.call_count == 1
+    clear_registry_cache()
+
+
+@pytest.mark.asyncio
+async def test_concurrent_send_reminders() -> None:
+    """Проверяет параллельную доставку напоминаний нескольким подписчикам."""
+    from services.models import Lesson
+    from services.notifier import send_single_reminder
+    lesson = Lesson(
+        subject="Химия", teacher="Петров П.П.", room="303",
+        time_str="10:05-11:30", period=1, is_remote=False,
+        lesson_type="Лаб", address="Корпус 1"
+    )
+    targets = {111, 222, 333}
+    with patch("db.subscribers.load_subscribers", return_value=targets), \
+         patch("services.notifier.bot.send_message", AsyncMock()) as mock_send:
+        await send_single_reminder(lesson)
+        assert mock_send.call_count == 3
