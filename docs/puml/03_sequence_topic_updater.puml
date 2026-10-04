@@ -1,0 +1,94 @@
+@startuml 03_sequence_topic_updater
+!theme cerulean
+
+skinparam defaultFontName "sans-serif"
+skinparam roundCorner 8
+skinparam shadowing true
+autonumber
+
+title ⏱️ Последовательность: Синхронизация топика и автоочистка уведомлений (PlantUML)
+
+actor "⏱️ APScheduler\n(para-worker)" as scheduler
+participant "🔄 TopicUpdater\n(сервис)" as updater
+participant "🚀 para-api\n(FastAPI)" as api
+database "⚡ para-redis\n(Redis 7)" as redis
+participant "🤖 Aiogram Bot\n(Telegram API)" as bot
+actor "👥 Чат группы\n(Telegram Topic)" as telegram
+
+loop Каждые 60 секунд
+  scheduler -> updater : trigger_topic_sync()
+  activate updater
+
+  updater -> api : GET /api/v1/schedule/day?group=...&date=today
+  activate api
+  
+  api -> redis : GET sched:group:snapshot
+  activate redis
+  alt Снимок найден в Redis (<2мс)
+    redis --> api : JSON снимка расписания
+  else Снимок отсутствует (Cold start)
+    api -> api : fetch_remote_schedule() (API КТМУ)
+    api -> redis : SET sched:group:snapshot (TTL 4ч)
+  end
+  deactivate redis
+  
+  api --> updater : 200 OK (DayScheduleResponse)
+  deactivate api
+
+  updater -> updater : calculate_current_call(now)
+  note right of updater
+    Определение статуса:
+    - До начала занятий
+    - Идёт пара (осталось N минут)
+    - Перемена (до следующей пары M минут)
+  end note
+
+  opt Наступило время напоминания (за 10 мин до звонка)
+    updater -> redis : EXISTS rem:sent:{group}:{date}:{period}:{type}
+    activate redis
+    redis --> updater : 0 (ещё не отправлялось)
+    deactivate redis
+
+    updater -> redis : SET rem:sent:{group}:{date}:{period}:{type} 1 EX 7200
+    activate redis
+    redis --> updater : OK (идемпотентный флаг установлен)
+    deactivate redis
+
+    updater -> bot : send_message(chat_id, text, message_thread_id)
+    activate bot
+    bot -> telegram : Отправка временного уведомления в топик
+    telegram --> bot : Message(message_id=9872)
+    bot --> updater : message_id = 9872
+    deactivate bot
+
+    updater -> redis : ZADD topic:cleanup_messages (now + 900) "chat_id:9872"
+    activate redis
+    redis --> updater : 1 (зарегистрировано на удаление через 15 мин)
+    deactivate redis
+  end
+
+  group Очистка устаревших эфемерных сообщений (ZSET Garbage Collection)
+    updater -> redis : ZRANGEBYSCORE topic:cleanup_messages -inf {now_timestamp}
+    activate redis
+    redis --> updater : ["chat_id:9872", ...]
+    deactivate redis
+
+    loop Для каждого истекшего сообщения
+      updater -> bot : delete_message(chat_id, 9872)
+      activate bot
+      bot -> telegram : Удаление сообщения из топика
+      telegram --> bot : OK
+      bot --> updater : Удалено
+      deactivate bot
+
+      updater -> redis : ZREM topic:cleanup_messages "chat_id:9872"
+      activate redis
+      redis --> updater : 1
+      deactivate redis
+    end
+  end
+
+  deactivate updater
+end
+
+@enduml

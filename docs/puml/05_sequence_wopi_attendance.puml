@@ -1,0 +1,88 @@
+@startuml 05_sequence_wopi_attendance
+!theme cerulean
+
+skinparam defaultFontName "sans-serif"
+skinparam roundCorner 8
+skinparam shadowing true
+autonumber
+
+title 📊 Последовательность: Фиксация посещаемости старостой через WOPI (PlantUML)
+
+actor "👑 Староста" as admin
+participant "🤖 para-bot\n(Telegram Handlers)" as bot
+participant "🚀 para-api\n(WOPI Host)" as api
+database "⚡ para-redis\n(Сессии и токены)" as redis
+participant "📊 Яндекс Документы\n(WOPI Client / Cloud Editor)" as yandex_docs
+
+== Шаг 1: Инициализация сессии отметки ==
+
+admin -> bot : Нажатие кнопки «Отметить пару»
+activate bot
+bot -> api : POST /api/v1/attendance/init (group, date, period)
+activate api
+
+api -> redis : SET att:session:{session_id} JSON(user_id, file_id) EX 3600
+activate redis
+redis --> api : OK (токен сессии активен 1 час)
+deactivate redis
+
+api --> bot : 200 OK (wopi_client_url, access_token)
+deactivate api
+
+bot --> admin : Inline-кнопка: «Открыть электронную ведомость» 📝
+deactivate bot
+
+== Шаг 2: Рукопожатие по протоколу WOPI (Handshake) ==
+
+admin -> yandex_docs : Переход по ссылке ведомости
+activate yandex_docs
+
+yandex_docs -> api : GET /wopi/files/{file_id}?access_token={token}
+activate api
+note over yandex_docs, api
+  WOPI протокол: Запрос метаданных файла (CheckFileInfo).
+  Проверяются права на чтение/запись и имя файла.
+end note
+
+api -> redis : GET att:session:{session_id}
+activate redis
+redis --> api : Данные авторизованной сессии
+deactivate redis
+
+api --> yandex_docs : 200 OK JSON { BaseFileName, Size, UserCanWrite: true }
+deactivate api
+
+yandex_docs -> api : GET /wopi/files/{file_id}/contents?access_token={token}
+activate api
+api --> yandex_docs : 200 OK (бинарный поток таблицы посещаемости .xlsx)
+deactivate api
+
+yandex_docs --> admin : Отображение интерфейса таблицы Excel в браузере
+
+== Шаг 3: Редактирование и сохранение изменений (Save / PutFile) ==
+
+admin -> yandex_docs : Проставление отметок (Н - отсутствовал, Б - болен)
+
+yandex_docs -> api : POST /wopi/files/{file_id}/contents (X-WOPI-Override: PUT)
+activate api
+note over yandex_docs, api
+  Яндекс Документы передают обновлённый файл
+  на сервер бэкенда para-api.
+end note
+
+api -> api : Валидация структуры OpenXML и запись на диск
+api -> redis : SET att:committed:{group}:{date}:{period} 1
+activate redis
+redis --> api : OK
+deactivate redis
+
+api --> yandex_docs : 200 OK (Зафиксировано успешно)
+deactivate api
+
+api -> bot : Внутреннее уведомление: отметки зафиксированы
+activate bot
+bot --> admin : ✅ Ведомость успешно обновлена и сохранена на Яндекс Диске!
+deactivate bot
+deactivate yandex_docs
+
+@enduml

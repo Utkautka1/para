@@ -1,0 +1,149 @@
+@startuml 02_class_diagram
+!theme cerulean
+
+skinparam defaultFontName "sans-serif"
+skinparam classAttributeIconSize 0
+skinparam roundCorner 8
+skinparam shadowing true
+
+title 🏛️ Диаграмма классов, моделей и сервисных контрактов (PlantUML)
+
+package "services.models (Общие Pydantic-модели)" <<Rectangle>> {
+  class Lesson {
+    +int period
+    +str time_str
+    +str subject
+    +str lesson_type
+    +str teacher
+    +bool is_remote
+    +str room
+    +str address
+    +int subgroup
+    +bool is_stream
+    +Optional[str] remote_link
+    +Optional[str] remote_passcode
+    +Optional[str] remote_meeting_id
+    +int number() : property
+  }
+
+  class ExamItem {
+    +str subject
+    +str exam_type
+    +str teacher
+    +str room
+    +str address
+    +List[int] weeks
+    +int subgroup
+    +str format_str
+  }
+}
+
+package "api.schemas (Схемы REST API)" <<Rectangle>> {
+  class DayScheduleResponse {
+    +str date
+    +str weekday
+    +List[Lesson] lessons
+  }
+
+  class WeekScheduleResponse {
+    +int week_number
+    +List[DayScheduleResponse] days
+  }
+
+  class TeachersResponse {
+    +List[str] teachers
+    +int total_count
+  }
+
+  class ExamsResponse {
+    +str group_name
+    +List[ExamItem] exams
+  }
+}
+
+package "core (Инфраструктурные синглтоны)" <<Rectangle>> {
+  class RedisPool {
+    -{static} ConnectionPool _pool
+    +{static} get_pool() : ConnectionPool
+    +{static} get_redis_client() : Redis
+  }
+
+  class ApiClient {
+    -httpx.AsyncClient _client
+    -str base_url
+    -httpx.Limits limits
+    +get_day_schedule(group, date) : DayScheduleResponse
+    +get_week_schedule(group, week) : WeekScheduleResponse
+    +get_teachers() : TeachersResponse
+    +get_exams(group) : ExamsResponse
+    +close() : None
+  }
+}
+
+package "services (Бизнес-логика и парсеры)" <<Rectangle>> {
+  class ScheduleParser {
+    -dict _in_memory_cache
+    -float _cache_timestamp
+    +fetch_schedule(group) : dict
+    +get_day(group, target_date) : List[Lesson]
+    +get_week(group, week_num) : dict
+    +load_schedule_snapshot(group) : Optional[dict]
+    +save_schedule_snapshot(group, data) : None
+  }
+
+  class RedisCacheManager {
+    +save_snapshot(group, payload) : bool
+    +load_snapshot(group) : Optional[dict]
+    +pop_hw_task(timeout) : Optional[str]
+    +ack_hw_task(raw_task) : bool
+    +recover_stale_hw_tasks() : int
+    +is_reminder_sent(key) : bool
+    +mark_reminder_sent(key, ttl) : None
+    +register_message_for_cleanup(chat_id, msg_id, delay) : None
+    +get_expired_messages_for_cleanup() : List[tuple]
+  }
+
+  class TopicUpdater {
+    -int chat_id
+    -int topic_id
+    +sync_topic_schedule() : None
+    +send_call_reminder(lesson, call_type) : None
+    +cleanup_expired_messages() : None
+    -calculate_current_call(now_time) : Optional[dict]
+  }
+
+  class DocxParserService {
+    +parse_docx_teachers(file_path) : List[str]
+    +create_solution_docx(task_text, solution_text, output_path) : str
+  }
+
+  class WopiSessionManager {
+    +create_attendance_session(group, date, period) : str
+    +get_session_status(session_id) : dict
+    +commit_attendance(session_id, marks_data) : bool
+  }
+}
+
+' Отношения между моделями и схемами
+DayScheduleResponse "1" *-- "many" Lesson : содержит
+WeekScheduleResponse "1" *-- "many" DayScheduleResponse : содержит
+ExamsResponse "1" *-- "many" ExamItem : содержит
+
+' Отношения между сервисами и клиентами
+ApiClient ..> DayScheduleResponse : возвращает
+ApiClient ..> WeekScheduleResponse : возвращает
+ApiClient ..> TeachersResponse : возвращает
+ApiClient ..> ExamsResponse : возвращает
+
+ScheduleParser ..> Lesson : парсит и создает
+ScheduleParser ..> RedisPool : использует кэш L2
+ScheduleParser ..> RedisCacheManager : снимки расписания
+
+TopicUpdater --> ApiClient : запрашивает расписание
+TopicUpdater --> RedisCacheManager : флаги и ZSET очистки
+TopicUpdater ..> Lesson : отображает в топике
+
+RedisCacheManager --> RedisPool : берет соединение
+
+WopiSessionManager --> RedisCacheManager : хранит состояние сессии
+@enduml
