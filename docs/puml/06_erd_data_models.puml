@@ -1,0 +1,111 @@
+@startuml 06_erd_data_models
+!theme cerulean
+
+skinparam defaultFontName "sans-serif"
+skinparam roundCorner 8
+skinparam shadowing true
+
+title 🗄️ Диаграмма сущностей (ERD) и схема хранилища Redis (PlantUML)
+
+' Описание моделей данных
+entity "LESSON" as lesson {
+  * period : int <<PK>>
+  --
+  * time_str : varchar(32)
+  * subject : varchar(255)
+  * lesson_type : varchar(64)
+  * teacher : varchar(128)
+  * is_remote : boolean
+  * room : varchar(64)
+  * address : varchar(255)
+  subgroup : int
+  is_stream : boolean
+  remote_link : text
+  remote_passcode : varchar(64)
+  remote_meeting_id : varchar(64)
+}
+
+entity "EXAM_ITEM" as exam {
+  * id : int <<PK>>
+  --
+  * subject : varchar(255)
+  * exam_type : varchar(64)
+  * teacher : varchar(128)
+  * room : varchar(64)
+  * address : varchar(255)
+  * weeks : json_array
+  subgroup : int
+  format_str : varchar(32)
+}
+
+entity "DAY_SCHEDULE" as day_sched {
+  * date : date <<PK>>
+  --
+  * weekday : varchar(32)
+  * group_name : varchar(64)
+}
+
+entity "ATTENDANCE_RECORD" as attendance {
+  * id : int <<PK>>
+  --
+  * student_name : varchar(128)
+  * date : date
+  * period : int
+  * status : varchar(16) 'Н, Б, У, П
+  updated_at : timestamp
+}
+
+entity "BIRTHDAY_RECORD" as birthday {
+  * student_name : varchar(128) <<PK>>
+  --
+  * birthdate : varchar(10) 'DD.MM
+  tg_id : bigint
+  is_celebrated : boolean
+}
+
+' Связи между сущностями
+day_sched ||--|{ lesson : "содержит пары дня"
+day_sched ||--o{ attendance : "фиксирует отметки"
+
+' Реестр структур данных в Redis
+package "⚡ Redis Key Schema (In-Memory Datastore)" <<Database>> {
+  class "sched:group:snapshot" as r_sched {
+    Тип: STRING (JSON)
+    TTL: 4 часа
+    Назначение: Полный снимок расписания группы для быстрого холодного старта (<2мс)
+  }
+
+  class "hw:tasks:queue" as r_hw_q {
+    Тип: LIST (FIFO)
+    TTL: Бессрочно
+    Назначение: Очередь задач ДЗ для воркера DeepSeek AI
+  }
+
+  class "hw:tasks:processing" as r_hw_p {
+    Тип: LIST
+    TTL: Бессрочно
+    Назначение: Задачи в обработке (Reliable Queue BLMOVE). Авто-восстановление при краше
+  }
+
+  class "topic:cleanup_messages" as r_zset {
+    Тип: ZSET (Sorted Set)
+    TTL: Динамический
+    Score: Unix timestamp истечения (now + 900)
+    Member: "chat_id:message_id"
+    Назначение: Фоновая очистка временных сообщений звонков через 15 минут
+  }
+
+  class "rem:sent:{group}:{date}:{period}:{type}" as r_rem {
+    Тип: STRING
+    TTL: 2 часа
+    Назначение: Идемпотентный флаг защиты от дублирования звонков в топик
+  }
+
+  class "att:session:{session_id}" as r_att {
+    Тип: STRING (JSON)
+    TTL: 1 час
+    Назначение: Авторизованная сессия старосты для редактирования ведомости по WOPI
+  }
+}
+
+@enduml

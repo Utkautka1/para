@@ -1,0 +1,85 @@
+@startuml 04_sequence_hw_solver
+!theme cerulean
+
+skinparam defaultFontName "sans-serif"
+skinparam roundCorner 8
+skinparam shadowing true
+autonumber
+
+title 🧠 Последовательность: Надежная очередь решения ДЗ на DeepSeek (PlantUML)
+
+actor "👤 Студент" as user
+participant "🤖 para-bot\n(Telegram Handlers)" as bot
+database "⚡ para-redis\n(Reliable Queue)" as redis
+participant "⚙️ para-solver\n(Worker Service)" as solver
+participant "🧠 DeepSeek API\n(LLM & Vision)" as deepseek
+participant "📄 Docx Service\n(asyncio.to_thread)" as docx
+
+== Фаза 1: Crash Recovery при запуске контейнера para-solver ==
+
+solver -> redis : recover_stale_hw_tasks()
+activate solver
+activate redis
+note over solver, redis
+  Если контейнер упал во время обработки задачи,
+  она осталась в списке hw:tasks:processing.
+  При старте воркер атомарно возвращает её в очередь.
+end note
+redis -> redis : RPOPLPUSH hw:tasks:processing hw:tasks:queue
+redis --> solver : Число восстановленных задач (N)
+deactivate redis
+deactivate solver
+
+== Фаза 2: Постановка задачи студентом ==
+
+user -> bot : Загрузка задания (текст / фото ДЗ)
+activate bot
+bot -> bot : Валидация файла и генерация task_id
+bot -> redis : LPUSH hw:tasks:queue JSON(task_id, user_id, payload)
+activate redis
+redis --> bot : Длина очереди
+deactivate redis
+bot --> user : ⏳ Задание принято в очередь! Решаем...
+deactivate bot
+
+== Фаза 3: Атомарный захват и решение (Reliable Queue Pattern) ==
+
+loop Бесконечный цикл обработки очереди
+  solver -> redis : BLMOVE hw:tasks:queue hw:tasks:processing 2 LEFT RIGHT
+  activate solver
+  activate redis
+  note over solver, redis
+    Атомарный перенос задачи:
+    Задача извлекается из queue и мгновенно помещается
+    в processing. Потеря при сбое воркера исключена!
+  end note
+  redis --> solver : raw_task (JSON данные задачи)
+  deactivate redis
+
+  solver -> solver : parse_file_payload(raw_task)
+
+  solver -> deepseek : chat.completions.create(prompt, images)
+  activate deepseek
+  deepseek --> solver : Решение задачи (Markdown / формулы / шаги)
+  deactivate deepseek
+
+  solver -> docx : asyncio.to_thread(create_solution_docx)
+  activate docx
+  note right of docx
+    Тяжелая генерация Word-документа
+    по ГОСТ вынесена в отдельный системный
+    поток, чтобы не блокировать asyncio event loop.
+  end note
+  docx --> solver : Сформированный файл solution.docx
+  deactivate docx
+
+  solver -> user : Отправка solution.docx студенту в Telegram
+  
+  solver -> redis : ack_hw_task(raw_task) -> LREM hw:tasks:processing 1 raw_task
+  activate redis
+  redis --> solver : 1 (Задача успешно завершена и удалена)
+  deactivate redis
+  deactivate solver
+end
+
+@enduml
