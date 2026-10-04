@@ -21,13 +21,15 @@ _CLIENT: Optional[httpx.AsyncClient] = None
 
 
 def _get_client() -> httpx.AsyncClient:
-    """Возвращает или создает персистентный HTTP-клиент к para-api."""
+    """Возвращает или создает персистентный HTTP-клиент к para-api с пулом сокетов."""
     global _CLIENT
     if _CLIENT is None or _CLIENT.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=10, max_connections=20, keepalive_expiry=30.0)
         _CLIENT = httpx.AsyncClient(
             base_url=API_BASE_URL,
             headers={"X-API-Key": API_SECRET_KEY},
             timeout=30.0,
+            limits=limits,
         )
     return _CLIENT
 

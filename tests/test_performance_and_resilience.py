@@ -1,0 +1,139 @@
+"""
+Unit-тесты для подсистем оптимизации производительности и надежности.
+
+Проверяет:
+  1. Синглтон пула соединений Redis (core/redis.py)
+  2. Кэширование и мгновенное восстановление снимка расписания (services/redis_cache.py)
+  3. Надежную обработку очереди задач ДЗ (BLMOVE, ACK, Recovery)
+  4. Сохранение идемпотентных состояний напоминаний и топика
+  5. Отслеживание и очистку временных сообщений по расписанию в Redis ZSET
+"""
+
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
+import pytest
+
+from core.api_client import _get_client
+from core.redis import get_redis_pool
+from services.redis_cache import (
+    ack_hw_task,
+    get_expired_messages_for_cleanup,
+    get_topic_state_redis,
+    is_reminder_sent,
+    load_schedule_snapshot,
+    mark_reminder_sent,
+    pop_hw_task,
+    recover_stale_hw_tasks,
+    register_message_for_cleanup,
+    save_schedule_snapshot,
+    set_topic_state_redis,
+)
+from services.schedule_parser import init_schedule_cache_from_redis
+
+
+def test_redis_connection_pool_configuration() -> None:
+    """Проверяет корректность параметров пула соединений Redis."""
+    pool = get_redis_pool()
+    assert pool.max_connections == 20
+    assert pool.connection_kwargs.get("socket_keepalive") is True
+    assert pool.connection_kwargs.get("health_check_interval") == 30
+
+
+def test_api_client_limits() -> None:
+    """Проверяет настройку пула соединений в API клиенте."""
+    client = _get_client()
+    assert client._transport._pool._max_keepalive_connections == 10
+    assert client._transport._pool._max_connections == 20
+
+
+@pytest.mark.asyncio
+async def test_save_and_load_schedule_snapshot() -> None:
+    """Проверяет сохранение и чтение снимка расписания из Redis."""
+    mock_redis = MagicMock()
+    pipe = MagicMock()
+    pipe.set = MagicMock()
+    pipe.execute = AsyncMock()
+    mock_redis.pipeline.return_value.__aenter__.return_value = pipe
+    snap_data = {"subjects": ["Математика"]}
+    meta_data = {"etag": "123", "last_modified": "Sat"}
+
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        await save_schedule_snapshot(snap_data, meta_data)
+        assert pipe.set.call_count == 2
+
+    mock_redis.get = AsyncMock(side_effect=[json.dumps(snap_data), json.dumps(meta_data)])
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        snap, meta = await load_schedule_snapshot()
+        assert snap == snap_data
+        assert meta["etag"] == "123"
+
+
+@pytest.mark.asyncio
+async def test_reminder_sent_state() -> None:
+    """Проверяет проверку и отметку отправленного напоминания."""
+    mock_redis = AsyncMock()
+    mock_redis.get.return_value = "1"
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        sent = await is_reminder_sent("2026-10-04_1_0_Math")
+        assert sent is True
+        await mark_reminder_sent("2026-10-04_1_0_Math")
+        mock_redis.set.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_topic_state_redis() -> None:
+    """Проверяет чтение и запись ID главного сообщения в Redis."""
+    mock_redis = AsyncMock()
+    mock_redis.get.return_value = "54321"
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        msg_id = await get_topic_state_redis()
+        assert msg_id == 54321
+        await set_topic_state_redis(99999)
+        mock_redis.set.assert_called_with("topic:main_msg_id", "99999")
+
+
+@pytest.mark.asyncio
+async def test_reliable_queue_pop_and_ack() -> None:
+    """Проверяет перемещение задачи в processing и подтверждение ack."""
+    task = {"message_id": 101, "prompt": "реши 2+2"}
+    mock_redis = AsyncMock()
+    mock_redis.blmove.return_value = json.dumps(task)
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        popped = await pop_hw_task(timeout=1)
+        assert popped == task
+        await ack_hw_task(task)
+        mock_redis.lrem.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_recover_stale_hw_tasks() -> None:
+    """Проверяет восстановление зависших задач из processing очереди."""
+    mock_redis = AsyncMock()
+    mock_redis.rpoplpush.side_effect = ["task1", "task2", None]
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        recovered = await recover_stale_hw_tasks()
+        assert recovered == 2
+        assert mock_redis.rpoplpush.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_message_cleanup_registration() -> None:
+    """Проверяет регистрацию и извлечение сообщений для очистки."""
+    mock_redis = AsyncMock()
+    mock_redis.zrangebyscore.return_value = ["-100123:555", "-100123:556"]
+    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+        await register_message_for_cleanup(-100123, 555, delay_sec=60)
+        mock_redis.zadd.assert_called_once()
+        expired = await get_expired_messages_for_cleanup()
+        assert len(expired) == 2
+        assert expired[0] == (-100123, 555)
+
+
+@pytest.mark.asyncio
+async def test_schedule_parser_cold_start_from_redis() -> None:
+    """Проверяет инициализацию кэша парсера из снимка Redis."""
+    snap = {"subjects": ["Информатика"]}
+    meta = {"etag": "etag-xyz", "last_modified": "Sun", "published_at": "2026-10-04"}
+    with patch("services.redis_cache.load_schedule_snapshot", AsyncMock(return_value=(snap, meta))):
+        success = await init_schedule_cache_from_redis(1000.0)
+        assert success is True

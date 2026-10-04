@@ -42,20 +42,31 @@ def load_topic_state() -> Optional[int]:
 
 
 def save_topic_state(msg_id: Optional[int]) -> None:
-    """
-    Атомарно сохраняет ID главного сообщения в JSON файл.
-
-    :param msg_id: ID сообщения
-    """
+    """Атомарно сохраняет ID главного сообщения в JSON файл и Redis."""
+    import asyncio
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
+    if msg_id:
+        from services.redis_cache import set_topic_state_redis
+        asyncio.create_task(set_topic_state_redis(msg_id))
+
+
+async def cleanup_expired_messages() -> None:
+    """Удаляет просроченные временные сообщения из топика Telegram."""
+    from services.redis_cache import get_expired_messages_for_cleanup
+    expired = await get_expired_messages_for_cleanup()
+    for chat_id, msg_id in expired:
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=msg_id)
+            log.info(f"Временное уведомление MSG_ID={msg_id} гарантированно удалено.")
+        except TelegramBadRequest:
+            pass
+        except Exception as e:
+            log.error(f"Ошибка удаления временного сообщения {msg_id}: {e}")
 
 
 async def send_temp_topic_reminder(lesson: Lesson) -> None:
-    """
-    Отправляет удаляемое через 15 минут уведомление за 10 минут до пары.
-
-    :param lesson: Объект пары
-    """
+    """Отправляет уведомление за 10 минут до пары с регистрацией на удаление."""
+    from services.redis_cache import register_message_for_cleanup
     try:
         text = format_reminder_text(lesson)
         kb = get_topic_inline_kb([lesson])
@@ -65,26 +76,22 @@ async def send_temp_topic_reminder(lesson: Lesson) -> None:
             text=text,
             reply_markup=kb
         )
-        log.info(f"Временное уведомление о паре {lesson.period + 1} отправлено в топик. MSG_ID={msg.message_id}")
-        await asyncio.sleep(900)
-        await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=msg.message_id)
-        log.info(f"Временное уведомление MSG_ID={msg.message_id} успешно удалено.")
+        log.info(f"Временное уведомление о паре {lesson.period + 1} отправлено. MSG_ID={msg.message_id}")
+        await register_message_for_cleanup(TOPIC_CHAT_ID, msg.message_id, delay_sec=900)
     except TelegramBadRequest:
         pass
     except Exception as e:
-        log.error(f"Ошибка отправки/удаления временного уведомления: {e}")
+        log.error(f"Ошибка отправки временного уведомления: {e}")
 
 
-def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime.date) -> None:
-    """
-    Проверяет время до пары и спавнит таску временного уведомления.
-
-    :param lesson: Объект пары
-    :param now_dt: Время МСК
-    :param today: Дата
-    """
+async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime.date) -> None:
+    """Проверяет время до пары и спавнит таску с защитой от дублей в Redis."""
     rem_key = f"{today.isoformat()}_{lesson.period}_{lesson.subgroup}_{lesson.subject}"
     if rem_key in _SENT_REMINDERS:
+        return
+    from services.redis_cache import is_reminder_sent, mark_reminder_sent
+    if await is_reminder_sent(rem_key):
+        _SENT_REMINDERS.add(rem_key)
         return
     start_t = parse_lesson_start_time(lesson.time_str)
     if not start_t:
@@ -93,6 +100,7 @@ def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime
     diff_sec = (pair_dt - now_dt).total_seconds()
     if 0 < diff_sec <= 600:
         _SENT_REMINDERS.add(rem_key)
+        await mark_reminder_sent(rem_key)
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
 
@@ -262,19 +270,15 @@ def should_skip_topic_update(
     return False
 
 
-def process_today_reminders(lessons: list, now_dt: datetime, target_date: date) -> None:
-    """
-    Запускает проверку напоминаний для пар текущего дня.
-    """
+async def process_today_reminders(lessons: list, now_dt: datetime, target_date: date) -> None:
+    """Запускает асинхронную проверку напоминаний для пар текущего дня."""
     if lessons and now_dt.date() == target_date:
         for l in lessons:
-            check_and_trigger_reminder(l, now_dt, now_dt.date())
+            await check_and_trigger_reminder(l, now_dt, now_dt.date())
 
 
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool:
-    """
-    Атомарно обновляет главное сообщение расписания в топике.
-    """
+    """Атомарно обновляет главное сообщение расписания в топике."""
     global _TOPIC_MAIN_MSG_ID
     if _TOPIC_MAIN_MSG_ID is None:
         _TOPIC_MAIN_MSG_ID = load_topic_state()
@@ -289,7 +293,8 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
     if should_skip_topic_update(lessons, now_dt, target_date, ignore_time_restriction):
         return False
 
-    process_today_reminders(lessons, now_dt, target_date)
+    await process_today_reminders(lessons, now_dt, target_date)
+    await cleanup_expired_messages()
     text = format_day_schedule(target_date, lessons)
     kb = get_topic_inline_kb(lessons) if lessons else None
     return await update_topic_message_payload(text, kb)
