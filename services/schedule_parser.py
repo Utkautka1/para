@@ -199,7 +199,7 @@ def get_http_client() -> httpx.AsyncClient:
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         limits = httpx.Limits(max_keepalive_connections=5, max_connections=10, keepalive_expiry=60.0)
-        _HTTP_CLIENT = httpx.AsyncClient(timeout=40.0, headers=headers, follow_redirects=True, limits=limits)
+        _HTTP_CLIENT = httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True, limits=limits)
     return _HTTP_CLIENT
 
 
@@ -311,6 +311,8 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
     now = time.time()
     if force_refresh:
         await refresh_schedule_in_background()
+        if _DATA_CACHE[1] is None:
+            await init_schedule_cache_from_redis(now)
         return _DATA_CACHE[1]
     if _DATA_CACHE[1] is None:
         if await init_schedule_cache_from_redis(now):

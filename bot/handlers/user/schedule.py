@@ -249,13 +249,17 @@ async def cb_refresh(callback: CallbackQuery) -> None:
         await callback.answer("Синхронизация с API КТМУ...")
     except TelegramBadRequest:
         pass
-    await cache_flush()
+    now = datetime.now(TIMEZONE).date()
     teachers_res = await fetch_teachers(force_refresh=True)
     count = teachers_res.get("count", 0)
-    now = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(now, force_refresh=True)
+    try:
+        lessons = await get_api_schedule_for_date(now, force_refresh=True)
+    except Exception as e:
+        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
+        lessons = await get_api_schedule_for_date(now, force_refresh=False)
+    await cache_flush()
     text = format_day_schedule(now, lessons)
-    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis очищен!</i>"
+    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis обновлен!</i>"
     await edit_or_answer(callback, text, lessons)
 
 
