@@ -15,17 +15,38 @@ from core.logger import get_logger
 from services.user_cache import add_user_to_cache
 from utils.storage import sync_atomic_save_json, sync_load_json
 
+import os
+
 log = get_logger("classmates_auth")
 BIRTHDAYS_FILE_PATH = "data/birthdays.json"
 
+_REGISTRY_CACHE: Optional[List[Dict[str, Any]]] = None
+_REGISTRY_MTIME: float = 0.0
 
-def load_classmates_registry() -> List[Dict[str, Any]]:
-    """
-    Загружает актуальный список студентов из data/birthdays.json.
 
-    :return: Список словарей с данными одногруппников
+def clear_registry_cache() -> None:
+    """Сбрасывает кэш реестра одногруппников в оперативной памяти."""
+    global _REGISTRY_CACHE, _REGISTRY_MTIME
+    _REGISTRY_CACHE = None
+    _REGISTRY_MTIME = 0.0
+
+
+def load_classmates_registry(force_reload: bool = False) -> List[Dict[str, Any]]:
     """
-    return sync_load_json(BIRTHDAYS_FILE_PATH, default=[])
+    Загружает актуальный список студентов с in-memory кэшированием по mtime.
+
+    Исключает дисковый I/O на каждый callback, возвращая срез из RAM.
+    """
+    global _REGISTRY_CACHE, _REGISTRY_MTIME
+    try:
+        current_mtime = os.path.getmtime(BIRTHDAYS_FILE_PATH)
+    except OSError:
+        current_mtime = 0.0
+    if not force_reload and _REGISTRY_CACHE is not None and current_mtime == _REGISTRY_MTIME:
+        return _REGISTRY_CACHE
+    _REGISTRY_CACHE = sync_load_json(BIRTHDAYS_FILE_PATH, default=[])
+    _REGISTRY_MTIME = current_mtime
+    return _REGISTRY_CACHE
 
 
 def find_classmate_by_tg_id(user_id: int) -> Optional[Dict[str, Any]]:
@@ -74,6 +95,7 @@ def update_classmate_tg_id(clean_username: str, tg_id: int) -> Optional[Dict[str
             break
     if updated_student:
         sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
+        clear_registry_cache()
         add_user_to_cache(clean_username, tg_id)
         log.info(
             f"🎉 Разовая фиксация ID: {updated_student['full_name']} "
