@@ -28,7 +28,7 @@ def _get_client() -> httpx.AsyncClient:
         _CLIENT = httpx.AsyncClient(
             base_url=API_BASE_URL,
             headers={"X-API-Key": API_SECRET_KEY},
-            timeout=30.0,
+            timeout=35.0,
             limits=limits,
         )
     return _CLIENT
