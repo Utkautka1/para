@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import html
 from typing import Optional, Tuple
 from aiogram import Router, F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ChatPermissions, Message
 from config import ALLOWED_USER_ID, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
 from core.logger import get_logger
@@ -38,8 +39,10 @@ async def _find_in_admins(bot, chat_id: int, clean: str) -> Optional[Tuple[int, 
             if a.user and a.user.username and a.user.username.lower() == clean:
                 add_user_to_cache(clean, a.user.id)
                 return a.user.id, f"<b>{html.escape(a.user.full_name)}</b>"
-    except Exception:
-        pass
+    except TelegramBadRequest as e:
+        log.debug(f"Не удалось получить администраторов чата {chat_id}: {e}")
+    except Exception as e:
+        log.debug(f"Ошибка проверки администраторов чата: {e}")
     return None
 
 
@@ -50,8 +53,10 @@ async def _find_in_members(bot, chat_id: int, clean: str) -> Optional[Tuple[int,
         if member and member.user:
             add_user_to_cache(clean, member.user.id)
             return member.user.id, f"<b>{html.escape(member.user.full_name)}</b>"
-    except Exception:
-        pass
+    except TelegramBadRequest as e:
+        log.debug(f"Пользователь @{clean} не найден среди участников: {e}")
+    except Exception as e:
+        log.debug(f"Ошибка поиска участника @{clean}: {e}")
     return None
 
 
@@ -174,8 +179,13 @@ async def _safe_delete_message(message: Message) -> None:
     if message.chat.type != "private":
         try:
             await message.delete()
-        except Exception:
-            pass
+        except TelegramBadRequest as e:
+            if "not found" in str(e).lower():
+                log.debug(f"Сервисная команда {message.message_id} уже была удалена")
+            else:
+                log.warning(f"Не удалось удалить сервисную команду {message.message_id}: {e}")
+        except Exception as e:
+            log.warning(f"Не удалось удалить сервисную команду {message.message_id}: {e}")
 
 
 def _build_mute_report(target_name: str, time_raw: str, reason: str) -> str:
