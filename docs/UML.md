@@ -1,133 +1,107 @@
 # 🏛️ Архитектура системы «para»
 
-Техническое описание архитектуры, взаимосвязи микросервисов, моделей данных, распределенных очередей и сценариев работы Telegram-бота группы, внутреннего бэкенда расписания и фоновых воркеров.
+Техническая спецификация архитектуры, сквозных потоков данных (End-to-End Data Flow), объектных моделей и жизненного цикла распределенных процессов Telegram-бота группы, сервиса расписания и фоновых воркеров.
 
 ---
 
 ## 📑 Содержание
 
-1. [Компонентная структура и развертывание](#1-компонентная-структура-и-развертывание)
-2. [Диаграмма классов и структур данных](#2-диаграмма-классов-и-структур-данных)
-3. [Сценарий: Синхронизация топика и автоочистка уведомлений](#3-сценарий-синхронизация-топика-и-автоочистка-уведомлений)
-4. [Сценарий: Надежная очередь решения задач](#4-сценарий-надежная-очередь-решения-задач)
-5. [Сценарий: Фиксация посещаемости старостой](#5-сценарий-фиксация-посещаемости-старостой)
-6. [Модели данных и структура хранилища Redis](#6-модели-данных-и-структура-хранилища-redis)
-7. [Реестр ключей хранилища Redis](#реестр-ключей-хранилища-redis)
+1. [Сквозная архитектура потоков данных (End-to-End Data Flow)](#1-сквозная-архитектура-потоков-данных)
+2. [Диаграмма классов, моделей и сервисных контрактов](#2-диаграмма-классов-моделей-и-сервисных-контрактов)
+3. [Сквозной процесс: Запрос и кэширование расписания](#3-сквозной-процесс-запрос-и-кэширование-расписания)
+4. [Сквозной процесс: Уведомления о парах и очистка топика](#4-сквозной-процесс-уведомления-о-парах-и-очистка-топика)
+5. [Сквозной процесс: Надежная очередь решения домашних заданий](#5-сквозной-процесс-надежная-очередь-решения-домашних-заданий)
+6. [Сквозной процесс: Электронная ведомость посещаемости (WOPI)](#6-сквозной-процесс-электронная-ведомость-посещаемости-wopi)
+7. [Модели сущностей и структура хранилища Redis](#7-модели-сущностей-и-структура-хранилища-redis)
 
 ---
 
-## 1. Компонентная структура и развертывание
+## 1. Сквозная архитектура потоков данных
 
-Система развернута в изолированном окружении Docker Compose и взаимодействует через внутреннюю сеть `internal_bridge`.
+Архитектура построена по многоуровневой схеме (Layered Pipeline). Запросы и события проходят строго сверху вниз: от инициаторов через шлюзы и слой бизнес-логики в кэш и внешние системы.
 
 ```mermaid
 flowchart TD
-    subgraph External["Внешние платформы и пользователи"]
-        User["Пользователь / Студент"]
-        Admin["Староста / Администратор"]
-        TG["Telegram"]
+    subgraph L1["1. Слой инициаторов событий"]
+        User["Студент / Пользователь"]
+        Admin["Староста группы"]
+        Timer["Системный таймер (APScheduler)"]
+    end
+
+    subgraph L2["2. Слой маршрутизации и шлюзов"]
+        TG_Gate["Шлюз Telegram (Диспетчер событий)"]
+        HTTP_Gate["Внутренний HTTP-контроллер"]
+    end
+
+    subgraph L3["3. Слой сервисов и бизнес-логики"]
+        Schedule_Svc["Сервис расписания\n(нормализация и выборка пар)"]
+        Topic_Svc["Сервис управления топиком\n(расчет звонков и статуса)"]
+        Solver_Svc["Воркер решения ДЗ\n(обработка очереди и генератор Word)"]
+        WOPI_Svc["WOPI-сервер ведомостей\n(интеграция с редактором таблиц)"]
+    end
+
+    subgraph L4["4. Слой состояния и очередей (Redis 7)"]
+        R_Snapshot[("L2-кэш расписания\nsched:group:snapshot")]
+        R_Queue[("Очередь задач ДЗ\nhw:tasks:queue")]
+        R_Proc[("Обработка ДЗ\nhw:tasks:processing")]
+        R_Zset[("Таймеры удаления сообщений\ntopic:cleanup_messages")]
+        R_Sessions[("Сессии ведомостей\natt:session:*")]
+        R_Flags[("Идемпотентные метки звонков\nrem:sent:*")]
+    end
+
+    subgraph L5["5. Слой внешних провайдеров и диска"]
         KTMU["Сервер расписания КТМУ"]
-        YD_DISK["Яндекс Диск"]
-        YD_DOCS["Яндекс Документы"]
-        DEEPSEEK["Модуль решений DeepSeek"]
+        DeepSeek["Модуль генерации решений"]
+        YandexDocs["Облачный редактор документов"]
+        YandexDisk["Хранилище Яндекс Диск"]
+        DiskVolume["Файловый том ./data"]
     end
 
-    subgraph Docker["Стек Docker Compose"]
-        subgraph S_Redis["para-redis (Redis 7)"]
-            RCache[("Снимок расписания")]
-            RQueue[("Очередь задач ДЗ")]
-            RProc[("Очередь обработки")]
-            RClean[("ZSET очистки топика")]
-            RSess[("Сессии посещаемости")]
-            RFlags[("Идемпотентные флаги")]
-        end
+    %% Потоки инициации
+    User -->|Команда расписания / Отправка ДЗ| TG_Gate
+    Admin -->|Команда отметки посещаемости| TG_Gate
+    Timer -->|Тик каждую минуту| Topic_Svc
 
-        subgraph S_API["para-api (FastAPI бэкенд)"]
-            Rout_Sched["Контроллер расписания"]
-            Rout_Exams["Контроллер сессии"]
-            Rout_Teachers["Контроллер преподавателей"]
-            Rout_Wopi["WOPI-контроллер"]
-            Parser_Sched["Модуль парсинга КТМУ"]
-        end
+    %% Потоки диспетчеризации
+    TG_Gate -->|Запрос пар на день| HTTP_Gate
+    TG_Gate -->|Постановка задачи в очередь| R_Queue
+    TG_Gate -->|Старт сессии отметки| HTTP_Gate
+    HTTP_Gate -->|Вызов логики| Schedule_Svc
+    HTTP_Gate -->|Управление файлами| WOPI_Svc
 
-        subgraph S_Bot["para-bot (Telegram-бот)"]
-            Bot_Dispatch["Диспетчер событий"]
-            Bot_User["Пользовательские сценарии"]
-            Bot_Admin["Административные функции"]
-        end
+    %% Потоки данных расписания
+    Schedule_Svc -->|1. Проверка наличия снимка| R_Snapshot
+    Schedule_Svc -->|2. При промахе: загрузка источника| KTMU
+    Schedule_Svc -->|3. Сохранение снимка на 4 часа| R_Snapshot
 
-        subgraph S_Worker["para-worker (Планировщик и задачи)"]
-            Worker_Topic["Синхронизация топика"]
-            Worker_Clean["Очистка уведомлений"]
-            Worker_Digest["Утренний дайджест"]
-            Worker_Keepalive["Продление сессий Яндекс"]
-        end
+    %% Потоки топика и звонков
+    Topic_Svc -->|Запрос актуального расписания| HTTP_Gate
+    Topic_Svc -->|Проверка: звонок уже отправлялся?| R_Flags
+    Topic_Svc -->|Публикация напоминания| TG_Gate
+    Topic_Svc -->|Регистрация сообщения на автоудаление| R_Zset
+    Topic_Svc -->|Сборка истекших сообщений| R_Zset
 
-        subgraph S_Solver["para-solver (Обработчик решений)"]
-            Solver_Loop["Очередь обработки BLMOVE"]
-            Solver_Docx["Генератор отчетов Word"]
-        end
-    end
+    %% Потоки решения ДЗ (Reliable Queue)
+    R_Queue -.->|Атомарный захват BLMOVE| R_Proc
+    R_Proc -->|Чтение задачи| Solver_Svc
+    Solver_Svc -->|Запрос на решение| DeepSeek
+    Solver_Svc -->|Сборка документа Word по ГОСТ| DiskVolume
+    Solver_Svc -->|Доставка файла студенту| TG_Gate
+    Solver_Svc -->|Подтверждение выполнения LREM| R_Proc
 
-    subgraph Storage["Файловое хранилище"]
-        Vol_Data["Том данных ./data"]
-        Vol_Redis["Том Redis ./data/redis"]
-        Vol_Logs["Том логов ./logs"]
-    end
-
-    User -->|Команды и кнопки| TG
-    Admin -->|Отметка пар, управление| TG
-    TG -->|События| Bot_Dispatch
-    Bot_Dispatch -->|Ответы| TG
-
-    Bot_Dispatch --> Bot_User
-    Bot_Dispatch --> Bot_Admin
-
-    Bot_User -->|Запрос расписания| Rout_Sched
-    Bot_User -->|Постановка задачи| RQueue
-    Bot_Admin -->|Создание сессии| Rout_Wopi
-
-    Rout_Sched --> Parser_Sched
-    Parser_Sched -->|Загрузка данных| KTMU
-    Rout_Sched -->|Чтение и запись снимка| RCache
-
-    Worker_Topic -->|Запрос расписания дня| Rout_Sched
-    Worker_Topic -->|Проверка отправки| RFlags
-    Worker_Topic -->|Публикация в топик| TG
-    Worker_Topic -->|Регистрация на удаление| RClean
-    Worker_Clean -->|Выборка истекших| RClean
-    Worker_Clean -->|Удаление звонков| TG
-
-    Solver_Loop -->|Атомарный захват| RProc
-    RQueue -.->|BLMOVE| RProc
-    Solver_Loop -->|Генерация решения| DEEPSEEK
-    Solver_Loop --> Solver_Docx
-    Solver_Docx -->|Отправка готового документа| TG
-
-    Admin -->|Редактирование ведомости| YD_DOCS
-    YD_DOCS -->|WOPI-синхронизация| Rout_Wopi
-    Rout_Wopi -->|Чтение и запись таблиц| YD_DISK
-
-    RCache -.-> Vol_Redis
-    Parser_Sched -.-> Vol_Data
-    Solver_Docx -.-> Vol_Data
-    Bot_Dispatch -.-> Vol_Logs
-    Worker_Topic -.-> Vol_Logs
+    %% Потоки WOPI-ведомости
+    Admin -->|Переход по ссылке| YandexDocs
+    YandexDocs -->|Запрос проверки прав и контента| WOPI_Svc
+    WOPI_Svc -->|Проверка токена доступа| R_Sessions
+    WOPI_Svc -->|Синхронизация таблицы .xlsx| YandexDisk
+    WOPI_Svc -->|Фиксация изменений| DiskVolume
 ```
-
-### Сводная таблица контейнеров
-
-| Контейнер | Базовый образ | Сетевой порт | Зона ответственности |
-| :--- | :--- | :--- | :--- |
-| `para-redis` | `redis:7-alpine` | `6379` (внутренний) | Быстрый кэш снимка расписания, надежная очередь задач с `BLMOVE`, хранилище сессий и ZSET-таймеры очистки |
-| `para-api` | Python 3.12 (slim) | `8000` (внутренний) | Внутренний сервис: нормализация расписания, обработка данных КТМУ, поддержка протокола WOPI для работы с таблицами |
-| `para-bot` | Python 3.12 (slim) | Выход через SOCKS5 | Пользовательский интерфейс: обработка команд, интерактивные клавиатуры, опросы старосты, FSM-состояния |
-| `para-worker` | Python 3.12 (slim) | — | Фоновый планировщик: синхронизация топика каждую минуту, автоочистка временных сообщений, утренние дайджесты |
-| `para-solver` | Python 3.12 (slim) | — | Воркер решения задач: непрерывное чтение очереди, формирование решения, оформление документов в формате Word |
 
 ---
 
-## 2. Диаграмма классов и структур данных
+## 2. Диаграмма классов, моделей и сервисных контрактов
+
+Диаграмма описывает типизацию предметной области, структуру передаваемых ответов и контракты сервисов.
 
 ```mermaid
 classDiagram
@@ -252,156 +226,187 @@ classDiagram
 
 ---
 
-## 3. Сценарий: Синхронизация топика и автоочистка уведомлений
+## 3. Сквозной процесс: Запрос и кэширование расписания
 
-Синхронизация выполняется каждую минуту воркером `para-worker`.
+Цепочка движения данных при запросе расписания пользователем или фоновым воркером. Процесс гарантирует холодный старт за `<2мс` за счет снимка в Redis.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Scheduler as Фоновый воркер
-    participant Updater as Сервис топика
-    participant Backend as Сервис расписания
-    participant Redis as Хранилище Redis
-    participant Bot as Бот
-    actor Group as Чат группы
+    actor Client as Студент / Воркер
+    participant Bot as Telegram-бот
+    participant API as Сервис расписания
+    participant Redis as Кэш Redis
+    participant KTMU as Сервер КТМУ
 
-    loop Каждые 60 секунд
-        Scheduler->>Updater: Запуск синхронизации
-        activate Updater
+    Client->>Bot: Запрос: "Пары на сегодня"
+    activate Bot
+    Bot->>API: GET /schedule/day?group=...&date=...
+    activate API
 
-        Updater->>Backend: Запрос расписания на сегодня
-        activate Backend
-        Backend->>Redis: Проверка снимка sched:group:snapshot
-        activate Redis
-        alt Снимок есть в кэше (<2мс)
-            Redis-->>Backend: Данные снимка (JSON)
-        else Снимок устарел
-            Backend->>Backend: Загрузка с сервера КТМУ
-            Backend->>Redis: Сохранение снимка на 4 часа
-        end
-        deactivate Redis
-        Backend-->>Updater: Расписание дня (список пар)
-        deactivate Backend
-
-        Updater->>Updater: Расчет текущего звонка и остатка времени
-
-        opt До начала или окончания пары ровно 10 минут
-            Updater->>Redis: Проверка флага rem:sent:{group}:{date}:{period}:{type}
-            activate Redis
-            Redis-->>Updater: 0 (еще не отправлялось)
-            deactivate Redis
-
-            Updater->>Redis: Установка флага (TTL 2 часа)
-            activate Redis
-            Redis-->>Updater: OK
-            deactivate Redis
-
-            Updater->>Bot: Отправка уведомления в топик
-            activate Bot
-            Bot->>Group: Сообщение: "Через 10 минут звонок..."
-            Group-->>Bot: ID сообщения (например, 5401)
-            Bot-->>Updater: msg_id = 5401
-            deactivate Bot
-
-            Updater->>Redis: Регистрация в ZSET (score = now + 900, member = "chat:5401")
-            activate Redis
-            Redis-->>Updater: 1
-            deactivate Redis
-        end
-
-        note over Updater,Redis: Процедура сборки устаревших сообщений
-        Updater->>Redis: Запрос истекших: ZRANGEBYSCORE topic:cleanup_messages -inf {now}
-        activate Redis
-        Redis-->>Updater: Список ID сообщений
-        deactivate Redis
-
-        loop Для каждого истекшего сообщения
-            Updater->>Bot: Удаление сообщения из чата
-            activate Bot
-            Bot->>Group: Удаление сообщения
-            Group-->>Bot: Успешно
-            Bot-->>Updater: OK
-            deactivate Bot
-
-            Updater->>Redis: Удаление из ZSET (ZREM)
-            activate Redis
-            Redis-->>Updater: 1
-            deactivate Redis
-        end
-
-        deactivate Updater
+    API->>Redis: 1. Проверка снимка: GET sched:group:snapshot
+    activate Redis
+    
+    alt Снимок найден в Redis (Штатный быстрый путь: <2мс)
+        Redis-->>API: Готовый JSON расписания группы
+    else Снимок отсутствует или истек (Холодный старт)
+        Redis-->>API: nil (кэш пуст)
+        API->>KTMU: 2. Загрузка исходных данных КТМУ (40 МБ)
+        activate KTMU
+        KTMU-->>API: Исходный JSON расписания всех групп
+        deactivate KTMU
+        API->>API: 3. Фильтрация и валидация в модели Lesson
+        API->>Redis: 4. Запись снимка: SET sched:group:snapshot EX 14400
     end
+    deactivate Redis
+
+    API-->>Bot: Ответ: DayScheduleResponse (список пар)
+    deactivate API
+
+    Bot->>Bot: Форматирование красивого сообщения с аудиториями
+    Bot-->>Client: Карточка расписания на день
+    deactivate Bot
 ```
 
 ---
 
-## 4. Сценарий: Надежная очередь решения задач
+## 4. Сквозной процесс: Уведомления о парах и очистка топика
 
-Очередь построена по принципу **Reliable Queue**: задача не теряется даже при падении или перезапуске воркера.
+Цепочка ежеминутного контроля времени звонков, предотвращения повторов и автоудаления временных сообщений.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Scheduler as Воркер (каждые 60 сек)
+    participant Updater as Сервис топика
+    participant API as Сервис расписания
+    participant Redis as Хранилище Redis
+    participant Telegram as Чат группы
+
+    Scheduler->>Updater: Запуск цикла проверки
+    activate Updater
+
+    Updater->>API: Запрос расписания на сегодня
+    activate API
+    API-->>Updater: Список занятий с временными интервалами
+    deactivate API
+
+    Updater->>Updater: Расчет интервалов звонков относительно текущего времени
+
+    opt До начала пары или звонка осталось ровно 10 минут
+        Updater->>Redis: 1. Проверка флага: EXISTS rem:sent:{group}:{date}:{period}:{type}
+        activate Redis
+        Redis-->>Updater: 0 (еще не отправлялось)
+        deactivate Redis
+
+        Updater->>Redis: 2. Фиксация флага отправки (TTL 2 часа)
+        activate Redis
+        Redis-->>Updater: OK
+        deactivate Redis
+
+        Updater->>Telegram: 3. Отправка сообщения: "Через 10 минут звонок на пару..."
+        activate Telegram
+        Telegram-->>Updater: Message(id = 8124)
+        deactivate Telegram
+
+        Updater->>Redis: 4. Регистрация на автоудаление через 15 минут:<br/>ZADD topic:cleanup_messages (now + 900) "chat:8124"
+        activate Redis
+        Redis-->>Updater: 1
+        deactivate Redis
+    end
+
+    note over Updater,Redis: Процедура сбора устаревших сообщений
+    Updater->>Redis: 5. Выборка истекших: ZRANGEBYSCORE topic:cleanup_messages -inf {now}
+    activate Redis
+    Redis-->>Updater: Список ID сообщений для удаления
+    deactivate Redis
+
+    loop Для каждого истекшего сообщения
+        Updater->>Telegram: 6. Удаление сообщения из чата (deleteMessage)
+        activate Telegram
+        Telegram-->>Updater: OK
+        deactivate Telegram
+
+        Updater->>Redis: 7. Удаление записи из ZSET (ZREM)
+        activate Redis
+        Redis-->>Updater: 1
+        deactivate Redis
+    end
+
+    deactivate Updater
+```
+
+---
+
+## 5. Сквозной процесс: Надежная очередь решения домашних заданий
+
+Паттерн **Reliable Queue**: исключает потерю задания студента при аварийном завершении воркера благодаря атомарному разделению очередей `queue` и `processing`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Student as Студент
     participant Bot as Telegram-бот
-    participant Redis as Очередь Redis
+    participant Queue as Redis (Queue)
+    participant Processing as Redis (Processing)
     participant Solver as Воркер решений
-    participant NeuralNet as Модуль DeepSeek
-    participant Docx as Генератор Word
+    participant DeepSeek as Модуль решений
+    participant WordGen as Генератор Word
 
-    note over Solver,Redis: Восстановление после сбоев (при старте воркера)
-    Solver->>Redis: Проверка зависших задач в hw:tasks:processing
+    note over Solver,Processing: Автоматическое восстановление при старте воркера
+    Solver->>Processing: 1. Проверка зависших задач при перезапуске
     activate Solver
-    activate Redis
-    Redis->>Redis: Атомарный перенос RPOPLPUSH в hw:tasks:queue
-    Redis-->>Solver: Восстановлено N задач
-    deactivate Redis
+    activate Processing
+    Processing->>Queue: 2. Атомарный перенос RPOPLPUSH в основную очередь
+    Processing-->>Solver: Восстановлено N задач
+    deactivate Processing
     deactivate Solver
 
-    Student->>Bot: Загрузка задания (текст или фото)
+    Student->>Bot: 3. Отправка фото / текста домашнего задания
     activate Bot
-    Bot->>Bot: Валидация файла и генерация ID
-    Bot->>Redis: LPUSH hw:tasks:queue {task_id, user_id, payload}
-    activate Redis
-    Redis-->>Bot: Размер очереди
-    deactivate Redis
-    Bot-->>Student: Задание принято! Приступаем к решению...
+    Bot->>Bot: Проверка формата и генерация ID задачи
+    Bot->>Queue: 4. Постановка задачи: LPUSH hw:tasks:queue {id, user, task}
+    activate Queue
+    Queue-->>Bot: Номер в очереди
+    deactivate Queue
+    Bot-->>Student: Задание принято! Передано в обработку...
     deactivate Bot
 
-    loop Постоянное чтение очереди
-        Solver->>Redis: BLMOVE hw:tasks:queue hw:tasks:processing 2 LEFT RIGHT
+    loop Непрерывное ожидание задач
+        Solver->>Queue: 5. Атомарный захват задачи:<br/>BLMOVE hw:tasks:queue hw:tasks:processing 2 LEFT RIGHT
         activate Solver
-        activate Redis
-        note over Solver,Redis: Атомарное перемещение: задача переходит в processing
-        Redis-->>Solver: Данные задачи (JSON)
-        deactivate Redis
+        activate Queue
+        activate Processing
+        note over Queue,Processing: Задача извлекается из Queue и МГНОВЕННО<br/>оказывается в Processing. Потеря исключена.
+        Processing-->>Solver: Данные задачи (JSON)
+        deactivate Queue
+        deactivate Processing
 
-        Solver->>NeuralNet: Запрос на генерацию решения (текст + изображения)
-        activate NeuralNet
-        NeuralNet-->>Solver: Пошаговое решение с формулами
-        deactivate NeuralNet
+        Solver->>DeepSeek: 6. Запрос на пошаговое решение с формулами
+        activate DeepSeek
+        DeepSeek-->>Solver: Полный текст решения в Markdown
+        deactivate DeepSeek
 
-        Solver->>Docx: Генерация документа по ГОСТ в отдельном потоке
-        activate Docx
-        Docx-->>Solver: Готовый файл solution.docx
-        deactivate Docx
+        Solver->>WordGen: 7. Сборка документа по ГОСТ (asyncio.to_thread)
+        activate WordGen
+        WordGen-->>Solver: Файл Решение_ДЗ.docx
+        deactivate WordGen
 
-        Solver->>Student: Отправка готового документа в Telegram
-        
-        Solver->>Redis: Подтверждение: LREM hw:tasks:processing 1 task
-        activate Redis
-        Redis-->>Solver: 1 (задача закрыта)
-        deactivate Redis
+        Solver->>Student: 8. Доставка готового документа студенту в Telegram
+
+        Solver->>Processing: 9. Подтверждение выполнения: LREM hw:tasks:processing 1 task
+        activate Processing
+        Processing-->>Solver: 1 (задача закрыта)
+        deactivate Processing
         deactivate Solver
     end
 ```
 
 ---
 
-## 5. Сценарий: Фиксация посещаемости старостой
+## 6. Сквозной процесс: Электронная ведомость посещаемости (WOPI)
 
-Интеграция со страницей редактирования Яндекс Документов по протоколу WOPI.
+Сквозная цепочка взаимодействия старосты, Telegram-бота, бэкенда и облачного редактора Яндекс Документов по стандарту WOPI.
 
 ```mermaid
 sequenceDiagram
@@ -410,71 +415,74 @@ sequenceDiagram
     participant Bot as Telegram-бот
     participant Backend as WOPI-сервер
     participant Redis as Хранилище сессий
-    participant Yandex as Редактор документов
+    participant Yandex as Яндекс Документы
+    participant Disk as Яндекс Диск
 
-    Admin->>Bot: Нажатие «Отметить пару»
+    Admin->>Bot: 1. Нажатие кнопки «Отметить пару»
     activate Bot
-    Bot->>Backend: Инициализация сессии посещаемости
+    Bot->>Backend: 2. Инициализация сессии: POST /attendance/init
     activate Backend
-    
-    Backend->>Redis: Сохранение сессии att:session:{id} (TTL 1 час)
+
+    Backend->>Redis: 3. Создание сессии: SET att:session:{id} (TTL 1 час)
     activate Redis
     Redis-->>Backend: OK
     deactivate Redis
 
-    Backend-->>Bot: Ссылка на веб-редактор и временный токен
+    Backend-->>Bot: 4. Ссылка на редактор и временный токен
     deactivate Backend
-    Bot-->>Admin: Кнопка: «Открыть электронную ведомость»
+    Bot-->>Admin: 5. Сообщение с кнопкой «Открыть ведомость»
     deactivate Bot
 
-    Admin->>Yandex: Переход по ссылке
+    Admin->>Yandex: 6. Переход по ссылке ведомости
     activate Yandex
 
     note over Yandex,Backend: Протокол WOPI (Проверка прав и скачивание)
-    Yandex->>Backend: GET /wopi/files/{id}?access_token={token} (CheckFileInfo)
+    Yandex->>Backend: 7. GET /wopi/files/{id}?access_token={token} (CheckFileInfo)
     activate Backend
-    Backend->>Redis: Валидация токена сессии
+    Backend->>Redis: 8. Валидация токена сессии
     activate Redis
-    Redis-->>Backend: Сессия подтверждена
+    Redis-->>Backend: Токен действителен, доступ разрешен
     deactivate Redis
-    Backend-->>Yandex: Метаданные файла (имя, размер, права на запись)
+    Backend-->>Yandex: Метаданные (имя файла, размер, права на запись)
     deactivate Backend
 
-    Yandex->>Backend: GET /wopi/files/{id}/contents (Скачивание таблицы)
+    Yandex->>Backend: 9. GET /wopi/files/{id}/contents (Скачивание таблицы)
     activate Backend
-    Backend-->>Yandex: Бинарный поток файла .xlsx
+    Backend->>Disk: 10. Чтение файла ведомости группы
+    Disk-->>Backend: Бинарный поток .xlsx
+    Backend-->>Yandex: Поток таблицы для открытия в редакторе
     deactivate Backend
 
-    Yandex-->>Admin: Отображение ведомости со списком группы
+    Yandex-->>Admin: Отображение таблицы со списком студентов в браузере
 
-    Admin->>Yandex: Проставление отметок отсутствующих (Н, Б)
+    Admin->>Yandex: 11. Проставление отметок (Н — отсутствовал, Б — болен)
 
-    Yandex->>Backend: POST /wopi/files/{id}/contents (Сохранение изменений)
+    Yandex->>Backend: 12. POST /wopi/files/{id}/contents (Сохранение изменений)
     activate Backend
-    Backend->>Backend: Проверка структуры и запись таблицы
-    Backend->>Redis: Фиксация отметки: SET att:committed:{group}:{date}:{period}
+    Backend->>Disk: 13. Запись обновленной таблицы на Яндекс Диск
+    Backend->>Redis: 14. Фиксация флага: SET att:committed:{group}:{date}:{period}
     activate Redis
     Redis-->>Backend: OK
     deactivate Redis
-    Backend-->>Yandex: 200 OK (Изменения сохранены)
+    Backend-->>Yandex: 200 OK (Сохранено)
     deactivate Backend
 
-    Backend->>Bot: Уведомление об успешной фиксации
+    Backend->>Bot: 15. Уведомление об успешной отметке
     activate Bot
-    Bot-->>Admin: Отметки сохранены в ведомости группы
+    Bot-->>Admin: Отметки успешно зафиксированы в ведомости!
     deactivate Bot
     deactivate Yandex
 ```
 
 ---
 
-## 6. Модели данных и структура хранилища Redis
+## 7. Модели сущностей и структура хранилища Redis
 
-### Диаграмма сущностей (ERD)
+### Диаграмма сущностей предметной области (ERD)
 
 ```mermaid
 erDiagram
-    DAY_SCHEDULE ||--|{ LESSON : "содержит пары"
+    DAY_SCHEDULE ||--|{ LESSON : "содержит пары дня"
     DAY_SCHEDULE ||--o{ ATTENDANCE_RECORD : "содержит отметки"
 
     DAY_SCHEDULE {
@@ -488,7 +496,7 @@ erDiagram
         string time_str "Время пары"
         string subject "Дисциплина"
         string lesson_type "Тип (Лек / Пр / Лаб)"
-        string teacher "ФИО преподавателя"
+        string teacher "Преподаватель"
         boolean is_remote "Дистанционный формат"
         string room "Аудитория"
         string address "Корпус"
@@ -497,8 +505,8 @@ erDiagram
 
     ATTENDANCE_RECORD {
         int id PK "Идентификатор"
-        string student_name "Студент"
-        date date "Дата"
+        string student_name "ФИО студента"
+        date date "Дата пары"
         int period "Номер пары"
         string status "Отметка (Н, Б, У)"
     }
@@ -506,15 +514,15 @@ erDiagram
     EXAM_ITEM {
         int id PK "Идентификатор"
         string subject "Предмет"
-        string exam_type "Зачет / Экзамен / КР"
+        string exam_type "Форма контроля"
         string teacher "Преподаватель"
         string room "Аудитория"
-        string weeks "Номера недель"
+        string weeks "Номера учебных недель"
     }
 
     BIRTHDAY_RECORD {
         string student_name PK "ФИО студента"
-        string birthdate "Дата рождения (DD.MM)"
+        string birthdate "День рождения (DD.MM)"
         bigint tg_id "Telegram ID"
     }
 ```
@@ -523,27 +531,15 @@ erDiagram
 
 ### Реестр ключей хранилища Redis
 
-Все ключи структурированы по префиксам и имеют четко определенное время жизни (TTL):
+Таблица описывает все ключи, используемые в системе, их тип данных, время жизни и происхождение данных:
 
-| Префикс / Шаблон ключа | Тип данных | Время жизни (TTL) | Назначение |
-| :--- | :--- | :--- | :--- |
-| `sched:group:snapshot` | String (JSON) | 4 часа | Снимок расписания группы на текущую неделю. Позволяет отдавать расписание за `<2мс` без повторного разбора 40-мегабайтных файлов КТМУ |
-| `hw:tasks:queue` | List (FIFO) | Бессрочно | Очередь задач на решение. Пополняется ботом по мере поступления заданий от студентов |
-| `hw:tasks:processing` | List | Бессрочно | Задачи в процессе обработки. Часть паттерна Reliable Queue: задача атомарно перемещается сюда через `BLMOVE` и удаляется только после отправки решения |
-| `topic:cleanup_messages` | Sorted Set (ZSET) | Динамический | Очередь автоудаления временных сообщений. В качестве `score` используется unix timestamp времени удаления (`now + 900`), `member` — `"chat_id:message_id"` |
-| `rem:sent:{group}:{date}:{period}:{type}` | String (флаг) | 2 часа | Защита от дублирования звонков и напоминаний в топике группы при сбоях или частых перезапусках |
-| `att:session:{session_id}` | String (JSON) | 1 час | Данные временной авторизованной сессии старосты для доступа к редактированию ведомости через веб-редактор |
-| `att:committed:{group}:{date}:{period}` | String (флаг) | 24 часа | Отметка о том, что посещаемость на конкретную пару зафиксирована старостой |
-| `topic:schedule_msg_id:{group}` | String (int) | Бессрочно | ID главного закрепленного сообщения с расписанием в топике для его обновления на месте |
-
----
-
-## 7. Файлы диаграмм
-
-Резервные копии схем в векторном формате также сохранены в каталоге `docs/puml/`:
-- [Диаграмма развертывания](puml/01_deployment_and_containers.svg)
-- [Диаграмма классов](puml/02_class_diagram.svg)
-- [Синхронизация топика](puml/03_sequence_topic_updater.svg)
-- [Очередь решений](puml/04_sequence_hw_solver.svg)
-- [Ведомость посещаемости](puml/05_sequence_wopi_attendance.svg)
-- [Модели данных](puml/06_erd_data_models.svg)
+| Ключ / Шаблон ключа | Тип структуры | Время жизни (TTL) | Откуда поступает | Куда передается / Назначение |
+| :--- | :--- | :--- | :--- | :--- |
+| `sched:group:snapshot` | String (JSON) | 4 часа | Сервер КТМУ (после нормализации) | Сервис расписания: отдает готовые данные за `<2мс` без повторного разбора файлов |
+| `hw:tasks:queue` | List (FIFO) | Бессрочно | Telegram-бот от студентов | Воркер решений: очередь входящих заданий на решение |
+| `hw:tasks:processing` | List | Бессрочно | Очередь `hw:tasks:queue` (через `BLMOVE`) | Воркер решений: изоляция задачи на время генерации. Удаляется после успешной отправки |
+| `topic:cleanup_messages` | Sorted Set (ZSET) | Динамический | Сервис топика при отправке напоминания | Сервис топика: сборщик устаревших сообщений каждые 60с по истечении 15 минут |
+| `rem:sent:{group}:{date}:{period}:{type}` | String (флаг) | 2 часа | Сервис топика перед отправкой звонка | Предотвращение дублирования сообщений при частых перезапусках сервисов |
+| `att:session:{session_id}` | String (JSON) | 1 час | Бэкенд при нажатии старостой кнопки | Редактор Яндекс Документов: валидация временного доступа по стандарту WOPI |
+| `att:committed:{group}:{date}:{period}` | String (флаг) | 24 часа | WOPI-контроллер после сохранения таблицы | Бот и сервисы: статус того, что староста зафиксировал посещаемость на пару |
+| `topic:schedule_msg_id:{group}` | String (int) | Бессрочно | Бот при первой публикации расписания | Сервис топика: ID главного закрепленного сообщения для обновления на месте |
