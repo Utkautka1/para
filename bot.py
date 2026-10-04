@@ -49,9 +49,10 @@ async def shutdown_bot() -> None:
 def setup_all_middlewares() -> None:
     """Регистрирует глобальные middleware для отказоустойчивости бота."""
     from bot.middlewares.retry import RetryAfterMiddleware
-    retry_mw = RetryAfterMiddleware()
-    dp.message.middleware(retry_mw)
-    dp.callback_query.middleware(retry_mw)
+    from bot.middlewares.throttling import CallbackThrottleMiddleware
+    dp.message.middleware(RetryAfterMiddleware())
+    dp.callback_query.middleware(RetryAfterMiddleware())
+    dp.callback_query.middleware(CallbackThrottleMiddleware())
 
 
 async def main() -> None:

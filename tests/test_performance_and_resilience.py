@@ -231,3 +231,52 @@ async def test_collect_health_summary() -> None:
         assert "15" in summary
         assert "Подписчики ЛС:</b> <code>2</code>" in summary
         assert "Сессия Яндекс:</b> ✅ Активна" in summary
+
+
+@pytest.mark.asyncio
+async def test_callback_throttle_middleware() -> None:
+    """Проверяет подавление повторных кликов через CallbackThrottleMiddleware."""
+    from aiogram.types import CallbackQuery
+    from bot.middlewares.throttling import CallbackThrottleMiddleware
+    mw = CallbackThrottleMiddleware()
+    event = MagicMock(spec=CallbackQuery)
+    event.from_user = MagicMock(id=123)
+    event.data = "sched:refresh"
+    event.answer = AsyncMock()
+    handler = AsyncMock(return_value="handled")
+
+    res1 = await mw(handler, event, {})
+    assert res1 == "handled"
+    assert handler.call_count == 1
+
+    res2 = await mw(handler, event, {})
+    assert res2 is None
+    assert handler.call_count == 1
+    event.answer.assert_called_with("⏳ Подождите секунду...", show_alert=False)
+
+
+@pytest.mark.asyncio
+async def test_docx_singleflight_cache_freshness() -> None:
+    """Проверяет защиту от повторного скачивания docx при кулдауне."""
+    import time
+    import services.docx_parser as dp_mod
+    cached = {"teacher": {"full_name": "T", "link_info": "L"}}
+    with patch.object(dp_mod, "_CACHE", (time.time(), cached)):
+        with patch.object(dp_mod, "fetch_docx_bytes", AsyncMock()) as mock_fetch:
+            res = await dp_mod.get_teacher_links(force_refresh=True)
+            assert "teacher" in res
+            mock_fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_week_schedule_single_fetch() -> None:
+    """Проверяет однократный fetch_schedule_data при get_week_schedule с force."""
+    from datetime import date
+    from services.schedule_parser import get_week_schedule
+    with patch("services.schedule_parser.fetch_schedule_data", AsyncMock()) as mock_fetch, \
+         patch("services.schedule_parser.get_schedule_for_date", AsyncMock(return_value=[])) as mock_day:
+        res = await get_week_schedule(date(2026, 10, 5), force_refresh=True)
+        assert len(res) == 6
+        mock_fetch.assert_called_once_with(force_refresh=True)
+        assert mock_day.call_count == 6
+

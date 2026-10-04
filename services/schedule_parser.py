@@ -445,7 +445,7 @@ async def get_schedule_for_date(target_date: date, force_refresh: bool = False) 
     week_num, day_idx = calculate_week_number(target_date, sem_start), target_date.weekday()
     sched = data.get("schedule", {})
     insts, asgns = sched.get("instances", []), sched.get("assignment", {})
-    maps, links, cfg = extract_entity_maps(data), await get_teacher_links(force_refresh=force_refresh), data.get("config", {})
+    maps, links, cfg = extract_entity_maps(data), await get_teacher_links(force_refresh=False), data.get("config", {})
     lessons: List[Lesson] = []
     for inst in insts:
         if not is_item_for_group(inst, GROUP_ID):
@@ -465,9 +465,11 @@ async def get_week_schedule(monday_date: date, force_refresh: bool = False) -> L
     :param force_refresh: Принудительное обновление
     :return: Список кортежей (дата, список_пар)
     """
+    if force_refresh:
+        await fetch_schedule_data(force_refresh=True)
     result: List[Tuple[date, List[Lesson]]] = []
     for i in range(6):
         day_date = monday_date + timedelta(days=i)
-        lessons = await get_schedule_for_date(day_date, force_refresh=force_refresh)
+        lessons = await get_schedule_for_date(day_date, force_refresh=False)
         result.append((day_date, lessons))
     return result

@@ -251,6 +251,23 @@ async def cb_copy_value(callback: CallbackQuery) -> None:
     await callback.answer(f"Скопировано: {val}", show_alert=True)
 
 
+async def _refresh_and_format_schedule(now: date) -> Tuple[str, List[Lesson], int]:
+    """Сбрасывает UI-кэш представлений и загружает свежее расписание из API."""
+    await cache_flush("sched:day_pack*")
+    await cache_flush("sched:week*")
+    teachers_res = await fetch_teachers(force_refresh=False)
+    count = teachers_res.get("count", 0)
+    try:
+        lessons = await get_api_schedule_for_date(now, force_refresh=True)
+    except Exception as e:
+        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
+        lessons = await get_api_schedule_for_date(now, force_refresh=False)
+    text = format_day_schedule(now, lessons)
+    payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
+    await cache_set(f"sched:day_pack:{now.isoformat()}", payload, ttl=180)
+    return text, lessons, count
+
+
 @router.callback_query(F.data == "sched:refresh")
 async def cb_refresh(callback: CallbackQuery) -> None:
     """
@@ -261,17 +278,10 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
     await _ack_callback(callback, "Синхронизация с API КТМУ...")
     now = datetime.now(TIMEZONE).date()
-    teachers_res = await fetch_teachers(force_refresh=True)
-    count = teachers_res.get("count", 0)
-    try:
-        lessons = await get_api_schedule_for_date(now, force_refresh=True)
-    except Exception as e:
-        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
-        lessons = await get_api_schedule_for_date(now, force_refresh=False)
-    await cache_flush()
-    text = format_day_schedule(now, lessons)
+    text, lessons, count = await _refresh_and_format_schedule(now)
     text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis обновлен!</i>"
     await edit_or_answer(callback, text, lessons)
+
 
 
 

@@ -97,19 +97,33 @@ def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
     return teachers_map
 
 
-async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherData]:
-    """
-    Возвращает карту контактов преподавателей (Docx + Custom JSON).
+import asyncio
 
-    :param force_refresh: Принудительное обновление кэша
-    :return: Словарь контактов преподавателей
-    """
+MIN_DOCX_REFRESH_INTERVAL_SECONDS = 30.0
+_DOCX_LOCK: Optional[asyncio.Lock] = None
+
+
+def _get_docx_lock() -> asyncio.Lock:
+    """Возвращает лениво инициализированный asyncio.Lock для текущего event loop."""
+    global _DOCX_LOCK
+    if _DOCX_LOCK is None:
+        _DOCX_LOCK = asyncio.Lock()
+    return _DOCX_LOCK
+
+
+def _is_cache_fresh(now: float, force_refresh: bool) -> bool:
+    """Проверяет актуальность кэша преподавателей с защитой от частых сетевых запросов."""
+    if not _CACHE[1]:
+        return False
+    age = now - _CACHE[0]
+    if not force_refresh:
+        return age < DOCX_CACHE_TTL_SECONDS
+    return age < MIN_DOCX_REFRESH_INTERVAL_SECONDS
+
+
+async def _fetch_and_cache_teachers(now: float) -> Dict[str, TeacherData]:
+    """Скачивает docx с Яндекс Диска, парсит преподавателей и обновляет кэш в памяти."""
     global _CACHE
-    import asyncio
-    now = time.time()
-    if not force_refresh and (now - _CACHE[0] < DOCX_CACHE_TTL_SECONDS) and _CACHE[1]:
-        return _CACHE[1]
-
     from services.custom_teachers import load_custom_teachers
     log.info("Загрузка свежих данных с Яндекс Диска...")
     content = await fetch_docx_bytes()
@@ -118,3 +132,16 @@ async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherDat
     parsed.update(custom)
     _CACHE = (now, parsed)
     return parsed
+
+
+async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherData]:
+    """Возвращает карту контактов преподавателей с Singleflight блокировкой."""
+    now = time.time()
+    if _is_cache_fresh(now, force_refresh):
+        return _CACHE[1]
+    async with _get_docx_lock():
+        now = time.time()
+        if _is_cache_fresh(now, force_refresh):
+            return _CACHE[1]
+        return await _fetch_and_cache_teachers(now)
+
