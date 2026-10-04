@@ -41,8 +41,11 @@ async def _ack_callback(callback: CallbackQuery, text: Optional[str] = None) -> 
     """Мгновенно подтверждает callback в Telegram, гася анимацию ожидания."""
     try:
         await callback.answer(text)
-    except TelegramBadRequest:
-        pass
+    except TelegramBadRequest as e:
+        if "query is too old" in str(e).lower():
+            log.debug("Callback устарел при ответе (query is too old)")
+        else:
+            log.warning(f"Ошибка подтверждения callback: {e}")
 
 
 async def edit_or_answer(
@@ -58,8 +61,11 @@ async def edit_or_answer(
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
-    except TelegramBadRequest:
-        pass
+    except TelegramBadRequest as e:
+        if "not modified" in str(e).lower():
+            log.debug("Сообщение расписания не изменилось ('not modified')")
+        else:
+            log.warning(f"Не удалось обновить сообщение расписания: {e}")
 
 
 async def _greet_new_student(message: Message, student: dict) -> None:
@@ -115,8 +121,11 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     try:
         if callback.message:
             await callback.message.edit_reply_markup(reply_markup=kb)
-    except TelegramBadRequest:
-        pass
+    except TelegramBadRequest as e:
+        if "not modified" in str(e).lower():
+            log.debug("Клавиатура расписания не изменилась ('not modified')")
+        else:
+            log.warning(f"Не удалось обновить клавиатуру подписки: {e}")
 
 
 @router.message(Command("notice"))
@@ -145,8 +154,11 @@ async def cb_notice_toggle(callback: CallbackQuery) -> None:
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=get_notice_settings_kb(new_sub))
-    except TelegramBadRequest:
-        pass
+    except TelegramBadRequest as e:
+        if "not modified" in str(e).lower():
+            log.debug("Экран /notice не изменился ('not modified')")
+        else:
+            log.warning(f"Не удалось обновить экран /notice: {e}")
 
 
 @router.callback_query(F.data == "sched:today")
@@ -231,10 +243,7 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     :param callback: CallbackQuery
     """
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
-    try:
-        await callback.answer("Синхронизация с API КТМУ...")
-    except TelegramBadRequest:
-        pass
+    await _ack_callback(callback, "Синхронизация с API КТМУ...")
     now = datetime.now(TIMEZONE).date()
     teachers_res = await fetch_teachers(force_refresh=True)
     count = teachers_res.get("count", 0)

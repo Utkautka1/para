@@ -125,6 +125,7 @@ async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool:
     """
     global _EXAM_MAIN_MSG_ID
     if "not modified" in err_str:
+        log.debug(f"sync_exam_topic: 'not modified' — текст экзаменов уже актуален (MSG_ID={_EXAM_MAIN_MSG_ID})")
         return True
     if retry:
         log.error("❌ Повторная ошибка создания exam-сообщения")

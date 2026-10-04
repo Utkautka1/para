@@ -22,6 +22,17 @@ router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
 
 
+async def _ack_admin_callback(callback: CallbackQuery, text: Optional[str] = None) -> None:
+    """Мгновенно подтверждает callback в админ-панели с обработкой устаревания."""
+    try:
+        await callback.answer(text, show_alert=False)
+    except TelegramBadRequest as e:
+        if "query is too old" in str(e).lower():
+            log.debug("Callback админки устарел (query is too old)")
+        else:
+            log.warning(f"Ошибка ответа на callback админки: {e}")
+
+
 async def _safe_edit_admin_message(
     message: Optional[Message], text: str, reply_markup: Optional[InlineKeyboardMarkup] = None
 ) -> None:
@@ -31,8 +42,10 @@ async def _safe_edit_admin_message(
     try:
         await message.edit_text(text, reply_markup=reply_markup)
     except TelegramBadRequest as e:
-        if "not modified" not in str(e).lower():
-            raise
+        if "not modified" in str(e).lower():
+            log.debug("Сообщение админки не изменилось ('not modified')")
+            return
+        log.warning(f"Не удалось обновить сообщение админки: {e}")
 
 
 def format_admin_panel_text(status_note: str = "") -> str:
@@ -67,22 +80,15 @@ async def cb_admin_menu(event: Message | CallbackQuery) -> None:
 
     if isinstance(event, CallbackQuery):
         await _safe_edit_admin_message(event.message, text, kb)
-        await event.answer()
+        await _ack_admin_callback(event)
     else:
         await event.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data == "admin:sync")
 async def cb_admin_sync(callback: CallbackQuery) -> None:
-    """
-    Принудительно скачивает расписание КТМУ и таблицу Яндекс Диска.
-
-    :param callback: CallbackQuery
-    """
-    try:
-        await callback.answer("⏳ Синхронизация данных...", show_alert=False)
-    except Exception:
-        pass
+    """Принудительно скачивает расписание КТМУ и таблицу Яндекс Диска."""
+    await _ack_admin_callback(callback, "⏳ Синхронизация данных...")
     log.info("Запущена принудительная синхронизация данных из админки")
     res_t = await fetch_teachers(force_refresh=True)
     await fetch_day_schedule(force_refresh=True)
@@ -95,34 +101,19 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "admin:status")
 async def cb_admin_status(callback: CallbackQuery) -> None:
-    """
-    Показывает подробный статус сервисов и парсера.
-
-    :param callback: CallbackQuery
-    """
+    """Показывает подробный статус сервисов и парсера."""
     res_t = await fetch_teachers(force_refresh=False)
     count = res_t.get("count", 0)
     note = f"📊 В памяти API загружено: {count} контактов преподавателей."
     text = format_admin_panel_text(note)
     await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
-    await callback.answer()
-
+    await _ack_admin_callback(callback)
 
 
 @router.callback_query(F.data == "admin:force_topic")
 async def cb_admin_force_topic(callback: CallbackQuery) -> None:
-    """
-    Принудительно публикует или обновляет сообщение в топике без утренних задержек.
-
-    Сначала отвечаем на callback (Telegram даёт 30 сек), потом синхронизируем.
-
-    :param callback: CallbackQuery
-    """
-    # Отвечаем СРАЗУ, иначе при медленной сети callback устареет
-    try:
-        await callback.answer("⏳ Обновляю топик...", show_alert=False)
-    except TelegramBadRequest:
-        pass
+    """Принудительно публикует или обновляет сообщение в топике."""
+    await _ack_admin_callback(callback, "⏳ Обновляю топик...")
     success = await sync_topic_main_message(ignore_time_restriction=True)
     note = "📢 Топик обновлён!" if success else "⚠️ Не удалось обновить топик. Проверьте логи."
     text = format_admin_panel_text(note)
@@ -131,18 +122,8 @@ async def cb_admin_force_topic(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "admin:recreate_topic")
 async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
-    """
-    Удаляет текущее сообщение топика и создаёт новое с правильным MSG_ID.
-
-    Одноразовый сброс — исправляет ситуацию когда state указывает
-    на призрачное/невидимое сообщение. После этого — обычное редактирование.
-
-    :param callback: CallbackQuery
-    """
-    try:
-        await callback.answer("🔁 Пересоздаю сообщение...", show_alert=False)
-    except TelegramBadRequest:
-        pass
+    """Удаляет текущее сообщение топика и создаёт новое с правильным MSG_ID."""
+    await _ack_admin_callback(callback, "🔁 Пересоздаю сообщение...")
     from services.topic_updater import recreate_topic_message
     success = await recreate_topic_message()
     note = "🔁 Сообщение пересоздано!" if success else "⚠️ Ошибка пересоздания. Проверьте логи."
@@ -152,15 +133,8 @@ async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "admin:force_exam")
 async def cb_admin_force_exam(callback: CallbackQuery) -> None:
-    """
-    Принудительно обновляет сообщение экзаменов в топике.
-
-    :param callback: CallbackQuery
-    """
-    try:
-        await callback.answer("⏳ Обновляю экзамены...", show_alert=False)
-    except TelegramBadRequest:
-        pass
+    """Принудительно обновляет сообщение экзаменов в топике."""
+    await _ack_admin_callback(callback, "⏳ Обновляю экзамены...")
     from services.exam_topic_updater import sync_exam_topic_message
     success = await sync_exam_topic_message()
     note = "📑 Экзамены обновлены!" if success else "⚠️ Не удалось обновить экзамены."
@@ -170,15 +144,8 @@ async def cb_admin_force_exam(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "admin:recreate_exam")
 async def cb_admin_recreate_exam(callback: CallbackQuery) -> None:
-    """
-    Удаляет текущее сообщение экзаменов и создаёт новое (сброс MSG_ID).
-
-    :param callback: CallbackQuery
-    """
-    try:
-        await callback.answer("🔁 Пересоздаю экзамены...", show_alert=False)
-    except TelegramBadRequest:
-        pass
+    """Удаляет текущее сообщение экзаменов и создаёт новое (сброс MSG_ID)."""
+    await _ack_admin_callback(callback, "🔁 Пересоздаю экзамены...")
     from services.exam_topic_updater import recreate_exam_topic_message
     success = await recreate_exam_topic_message()
     note = "🔁 Сообщение экзаменов пересоздано!" if success else "⚠️ Ошибка пересоздания."

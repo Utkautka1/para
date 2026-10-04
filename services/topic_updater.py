@@ -58,8 +58,11 @@ async def cleanup_expired_messages() -> None:
         try:
             await bot.delete_message(chat_id=chat_id, message_id=msg_id)
             log.info(f"Временное уведомление MSG_ID={msg_id} гарантированно удалено.")
-        except TelegramBadRequest:
-            pass
+        except TelegramBadRequest as e:
+            if "not found" in str(e).lower():
+                log.debug(f"Временное сообщение MSG_ID={msg_id} уже было удалено: {e}")
+            else:
+                log.warning(f"Не удалось удалить временное сообщение MSG_ID={msg_id}: {e}")
         except Exception as e:
             log.error(f"Ошибка удаления временного сообщения {msg_id}: {e}")
 
@@ -78,8 +81,8 @@ async def send_temp_topic_reminder(lesson: Lesson) -> None:
         )
         log.info(f"Временное уведомление о паре {lesson.period + 1} отправлено. MSG_ID={msg.message_id}")
         await register_message_for_cleanup(TOPIC_CHAT_ID, msg.message_id, delay_sec=900)
-    except TelegramBadRequest:
-        pass
+    except TelegramBadRequest as e:
+        log.warning(f"⚠️ Ошибка Telegram при отправке временного напоминания в топик: {e}")
     except Exception as e:
         log.error(f"Ошибка отправки временного уведомления: {e}")
 
