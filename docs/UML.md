@@ -39,6 +39,21 @@ classDiagram
         +retry_on_flood_control(attempt, delay) Any
     }
 
+    class CallbackThrottleMiddleware {
+        -_last_clicks dict
+        +__call__(handler, event, data) Any
+        -_determine_cooldown(cb_data) float
+        -_handle_callback_throttle(event, now) bool
+    }
+
+    class DocxParserService {
+        -_DOCX_LOCK Lock
+        -_CACHE tuple
+        +get_teacher_links(force_refresh) dict
+        -_fetch_and_cache_teachers(now) dict
+        -_is_cache_fresh(now, force) bool
+    }
+
     class ScheduleApiService {
         +get_day_schedule(group, date) DayScheduleResponse
         +get_week_schedule(group, week) WeekScheduleResponse
@@ -90,6 +105,7 @@ classDiagram
         +write_disk_xlsx(path, data) bool
     }
 
+    CallbackThrottleMiddleware --> TelegramGateway : debounces rapid inline-clicks & prevents handler flooding
     RetryAfterMiddleware --> TelegramGateway : wraps ingress updates & transparent 429 backoff
     TelegramGateway --> ScheduleApiService : HTTP GET schedule
     TelegramGateway --> RedisStateManager : LPUSH HW queue
@@ -98,6 +114,8 @@ classDiagram
     TopicWorkerService --> RedisStateManager : verify flags and ZSET
     TopicWorkerService --> TelegramGateway : publish bell reminders
     ScheduleApiService --> RedisStateManager : L2 snapshot cache
+    ScheduleApiService --> DocxParserService : singleflight contact sync (30s cooldown)
+    DocxParserService --> YandexOfficeProvider : public disk download
     ScheduleApiService ..> KTMUProvider : parse upstream on cache miss
     HomeworkSolverService --> RedisStateManager : BLMOVE HW queue
     HomeworkSolverService --> DeepSeekProvider : generate step solution
@@ -110,8 +128,9 @@ classDiagram
 
 1. **Decoupled Ingress & Asynchronous Queuing**: The Telegram Gateway never blocks on compute-heavy tasks or document rendering. Inbound student homework is atomically placed onto Redis queues (`LPUSH`) and acknowledged instantly. Attendance commit to Yandex Documents runs asynchronously via background worker tasks (`_async_commit_and_update`), immediately returning interactive feedback to group admins.
 2. **Network Resilience & Connection Pooling**: Telegram API outbound calls operate over a persistent `AiohttpSession` pool (concurrency limit 50, keepalive), protected by `RetryAfterMiddleware` to transparently handle flood control (HTTP 429 / TelegramRetryAfter).
-3. **Multi-Tier L2 Snapshot Caching**: The Schedule API isolates upstream college infrastructure by serving pre-computed, group-filtered timetable snapshots directly from Redis memory in `<2ms`.
-4. **Autonomous Worker Daemons**: Background daemons (`Topic Worker` and `Homework Solver`) operate independently, relying on atomic primitives (`BLMOVE`, `ZRANGEBYSCORE`) to guarantee high availability and fault isolation.
+3. **Thundering Herd & Click Debounce Protection**: `CallbackThrottleMiddleware` intercepts rapid clicks on inline-buttons (cooldown 1.0–4.0s). `DocxParserService` applies `asyncio.Lock` singleflight synchronization and a 30s forced-refresh guard, completely eliminating parallel cache stampedes to Yandex Disk.
+4. **Multi-Tier L2 Snapshot Caching**: The Schedule API isolates upstream college infrastructure by serving pre-computed, group-filtered timetable snapshots directly from Redis memory in `<2ms`.
+5. **Autonomous Worker Daemons**: Background daemons (`Topic Worker` and `Homework Solver`) operate independently, relying on atomic primitives (`BLMOVE`, `ZRANGEBYSCORE`) to guarantee high availability and fault isolation.
 
 ---
 

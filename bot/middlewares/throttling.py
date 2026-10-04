@@ -1,0 +1,75 @@
+"""
+Middleware для защиты от частого нажатия инлайн-кнопок (Debounce / Throttling).
+
+Предотвращает лавины параллельных обработчиков при повторных кликах
+нетерпеливых пользователей по инлайн-кнопкам расписания и админки.
+"""
+
+import time
+from typing import Any, Awaitable, Callable, Dict
+from aiogram import BaseMiddleware
+from aiogram.types import CallbackQuery, TelegramObject
+from core.logger import get_logger
+
+log = get_logger("throttle_middleware")
+
+# Кулдауны для категорий действий (в секундах)
+HEAVY_COOLDOWN = 4.0
+NAV_COOLDOWN = 1.0
+DEFAULT_COOLDOWN = 0.5
+
+
+def _determine_cooldown(cb_data: str) -> float:
+    """Определяет необходимый интервал кулдауна по префиксу callback_data."""
+    if cb_data in ("sched:refresh", "admin:sync"):
+        return HEAVY_COOLDOWN
+    if cb_data.startswith("sched:"):
+        return NAV_COOLDOWN
+    return DEFAULT_COOLDOWN
+
+
+class CallbackThrottleMiddleware(BaseMiddleware):
+    """Предотвращает спам-клики по инлайн-кнопкам бота."""
+
+    def __init__(self) -> None:
+        # _last_clicks: ключ "uid:callback_data" -> timestamp последнего клика
+        self._last_clicks: Dict[str, float] = {}
+
+    def _cleanup_old_entries(self, now: float) -> None:
+        """Очищает устаревшие записи, предотвращая утечку памяти."""
+        if len(self._last_clicks) > 1000:
+            self._last_clicks = {
+                k: v for k, v in self._last_clicks.items()
+                if now - v < HEAVY_COOLDOWN * 2
+            }
+
+    async def _handle_callback_throttle(
+        self, event: CallbackQuery, now: float
+    ) -> bool:
+        """Проверяет кулдаун клика. Возвращает True, если клик разрешён."""
+        uid = event.from_user.id if event.from_user else 0
+        cb_data = event.data or ""
+        key = f"{uid}:{cb_data}"
+        cooldown = _determine_cooldown(cb_data)
+        last_time = self._last_clicks.get(key, 0.0)
+
+        if now - last_time < cooldown:
+            log.debug(f"Дребезг клика от {uid} ({cb_data}), кулдаун {cooldown}с")
+            await event.answer("⏳ Подождите секунду...", show_alert=False)
+            return False
+
+        self._last_clicks[key] = now
+        self._cleanup_old_entries(now)
+        return True
+
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
+    ) -> Any:
+        """Перехватывает CallbackQuery и отсекает спам-клики."""
+        if isinstance(event, CallbackQuery):
+            if not await self._handle_callback_throttle(event, time.time()):
+                return None
+        return await handler(event, data)
