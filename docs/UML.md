@@ -26,27 +26,27 @@ flowchart TD
         User["Пользователь / Студент"]
         Admin["Староста / Администратор"]
         TG["Telegram"]
-        KTMU["Сервер расписания КТМУ\n(timetable-ktmu.ru)"]
+        KTMU["Сервер расписания КТМУ"]
         YD_DISK["Яндекс Диск"]
-        YD_DOCS["Яндекс Документы (WOPI)"]
+        YD_DOCS["Яндекс Документы"]
         DEEPSEEK["Модуль решений DeepSeek"]
     end
 
     subgraph Docker["Стек Docker Compose"]
         subgraph S_Redis["para-redis (Redis 7)"]
-            RCache[("Снимок расписания\nsched:group:snapshot")]
-            RQueue[("Очередь задач ДЗ\nhw:tasks:queue")]
-            RProc[("Очередь обработки\nhw:tasks:processing")]
-            RClean[("ZSET очистки топика\ntopic:cleanup_messages")]
-            RSess[("Сессии посещаемости\natt:session:*")]
-            RFlags[("Идемпотентные флаги\nrem:sent:*")]
+            RCache[("Снимок расписания")]
+            RQueue[("Очередь задач ДЗ")]
+            RProc[("Очередь обработки")]
+            RClean[("ZSET очистки топика")]
+            RSess[("Сессии посещаемости")]
+            RFlags[("Идемпотентные флаги")]
         end
 
         subgraph S_API["para-api (FastAPI бэкенд)"]
-            Rout_Sched["Контроллер расписания\n(/schedule)"]
-            Rout_Exams["Контроллер сессии\n(/exams)"]
-            Rout_Teachers["Контроллер преподавателей\n(/teachers)"]
-            Rout_Wopi["WOPI-контроллер\n(/wopi/files/*)"]
+            Rout_Sched["Контроллер расписания"]
+            Rout_Exams["Контроллер сессии"]
+            Rout_Teachers["Контроллер преподавателей"]
+            Rout_Wopi["WOPI-контроллер"]
             Parser_Sched["Модуль парсинга КТМУ"]
         end
 
@@ -56,11 +56,11 @@ flowchart TD
             Bot_Admin["Административные функции"]
         end
 
-        subgraph S_Worker["para-worker (Планировщик и фоновые задачи)"]
-            Worker_Topic["Синхронизация топика (60с)"]
-            Worker_Clean["Очистка уведомлений (60с)"]
-            Worker_Digest["Утренний дайджест (06:00)"]
-            Worker_Keepalive["Продление сессий Яндекс (6ч)"]
+        subgraph S_Worker["para-worker (Планировщик и задачи)"]
+            Worker_Topic["Синхронизация топика"]
+            Worker_Clean["Очистка уведомлений"]
+            Worker_Digest["Утренний дайджест"]
+            Worker_Keepalive["Продление сессий Яндекс"]
         end
 
         subgraph S_Solver["para-solver (Обработчик решений)"]
@@ -70,14 +70,15 @@ flowchart TD
     end
 
     subgraph Storage["Файловое хранилище"]
-        Vol_Data[("./data — расписания и списки")]
-        Vol_Redis[("./data/redis — постоянные данные AOF")]
-        Vol_Logs[("./logs — журналы работы")]
+        Vol_Data["Том данных ./data"]
+        Vol_Redis["Том Redis ./data/redis"]
+        Vol_Logs["Том логов ./logs"]
     end
 
     User -->|Команды и кнопки| TG
     Admin -->|Отметка пар, управление| TG
-    TG <-->|Long Polling| Bot_Dispatch
+    TG -->|События| Bot_Dispatch
+    Bot_Dispatch -->|Ответы| TG
 
     Bot_Dispatch --> Bot_User
     Bot_Dispatch --> Bot_Admin
@@ -88,7 +89,7 @@ flowchart TD
 
     Rout_Sched --> Parser_Sched
     Parser_Sched -->|Загрузка данных| KTMU
-    Rout_Sched <-->|Снимок данных| RCache
+    Rout_Sched -->|Чтение и запись снимка| RCache
 
     Worker_Topic -->|Запрос расписания дня| Rout_Sched
     Worker_Topic -->|Проверка отправки| RFlags
@@ -104,14 +105,14 @@ flowchart TD
     Solver_Docx -->|Отправка готового документа| TG
 
     Admin -->|Редактирование ведомости| YD_DOCS
-    YD_DOCS <-->|WOPI-синхронизация| Rout_Wopi
-    Rout_Wopi <-->|Чтение и запись таблиц| YD_DISK
+    YD_DOCS -->|WOPI-синхронизация| Rout_Wopi
+    Rout_Wopi -->|Чтение и запись таблиц| YD_DISK
 
-    S_Redis ..> Vol_Redis
-    S_API ..> Vol_Data
-    S_Solver ..> Vol_Data
-    S_Bot ..> Vol_Logs
-    S_Worker ..> Vol_Logs
+    RCache -.-> Vol_Redis
+    Parser_Sched -.-> Vol_Data
+    Solver_Docx -.-> Vol_Data
+    Bot_Dispatch -.-> Vol_Logs
+    Worker_Topic -.-> Vol_Logs
 ```
 
 ### Сводная таблица контейнеров
@@ -309,26 +310,24 @@ sequenceDiagram
             deactivate Redis
         end
 
-        rect rgb(240, 245, 255)
-            note over Updater,Redis: Процедура сборки устаревших сообщений
-            Updater->>Redis: Запрос истекших: ZRANGEBYSCORE topic:cleanup_messages -inf {now}
+        note over Updater,Redis: Процедура сборки устаревших сообщений
+        Updater->>Redis: Запрос истекших: ZRANGEBYSCORE topic:cleanup_messages -inf {now}
+        activate Redis
+        Redis-->>Updater: Список ID сообщений
+        deactivate Redis
+
+        loop Для каждого истекшего сообщения
+            Updater->>Bot: Удаление сообщения из чата
+            activate Bot
+            Bot->>Group: Удаление сообщения
+            Group-->>Bot: Успешно
+            Bot-->>Updater: OK
+            deactivate Bot
+
+            Updater->>Redis: Удаление из ZSET (ZREM)
             activate Redis
-            Redis-->>Updater: Список ID сообщений
+            Redis-->>Updater: 1
             deactivate Redis
-
-            loop Для каждого истекшего сообщения
-                Updater->>Bot: Удаление сообщения из чата
-                activate Bot
-                Bot->>Group: Удаление сообщения
-                Group-->>Bot: Успешно
-                Bot-->>Updater: OK
-                deactivate Bot
-
-                Updater->>Redis: Удаление из ZSET (ZREM)
-                activate Redis
-                Redis-->>Updater: 1
-                deactivate Redis
-            end
         end
 
         deactivate Updater
@@ -351,16 +350,14 @@ sequenceDiagram
     participant NeuralNet as Модуль DeepSeek
     participant Docx as Генератор Word
 
-    rect rgb(255, 245, 240)
-        note over Solver,Redis: Восстановление после сбоев (при старте воркера)
-        Solver->>Redis: Проверка зависших задач в hw:tasks:processing
-        activate Solver
-        activate Redis
-        Redis->>Redis: Атомарный перенос RPOPLPUSH в hw:tasks:queue
-        Redis-->>Solver: Восстановлено N задач
-        deactivate Redis
-        deactivate Solver
-    end
+    note over Solver,Redis: Восстановление после сбоев (при старте воркера)
+    Solver->>Redis: Проверка зависших задач в hw:tasks:processing
+    activate Solver
+    activate Redis
+    Redis->>Redis: Атомарный перенос RPOPLPUSH в hw:tasks:queue
+    Redis-->>Solver: Восстановлено N задач
+    deactivate Redis
+    deactivate Solver
 
     Student->>Bot: Загрузка задания (текст или фото)
     activate Bot
@@ -433,22 +430,20 @@ sequenceDiagram
     Admin->>Yandex: Переход по ссылке
     activate Yandex
 
-    rect rgb(245, 255, 245)
-        note over Yandex,Backend: Протокол WOPI
-        Yandex->>Backend: GET /wopi/files/{id}?access_token={token} (CheckFileInfo)
-        activate Backend
-        Backend->>Redis: Валидация токена сессии
-        activate Redis
-        Redis-->>Backend: Сессия подтверждена
-        deactivate Redis
-        Backend-->>Yandex: Метаданные файла (имя, размер, права на запись)
-        deactivate Backend
+    note over Yandex,Backend: Протокол WOPI (Проверка прав и скачивание)
+    Yandex->>Backend: GET /wopi/files/{id}?access_token={token} (CheckFileInfo)
+    activate Backend
+    Backend->>Redis: Валидация токена сессии
+    activate Redis
+    Redis-->>Backend: Сессия подтверждена
+    deactivate Redis
+    Backend-->>Yandex: Метаданные файла (имя, размер, права на запись)
+    deactivate Backend
 
-        Yandex->>Backend: GET /wopi/files/{id}/contents (Скачивание таблицы)
-        activate Backend
-        Backend-->>Yandex: Бинарный поток файла .xlsx
-        deactivate Backend
-    end
+    Yandex->>Backend: GET /wopi/files/{id}/contents (Скачивание таблицы)
+    activate Backend
+    Backend-->>Yandex: Бинарный поток файла .xlsx
+    deactivate Backend
 
     Yandex-->>Admin: Отображение ведомости со списком группы
 
