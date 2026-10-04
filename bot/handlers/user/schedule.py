@@ -6,7 +6,7 @@ sched:week, sched:refresh с редактированием существующ
 """
 
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
@@ -37,6 +37,14 @@ router = Router()
 router.callback_query.filter(ClassmateAuthFilter())
 
 
+async def _ack_callback(callback: CallbackQuery, text: Optional[str] = None) -> None:
+    """Мгновенно подтверждает callback в Telegram, гася анимацию ожидания."""
+    try:
+        await callback.answer(text)
+    except TelegramBadRequest:
+        pass
+
+
 async def edit_or_answer(
     callback: CallbackQuery, text: str, lessons: List[Lesson] = None, week_offset: int = 0
 ) -> None:
@@ -50,10 +58,6 @@ async def edit_or_answer(
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
-    except TelegramBadRequest:
-        pass
-    try:
-        await callback.answer("Расписание обновлено!")
     except TelegramBadRequest:
         pass
 
@@ -100,10 +104,7 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     uid = callback.from_user.id if callback.from_user else 0
     new_sub = toggle_subscriber(uid)
     ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
-    try:
-        await callback.answer(ans_text)
-    except TelegramBadRequest:
-        pass
+    await _ack_callback(callback, ans_text)
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
@@ -139,10 +140,7 @@ async def cb_notice_toggle(callback: CallbackQuery) -> None:
     uid = callback.from_user.id if callback.from_user else 0
     new_sub = toggle_subscriber(uid)
     ans = "🔔 Уведомления включены!" if new_sub else "🔕 Уведомления отключены."
-    try:
-        await callback.answer(ans)
-    except TelegramBadRequest:
-        pass
+    await _ack_callback(callback, ans)
     text = format_notice_settings_text(new_sub)
     try:
         if callback.message:
@@ -153,12 +151,9 @@ async def cb_notice_toggle(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:today")
 async def cb_today(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на сегодня.
-
-    :param callback: CallbackQuery
-    """
+    """Заменяет сообщение на расписание на сегодня."""
     log.info("Нажата инлайн-кнопка: Сегодня")
+    await _ack_callback(callback)
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     text = format_day_schedule(now, lessons)
@@ -167,12 +162,9 @@ async def cb_today(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:tomorrow")
 async def cb_tomorrow(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на завтра.
-
-    :param callback: CallbackQuery
-    """
+    """Заменяет сообщение на расписание на завтра."""
     log.info("Нажата инлайн-кнопка: Завтра")
+    await _ack_callback(callback)
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
     lessons = await get_api_schedule_for_date(tomorrow)
     text = format_day_schedule(tomorrow, lessons)
@@ -181,12 +173,9 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:week")
 async def cb_week(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием.
-
-    :param callback: CallbackQuery
-    """
+    """Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Эта неделя")
+    await _ack_callback(callback)
     today = datetime.now(TIMEZONE).date()
     monday = today - timedelta(days=today.weekday())
     cache_key = f"sched:week:{monday.isoformat()}"
@@ -204,12 +193,9 @@ async def cb_week(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:week_next")
 async def cb_week_next(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием.
-
-    :param callback: CallbackQuery
-    """
+    """Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Следующая неделя")
+    await _ack_callback(callback)
     today = datetime.now(TIMEZONE).date()
     next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
     cache_key = f"sched:week_next:{next_monday.isoformat()}"

@@ -5,6 +5,8 @@
 вычисляет дату, предмет, тип пары (Лек/Пр), адреса корпусов и кэширует данные.
 """
 
+import asyncio
+import json
 import re
 import time
 from datetime import date, datetime, timedelta
@@ -189,17 +191,20 @@ def get_period_time_str(
 _HTTP_CLIENT: Optional[httpx.AsyncClient] = None
 _LAST_ETAG: Optional[str] = None
 _LAST_MODIFIED: Optional[str] = None
+_COOLDOWN_UNTIL: float = 0.0
+_COOLDOWN_SECONDS: float = 300.0
 
 
 def get_http_client() -> httpx.AsyncClient:
-    """Возвращает или создает персистентный HTTP клиент с пулом соединений."""
+    """Возвращает персистентный HTTP клиент с пулом соединений и увеличенным таймаутом."""
     global _HTTP_CLIENT
     if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         limits = httpx.Limits(max_keepalive_connections=5, max_connections=10, keepalive_expiry=60.0)
-        _HTTP_CLIENT = httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True, limits=limits)
+        timeout = httpx.Timeout(60.0, connect=10.0, read=60.0)
+        _HTTP_CLIENT = httpx.AsyncClient(timeout=timeout, headers=headers, follow_redirects=True, limits=limits)
     return _HTTP_CLIENT
 
 
@@ -234,16 +239,33 @@ def filter_snapshot_for_target_group(snapshot: Dict[str, Any]) -> Dict[str, Any]
     }
 
 
+def _parse_and_clean_payload(content: bytes) -> Tuple[Optional[str], Dict[str, Any]]:
+    """
+    Синхронно в пуле потоков парсит 50 МБ JSON и фильтрует целевую группу.
+
+    Используется в asyncio.to_thread, чтобы не блокировать event loop FastAPI.
+    Возвращает (published_at, cleaned_snapshot).
+    """
+    val = json.loads(content).get("value", {})
+    snapshot = val.get("publishedSnapshot") or val
+    pub_at = snapshot.get("publishedAt")
+    cleaned = filter_snapshot_for_target_group(snapshot)
+    return pub_at, cleaned
+
+
 def _persist_snapshot_to_redis(snapshot: Dict[str, Any]) -> None:
     """В фоновом режиме сохраняет снимок и ETag в Redis."""
-    import asyncio
     from services.redis_cache import save_schedule_snapshot
     meta = {"etag": _LAST_ETAG, "last_modified": _LAST_MODIFIED, "published_at": _LAST_PUBLISHED_AT}
     asyncio.create_task(save_schedule_snapshot(snapshot, meta))
 
 
-def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
-    """Обрабатывает HTTP-ответ от API КТМУ (304 Not Modified или 200 OK)."""
+async def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
+    """
+    Обрабатывает ответ API КТМУ (304 или 200) без блокировки основного потока.
+
+    Возвращает очищенный срез расписания или текущий кэш при ошибке.
+    """
     global _DATA_CACHE, _LAST_PUBLISHED_AT
     if res.status_code == 304:
         _DATA_CACHE = (now, _DATA_CACHE[1])
@@ -252,40 +274,48 @@ def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, 
         log.error(f"Ошибка API КТМУ: HTTP {res.status_code}")
         return _DATA_CACHE[1]
     update_cache_headers(res.headers)
-    val = res.json().get("value", {})
-    snapshot = val.get("publishedSnapshot") or val
-    pub_at = snapshot.get("publishedAt")
+    pub_at, cleaned = await asyncio.to_thread(_parse_and_clean_payload, res.content)
     if pub_at and pub_at != _LAST_PUBLISHED_AT:
         log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
         _LAST_PUBLISHED_AT = pub_at
-    cleaned_snapshot = filter_snapshot_for_target_group(snapshot)
-    _DATA_CACHE = (now, cleaned_snapshot)
-    _persist_snapshot_to_redis(cleaned_snapshot)
-    return cleaned_snapshot
+    _DATA_CACHE = (now, cleaned)
+    _persist_snapshot_to_redis(cleaned)
+    return cleaned
 
 
 _IS_REFRESHING: bool = False
 
 
-async def refresh_schedule_in_background() -> None:
-    """Асинхронно обновляет расписание КТМУ в фоне без блокировки вызова."""
-    global _IS_REFRESHING
+async def _fetch_remote_schedule() -> httpx.Response:
+    """Выполняет HTTP-запрос к расписанию КТМУ с заголовками кэширования."""
+    client = get_http_client()
+    headers = {}
+    if _LAST_ETAG:
+        headers["If-None-Match"] = _LAST_ETAG
+    if _LAST_MODIFIED:
+        headers["If-Modified-Since"] = _LAST_MODIFIED
+    return await client.get(SCHEDULE_API_URL, headers=headers)
+
+
+async def refresh_schedule_in_background(force: bool = False) -> None:
+    """
+    Асинхронно обновляет расписание КТМУ с защитой от частых сбоев.
+
+    При ошибке сети включает 5-минутный кулдаун для предотвращения спама.
+    """
+    global _IS_REFRESHING, _COOLDOWN_UNTIL
     if _IS_REFRESHING:
         return
     _IS_REFRESHING = True
     now = time.time()
     try:
-        client = get_http_client()
-        headers = {}
-        if _LAST_ETAG:
-            headers["If-None-Match"] = _LAST_ETAG
-        if _LAST_MODIFIED:
-            headers["If-Modified-Since"] = _LAST_MODIFIED
-        res = await client.get(SCHEDULE_API_URL, headers=headers)
-        process_api_response(res, now)
+        res = await _fetch_remote_schedule()
+        await process_api_response(res, now)
+        _COOLDOWN_UNTIL = 0.0
     except Exception as e:
+        _COOLDOWN_UNTIL = now + _COOLDOWN_SECONDS
         err_msg = repr(e) if str(e) == "" else f"{type(e).__name__}: {e}"
-        log.warning(f"Фоновое обновление API КТМУ не удалось ({err_msg}). Используется кэш.")
+        log.warning(f"Фоновое обновление API КТМУ не удалось ({err_msg}). Используется кэш (кулдаун 5 мин).")
     finally:
         _IS_REFRESHING = False
 
@@ -306,21 +336,24 @@ async def init_schedule_cache_from_redis(now: float) -> bool:
 
 
 async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
-    """Отдаёт расписание из памяти или принудительно обновляет данные."""
-    import asyncio
+    """
+    Отдаёт расписание из памяти/Redis или обновляет данные с учетом кулдауна.
+
+    Предотвращает цикличные зависания и обеспечивает мгновенный холодный старт.
+    """
     now = time.time()
     if force_refresh:
-        await refresh_schedule_in_background()
+        await refresh_schedule_in_background(force=True)
         if _DATA_CACHE[1] is None:
             await init_schedule_cache_from_redis(now)
         return _DATA_CACHE[1]
-    if _DATA_CACHE[1] is None:
-        if await init_schedule_cache_from_redis(now):
+    if _DATA_CACHE[1] is None and await init_schedule_cache_from_redis(now):
+        if now >= _COOLDOWN_UNTIL:
             asyncio.create_task(refresh_schedule_in_background())
-            return _DATA_CACHE[1]
+        return _DATA_CACHE[1]
     cache_valid = (now - _DATA_CACHE[0] < SCHEDULE_CACHE_TTL_SECONDS)
     if _DATA_CACHE[1] is not None:
-        if not cache_valid:
+        if not cache_valid and now >= _COOLDOWN_UNTIL:
             asyncio.create_task(refresh_schedule_in_background())
         return _DATA_CACHE[1]
     await refresh_schedule_in_background()

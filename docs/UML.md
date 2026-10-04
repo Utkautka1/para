@@ -184,7 +184,11 @@ classDiagram
     class ScheduleParser {
         -dict _in_memory_cache
         -float _cache_timestamp
+        -float _cooldown_until
+        -Timeout _http_timeout
         +fetch_schedule(group) dict
+        +refresh_schedule_in_background(force) void
+        +_parse_and_clean_payload(content) tuple
         +get_day(group, target_date) List~Lesson~
         +get_week(group, week_num) dict
         +load_schedule_snapshot(group) dict
@@ -293,8 +297,9 @@ classDiagram
 ### Execution Flow & Data Lifecycle
 
 1. **L2 Snapshot Verification**: When `get_day_schedule` is invoked, the parser immediately queries Redis key `sched:group:snapshot`. If the snapshot exists and is valid, structured timetable data is returned in `<2ms` without outbound networking.
-2. **Cold Start & Upstream Ingestion**: On cache misses, the parser requests the raw 40 MB timetable payload from KTMU servers, applies stream/subgroup filters, and extracts strongly typed `Lesson` objects.
-3. **Atomic Persistence**: The normalized JSON payload is persisted to Redis with a TTL of 14,400 seconds (4 hours), ensuring subsequent inquiries remain instant.
+2. **Cold Start & Upstream Ingestion**: On cache misses or stale intervals, the parser requests the raw ~50 MB timetable payload from KTMU servers with a 60-second read timeout. Deserialization and group filtering are offloaded to `asyncio.to_thread` to prevent freezing the FastAPI event loop.
+3. **Resilience & Cooldown**: In case of network timeouts or upstream outages, a 5-minute cooldown (`_COOLDOWN_UNTIL`) prevents hammering the upstream server, seamlessly falling back to cached Redis snapshots.
+4. **Atomic Persistence**: The normalized JSON payload is persisted to Redis with a TTL of 14,400 seconds (4 hours), ensuring subsequent inquiries remain instant.
 
 ---
 

@@ -247,7 +247,7 @@ async def _handle_edit_failure(
     global _TOPIC_MAIN_MSG_ID
     err = str(e).lower()
     if "not modified" in err:
-        log.info(f"sync_topic: 'not modified' — текст уже актуален (MSG_ID={_TOPIC_MAIN_MSG_ID})")
+        log.debug(f"sync_topic: 'not modified' — текст уже актуален (MSG_ID={_TOPIC_MAIN_MSG_ID})")
         return True
     if is_retry:
         log.error(f"❌ Повторная ошибка создания сообщения топика: {e}")
