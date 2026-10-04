@@ -175,7 +175,7 @@ async def pop_hw_task(timeout: int = 2) -> Optional[dict]:
         if client:
             raw = await client.blmove(
                 HW_QUEUE_KEY, HW_PROCESSING_KEY,
-                timeout=timeout, wherefrom="LEFT", whereto="RIGHT"
+                timeout, "LEFT", "RIGHT"
             )
             return json.loads(raw) if raw else None
     except Exception as e:
