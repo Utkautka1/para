@@ -99,12 +99,39 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
     await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
+async def _collect_health_summary() -> str:
+    """Собирает диагностические метрики всех компонентов системы."""
+    from db.subscribers import load_subscribers
+    from services.classmates_auth import load_classmates_registry
+    from services.redis_cache import init_redis
+    from services.yandex_docs import get_effective_yandex_cookie
+    subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
+    res_t = await fetch_teachers(force_refresh=False)
+    teach_cnt = res_t.get("count", 0)
+    has_cookie = bool(await get_effective_yandex_cookie())
+    redis_mem = "N/A"
+    try:
+        r = await init_redis()
+        if r:
+            info = await r.info("memory")
+            redis_mem = info.get("used_memory_human", "OK")
+    except Exception:
+        redis_mem = "Ошибка"
+    cookie_badge = "✅ Активна" if has_cookie else "⚠️ Отсутствует"
+    return (
+        f"📊 <b>ДИАГНОСТИКА СИСТЕМЫ:</b>\n"
+        f"• <b>Redis (RAM):</b> <code>{redis_mem}</code>\n"
+        f"• <b>Преподаватели:</b> <code>{teach_cnt}</code> контактов\n"
+        f"• <b>Одногруппники:</b> <code>{class_cnt}</code> в реестре\n"
+        f"• <b>Подписчики ЛС:</b> <code>{subs_cnt}</code> чел.\n"
+        f"• <b>Сессия Яндекс:</b> {cookie_badge}"
+    )
+
+
 @router.callback_query(F.data == "admin:status")
 async def cb_admin_status(callback: CallbackQuery) -> None:
-    """Показывает подробный статус сервисов и парсера."""
-    res_t = await fetch_teachers(force_refresh=False)
-    count = res_t.get("count", 0)
-    note = f"📊 В памяти API загружено: {count} контактов преподавателей."
+    """Показывает подробный дашборд статуса компонентов системы."""
+    note = await _collect_health_summary()
     text = format_admin_panel_text(note)
     await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
     await _ack_admin_callback(callback)

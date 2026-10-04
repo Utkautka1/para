@@ -5,7 +5,9 @@
 исключительно для старосты (ALLOWED_USER_ID) и замстаросты (DEPUTY_USER_ID).
 """
 
+import asyncio
 from datetime import datetime
+from typing import Dict, Optional
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
@@ -31,24 +33,38 @@ router.message.filter(AttendanceAuthFilter())
 router.callback_query.filter(AttendanceAuthFilter())
 
 
-async def finish_and_notify(cb: CallbackQuery, session) -> None:
-    """Завершает опрос, сохраняет таблицу в Яндекс и выводит сводку."""
-    if cb.message:
-        await cb.message.edit_text("⏳ <i>Сохранение в Яндекс Документы...</i>")
-    stats = calculate_summary_stats(session.marks)
+async def _async_commit_and_update(
+    message: Optional[Message], session, stats: Dict[str, int]
+) -> None:
+    """Фоновая асинхронная запись в Яндекс Таблицу с обновлением статуса."""
     success = await commit_session_to_table(session)
-    if not success:
-        if cb.message:
-            await cb.message.edit_text(
-                "❌ <b>Не удалось сохранить в таблицу</b>\n\n"
-                "<i>Все попытки записи исчерпаны. "
-                "Данные сессии сохранены — попробуйте /attendance ещё раз.</i>"
-            )
+    if not message:
         return
-    text = format_summary_text(session, stats)
+    badge = (
+        "\n\n✅ <i>Успешно сохранено в Яндекс Таблицу</i>"
+        if success else
+        "\n\n⚠️ <i>Не удалось сохранить в Яндекс. Данные сохранены в Redis (/attendance).</i>"
+    )
+    try:
+        await message.edit_text(format_summary_text(session, stats) + badge)
+    except Exception as e:
+        log.debug(f"Не удалось обновить статус выгрузки посещаемости: {e}")
+
+
+async def finish_and_notify(cb: CallbackQuery, session) -> None:
+    """Мгновенно отображает сводку старосте и запускает фоновую выгрузку в Яндекс."""
+    stats = calculate_summary_stats(session.marks)
+    text_saving = (
+        format_summary_text(session, stats)
+        + "\n\n⏳ <i>Синхронизация с Яндекс Таблицей в фоне...</i>"
+    )
     if cb.message:
-        await cb.message.edit_text(text)
-    log.info(f"✅ Посещаемость пары {session.lesson_num} успешно записана")
+        try:
+            await cb.message.edit_text(text_saving)
+        except Exception:
+            pass
+    asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
+    log.info(f"Сводка пары {session.lesson_num} выдана, запущена фоновая запись в Яндекс")
 
 
 @router.message(Command("attendance"))

@@ -14,9 +14,15 @@ from core.logger import get_logger
 
 log = get_logger("bot_core")
 
-session = AiohttpSession(proxy=PROXY_URL, timeout=30.0) if PROXY_URL else AiohttpSession(timeout=10.0)
-if PROXY_URL:
-    log.info("SOCKS5 Прокси успешно подключен для Telegram API")
+def create_bot_session() -> AiohttpSession:
+    """Создает сессию aiohttp с пулом соединений (limit=50) и SOCKS5 прокси."""
+    if PROXY_URL:
+        log.info("SOCKS5 Прокси успешно подключен для Telegram API (limit=50, timeout=30s)")
+        return AiohttpSession(proxy=PROXY_URL, limit=50, timeout=30.0)
+    return AiohttpSession(limit=50, timeout=15.0)
+
+
+session = create_bot_session()
 
 bot = Bot(
     token=BOT_TOKEN,
