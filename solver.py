@@ -22,7 +22,7 @@ from core.logger import get_logger
 from core.redis import init_redis, redis_client
 from services.deepseek_solver import solve_homework
 from services.doc_generator import create_solution_docx
-from services.redis_cache import pop_hw_task
+from services.redis_cache import ack_hw_task, pop_hw_task, recover_stale_hw_tasks
 
 log = get_logger("solver_worker")
 MAX_FILE_SIZE = 20 * 1024 * 1024
@@ -110,7 +110,7 @@ async def resolve_task_payload(tg_bot: Bot, task: dict) -> Tuple[Optional[bytes]
         return None, prompt or None
     f_name = task.get("file_name") or "file"
     mime = task.get("mime_type")
-    return parse_file_payload(raw_bytes, f_name, mime, prompt)
+    return await asyncio.to_thread(parse_file_payload, raw_bytes, f_name, mime, prompt)
 
 
 async def send_solution_to_telegram(tg_bot: Bot, task: dict, doc_path: str) -> None:
@@ -153,12 +153,14 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
     try:
         img_bytes, prompt = await resolve_task_payload(tg_bot, task)
         solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
-        create_solution_docx(solution, output_path=doc_path)
+        await asyncio.to_thread(create_solution_docx, solution, output_path=doc_path)
         await send_solution_to_telegram(tg_bot, task, doc_path)
+        await ack_hw_task(task)
         log.info(f"✅ Решение ДЗ msg_id={msg_id} успешно доставлено в топик решений!")
     except Exception as e:
         log.error(f"❌ Сбой обработки ДЗ msg_id={msg_id}: {e}")
         await notify_task_error(tg_bot, task)
+        await ack_hw_task(task)
     finally:
         if os.path.exists(doc_path):
             os.remove(doc_path)
@@ -192,6 +194,7 @@ async def main() -> None:
     log.info(f"  Топик решений: {config.HW_OUTPUT_TOPIC_THREAD_ID}")
     log.info("=" * 60)
     await init_redis()
+    await recover_stale_hw_tasks()
     try:
         await run_solver_loop()
     finally:

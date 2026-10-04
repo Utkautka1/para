@@ -5,26 +5,44 @@
 """
 
 from typing import Optional
-from redis.asyncio import Redis
+from redis.asyncio import ConnectionPool, Redis
 from config import REDIS_HOST, REDIS_PORT
 from core.logger import get_logger
 
 log = get_logger("redis")
 redis_client: Optional[Redis] = None
+_pool: Optional[ConnectionPool] = None
 
 
-async def init_redis() -> Redis:
+def get_redis_pool() -> ConnectionPool:
+    """Создает или возвращает синглтон пула соединений к Redis с лимитом сокетов."""
+    global _pool
+    if _pool is None:
+        _pool = ConnectionPool(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            decode_responses=True,
+            max_connections=20,
+            socket_keepalive=True,
+            health_check_interval=30,
+            socket_timeout=5.0,
+        )
+    return _pool
+
+
+async def init_redis() -> Optional[Redis]:
     """
-    Инициализирует асинхронное подключение к Redis.
+    Инициализирует подключение к Redis через пул соединений.
 
-    :return: Объект Redis
+    :return: Объект Redis или None при сбое сети
     """
     global redis_client
     if redis_client is None:
         try:
-            redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+            pool = get_redis_pool()
+            redis_client = Redis(connection_pool=pool)
             await redis_client.ping()
-            log.info(f"Успешное подключение к Redis ({REDIS_HOST}:{REDIS_PORT})")
+            log.info(f"Успешное подключение к Redis ({REDIS_HOST}:{REDIS_PORT}) через ConnectionPool")
         except Exception as e:
             log.error(f"Ошибка подключения к Redis ({REDIS_HOST}:{REDIS_PORT}): {e}")
             redis_client = None
@@ -45,9 +63,12 @@ async def get_redis() -> Optional[Redis]:
 
 
 async def close_redis() -> None:
-    """Освобождает соединение с Redis при завершении работы сервиса."""
-    global redis_client
+    """Освобождает клиент и пул соединений с Redis при завершении сервиса."""
+    global redis_client, _pool
     if redis_client:
         await redis_client.aclose()
         redis_client = None
-        log.info("Соединение с Redis успешно закрыто")
+    if _pool:
+        await _pool.disconnect()
+        _pool = None
+    log.info("Соединение и пул соединений с Redis успешно закрыты")

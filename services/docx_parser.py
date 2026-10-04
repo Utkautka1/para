@@ -105,6 +105,7 @@ async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherDat
     :return: Словарь контактов преподавателей
     """
     global _CACHE
+    import asyncio
     now = time.time()
     if not force_refresh and (now - _CACHE[0] < DOCX_CACHE_TTL_SECONDS) and _CACHE[1]:
         return _CACHE[1]
@@ -112,9 +113,8 @@ async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherDat
     from services.custom_teachers import load_custom_teachers
     log.info("Загрузка свежих данных с Яндекс Диска...")
     content = await fetch_docx_bytes()
-    parsed = parse_docx_teachers(content) if content else _CACHE[1].copy()
+    parsed = (await asyncio.to_thread(parse_docx_teachers, content)) if content else _CACHE[1].copy()
     custom = load_custom_teachers()
-    # Сначала применяем данные из docx, затем перекрываем кастомными
     parsed.update(custom)
     _CACHE = (now, parsed)
     return parsed

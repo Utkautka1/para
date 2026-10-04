@@ -5,13 +5,18 @@
 """
 
 import json
-from typing import Optional
+import time
+from typing import List, Optional, Tuple
 from config import ALLOWED_USER_ID, REDIS_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from core.redis import init_redis
 
 log = get_logger("redis_cache")
 HW_QUEUE_KEY = "hw:tasks:queue"
+HW_PROCESSING_KEY = "hw:tasks:processing"
+SNAPSHOT_KEY = "sched:group:snapshot"
+SNAPSHOT_META_KEY = "sched:group:meta"
+TOPIC_CLEANUP_KEY = "topic:cleanup_messages"
 
 
 async def cache_get(key: str) -> Optional[str]:
@@ -33,18 +38,21 @@ async def cache_get(key: str) -> Optional[str]:
     return None
 
 
-async def cache_set(key: str, value: str, ttl: int = REDIS_CACHE_TTL_SECONDS) -> None:
+async def cache_set(key: str, value: str, ttl: Optional[int] = REDIS_CACHE_TTL_SECONDS) -> None:
     """
-    Сохраняет строковое значение в Redis с TTL (по умолчанию 600 сек / 10 мин).
+    Сохраняет строковое значение в Redis с опциональным TTL (сек).
 
     :param key: Ключ записи
     :param value: Сохраняемая строка
-    :param ttl: Время жизни в секундах
+    :param ttl: Время жизни в секундах (None / 0 для бессрочного)
     """
     try:
         client = await init_redis()
         if client:
-            await client.set(key, value, ex=ttl)
+            if ttl and ttl > 0:
+                await client.set(key, value, ex=ttl)
+            else:
+                await client.set(key, value)
             log.debug(f"Сохранено в Redis [key={key}, ttl={ttl}s]")
     except Exception as e:
         log.error(f"Ошибка записи в Redis ({key}): {e}")
@@ -161,38 +169,138 @@ async def push_hw_task(task_data: dict) -> bool:
 
 
 async def pop_hw_task(timeout: int = 2) -> Optional[dict]:
-    """
-    Атомарно извлекает задачу решения ДЗ из начала очереди Redis.
-
-    :param timeout: Время ожидания в секундах
-    :return: Словарь задачи или None
-    """
+    """Атомарно перемещает задачу из очереди в processing и возвращает словарь."""
     try:
         client = await init_redis()
         if client:
-            res = await client.blpop(HW_QUEUE_KEY, timeout=timeout)
-            if res:
-                _, data_str = res
-                return json.loads(data_str)
+            raw = await client.blmove(
+                HW_QUEUE_KEY, HW_PROCESSING_KEY,
+                timeout=timeout, wherefrom="LEFT", whereto="RIGHT"
+            )
+            return json.loads(raw) if raw else None
     except Exception as e:
         log.error(f"Ошибка извлечения задачи ДЗ из Redis: {e}")
     return None
 
 
-async def clear_hw_queue() -> int:
-    """
-    Очищает очередь задач ДЗ (hw:tasks:queue) в Redis.
-
-    :return: 1 если очередь существовала и была удалена, иначе 0
-    """
+async def ack_hw_task(task_data: dict) -> None:
+    """Удаляет завершенную задачу из processing очереди после успешного решения."""
     try:
         client = await init_redis()
         if client:
-            deleted = await client.delete(HW_QUEUE_KEY)
-            log.info(f"Очередь задач ДЗ {HW_QUEUE_KEY} очищена (deleted={deleted})")
+            payload = json.dumps(task_data, ensure_ascii=False)
+            await client.lrem(HW_PROCESSING_KEY, 1, payload)
+            log.debug(f"Задача ДЗ {task_data.get('message_id')} подтверждена (ack)")
+    except Exception as e:
+        log.error(f"Ошибка подтверждения задачи ДЗ в Redis: {e}")
+
+
+async def recover_stale_hw_tasks() -> int:
+    """Возвращает зависшие задачи из processing обратно в очередь при старте."""
+    recovered = 0
+    try:
+        client = await init_redis()
+        if client:
+            while await client.rpoplpush(HW_PROCESSING_KEY, HW_QUEUE_KEY):
+                recovered += 1
+            if recovered > 0:
+                log.warning(f"⚠️ Восстановлено {recovered} зависших задач ДЗ из processing")
+    except Exception as e:
+        log.error(f"Ошибка восстановления зависших задач ДЗ: {e}")
+    return recovered
+
+
+async def clear_hw_queue() -> int:
+    """Очищает основную и processing очереди задач ДЗ в Redis."""
+    try:
+        client = await init_redis()
+        if client:
+            deleted = await client.delete(HW_QUEUE_KEY, HW_PROCESSING_KEY)
+            log.info(f"Очереди задач ДЗ очищены (deleted={deleted})")
             return deleted
     except Exception as e:
         log.error(f"Ошибка очистки очереди ДЗ в Redis: {e}")
     return 0
+
+
+async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -> None:
+    """Сохраняет отфильтрованный срез расписания группы и метаданные в Redis."""
+    try:
+        client = await init_redis()
+        if client:
+            p_snap = json.dumps(snapshot, ensure_ascii=False)
+            p_meta = json.dumps(meta, ensure_ascii=False)
+            async with client.pipeline(transaction=True) as pipe:
+                pipe.set(SNAPSHOT_KEY, p_snap, ex=ttl)
+                pipe.set(SNAPSHOT_META_KEY, p_meta, ex=ttl)
+                await pipe.execute()
+            log.info("Срез расписания группы успешно сохранен в кэш Redis")
+    except Exception as e:
+        log.error(f"Ошибка сохранения снимка расписания в Redis: {e}")
+
+
+async def load_schedule_snapshot() -> Tuple[Optional[dict], Optional[dict]]:
+    """Загружает сохраненный срез расписания и метаданные из Redis."""
+    try:
+        client = await init_redis()
+        if client:
+            snap_raw = await client.get(SNAPSHOT_KEY)
+            meta_raw = await client.get(SNAPSHOT_META_KEY)
+            if snap_raw and meta_raw:
+                log.debug("Снимок расписания успешно загружен из Redis")
+                return json.loads(snap_raw), json.loads(meta_raw)
+    except Exception as e:
+        log.error(f"Ошибка чтения снимка расписания из Redis: {e}")
+    return None, None
+
+
+async def is_reminder_sent(rem_key: str) -> bool:
+    """Проверяет, было ли уже отправлено напоминание с данным ключом сегодня."""
+    val = await cache_get(f"rem:sent:{rem_key}")
+    return val == "1"
+
+
+async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None:
+    """Отмечает напоминание как отправленное в Redis с суточным TTL."""
+    await cache_set(f"rem:sent:{rem_key}", "1", ttl=ttl)
+
+
+async def get_topic_state_redis(key: str = "topic:main_msg_id") -> Optional[int]:
+    """Извлекает сохраненный ID сообщения топика из Redis."""
+    val = await cache_get(key)
+    return int(val) if val and val.isdigit() else None
+
+
+async def set_topic_state_redis(val: int, key: str = "topic:main_msg_id") -> None:
+    """Сохраняет ID главного сообщения топика в Redis без экспирации."""
+    await cache_set(key, str(val), ttl=0)
+
+
+async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int = 900) -> None:
+    """Регистрирует сообщение в ZSET для гарантированного удаления через delay_sec."""
+    try:
+        client = await init_redis()
+        if client:
+            target_ts = time.time() + delay_sec
+            await client.zadd(TOPIC_CLEANUP_KEY, {f"{chat_id}:{msg_id}": target_ts})
+            log.debug(f"Сообщение {chat_id}:{msg_id} запланировано на удаление через {delay_sec}с")
+    except Exception as e:
+        log.error(f"Ошибка регистрации сообщения на удаление: {e}")
+
+
+async def get_expired_messages_for_cleanup() -> List[Tuple[int, int]]:
+    """Извлекает и удаляет из ZSET сообщения, чей срок хранения истёк."""
+    results: List[Tuple[int, int]] = []
+    try:
+        client = await init_redis()
+        if client:
+            now_ts = time.time()
+            expired = await client.zrangebyscore(TOPIC_CLEANUP_KEY, min=0, max=now_ts)
+            if expired:
+                await client.zrem(TOPIC_CLEANUP_KEY, *expired)
+                results = [(int(i.split(":")[0]), int(i.split(":")[1])) for i in expired]
+    except Exception as e:
+        log.error(f"Ошибка извлечения сообщений для очистки: {e}")
+    return results
 
 

@@ -3,7 +3,7 @@ services:
     image: redis:7-alpine
     container_name: para-redis
     restart: always
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 48M --maxmemory-policy volatile-lru
     volumes:
       - ./data/redis:/data
     deploy:
@@ -13,6 +13,12 @@ services:
           cpus: '0.25'
         reservations:
           memory: 16M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   api:
     build:
@@ -21,7 +27,8 @@ services:
     container_name: para-api
     restart: always
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
@@ -47,8 +54,10 @@ services:
     container_name: para-bot
     restart: always
     depends_on:
-      - redis
-      - api
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
@@ -74,9 +83,10 @@ services:
     container_name: para-worker
     restart: always
     depends_on:
-      - redis
-      - api
-
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
@@ -102,7 +112,8 @@ services:
     container_name: para-solver
     restart: always
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
