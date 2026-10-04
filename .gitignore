@@ -35,3 +35,4 @@ data/*
 .pytest_cache/
 .agents/
 skills-logs.json
+implementation-notes.md
