@@ -1,24 +1,24 @@
-# 🏛️ Архитектура системы «para»
+# 🏛️ Architecture Specification for «para»
 
-Техническая спецификация архитектуры, сквозных потоков данных (End-to-End Data Flow), объектных моделей и жизненного цикла распределенных процессов Telegram-бота группы, сервиса расписания и фоновых воркеров.
-
----
-
-## 📑 Содержание
-
-1. [Сквозная архитектура сервисов и системных контрактов](#1-сквозная-архитектура-сервисов-и-системных-контрактов)
-2. [Диаграмма классов, моделей и сервисных контрактов](#2-диаграмма-классов-моделей-и-сервисных-контрактов)
-3. [Сквозной процесс: Запрос и кэширование расписания](#3-сквозной-процесс-запрос-и-кэширование-расписания)
-4. [Сквозной процесс: Уведомления о парах и очистка топика](#4-сквозной-процесс-уведомления-о-парах-и-очистка-топика)
-5. [Сквозной процесс: Надежная очередь решения домашних заданий](#5-сквозной-процесс-надежная-очередь-решения-домашних-заданий)
-6. [Сквозной процесс: Электронная ведомость посещаемости (WOPI)](#6-сквозной-процесс-электронная-ведомость-посещаемости-wopi)
-7. [Модели сущностей и структура хранилища Redis](#7-модели-сущностей-и-структура-хранилища-redis)
+Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
 ---
 
-## 1. Сквозная архитектура сервисов и системных контрактов
+## 📑 Table of Contents
 
-Архитектурная схема описывает взаимодействие распределенных компонентов системы: точки входа запросов, диспетчеры, сервисы бизнес-логики, узлы оперативной памяти и внешние интеграции.
+1. [System Services Architecture & Core Contracts](#1-system-services-architecture--core-contracts)
+2. [Domain Models & Service Contracts Diagram](#2-domain-models--service-contracts-diagram)
+3. [End-to-End Flow: Schedule Query & L2 Caching](#3-end-to-end-flow-schedule-query--l2-caching)
+4. [End-to-End Flow: Bell Notifications & Topic Auto-Cleanup](#4-end-to-end-flow-bell-notifications--topic-auto-cleanup)
+5. [End-to-End Flow: Reliable AI Homework Solver Queue](#5-end-to-end-flow-reliable-ai-homework-solver-queue)
+6. [End-to-End Flow: Electronic Attendance Registry (WOPI)](#6-end-to-end-flow-electronic-attendance-registry-wopi)
+7. [Data Models & Redis Storage Structure](#7-data-models--redis-storage-structure)
+
+---
+
+## 1. System Services Architecture & Core Contracts
+
+The architecture diagram outlines the interaction between distributed system components: ingress gateways, dispatchers, business logic microservices, in-memory state stores, and external upstream integrations.
 
 ```mermaid
 classDiagram
@@ -84,32 +84,32 @@ classDiagram
         +write_disk_xlsx(path, data) bool
     }
 
-    TelegramGateway --> ScheduleApiService : HTTP GET расписание
-    TelegramGateway --> RedisStateManager : LPUSH очереди ДЗ
-    TelegramGateway --> WopiAttendanceService : POST старт сессии
-    TopicWorkerService --> ScheduleApiService : запрос пар на сегодня
-    TopicWorkerService --> RedisStateManager : проверка флагов и ZSET
-    TopicWorkerService --> TelegramGateway : публикация звонков
-    ScheduleApiService --> RedisStateManager : L2 кэш снимков
-    ScheduleApiService ..> KTMUProvider : парсинг при промахе кэша
-    HomeworkSolverService --> RedisStateManager : BLMOVE очереди ДЗ
-    HomeworkSolverService --> DeepSeekProvider : генерация решения
-    HomeworkSolverService --> TelegramGateway : отправка docx студенту
-    WopiAttendanceService --> RedisStateManager : валидация токенов
-    WopiAttendanceService --> YandexOfficeProvider : синхронизация таблицы
+    TelegramGateway --> ScheduleApiService : HTTP GET schedule
+    TelegramGateway --> RedisStateManager : LPUSH HW queue
+    TelegramGateway --> WopiAttendanceService : POST init session
+    TopicWorkerService --> ScheduleApiService : query today schedule
+    TopicWorkerService --> RedisStateManager : verify flags and ZSET
+    TopicWorkerService --> TelegramGateway : publish bell reminders
+    ScheduleApiService --> RedisStateManager : L2 snapshot cache
+    ScheduleApiService ..> KTMUProvider : parse upstream on cache miss
+    HomeworkSolverService --> RedisStateManager : BLMOVE HW queue
+    HomeworkSolverService --> DeepSeekProvider : generate step solution
+    HomeworkSolverService --> TelegramGateway : send docx to student
+    WopiAttendanceService --> RedisStateManager : token validation
+    WopiAttendanceService --> YandexOfficeProvider : spreadsheet sync
 ```
 
-### Принципы межсервисного взаимодействия
+### Architectural Principles
 
-1. **Изоляция очередей и диспетчеризации**: Шлюз Telegram не производит тяжелых вычислений и не ждет генерации файлов, а атомарно регистрирует задачу в очереди Redis (`LPUSH`).
-2. **L2-кэширование**: Сервис расписания изолирует сервер КТМУ, отдавая готовые структуры занятий из снимка Redis за `<2мс`.
-3. **Автономность воркеров**: Воркер топика и воркер решений ДЗ функционируют как независимые демоны, взаимодействуя с ботом через контракты очереди и вызовы сообщений.
+1. **Decoupled Ingress & Asynchronous Queuing**: The Telegram Gateway never blocks on compute-heavy tasks or document rendering. Inbound student homework is atomically placed onto Redis queues (`LPUSH`) and acknowledged instantly.
+2. **Multi-Tier L2 Snapshot Caching**: The Schedule API isolates upstream college infrastructure by serving pre-computed, group-filtered timetable snapshots directly from Redis memory in `<2ms`.
+3. **Autonomous Worker Daemons**: Background daemons (`Topic Worker` and `Homework Solver`) operate independently, relying on atomic primitives (`BLMOVE`, `ZRANGEBYSCORE`) to guarantee high availability and fault isolation.
 
 ---
 
-## 2. Диаграмма классов, моделей и сервисных контрактов
+## 2. Domain Models & Service Contracts Diagram
 
-Диаграмма описывает типизацию предметной области, структуру передаваемых ответов и контракты сервисов.
+This diagram specifies domain model typing, response payloads, service contracts, and inter-module dependencies across the application.
 
 ```mermaid
 classDiagram
@@ -212,31 +212,31 @@ classDiagram
         -calculate_current_call(now) dict
     }
 
-    DayScheduleResponse "1" *-- "many" Lesson : содержит
-    WeekScheduleResponse "1" *-- "many" DayScheduleResponse : содержит
-    ExamsResponse "1" *-- "many" ExamItem : содержит
+    DayScheduleResponse "1" *-- "many" Lesson : contains
+    WeekScheduleResponse "1" *-- "many" DayScheduleResponse : contains
+    ExamsResponse "1" *-- "many" ExamItem : contains
 
-    ApiClient ..> DayScheduleResponse : возвращает
-    ApiClient ..> WeekScheduleResponse : возвращает
-    ApiClient ..> TeachersResponse : возвращает
-    ApiClient ..> ExamsResponse : возвращает
+    ApiClient ..> DayScheduleResponse : returns
+    ApiClient ..> WeekScheduleResponse : returns
+    ApiClient ..> TeachersResponse : returns
+    ApiClient ..> ExamsResponse : returns
 
-    ScheduleParser ..> Lesson : парсит
-    ScheduleParser ..> RedisPool : L2 кэш
-    ScheduleParser ..> RedisCacheManager : сохранение снимка
+    ScheduleParser ..> Lesson : parses
+    ScheduleParser ..> RedisPool : L2 cache pool
+    ScheduleParser ..> RedisCacheManager : persists snapshot
 
-    TopicUpdater --> ApiClient : запрашивает расписание
-    TopicUpdater --> RedisCacheManager : флаги и очередь очистки
-    TopicUpdater ..> Lesson : выводит в топик
+    TopicUpdater --> ApiClient : requests schedule
+    TopicUpdater --> RedisCacheManager : flags and cleanup queue
+    TopicUpdater ..> Lesson : renders to topic
 
-    RedisCacheManager --> RedisPool : пул соединений
+    RedisCacheManager --> RedisPool : connection pool
 ```
 
 ---
 
-## 3. Сквозной процесс: Запрос и кэширование расписания
+## 3. End-to-End Flow: Schedule Query & L2 Caching
 
-Цепочка движения данных при запросе расписания пользователем или фоновым воркером. Процесс гарантирует холодный старт за `<2мс` за счет снимка в Redis.
+Pipeline describing data movement when students or background services request group schedules, guaranteeing cold starts under `<2ms`.
 
 ```mermaid
 classDiagram
@@ -283,24 +283,24 @@ classDiagram
         +fetch_raw_payload() dict
     }
 
-    DayScheduleResponse "1" *-- "many" Lesson : содержит
-    ApiClient ..> DayScheduleResponse : возвращает
-    ScheduleParser ..> Lesson : парсит
-    ScheduleParser --> RedisCacheManager : сохраняет и читает снимок
-    ScheduleParser ..> KTMUProvider : загружает при промахе
+    DayScheduleResponse "1" *-- "many" Lesson : contains
+    ApiClient ..> DayScheduleResponse : returns
+    ScheduleParser ..> Lesson : parses
+    ScheduleParser --> RedisCacheManager : reads and writes snapshot
+    ScheduleParser ..> KTMUProvider : downloads on cache miss
 ```
 
-### Логика движения данных в модуле расписания
+### Execution Flow & Data Lifecycle
 
-1. **Проверка L2-кэша**: При входящем вызове `get_day_schedule` парсер сначала проверяет ключ `sched:group:snapshot` в Redis. Если снимок существует и не просрочен, данные десериализуются за `<2мс` без сетевых вызовов.
-2. **Холодный старт**: При отсутствии ключа парсер обращается к серверу КТМУ, скачивает общий JSON-файл расписания (размером 40 МБ), производит фильтрацию по группе и валидацию полей в типизированные объекты `Lesson`.
-3. **Фиксация снимка**: Нормализованный JSON сохраняется в Redis с TTL 14400 секунд (4 часа), гарантируя мгновенные ответы для всех последующих обращений.
+1. **L2 Snapshot Verification**: When `get_day_schedule` is invoked, the parser immediately queries Redis key `sched:group:snapshot`. If the snapshot exists and is valid, structured timetable data is returned in `<2ms` without outbound networking.
+2. **Cold Start & Upstream Ingestion**: On cache misses, the parser requests the raw 40 MB timetable payload from KTMU servers, applies stream/subgroup filters, and extracts strongly typed `Lesson` objects.
+3. **Atomic Persistence**: The normalized JSON payload is persisted to Redis with a TTL of 14,400 seconds (4 hours), ensuring subsequent inquiries remain instant.
 
 ---
 
-## 4. Сквозной процесс: Уведомления о парах и очистка топика
+## 4. End-to-End Flow: Bell Notifications & Topic Auto-Cleanup
 
-Цепочка ежеминутного контроля времени звонков, предотвращения повторов и автоудаления временных сообщений.
+Execution cycle governing bell reminders, deduplication guards, and message lifecycles inside Telegram forum topics.
 
 ```mermaid
 classDiagram
@@ -335,22 +335,22 @@ classDiagram
         +delete_message(chat_id, msg_id) bool
     }
 
-    TopicUpdater --> RedisCacheManager : флаги отправки и очередь ZSET
-    TopicUpdater --> TelegramChat : отправка и удаление звонков
-    TopicUpdater ..> CallNotification : формирует
+    TopicUpdater --> RedisCacheManager : delivery flags and ZSET queue
+    TopicUpdater --> TelegramChat : sends and deletes bell alerts
+    TopicUpdater ..> CallNotification : builds notification
 ```
 
-### Логика мониторинга звонков и топика
+### Notification & Auto-Cleanup Logic
 
-1. **Идемпотентность отправки**: Каждую минуту воркер рассчитывает время до ближайшей пары. Если до звонка осталось ровно 10 минут, проверяется флаг `rem:sent:{group}:{date}:{period}:{type}`. При значении 0 выставляется ключ с TTL 2 часа, исключая повторные отправки при рестартах воркера.
-2. **Регистрация на автоудаление**: После успешной отправки уведомления ID сообщения помещается в Redis Sorted Set `topic:cleanup_messages` со score, равным `timestamp + 900` (15 минут).
-3. **Сборщик устаревших записей**: Раз в минуту выполняется `ZRANGEBYSCORE topic:cleanup_messages -inf {now}`, сообщения удаляются из чата через `deleteMessage`, а записи очищаются через `ZREM`.
+1. **Idempotent Bell Alerts**: Every 60 seconds, the worker inspects lesson intervals for the current day. If exactly 10 minutes remain before lesson start/end, it checks `rem:sent:{group}:{date}:{period}:{type}`. If unset, it sets the flag with a 2-hour TTL and posts the alert to the chat.
+2. **Expiration Scheduling**: Immediately after sending, the Telegram `message_id` is registered in Redis Sorted Set `topic:cleanup_messages` with a score equal to `timestamp + 900` (15 minutes).
+3. **Automated Message Purging**: Each minute, the daemon calls `ZRANGEBYSCORE topic:cleanup_messages -inf {now}`, removes expired messages via Telegram `deleteMessage`, and deletes the entries via `ZREM`.
 
 ---
 
-## 5. Сквозной процесс: Надежная очередь решения домашних заданий
+## 5. End-to-End Flow: Reliable AI Homework Solver Queue
 
-Паттерн **Reliable Queue**: исключает потерю задания студента при аварийном завершении воркера благодаря атомарному разделению очередей `queue` и `processing`.
+Implementation of the **Reliable Queue** pattern guaranteeing **At-Least-Once** task execution via atomic list transitions.
 
 ```mermaid
 classDiagram
@@ -388,23 +388,23 @@ classDiagram
         +solve_task_prompt(task_text, image_b64) str
     }
 
-    SolverWorker --> RedisCacheManager : BLMOVE и LREM очереди
-    SolverWorker ..> HomeworkTask : извлекает из JSON
-    SolverWorker --> DeepSeekClient : пошаговое решение
-    SolverWorker --> DocxParser : собирает Word по ГОСТ
+    SolverWorker --> RedisCacheManager : BLMOVE and LREM queue operations
+    SolverWorker ..> HomeworkTask : deserializes JSON
+    SolverWorker --> DeepSeekClient : requests step reasoning
+    SolverWorker --> DocxParser : compiles GOST Word document
 ```
 
-### Надежная обработка задач генерации решений
+### Reliable Task Processing
 
-1. **Атомарный захват (`BLMOVE`)**: Воркер извлекает задачу из `hw:tasks:queue` и одновременно помещает в `hw:tasks:processing`. Если контейнер воркера перезапустится в момент генерации, задача не будет потеряна.
-2. **Восстановление при старте**: Функция `recover_stale_hw_tasks` при инициализации сервиса возвращает зависшие задачи из `processing` обратно в `queue` через `RPOPLPUSH`.
-3. **Генерация по ГОСТ**: Модуль генерации оформляет текст и формулы в `.docx` с соблюдением стандартов (шрифт Times New Roman 14, поля 30-15-20-20 мм, нумерация страниц). После отправки документа в Telegram воркер подтверждает выполнение вызовом `LREM`.
+1. **Atomic Ingestion (`BLMOVE`)**: The consumer extracts tasks from `hw:tasks:queue` and simultaneously moves them to `hw:tasks:processing`. If the container crashes mid-computation, the task remains preserved in `processing`.
+2. **Daemon Crash Recovery**: On startup, `recover_stale_hw_tasks` safely relocates any orphaned tasks from `processing` back to `queue` via atomic `RPOPLPUSH`.
+3. **GOST Academic Formatting**: Solved Markdown formulas are translated into Microsoft Word `.docx` documents adhering strictly to Russian academic GOST formatting (Times New Roman 14pt, 1.5 line spacing, 30-15-20-20 mm margins). The task is acknowledged via `LREM` only after document delivery.
 
 ---
 
-## 6. Сквозной процесс: Электронная ведомость посещаемости (WOPI)
+## 6. End-to-End Flow: Electronic Attendance Registry (WOPI)
 
-Сквозная цепочка взаимодействия старосты, Telegram-бота, бэкенда и облачного редактора Яндекс Документов по стандарту WOPI.
+Data flow bridging the group administrator, Telegram Bot, FastAPI backend, and Yandex Documents cloud office via the WOPI standard.
 
 ```mermaid
 classDiagram
@@ -443,87 +443,87 @@ classDiagram
         +PutFile(access_token, content) bool
     }
 
-    WopiController --> RedisCacheManager : валидация сессий
-    WopiController --> YandexDiskClient : чтение и запись xlsx
-    WopiController ..> AttendanceSession : парсит сессию
-    YandexDocsEditor --> WopiController : WOPI REST протокол
+    WopiController --> RedisCacheManager : session token validation
+    WopiController --> YandexDiskClient : reads and writes xlsx
+    WopiController ..> AttendanceSession : parses session context
+    YandexDocsEditor --> WopiController : WOPI REST protocol
 ```
 
-### Жизненный цикл сессии ведомости
+### WOPI Session Lifecycle
 
-1. **Инициализация сессии**: При нажатии старостой кнопки бот создает токен доступа и сохраняет сессию в Redis `att:session:{id}` с TTL 3600с.
-2. **Интеграция с редактором**: Яндекс Документы обращаются к эндпоинтам контроллера:
-   - `CheckFileInfo`: подтверждение прав доступа и структуры файла;
-   - `GetFile`: загрузка исходной таблицы `.xlsx` с Яндекс Диска;
-   - `PutFile`: сохранение измененного бинарного файла обратно в хранилище.
-3. **Фиксация отметки**: После успешного закрытия файла выставляется флаг `att:committed:{group}:{date}:{period}`, подтверждающий учет посещаемости за пару.
+1. **Session Provisioning**: When the admin clicks "Mark Attendance", the bot issues a secure access token and creates a session in Redis `att:session:{id}` with a 1-hour TTL.
+2. **Cloud Office Interaction**: Yandex Documents connects to the backend:
+   - `CheckFileInfo`: verifies write permissions, user identity, and spreadsheet metadata;
+   - `GetFile`: streams the binary `.xlsx` spreadsheet loaded from Yandex Disk;
+   - `PutFile`: receives and updates the modified spreadsheet directly back to Yandex Disk storage.
+3. **Commit Notification**: Upon successful saving, the backend flags `att:committed:{group}:{date}:{period}` and notifies the group admin in Telegram.
 
 ---
 
-## 7. Модели сущностей и структура хранилища Redis
+## 7. Data Models & Redis Storage Structure
 
-### Диаграмма сущностей предметной области (ERD)
+### Entity Relationship Diagram (ERD)
 
 ```mermaid
 erDiagram
-    DAY_SCHEDULE ||--|{ LESSON : "содержит пары дня"
-    DAY_SCHEDULE ||--o{ ATTENDANCE_RECORD : "содержит отметки"
+    DAY_SCHEDULE ||--|{ LESSON : "contains day lessons"
+    DAY_SCHEDULE ||--o{ ATTENDANCE_RECORD : "contains records"
 
     DAY_SCHEDULE {
-        date date PK "Дата занятий"
-        string weekday "День недели"
-        string group_name "Название группы"
+        date date PK "Lesson date"
+        string weekday "Day of week"
+        string group_name "Group identifier"
     }
 
     LESSON {
-        int period PK "Номер слота (0-5)"
-        string time_str "Время пары"
-        string subject "Дисциплина"
-        string lesson_type "Тип (Лек / Пр / Лаб)"
-        string teacher "Преподаватель"
-        boolean is_remote "Дистанционный формат"
-        string room "Аудитория"
-        string address "Корпус"
-        int subgroup "Подгруппа (0 - вся группа)"
+        int period PK "Slot number (0-5)"
+        string time_str "Time interval"
+        string subject "Discipline title"
+        string lesson_type "Type (Lecture / Lab / Practice)"
+        string teacher "Teacher full name"
+        boolean is_remote "Remote format flag"
+        string room "Classroom number"
+        string address "Campus address"
+        int subgroup "Subgroup (0 - whole group)"
     }
 
     ATTENDANCE_RECORD {
-        int id PK "Идентификатор"
-        string student_name "ФИО студента"
-        date date "Дата пары"
-        int period "Номер пары"
-        string status "Отметка (Н, Б, У)"
+        int id PK "Record identifier"
+        string student_name "Student full name"
+        date date "Lesson date"
+        int period "Period number"
+        string status "Attendance status"
     }
 
     EXAM_ITEM {
-        int id PK "Идентификатор"
-        string subject "Предмет"
-        string exam_type "Форма контроля"
-        string teacher "Преподаватель"
-        string room "Аудитория"
-        string weeks "Номера учебных недель"
+        int id PK "Exam identifier"
+        string subject "Subject name"
+        string exam_type "Assessment type"
+        string teacher "Instructor name"
+        string room "Exam room"
+        string weeks "Academic weeks"
     }
 
     BIRTHDAY_RECORD {
-        string student_name PK "ФИО студента"
-        string birthdate "День рождения (DD.MM)"
-        bigint tg_id "Telegram ID"
+        string student_name PK "Student full name"
+        string birthdate "Birthdate (DD.MM)"
+        bigint tg_id "Telegram user ID"
     }
 ```
 
 ---
 
-### Реестр ключей хранилища Redis
+### Redis Key Registry & Storage Lifecycle
 
-Таблица описывает все ключи, используемые в системе, их тип данных, время жизни и происхождение данных:
+Comprehensive registry of all Redis keys, data structures, expiration policies, and lifecycle producers/consumers:
 
-| Ключ / Шаблон ключа | Тип структуры | Время жизни (TTL) | Откуда поступает | Куда передается / Назначение |
+| Key / Key Pattern | Data Structure | TTL | Source / Producer | Consumer / Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| `sched:group:snapshot` | String (JSON) | 4 часа | Сервер КТМУ (после нормализации) | Сервис расписания: отдает готовые данные за `<2мс` без повторного разбора файлов |
-| `hw:tasks:queue` | List (FIFO) | Бессрочно | Telegram-бот от студентов | Воркер решений: очередь входящих заданий на решение |
-| `hw:tasks:processing` | List | Бессрочно | Очередь `hw:tasks:queue` (через `BLMOVE`) | Воркер решений: изоляция задачи на время генерации. Удаляется после успешной отправки |
-| `topic:cleanup_messages` | Sorted Set (ZSET) | Динамический | Сервис топика при отправке напоминания | Сервис топика: сборщик устаревших сообщений каждые 60с по истечении 15 минут |
-| `rem:sent:{group}:{date}:{period}:{type}` | String (флаг) | 2 часа | Сервис топика перед отправкой звонка | Предотвращение дублирования сообщений при частых перезапусках сервисов |
-| `att:session:{session_id}` | String (JSON) | 1 час | Бэкенд при нажатии старостой кнопки | Редактор Яндекс Документов: валидация временного доступа по стандарту WOPI |
-| `att:committed:{group}:{date}:{period}` | String (флаг) | 24 часа | WOPI-контроллер после сохранения таблицы | Бот и сервисы: статус того, что староста зафиксировал посещаемость на пару |
-| `topic:schedule_msg_id:{group}` | String (int) | Бессрочно | Бот при первой публикации расписания | Сервис топика: ID главного закрепленного сообщения для обновления на месте |
+| `sched:group:snapshot` | String (JSON) | 4 hours | KTMU Server (post-normalization) | Schedule API: serves group schedule in `<2ms` without raw file parsing |
+| `hw:tasks:queue` | List (FIFO) | Indefinite | Telegram Bot (students) | Homework Solver: inbound queue of homework tasks |
+| `hw:tasks:processing` | List | Indefinite | `hw:tasks:queue` (via `BLMOVE`) | Homework Solver: in-flight task isolation. Purged via `LREM` upon delivery |
+| `topic:cleanup_messages` | Sorted Set (ZSET) | Dynamic | Topic Service on alert dispatch | Topic Service: scheduled message collector purged every 60s past 15 min |
+| `rem:sent:{group}:{date}:{period}:{type}` | String (flag) | 2 hours | Topic Service before alert dispatch | Bell alert deduplication guard preventing repeats across worker restarts |
+| `att:session:{session_id}` | String (JSON) | 1 hour | Backend on headman action | Yandex Documents: ephemeral token validation following WOPI standard |
+| `att:committed:{group}:{date}:{period}` | String (flag) | 24 hours | WOPI controller on save | Bot & Worker: confirmation flag that attendance was marked for the lesson |
+| `topic:schedule_msg_id:{group}` | String (int) | Indefinite | Bot on initial timetable post | Topic Service: pinned main schedule message ID updated in-place |
