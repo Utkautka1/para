@@ -84,70 +84,89 @@ def _build_student_item(fio: str, data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _build_topic_header(pulse: float, total: int, g_cnt: int, s_cnt: int, r_cnt: int) -> str:
-    """Формирует презентабельную шапку академического дашборда группы."""
+def _build_compact_topic_header(pulse: float, total: int, p_cnt: int, d_cnt: int) -> str:
+    """Формирует презентабельную компактную шапку дашборда группы."""
     return (
-        "📊 <b>ДАШБОРД ПОСЕЩАЕМОСТИ • 1-КПД-3</b>\n"
+        "📊 <b>ПОСЕЩАЕМОСТЬ • 1-КПД-3</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👥 <b>Студентов:</b> {total}  •  📈 <b>Пульс группы:</b> <b>{pulse:.1f}%</b>\n"
-        f"🏆 Лидеры: <b>{g_cnt}</b>  •  ⚡️ В норме: <b>{s_cnt}</b>  •  🚨 Риск: <b>{r_cnt}</b>\n"
+        f"👥 Всего: <b>{total}</b>  •  📈 Пульс: <b>{pulse:.1f}%</b>\n"
+        f"✨ Без пропусков: <b>{p_cnt}</b>  •  ⚠️ С пропусками: <b>{d_cnt}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     )
 
 
-def _format_league_line(s: Dict[str, Any], icon: str) -> str:
-    """Формирует ультра-компактную однострочную запись студента."""
-    bar = make_progress_bar(s["pct"])
-    marks = _format_compact_marks(s["p"], s["o"], s["u"], s["n"])
+def _decline_absence(n: int) -> str:
+    """Склоняет слово 'прогул' по грамматическим правилам русского языка."""
+    if 11 <= (n % 100) <= 14:
+        return f"{n} прогулов"
+    rem = n % 10
+    if rem == 1:
+        return f"{n} прогул"
+    if 2 <= rem <= 4:
+        return f"{n} прогула"
+    return f"{n} прогулов"
+
+
+def _format_debt_details(s: Dict[str, Any]) -> str:
+    """Формирует понятный список причин (прогулы, опоздания, справки)."""
+    parts = []
+    if s["n"] > 0:
+        parts.append(_decline_absence(s["n"]))
+    if s["o"] > 0:
+        parts.append(f"{s['o']} оп.")
+    if s["u"] > 0:
+        parts.append(f"{s['u']} по справке")
+    return ", ".join(parts) if parts else "без замечаний"
+
+
+def _format_debt_student(s: Dict[str, Any]) -> str:
+    """Формирует строку студента, имеющего пропуски или опоздания."""
+    details = _format_debt_details(s)
     clean_fio = html.escape(s["fio"])
-    return f"{icon} <b>{clean_fio}</b> · <b>{s['pct']:.0f}%</b> {bar} ({marks})"
+    if s["pct"] == 0 or s["n"] >= 12:
+        icon = "⛔️"
+    elif s["n"] >= 5:
+        icon = "🚨"
+    else:
+        icon = "•"
+    return f"{icon} <b>{clean_fio}</b> — <b>{s['pct']:.0f}%</b> ({details})"
 
 
-def _build_league_block(
-    title: str, students: List[Dict[str, Any]], is_gold: bool = False, is_risk: bool = False
-) -> List[str]:
-    """Формирует визуальный блок отдельной лиги студентов."""
-    if not students:
-        return []
-    lines = [f"\n{title}"]
-    for idx, s in enumerate(students, 1):
-        if is_gold:
-            icon = "🥇" if idx == 1 else ("🥈" if idx == 2 else ("🥉" if idx == 3 else "•"))
-        elif is_risk:
-            icon = "⛔️" if s["pct"] == 0 else "⚠️"
-        else:
-            icon = "•"
-        lines.append(_format_league_line(s, icon))
-    return lines
+def _format_perfect_student(s: Dict[str, Any]) -> str:
+    """Формирует аккуратную строку отличника без лишнего визуального шума."""
+    clean_fio = html.escape(s["fio"])
+    if s["u"] > 0:
+        return f"• <b>{clean_fio}</b> <i>({s['u']} по справке)</i>"
+    return f"• <b>{clean_fio}</b>"
 
 
 def _build_topic_footer() -> str:
-    """Формирует подвал сообщения с легендой обозначений и временем обновления."""
+    """Формирует подвал сообщения со ссылкой на ЛС и временем обновления."""
     now_str = datetime.now(TIMEZONE).strftime("%H:%M")
     return (
         "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>П — был, оп — опоздал, У — по справке, Н — прогул.</i>\n"
-        "📱 <i>Личная статистика и срез: /my_attendance в ЛС</i>\n"
+        "📱 <i>Личная статистика и срез по датам: /my_attendance в ЛС</i>\n"
         f"⏱ <i>Обновлено: {now_str} МСК</i>"
     )
 
 
 def format_attendance_topic_message(stats: Dict[str, Dict[str, Any]]) -> str:
-    """Форматирует стильный академический дашборд рейтинга посещаемости."""
+    """Формирует дашборд с компактным блоком отличников и журналом долгов."""
     if not stats:
-        header = _build_topic_header(0.0, 0, 0, 0, 0)
+        header = _build_compact_topic_header(0.0, 0, 0, 0)
         return header + "<i>Данные журнала посещаемости загружаются...</i> ⏳"
     items = [_build_student_item(fio, d) for fio, d in stats.items()]
-    items.sort(key=lambda s: (-s["pct"], s["n"], -s["p"], s["fio"]))
-    gold = [s for s in items if s["pct"] >= 90]
-    silver = [s for s in items if 60 <= s["pct"] < 90]
-    risk = [s for s in items if s["pct"] < 60]
-    avg_pulse = sum(s["pct"] for s in items) / len(items) if items else 0.0
-    header = _build_topic_header(avg_pulse, len(items), len(gold), len(silver), len(risk))
-    lines = [header.rstrip()]
-    lines.extend(_build_league_block("🏆 <b>ЗОЛОТАЯ ЛИГА (90–100%)</b>", gold, is_gold=True))
-    lines.extend(_build_league_block("⚡️ <b>СЕРЕБРЯНАЯ ЛИГА (60–89%)</b>", silver))
-    lines.extend(_build_league_block("🚨 <b>ЗОНА РИСКА (МЕНЕЕ 60%)</b>", risk, is_risk=True))
+    perfect = [s for s in items if s["n"] == 0 and s["o"] == 0]
+    debts = [s for s in items if s["n"] > 0 or s["o"] > 0]
+    perfect.sort(key=lambda s: s["fio"])
+    debts.sort(key=lambda s: (-s["pct"], -s["n"], s["fio"]))
+    pulse = sum(s["pct"] for s in items) / len(items) if items else 0.0
+    header = _build_compact_topic_header(pulse, len(items), len(perfect), len(debts))
+    lines = [header.rstrip(), "\n🏆 <b>БЕЗ ПРОПУСКОВ (100%):</b>"]
+    lines.extend(_format_perfect_student(s) for s in perfect)
+    if debts:
+        lines.append("\n⚠️ <b>ЖУРНАЛ ПРОПУСКОВ И ОПОЗДАНИЙ:</b>")
+        lines.extend(_format_debt_student(s) for s in debts)
     lines.append(_build_topic_footer())
     return "\n".join(lines)
 
