@@ -26,6 +26,14 @@ data/*
 !data/birthday_wishes.json
 !data/starosta_wishes.json
 !data/custom_teachers.json
+!data/bot/
+!data/bot/.gitkeep
+!data/bot/birthdays.json
+!data/bot/birthday_wishes.json
+!data/bot/starosta_wishes.json
+!data/bot/custom_teachers.json
+!data/api/
+!data/api/.gitkeep
 
 # IDE files
 .idea/

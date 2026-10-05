@@ -22,13 +22,15 @@ async def unauth_fallback(message: Message) -> None:
 
     Пропускает авторизованных студентов и главного администратора.
     """
-    if message.from_user and not is_authorized_user(message.from_user):
-        log.warning(
-            f"⛔ Доступ ограничен для стороннего пользователя: "
-            f"id={message.from_user.id}, username=@{message.from_user.username}"
-        )
+    user = message.from_user
+    if user and not is_authorized_user(user):
+        uid = user.id
+        uname = f"@{user.username}" if user.username else "нет username"
+        log.warning(f"⛔ Доступ ограничен: id={uid}, username={uname}")
         await message.answer(
             "⛔ <b>Доступ ограничен.</b>\n"
-            "Этот бот работает исключительно для студентов группы 1-КПД-3."
+            "Этот бот работает исключительно для студентов группы 1-КПД-3.\n\n"
+            f"Ваш Telegram ID: <code>{uid}</code>\n"
+            "<i>Если вы учитесь в 1-КПД-3, но не можете войти — отправьте этот ID старосте.</i>"
         )
 
