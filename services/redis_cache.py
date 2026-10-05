@@ -4,9 +4,10 @@
 Отвечает за сохранение и извлечение кэшированных данных кнопок бота.
 """
 
+from contextlib import asynccontextmanager
 import json
 import time
-from typing import List, Optional, Tuple
+from typing import AsyncGenerator, List, Optional, Tuple
 from config import ALLOWED_USER_ID, REDIS_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from core.redis import init_redis
@@ -302,5 +303,29 @@ async def get_expired_messages_for_cleanup() -> List[Tuple[int, int]]:
     except Exception as e:
         log.error(f"Ошибка извлечения сообщений для очистки: {e}")
     return results
+
+
+@asynccontextmanager
+async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
+    """
+    Асинхронный распределенный лок Redis с автоматическим освобождением.
+
+    Предотвращает одновременную работу bot и worker над общими ресурсами.
+    """
+    client = await init_redis()
+    acquired = False
+    if client:
+        try:
+            acquired = bool(await client.set(key, "1", nx=True, ex=ttl))
+        except Exception as e:
+            log.warning(f"Ошибка захвата лока Redis ({key}): {e}")
+    try:
+        yield acquired
+    finally:
+        if acquired and client:
+            try:
+                await client.delete(key)
+            except Exception as e:
+                log.debug(f"Ошибка освобождения лока Redis ({key}): {e}")
 
 

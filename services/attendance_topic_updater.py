@@ -14,10 +14,17 @@ import html
 from typing import Any, Dict, List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
-from config import ATTENDANCE_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
+from config import (
+    ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS,
+    ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS,
+    ATTENDANCE_TOPIC_THREAD_ID,
+    TIMEZONE,
+    TOPIC_CHAT_ID,
+)
 from core.bot import bot
 from core.logger import get_logger
 from services.attendance_stats import fetch_all_time_attendance
+from services.redis_cache import redis_lock
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("att_topic_updater")
@@ -43,10 +50,10 @@ def make_progress_bar(pct: float) -> str:
 
 
 def _format_compact_marks(p: int, o: int, u: int, n: int) -> str:
-    """Формирует компактную строку отметок без лишних нулей."""
+    """Формирует понятные отметки, исключая оптическую иллюзию 1О -> 10."""
     parts = [f"{p}П"]
     if o > 0:
-        parts.append(f"{o}О")
+        parts.append(f"{o} оп")
     if u > 0:
         parts.append(f"{u}У")
     parts.append(f"{n}Н")
@@ -67,7 +74,9 @@ def _build_student_item(fio: str, data: Dict[str, Any]) -> Dict[str, Any]:
     p, o = tot.get("П", 0), tot.get("О", 0)
     u, n = tot.get("У", 0), tot.get("Н", 0)
     total_classes = p + o + u + n
-    pct = (p / total_classes * 100.0) if total_classes > 0 else 0.0
+    # Уважительная причина (У) — официальный пропуск по справке, не снижает процент
+    valid_classes = p + o + u
+    pct = (valid_classes / total_classes * 100.0) if total_classes > 0 else 100.0
     return {
         "fio": extract_short_fio(fio),
         "p": p, "o": o, "u": u, "n": n,
@@ -113,11 +122,13 @@ def _build_league_block(
 
 
 def _build_topic_footer() -> str:
-    """Формирует подвал сообщения с легендой обозначений."""
+    """Формирует подвал сообщения с легендой обозначений и временем обновления."""
+    now_str = datetime.now(TIMEZONE).strftime("%H:%M")
     return (
         "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>П — был, О — опоздал, У — уважительная, Н — прогул.</i>\n"
-        "📱 <i>Личная статистика и срез по месяцам: /my_attendance в ЛС</i>"
+        "💡 <i>П — был, оп — опоздал, У — по справке, Н — прогул.</i>\n"
+        "📱 <i>Личная статистика и срез: /my_attendance в ЛС</i>\n"
+        f"⏱ <i>Обновлено: {now_str} МСК</i>"
     )
 
 
@@ -127,7 +138,7 @@ def format_attendance_topic_message(stats: Dict[str, Dict[str, Any]]) -> str:
         header = _build_topic_header(0.0, 0, 0, 0, 0)
         return header + "<i>Данные журнала посещаемости загружаются...</i> ⏳"
     items = [_build_student_item(fio, d) for fio, d in stats.items()]
-    items.sort(key=lambda s: (-s["pct"], s["n"], s["fio"]))
+    items.sort(key=lambda s: (-s["pct"], s["n"], -s["p"], s["fio"]))
     gold = [s for s in items if s["pct"] >= 90]
     silver = [s for s in items if 60 <= s["pct"] < 90]
     risk = [s for s in items if s["pct"] < 60]
@@ -217,25 +228,38 @@ async def recreate_attendance_topic_message() -> bool:
 
 
 async def sync_attendance_topic_message(force_refresh: bool = False) -> bool:
-    """Синхронизирует данные из таблицы и обновляет сообщение в топике."""
+    """Синхронизирует данные из таблицы и обновляет сообщение в топике с локом."""
     global _ATT_MAIN_MSG_ID
     if _ATT_MAIN_MSG_ID is None:
         _ATT_MAIN_MSG_ID = load_attendance_topic_state()
-    try:
-        stats = await fetch_all_time_attendance(force_refresh=force_refresh)
-        text = format_attendance_topic_message(stats)
-        return await send_or_edit_attendance_msg(text)
-    except Exception as e:
-        log.error(f"Ошибка синхронизации реестра посещаемости: {e}")
-        return False
+    async with redis_lock("att:lock:topic_sync", ttl=20) as acquired:
+        if not acquired:
+            log.debug("Синхронизация топика посещаемости пропущена: занят лок")
+            return False
+        try:
+            stats = await fetch_all_time_attendance(force_refresh=force_refresh)
+            text = format_attendance_topic_message(stats)
+            return await send_or_edit_attendance_msg(text)
+        except Exception as e:
+            log.error(f"Ошибка синхронизации реестра посещаемости: {e}")
+            return False
+
+
+def _get_attendance_sync_sleep_seconds() -> int:
+    """Определяет интервал: 3 мин в учебные часы (08-19), иначе 15 мин."""
+    now = datetime.now(TIMEZONE)
+    if 8 <= now.hour < 19 and now.weekday() < 6:
+        return ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS
+    return ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS
 
 
 async def attendance_topic_sync_loop() -> None:
-    """Фоновый цикл авто-обновления топика посещаемости каждые 15 минут."""
-    log.info("Запущен фоновый сервис авто-обновления топика Посещаемость (15 мин)")
+    """Фоновый цикл авто-обновления топика с адаптивным интервалом."""
+    log.info("Запущен адаптивный фоновый сервис авто-обновления топика Посещаемость")
     while True:
         try:
             await sync_attendance_topic_message(force_refresh=False)
         except Exception as e:
             log.error(f"Ошибка в цикле attendance_topic_sync_loop: {e}")
-        await asyncio.sleep(900)
+        sleep_sec = _get_attendance_sync_sleep_seconds()
+        await asyncio.sleep(sleep_sec)

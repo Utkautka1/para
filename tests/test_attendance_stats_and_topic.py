@@ -108,10 +108,11 @@ def test_find_student_attendance():
 
 
 def test_calculate_attendance_percent():
-    """Проверяет вычисление процентов посещаемости."""
-    assert _calculate_attendance_percent(0, 0) == "100.0%"
-    assert _calculate_attendance_percent(8, 10) == "80.0%"
-    assert _calculate_attendance_percent(9, 11) == "81.8%"
+    """Проверяет вычисление процентов посещаемости с учетом У и О."""
+    assert _calculate_attendance_percent(0, 0, 0, 0) == "100.0%"
+    assert _calculate_attendance_percent(8, 0, 0, 10) == "80.0%"
+    # 4П + 0О + 7У из 12 пар = 11/12 = 91.7%
+    assert _calculate_attendance_percent(4, 0, 7, 12) == "91.7%"
 
 
 def test_format_personal_month_breakdown():
@@ -134,8 +135,8 @@ def test_format_personal_attendance_card():
     }
     card = format_personal_attendance_card("Барчугова Ева", data)
     assert "Барчугова Ева" in card
-    assert "✅ 15" in card
-    assert "83.3%" in card
+    assert "✅ Присутствовал: <b>15</b>" in card
+    assert "88.9%" in card
 
 
 def test_shorten_fio_and_progress_bar():
@@ -156,12 +157,22 @@ def test_format_attendance_topic_message():
     stats = {
         "Базаров Аюр Этигэлович": {"total": {"П": 2, "О": 0, "У": 0, "Н": 11}},
         "Барчугова Ева Алексеевна": {"total": {"П": 9, "О": 1, "У": 0, "Н": 2}},
+        "Мухамадеев Артём": {"total": {"П": 4, "О": 0, "У": 7, "Н": 1}},
     }
     msg = format_attendance_topic_message(stats)
     assert "Базаров Аюр" in msg
     assert "Барчугова Ева" in msg
-    assert "Пульс группы:" in msg
+    assert "Мухамадеев Артём" in msg
+    assert "1 оп" in msg  # не '1О' (чтобы не путать с 10)
+    assert "ЗОЛОТАЯ ЛИГА" in msg
     assert "ЗОНА РИСКА" in msg
+
+    # Проверяем, что Мухамадеев в Золотой лиге (92%), а не в Зоне риска
+    gold_part = msg.split("ЗОЛОТАЯ ЛИГА")[1].split("СЕРЕБРЯНАЯ ЛИГА")[0]
+    risk_part = msg.split("ЗОНА РИСКА")[1]
+    assert "Мухамадеев Артём" in gold_part
+    assert "Мухамадеев Артём" not in risk_part
+
 
 
 def test_topic_state_storage(tmp_path):
@@ -220,3 +231,38 @@ async def test_admin_att_topic_callbacks():
         await cb_admin_force_att_topic(cb)
         await cb_admin_recreate_att_topic(cb)
         assert cb.message.edit_text.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_optimistic_update_and_deduplication():
+    """Проверяет оптимистичное обновление и защиту от задвоения отметок."""
+    from services.attendance_stats import apply_session_optimistic_update
+    from services.attendance_manager import AttendanceSession
+
+    initial_stats = {
+        "Базаров Аюр": {"fio": "Базаров Аюр", "total": {"П": 5, "О": 0, "У": 0, "Н": 1}, "months": {}},
+    }
+    session = AttendanceSession(
+        target_date="2026-10-05", lesson_num=1, lesson_title="Физика",
+        students=[(5, "Базаров Аюр")], marks={"5": "П"}, initiator_id=123,
+    )
+    with patch("services.attendance_stats.fetch_all_time_attendance", return_value=initial_stats), \
+         patch("services.attendance_stats._get_saved_lesson_marks", return_value={}), \
+         patch("services.attendance_stats._save_lesson_marks", AsyncMock()), \
+         patch("services.attendance_stats._save_to_redis_cache", AsyncMock()):
+        updated = await apply_session_optimistic_update(session)
+        assert updated["Базаров Аюр"]["total"]["П"] == 6
+
+
+@pytest.mark.asyncio
+async def test_redis_lock_context():
+    """Проверяет захват и освобождение распределенного лока Redis."""
+    from services.redis_cache import redis_lock
+    mock_redis = AsyncMock()
+    mock_redis.set.return_value = True
+    mock_redis.delete.return_value = 1
+    with patch("services.redis_cache.init_redis", return_value=mock_redis):
+        async with redis_lock("test:key", ttl=10) as acquired:
+            assert acquired is True
+        mock_redis.set.assert_called_once()
+        mock_redis.delete.assert_called_once()

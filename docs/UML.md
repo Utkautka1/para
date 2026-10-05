@@ -483,6 +483,7 @@ classDiagram
         +fetch_all_time_attendance(force_refresh) dict
         +parse_workbook_attendance(workbook) dict
         +find_student_attendance(stats, target_name) dict
+        +apply_session_optimistic_update(session) dict
         +invalidate_attendance_stats_cache() void
     }
 
@@ -498,7 +499,7 @@ classDiagram
     WopiController ..> AttendanceSession : parses session context
     YandexDocsEditor --> WopiController : WOPI REST protocol
     AttendanceTopicUpdater --> AttendanceStatsService : requests aggregated metrics
-    AttendanceTopicUpdater --> RedisCacheManager : caches snapshot
+    AttendanceTopicUpdater --> RedisCacheManager : caches snapshot and acquires redis_lock
     AttendanceStatsService --> YandexDiskClient : downloads workbook sheets
 ```
 
@@ -509,9 +510,9 @@ classDiagram
    - `CheckFileInfo`: verifies write permissions, user identity, and spreadsheet metadata;
    - `GetFile`: streams the binary `.xlsx` spreadsheet loaded from Yandex Disk;
    - `PutFile`: receives and updates the modified spreadsheet directly back to Yandex Disk storage.
-3. **Optimistic Non-Blocking Commit**: Upon completing attendance input in the Telegram UI, the admin immediately receives the session summary and a pending sync badge (`⏳ Синхронизация...`). An asynchronous task (`_async_commit_and_update`) persists records to the Yandex Table and updates the message in place (`✅ Успешно сохранено`).
-4. **All-Time Multi-Month Tally**: `AttendanceStatsService` scans all historical monthly sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`...), aggregates cumulative counts (`П`, `О`, `У`, `Н`) for each student, and stores the structured result in Redis (`att:stats:all_time`) with a 1-hour TTL.
-5. **Real-Time Topic Registry (Thread ID 7025)**: `AttendanceTopicUpdater` maintains an idempotent pinned message in the dedicated Telegram Topic containing the full group ranking and visual status badges (`✅`, `⏰`, `📋`, `❌`). On each successful admin commit or button press (`att_topic:refresh`), the topic message updates automatically.
+3. **Instant Optimistic UI & Non-Blocking Commit**: Upon completing attendance input in the Telegram UI, `apply_session_optimistic_update` immediately adjusts student metrics in Redis and updates the Telegram Topic message within ~1s. An asynchronous task (`_async_commit_and_update`) persists records to the Yandex Table, followed by a delayed 15s settling pass.
+4. **All-Time Multi-Month Tally**: `AttendanceStatsService` scans all historical monthly sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`...), aggregates cumulative counts (`П`, `О`, `У`, `Н`) for each student, and stores the structured result in Redis (`att:stats:all_time`) with a 1-hour TTL. Excused absences (`У`) are considered legitimate and do not lower the academic percentage.
+5. **Academic Leagues Dashboard (Thread ID 7025)**: `AttendanceTopicUpdater` maintains an idempotent pinned message in the dedicated Telegram Topic containing the full group ranking divided into 3 Academic Leagues (Gold 90-100%, Silver 60-89%, Risk Zone <60%), clean single-line rows without line-wrapping, and progress bars. Late arrivals are formatted as `N оп` to eliminate optical confusion with the number 10. Background sync adapts between 3 min (daytime 08-19) and 15 min (night).
 6. **Student Self-Service (`/my_attendance`)**: Students can check their private cumulative record and percentage of attendance in PM without group disclosure.
 
 ---

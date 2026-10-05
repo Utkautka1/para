@@ -9,7 +9,7 @@
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -141,3 +141,47 @@ def find_student_attendance(
             if last_name in fio.lower():
                 return data
     return None
+
+
+def _adjust_student_counts(stat: Dict[str, Any], old_mark: Optional[str], new_mark: str) -> None:
+    """Корректирует счетчики студента с учетом замены старой отметки на новую."""
+    tot = stat.setdefault("total", {"П": 0, "О": 0, "У": 0, "Н": 0})
+    if old_mark and old_mark in tot and tot[old_mark] > 0:
+        tot[old_mark] -= 1
+    if new_mark in tot:
+        tot[new_mark] += 1
+
+
+async def _get_saved_lesson_marks(t_date: str, l_num: int) -> Dict[str, str]:
+    """Считывает ранее сохраненный срез отметок пары из Redis."""
+    raw = await cache_get(f"att:marks:{t_date}:{l_num}")
+    if not raw:
+        return {}
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {}
+
+
+async def _save_lesson_marks(t_date: str, l_num: int, marks: Dict[str, str]) -> None:
+    """Сохраняет срез отметок пары в Redis на 30 дней для защиты от задвоений."""
+    payload = json.dumps(marks, ensure_ascii=False)
+    await cache_set(f"att:marks:{t_date}:{l_num}", payload, ttl=2592000)
+
+
+async def apply_session_optimistic_update(session: Any) -> Dict[str, Dict[str, Any]]:
+    """Мгновенно обновляет кэш статистики в Redis на основе отметок сессии."""
+    stats = await fetch_all_time_attendance(force_refresh=False)
+    saved_marks = await _get_saved_lesson_marks(session.target_date, session.lesson_num)
+    new_saved_marks = dict(saved_marks)
+    for row_idx, fio in session.students:
+        new_mark = session.marks.get(str(row_idx))
+        if not new_mark or saved_marks.get(str(row_idx)) == new_mark:
+            continue
+        student_stat = stats.setdefault(fio, _init_student_stat(fio))
+        _adjust_student_counts(student_stat, saved_marks.get(str(row_idx)), new_mark)
+        new_saved_marks[str(row_idx)] = new_mark
+    await _save_lesson_marks(session.target_date, session.lesson_num, new_saved_marks)
+    await _save_to_redis_cache(stats)
+    log.info(f"✅ Оптимистичное обновление посещаемости пары {session.lesson_num} применено")
+    return stats
