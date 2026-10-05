@@ -6,6 +6,7 @@
 """
 
 import os
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 
@@ -40,7 +41,6 @@ GROUP_NAME: str = get_required_env("GROUP_NAME")
 
 # Часовой пояс проекта
 TIMEZONE_NAME: str = get_required_env("TIMEZONE")
-from zoneinfo import ZoneInfo
 TIMEZONE = ZoneInfo(TIMEZONE_NAME)
 
 # Интервалы рассылок и кэширования

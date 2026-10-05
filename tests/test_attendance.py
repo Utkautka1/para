@@ -27,7 +27,7 @@ from services.attendance_manager import (
     step_back
 )
 from services.models import Lesson
-from services.yandex_docs import (
+from integrations.yandex_docs import (
     extract_client_config, find_date_column_start, find_lesson_column,
     find_student_row, get_month_sheet, get_students_list, get_yandex_cookie_header,
     normalize_fio, parse_date_cell, write_student_mark
@@ -380,7 +380,7 @@ def test_ensure_summary_headers():
 
 def test_find_sheet_rid():
     """Проверяет извлечение r:id листа из workbook.xml даже с xmlns атрибутами."""
-    from services.yandex_docs import _find_sheet_rid
+    from integrations.yandex_docs import _find_sheet_rid
     xml = (
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
         '<sheets><sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
@@ -392,7 +392,7 @@ def test_find_sheet_rid():
 
 def test_resolve_sheet_target_path():
     """Проверяет корректное разрешение пути листа по r:id с очисткой слэшей."""
-    from services.yandex_docs import _resolve_sheet_target_path
+    from integrations.yandex_docs import _resolve_sheet_target_path
     xml = (
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Target="/xl/worksheets/sheet1.xml"/>'
@@ -406,7 +406,7 @@ def test_resolve_sheet_target_path():
 
 def test_cell_has_expected_mark_entities():
     """Проверяет распознавание отметок с HTML-сущностями и тегами <t> и <v>."""
-    from services.yandex_docs import _cell_has_expected_mark
+    from integrations.yandex_docs import _cell_has_expected_mark
     assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>&#1055;</t></is></c>', "П")
     assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>О</t></is></c>', "О")
     assert _cell_has_expected_mark('<c r="D5"><v>Н</v></c>', "Н")
@@ -416,7 +416,7 @@ def test_cell_has_expected_mark_entities():
 
 def test_extract_and_verify_marks_in_raw():
     """Проверяет извлечение листа и проверку отметок из реального xlsx-архива."""
-    from services.yandex_docs import _extract_sheet_xml, _verify_marks_in_raw, save_workbook_to_bytes
+    from integrations.yandex_docs import _extract_sheet_xml, _verify_marks_in_raw, save_workbook_to_bytes
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")
@@ -432,14 +432,14 @@ def test_extract_and_verify_marks_in_raw():
 @pytest.mark.asyncio
 async def test_verify_upload_with_mock_bytes():
     """Проверяет асинхронный вызов verify_upload при успешном скачивании байтов."""
-    from services.yandex_docs import verify_upload, WopiSession, save_workbook_to_bytes
+    from integrations.yandex_docs import verify_upload, WopiSession, save_workbook_to_bytes
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")
     ws.cell(2, 20, "Опоздавшие")
     raw = save_workbook_to_bytes(wb)
     session = WopiSession("https://wopi.test/files/1", "token", "lock1")
-    with patch("services.yandex_docs._download_raw_bytes", new_callable=AsyncMock, return_value=raw):
+    with patch("integrations.yandex_docs._download_raw_bytes", new_callable=AsyncMock, return_value=raw):
         res = await verify_upload(session, date(2026, 9, 29), 2, {"5": "П"})
         assert res is True
 

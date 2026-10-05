@@ -17,7 +17,7 @@ from bot.handlers.admin.panel import (
     cb_admin_list_custom,
     router as panel_router,
 )
-from services.yandex_docs import extract_client_config
+from integrations.yandex_docs import extract_client_config
 
 
 def test_build_custom_teachers_view_empty() -> None:

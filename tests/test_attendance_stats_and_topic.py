@@ -261,11 +261,11 @@ async def test_optimistic_update_and_deduplication():
 @pytest.mark.asyncio
 async def test_redis_lock_context():
     """Проверяет захват и освобождение распределенного лока Redis."""
-    from services.redis_cache import redis_lock
+    from core.redis_cache import redis_lock
     mock_redis = AsyncMock()
     mock_redis.set.return_value = True
     mock_redis.delete.return_value = 1
-    with patch("services.redis_cache.init_redis", return_value=mock_redis):
+    with patch("core.redis_cache.init_redis", return_value=mock_redis):
         async with redis_lock("test:key", ttl=10) as acquired:
             assert acquired is True
         mock_redis.set.assert_called_once()

@@ -14,8 +14,8 @@ import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
 from core.logger import get_logger
-from services.redis_cache import cache_flush, cache_get, cache_set
-from services.yandex_docs import (
+from core.redis_cache import cache_flush, cache_get, cache_set
+from integrations.yandex_docs import (
     MONTH_SHEET_MAP,
     download_workbook,
     init_wopi_session,

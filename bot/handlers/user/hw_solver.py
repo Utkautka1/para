@@ -12,7 +12,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, ReactionTypeEmoji
 import config
 from core.logger import get_logger
-from services.redis_cache import (
+from core.redis_cache import (
     check_user_rate_limit,
     is_hash_processed,
     is_message_processed,

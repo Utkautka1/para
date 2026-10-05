@@ -20,9 +20,9 @@ import config
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import init_redis, redis_client
-from services.deepseek_solver import solve_homework
-from services.doc_generator import create_solution_docx
-from services.redis_cache import ack_hw_task, pop_hw_task, recover_stale_hw_tasks
+from integrations.deepseek import solve_homework
+from utils.doc_generator import create_solution_docx
+from core.redis_cache import ack_hw_task, pop_hw_task, recover_stale_hw_tasks
 
 log = get_logger("solver_worker")
 MAX_FILE_SIZE = 20 * 1024 * 1024

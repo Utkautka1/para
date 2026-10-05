@@ -30,7 +30,7 @@ from core.logger import get_logger
 from db.subscribers import is_subscribed, toggle_subscriber
 from services.classmates_auth import is_authorized_user, process_user_auth
 from services.models import Lesson
-from services.redis_cache import cache_flush, cache_get, cache_set
+from core.redis_cache import cache_flush, cache_get, cache_set
 
 log = get_logger("user_schedule")
 

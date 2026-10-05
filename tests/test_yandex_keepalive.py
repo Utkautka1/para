@@ -13,13 +13,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from config import REDIS_COOKIE_TTL_SECONDS, REDIS_YANDEX_COOKIE_KEY
-from services.yandex_docs import (
+from integrations.yandex_docs import (
     get_effective_yandex_cookie,
     merge_cookie_header,
     save_effective_yandex_cookie,
     update_cookies_from_response,
 )
-from services.yandex_keepalive import ping_yandex_session
+from integrations.yandex_keepalive import ping_yandex_session
 
 
 def test_merge_cookie_header_basic() -> None:
@@ -59,7 +59,7 @@ async def test_get_effective_cookie_fallback() -> None:
     mock_redis.get.return_value = None
 
     with patch("core.redis.get_redis", return_value=mock_redis):
-        with patch("services.yandex_docs.get_yandex_cookie_header", return_value="Session_id=env_val"):
+        with patch("integrations.yandex_docs.get_yandex_cookie_header", return_value="Session_id=env_val"):
             cookie = await get_effective_yandex_cookie()
             assert cookie == "Session_id=env_val"
 
@@ -82,7 +82,7 @@ async def test_update_cookies_from_response() -> None:
     res = MagicMock()
     res.cookies = {"_yasc": "new_yasc_token"}
 
-    with patch("services.yandex_docs.save_effective_yandex_cookie", new_callable=AsyncMock) as mock_save:
+    with patch("integrations.yandex_docs.save_effective_yandex_cookie", new_callable=AsyncMock) as mock_save:
         await update_cookies_from_response(res, "Session_id=123; _yasc=old")
         mock_save.assert_awaited_once_with("Session_id=123; _yasc=new_yasc_token")
 
@@ -90,9 +90,9 @@ async def test_update_cookies_from_response() -> None:
 @pytest.mark.asyncio
 async def test_ping_yandex_session_success() -> None:
     """Проверяет успешный пинг сессии при валидном client-config."""
-    with patch("services.yandex_keepalive.fetch_page_dom", return_value="<html>ok</html>"):
+    with patch("integrations.yandex_keepalive.fetch_page_dom", return_value="<html>ok</html>"):
         with patch(
-            "services.yandex_keepalive.extract_client_config",
+            "integrations.yandex_keepalive.extract_client_config",
             return_value={"officeActionData": {"resource_url": "https://test"}},
         ):
             ok = await ping_yandex_session()
@@ -102,6 +102,6 @@ async def test_ping_yandex_session_success() -> None:
 @pytest.mark.asyncio
 async def test_ping_yandex_session_failure() -> None:
     """Проверяет возврат False при сбое пинга сессии."""
-    with patch("services.yandex_keepalive.fetch_page_dom", side_effect=RuntimeError("HTTP 403")):
+    with patch("integrations.yandex_keepalive.fetch_page_dom", side_effect=RuntimeError("HTTP 403")):
         ok = await ping_yandex_session()
         assert ok is False

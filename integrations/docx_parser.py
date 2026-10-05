@@ -5,6 +5,7 @@
 извлекает из таблицы ФИО преподавателей и их персональные Zoom/Телемост ссылки.
 """
 
+import asyncio
 import io
 import time
 import xml.etree.ElementTree as ET
@@ -96,8 +97,6 @@ def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
         log.error(f"Ошибка парсинга docx XML: {e}")
     return teachers_map
 
-
-import asyncio
 
 MIN_DOCX_REFRESH_INTERVAL_SECONDS = 30.0
 _DOCX_LOCK: Optional[asyncio.Lock] = None

@@ -102,7 +102,7 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
 async def _get_redis_memory_stat() -> str:
     """Безопасно извлекает объем используемой оперативной памяти Redis."""
     try:
-        from services.redis_cache import init_redis
+        from core.redis_cache import init_redis
         r = await init_redis()
         if r:
             info = await r.info("memory")
@@ -117,7 +117,7 @@ async def _collect_health_summary() -> str:
     from db.subscribers import load_subscribers
     from services.attendance_topic_updater import load_attendance_topic_state
     from services.classmates_auth import load_classmates_registry
-    from services.yandex_docs import get_effective_yandex_cookie
+    from integrations.yandex_docs import get_effective_yandex_cookie
     subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
     res_t = await fetch_teachers(force_refresh=False)
     teach_cnt = res_t.get("count", 0)

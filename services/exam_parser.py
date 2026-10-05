@@ -18,7 +18,7 @@ from services.schedule_parser import (
     is_item_for_group,
     resolve_room_address,
 )
-from services.docx_parser import get_teacher_links
+from integrations.docx_parser import get_teacher_links
 
 log = get_logger("exam_parser")
 
