@@ -264,6 +264,8 @@ The internal API (`para-api`) exposes high-performance endpoints secured by `X-A
 
 ---
 
-## 📄 License & Attribution
+## 📄 License & Privacy
 
-Designed and maintained for student group **1-КПД-3**. All rights reserved. Architectural and visual design details can be explored in the [Architecture Documentation](docs/UML.md).
+- **License**: This project is licensed under the terms of the [MIT License](LICENSE).
+- **Privacy Policy**: Details regarding user identification, attendance records, and data protection are available in the [Privacy Policy](PRIVACY.md).
+- **Attribution**: Designed and maintained for student group **1-КПД-3**. Architectural and visual design details can be explored in the [Architecture Documentation](docs/UML.md).
