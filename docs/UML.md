@@ -1,10 +1,10 @@
-# 🏛️ Architecture Specification for «para»
+# Architecture Specification for «para»
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 1. [System Services Architecture & Core Contracts](#1-system-services-architecture--core-contracts)
 2. [Domain Models & Service Contracts Diagram](#2-domain-models--service-contracts-diagram)
@@ -98,26 +98,10 @@ classDiagram
         +format_exams_schedule_message(exams, sem_start) str
     }
 
-    class BaseIntegration {
-        <<abstract>>
-        +str service_name
-        +ping() bool
-        +close() void
-    }
-
-    class BaseServiceManager {
-        <<abstract>>
-        +str name
-        +bool _is_running
-        +start() void
-        +stop() void
-    }
-
-    class DeepSeekIntegration {
-        +client AsyncOpenAI
-        +ping() bool
-        +close() void
-        +solve_homework(image, prompt) str
+    class DeepSeekIntegrationModule {
+        +solve_homework(image_bytes, prompt) str
+        +build_deepseek_messages(prompt, b64_img) list
+        +encode_image_bytes(image_bytes) str
     }
 
     class RedisStateManager {
@@ -161,10 +145,6 @@ classDiagram
     HomeworkSolverService --> RedisStateManager : BLMOVE HW queue
     HomeworkSolverService --> DeepSeekProvider : generate step solution
     HomeworkSolverService --> TelegramGateway : send docx to student
-    DeepSeekIntegration --|> BaseIntegration : implements
-    WopiAttendanceService --|> BaseIntegration : implements
-    TopicWorkerService --|> BaseServiceManager : implements
-    HomeworkSolverService --|> BaseServiceManager : implements
     WopiAttendanceService --> RedisStateManager : token validation
     WopiAttendanceService --> YandexOfficeProvider : spreadsheet sync
 ```

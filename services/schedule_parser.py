@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from config import GROUP_ID, SCHEDULE_API_URL, SCHEDULE_CACHE_TTL_SECONDS
 from core.logger import get_logger
-from services.docx_parser import TeacherData, get_teacher_links
+from integrations.docx_parser import TeacherData, get_teacher_links
 from services.models import Lesson
 
 log = get_logger("schedule_parser")
@@ -255,7 +255,7 @@ def _parse_and_clean_payload(content: bytes) -> Tuple[Optional[str], Dict[str, A
 
 def _persist_snapshot_to_redis(snapshot: Dict[str, Any]) -> None:
     """В фоновом режиме сохраняет снимок и ETag в Redis."""
-    from services.redis_cache import save_schedule_snapshot
+    from core.redis_cache import save_schedule_snapshot
     meta = {"etag": _LAST_ETAG, "last_modified": _LAST_MODIFIED, "published_at": _LAST_PUBLISHED_AT}
     asyncio.create_task(save_schedule_snapshot(snapshot, meta))
 
@@ -325,7 +325,7 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
 async def init_schedule_cache_from_redis(now: float) -> bool:
     """Загружает срез расписания и метаданные из Redis для мгновенного холодного старта."""
     global _DATA_CACHE, _LAST_ETAG, _LAST_MODIFIED, _LAST_PUBLISHED_AT
-    from services.redis_cache import load_schedule_snapshot
+    from core.redis_cache import load_schedule_snapshot
     snap, meta = await load_schedule_snapshot()
     if snap and meta:
         _DATA_CACHE = (now, snap)

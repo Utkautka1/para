@@ -21,7 +21,7 @@ from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
 from services.notifier import schedule_attendance_poll, schedule_lesson_reminder, setup_scheduler, scheduler
 from services.topic_updater import topic_sync_loop
-from services.yandex_keepalive import yandex_session_keepalive_loop
+from integrations.yandex_keepalive import yandex_session_keepalive_loop
 
 log = get_logger("worker_main")
 

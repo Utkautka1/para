@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from core.logger import get_logger
 from core.redis import get_redis
-from services.yandex_docs import (
+from integrations.yandex_docs import (
     download_workbook, find_lesson_column, get_month_sheet,
     get_students_list, init_wopi_session, upload_workbook,
     verify_upload, write_student_mark

@@ -15,7 +15,7 @@ import pytest
 
 from core.api_client import _get_client
 from core.redis import get_redis_pool
-from services.redis_cache import (
+from core.redis_cache import (
     ack_hw_task,
     get_expired_messages_for_cleanup,
     get_topic_state_redis,
@@ -57,12 +57,12 @@ async def test_save_and_load_schedule_snapshot() -> None:
     snap_data = {"subjects": ["Математика"]}
     meta_data = {"etag": "123", "last_modified": "Sat"}
 
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         await save_schedule_snapshot(snap_data, meta_data)
         assert pipe.set.call_count == 2
 
     mock_redis.get = AsyncMock(side_effect=[json.dumps(snap_data), json.dumps(meta_data)])
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         snap, meta = await load_schedule_snapshot()
         assert snap == snap_data
         assert meta["etag"] == "123"
@@ -73,7 +73,7 @@ async def test_reminder_sent_state() -> None:
     """Проверяет проверку и отметку отправленного напоминания."""
     mock_redis = AsyncMock()
     mock_redis.get.return_value = "1"
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         sent = await is_reminder_sent("2026-10-04_1_0_Math")
         assert sent is True
         await mark_reminder_sent("2026-10-04_1_0_Math")
@@ -85,7 +85,7 @@ async def test_topic_state_redis() -> None:
     """Проверяет чтение и запись ID главного сообщения в Redis."""
     mock_redis = AsyncMock()
     mock_redis.get.return_value = "54321"
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         msg_id = await get_topic_state_redis()
         assert msg_id == 54321
         await set_topic_state_redis(99999)
@@ -98,7 +98,7 @@ async def test_reliable_queue_pop_and_ack() -> None:
     task = {"message_id": 101, "prompt": "реши 2+2"}
     mock_redis = AsyncMock()
     mock_redis.blmove.return_value = json.dumps(task)
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         popped = await pop_hw_task(timeout=1)
         assert popped == task
         await ack_hw_task(task)
@@ -110,7 +110,7 @@ async def test_recover_stale_hw_tasks() -> None:
     """Проверяет восстановление зависших задач из processing очереди."""
     mock_redis = AsyncMock()
     mock_redis.rpoplpush.side_effect = ["task1", "task2", None]
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         recovered = await recover_stale_hw_tasks()
         assert recovered == 2
         assert mock_redis.rpoplpush.call_count == 3
@@ -121,7 +121,7 @@ async def test_message_cleanup_registration() -> None:
     """Проверяет регистрацию и извлечение сообщений для очистки."""
     mock_redis = AsyncMock()
     mock_redis.zrangebyscore.return_value = ["-100123:555", "-100123:556"]
-    with patch("services.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
         await register_message_for_cleanup(-100123, 555, delay_sec=60)
         mock_redis.zadd.assert_called_once()
         expired = await get_expired_messages_for_cleanup()
@@ -134,7 +134,7 @@ async def test_schedule_parser_cold_start_from_redis() -> None:
     """Проверяет инициализацию кэша парсера из снимка Redis."""
     snap = {"subjects": ["Информатика"]}
     meta = {"etag": "etag-xyz", "last_modified": "Sun", "published_at": "2026-10-04"}
-    with patch("services.redis_cache.load_schedule_snapshot", AsyncMock(return_value=(snap, meta))):
+    with patch("core.redis_cache.load_schedule_snapshot", AsyncMock(return_value=(snap, meta))):
         success = await init_schedule_cache_from_redis(1000.0)
         assert success is True
 
@@ -224,8 +224,8 @@ async def test_collect_health_summary() -> None:
     with patch("db.subscribers.load_subscribers", return_value={1, 2}), \
          patch("services.classmates_auth.load_classmates_registry", return_value=[{"tg_id": 1}]), \
          patch("bot.handlers.admin.panel.fetch_teachers", AsyncMock(return_value={"count": 15})), \
-         patch("services.yandex_docs.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")), \
-         patch("services.redis_cache.init_redis", AsyncMock(return_value=None)):
+         patch("integrations.yandex_docs.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")), \
+         patch("core.redis_cache.init_redis", AsyncMock(return_value=None)):
         summary = await _collect_health_summary()
         assert "ДИАГНОСТИКА СИСТЕМЫ" in summary
         assert "15" in summary
@@ -259,7 +259,7 @@ async def test_callback_throttle_middleware() -> None:
 async def test_docx_singleflight_cache_freshness() -> None:
     """Проверяет защиту от повторного скачивания docx при кулдауне."""
     import time
-    import services.docx_parser as dp_mod
+    import integrations.docx_parser as dp_mod
     cached = {"teacher": {"full_name": "T", "link_info": "L"}}
     with patch.object(dp_mod, "_CACHE", (time.time(), cached)):
         with patch.object(dp_mod, "fetch_docx_bytes", AsyncMock()) as mock_fetch:

@@ -1,271 +1,231 @@
-# 🏛️ Para — Distributed Telegram Bot, College Schedule & AI Academic Platform
+# Para
+
+Telegram-бот и сопутствующие сервисы для учебной группы колледжа (1-КПД-3). Проект включает парсинг и кэширование расписания, автоматические напоминания о парах и звонках, ведение посещаемости через Яндекс Документы (протокол WOPI), генерацию решений заданий в DOCX и управление темами в Telegram-супергруппе.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
 [![aiogram 3](https://img.shields.io/badge/aiogram-3.x-2CA5E0.svg)](https://docs.aiogram.dev/)
 [![Redis 7](https://img.shields.io/badge/Redis-7.x-DC382D.svg)](https://redis.io/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://docs.docker.com/compose/)
-[![Tests](https://img.shields.io/badge/Tests-445%20Passed-brightgreen.svg)]()
-[![Architecture](https://img.shields.io/badge/UML%20Docs-Verified-blueviolet.svg)](docs/UML.md)
-
-A high-performance, fault-tolerant distributed system designed for college student groups. Combines sub-2ms timetable caching, automated Telegram topic administration, bell reminders with chat auto-cleanup, an At-Least-Once reliable queue AI homework solver generating GOST-standard Word documents, and an electronic attendance registry powered by the WOPI protocol and cloud office editors.
+[![Tests](https://img.shields.io/badge/Tests-478%20Passed-brightgreen.svg)]()
 
 ---
 
-## 📑 Architecture & UML Specification
+## Основные возможности
 
-Comprehensive architectural specifications, class contracts, state registries, and execution flows are documented in **[docs/UML.md](docs/UML.md)**:
+1. **Расписание пар и экзаменов**
+   - Получение расписания с серверов колледжа (КТМУ) с учетом подгрупп, четности недель и аудиторий.
+   - Двухуровневое кэширование: оперативная память процесса + снапшоты в Redis для мгновенной отдачи при повторных запросах.
+   - Подтягивание ссылок на дистанционные пары (Zoom, Телемост) из документов преподавателей на Яндекс Диске.
 
-1. **[System Services Architecture](docs/UML.md#1-сквозная-архитектура-сервисов-и-системных-контрактов)** — Component topology and typed service contracts (`classDiagram`).
-2. **[Domain Models & Interfaces](docs/UML.md#2-диаграмма-классов-моделей-и-сервисных-контрактов)** — Core Pydantic schemas, response types, and manager interfaces (`classDiagram`).
-3. **[Schedule Caching Module](docs/UML.md#3-сквозной-процесс-запрос-и-кэширование-расписания)** — Multi-level caching (L1 memory, L2 Redis snapshot) with KTMU parser (`classDiagram`).
-4. **[Topic & Bell Management](docs/UML.md#4-сквозной-процесс-уведомления-о-парах-и-очистка-топика)** — Idempotent notifications and ZSET auto-cleanup timers (`classDiagram`).
-5. **[Reliable Homework Queue](docs/UML.md#5-сквозной-процесс-надежная-очередь-решения-домашних-заданий)** — At-Least-Once execution via atomic `BLMOVE` and GOST docx generator (`classDiagram`).
-6. **[WOPI Attendance Engine](docs/UML.md#6-сквозной-процесс-электронная-ведомость-посещаемости-wopi)** — Cloud office document integration with Yandex Disk (`classDiagram`).
-7. **[Data Models & Redis Registry](docs/UML.md#7-модели-сущностей-и-структура-хранилища-redis)** — Complete ERD and key storage lifecycle specification.
+2. **Напоминания и управление темами супергруппы**
+   - Фоновый воркер проверяет расписание каждую минуту.
+   - Оповещения за 10 минут до звонка на пару и об окончании пары.
+   - Автоматическая очистка временных сервисных сообщений через Redis ZSET.
+   - Закрепленные информационные сообщения в топиках (текущее расписание, сессия, дни рождения одногруппников).
 
----
+3. **Электронный журнал посещаемости (WOPI)**
+   - Интеграция с редактором Яндекс Документов по протоколу WOPI (`CheckFileInfo`, `GetFile`, `PutFile`).
+   - Староста открывает ведомость прямо в браузере или проставляет отметки через инлайн-кнопки бота.
+   - Статистика посещаемости, распределение по лигам и автоматическая выгрузка в облачную таблицу `.xlsx`.
 
-## ⚡ Key Capabilities
-
-### 1. Timetable Engine & L2-Snapshot Caching
-- **Sub-2ms Cold Starts**: Serializes parsed group schedules into a Redis snapshot (`sched:group:snapshot`) with a 4-hour TTL, completely shielding users from upstream latency.
-- **Upstream KTMU Parser**: Parses 40 MB raw JSON payloads from KTMU college servers, resolves subgroups, streams, classroom addresses, and parity-dependent lesson times.
-- **Remote Classroom Enrichment**: Automatically parses teacher consultation docx files from Yandex Disk to embed direct Zoom and Yandex Telemost conference credentials into lesson cards.
-- **Fail-Safe HTTP Resilience**: Implements HTTP conditional requests (`ETag` / `If-None-Match`), fast 15-second timeouts, and automatic fallback to stale snapshots if upstream college servers degrade.
-
-### 2. Automated Topic Manager & Bell Alerts
-- **Minute-by-Minute Evaluation**: Background scheduler monitors time remaining until bell rings (10 minutes before start/end).
-- **Strict Idempotency**: Employs Redis atomic flags (`rem:sent:{group}:{date}:{period}:{type}`) to prevent duplicate notifications across worker restarts.
-- **Self-Cleaning Ephemeral Messages**: Temporary notifications are registered in a Redis Sorted Set (`topic:cleanup_messages`) with a score of `now + 900s` and automatically purged via `deleteMessage` to prevent chat bloat.
-
-### 3. Reliable AI Homework Solver
-- **Reliable Queue Pattern**: Uses Redis atomic `BLMOVE` between `hw:tasks:queue` and `hw:tasks:processing` to guarantee **At-Least-Once** processing even during hard worker terminations.
-- **Stale Task Recovery**: On daemon startup, `recover_stale_hw_tasks` restores orphaned tasks via `RPOPLPUSH`.
-- **DeepSeek Integration**: Step-by-step academic solutions with full mathematical formula derivation.
-- **GOST Academic Word Compiling**: Translates Markdown and LaTeX formulas into `.docx` files formatted strictly according to Russian GOST standards (Times New Roman 14pt, 1.5 line spacing, 30-15-20-20 mm margins, page numbering).
-
-### 4. Electronic Attendance Registry (WOPI Protocol)
-- **Standardized Cloud Office**: Full WOPI implementation (`CheckFileInfo`, `GetFile`, `PutFile`) allowing group admins to edit attendance spreadsheets directly inside Yandex Documents web editor.
-- **Temporary Cryptographic Sessions**: Ephemeral session tokens with 1-hour TTL in Redis.
-- **Cloud Storage Synchronization**: Direct two-way sync with Yandex Disk `.xlsx` spreadsheets.
+4. **Генератор решений домашних заданий**
+   - Надежная очередь задач в Redis (`BLMOVE` между очередями ожидания и обработки).
+   - Интеграция с DeepSeek API для разбора условий с формулами.
+   - Формирование оформленного документа `.docx` с титульной разметкой, списками и формулами.
 
 ---
 
-## 🏗️ Architecture & Service Topology
+## Архитектура системы
 
-The system is engineered as 5 isolated containerized microservices:
+Проект разделен на изолированные контейнеры:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       Client Layer                          │
-│          Students, Group Chat, Group Admin (Telegram)       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Telegram Gateway (para-bot)                 │
-│         aiogram 3 • Event Routers • Keyboard Handlers       │
-└──────────────┬──────────────────────────────┬───────────────┘
-               │                              │
-     HTTP GET  │                    LPUSH     │ Task
-     /schedule │                              │
-               ▼                              ▼
-┌──────────────────────────────┐┌─────────────────────────────┐
-│   Internal API (para-api)    ││     In-Memory Data Grid     │
-│   FastAPI • Schedule Parser  ││        (para-redis)         │
-│   WOPI Office Controller     ││  Redis 7 • Snapshots • ZSET │
-└──────────────┬───────────────┘│  Reliable Queue • Sessions  │
-               │                └─────────────┬───────────────┘
-    L2 Cache   │                              │ BLMOVE
-    Snapshot   │                              │
-               ▼                              ▼
-┌──────────────────────────────┐┌─────────────────────────────┐
-│  Topic Worker (para-worker)  ││   AI Solver (para-solver)   │
-│  APScheduler • 60s Monitor   ││   DeepSeek LLM • Docx GOST  │
-│  Bell Reminders • Cleanup    ││   Consumer Loop • Delivery  │
-└──────────────────────────────┘└─────────────────────────────┘
+                  ┌───────────────────────────────┐
+                  │    Пользователи в Telegram    │
+                  └───────────────┬───────────────┘
+                                  │
+                                  ▼
+                  ┌───────────────────────────────┐
+                  │           para-bot            │
+                  │   aiogram 3, меню, команды    │
+                  └───────┬───────────────┬───────┘
+       HTTP-запросы       │               │ Задачи в очередь
+       к API              ▼               ▼
+┌───────────────────────────────┐   ┌───────────────────────────┐
+│           para-api            │   │        para-redis         │
+│   FastAPI, парсер КТМУ,       │   │  Кэш расписания, сессии   │
+│   сервер протокола WOPI       │   │  WOPI, очереди задач      │
+└───────────────┬───────────────┘   └─────────────┬─────────────┘
+                │ Снапшоты                        │ BLMOVE
+                ▼                                 ▼
+┌───────────────────────────────┐   ┌───────────────────────────┐
+│          para-worker          │   │        para-solver        │
+│    APScheduler, звонки,       │   │  Воркер очереди задач,    │
+│    очистка топиков            │   │  DeepSeek + сборка docx   │
+└───────────────────────────────┘   └───────────────────────────┘
 ```
 
-| Container | Base Image | Role | Memory Limit |
-| :--- | :--- | :--- | :--- |
-| `para-redis` | `redis:7-alpine` | Primary data grid: L2 snapshot cache, reliable queues, cleanup ZSET | 64 MB |
-| `para-api` | Python 3.11-slim | Internal REST API for schedule parsing, teacher data, and WOPI server | 256 MB |
-| `para-bot` | Python 3.11-slim | Interactive Telegram bot (aiogram 3), commands, inline menus | 384 MB |
-| `para-worker` | Python 3.11-slim | Background daemon with APScheduler, 60s bell monitor, auto-cleanup | 384 MB |
-| `para-solver` | Python 3.11-slim | Reliable queue consumer loop, AI reasoning, GOST docx generation | 512 MB |
+| Сервис | Образ / База | Назначение |
+| :--- | :--- | :--- |
+| `para-redis` | `redis:7-alpine` | Кэш расписания, сессии WOPI, очереди задач |
+| `para-api` | Python 3.11-slim | Внутренний REST API и хост WOPI |
+| `para-bot` | Python 3.11-slim | Telegram-бот, обработка сообщений и инлайн-кнопок |
+| `para-worker` | Python 3.11-slim | Фоновые задачи: проверка звонков, обновление топиков |
+| `para-solver` | Python 3.11-slim | Обработка задач на решение ДЗ и генерация docx |
+
+Подробные UML-диаграммы и схемы взаимодействия описаны в [docs/UML.md](docs/UML.md).
 
 ---
 
-## 📁 Repository Structure
+## Структура проекта
 
 ```
 para/
-├── api.py                    # Entrypoint for FastAPI Internal API service
-├── api.dockerfile            # Dockerfile for para-api container
-├── bot.py                    # Entrypoint for Telegram Bot service
-├── bot.dockerfile            # Dockerfile for para-bot container
-├── worker.py                 # Entrypoint for Background Topic/Bell Worker
-├── worker.dockerfile         # Dockerfile for para-worker container
-├── solver.py                 # Entrypoint for AI Homework Solver Worker
-├── solver.dockerfile         # Dockerfile for para-solver container
-├── compose.yml               # Production multi-service Docker Compose configuration
-├── config.py                 # Global typed environment settings & constants
-├── requirements.txt          # Python runtime dependencies
+├── api.py                    # Точка входа сервиса FastAPI
+├── api.dockerfile
+├── bot.py                    # Точка входа Telegram-бота
+├── bot.dockerfile
+├── worker.py                 # Точка входа фонового воркера (APScheduler)
+├── worker.dockerfile
+├── solver.py                 # Точка входа обработчика очереди решений
+├── solver.dockerfile
+├── compose.yml               # Конфигурация Docker Compose
+├── config.py                 # Конфигурация и переменные окружения
+├── requirements.txt          # Зависимости Python
 │
 ├── api/
-│   ├── deps.py               # Dependency injection & API Key security
-│   ├── router/               # Route endpoints (schedule, wopi, attendance)
-│   └── schemas/              # Pydantic request/response validation schemas
+│   ├── deps.py               # Зависимости FastAPI и авторизация по API-ключу
+│   ├── router/               # Маршруты (расписание, преподаватели, WOPI)
+│   └── schemas/              # Pydantic-схемы запросов и ответов
 │
 ├── bot/
-│   ├── filters/              # aiogram custom chat and role filters
-│   ├── handlers/             # Telegram command & callback handlers (admin/user)
-│   ├── keyboards/            # Dynamic inline keyboards & navigation
-│   └── templates/            # Message formatting & HTML presentation
+│   ├── filters/              # Фильтры чатов и прав доступа aiogram
+│   ├── handlers/             # Хэндлеры команд и колбэков (admin / user)
+│   ├── keyboards/            # Инлайн-клавиатуры
+│   ├── middlewares/          # Ограничение частоты кликов (троттлинг)
+│   └── templates/            # Шаблоны сообщений
 │
 ├── core/
-│   ├── api_client.py         # Persistent keep-alive HTTP client to para-api
-│   ├── bot.py                # Bot and Dispatcher global singletons
-│   ├── logger.py             # Structured logging subsystem
-│   └── redis.py              # Redis connection pool and async client
+│   ├── api_client.py         # HTTP-клиент для вызовов internal API
+│   ├── bot.py                # Синглтоны Bot и Dispatcher
+│   ├── logger.py             # Настройка структурированного логирования
+│   ├── redis.py              # Пул соединений и инициализация Redis
+│   └── redis_cache.py        # Кэш, очереди задач и распределенные блокировки
 │
-├── data/                     # Local data files, birthday configs, templates
-├── docs/
-│   ├── UML.md                # Full architectural specifications & Mermaid diagrams
-│   └── puml/                 # Standalone PlantUML source files & SVG exports
+├── data/                     # Данные группы, дни рождения, локальные файлы
+├── db/                       # Локальные хранилища (список подписчиков)
+├── docs/                     # Архитектурная документация и диаграммы
+│   ├── UML.md
+│   └── puml/
+│
+├── integrations/
+│   ├── deepseek.py           # Клиент API DeepSeek
+│   ├── docx_parser.py        # Парсинг файлов преподавателей
+│   ├── yandex_docs.py        # Клиент Яндекс Документов и протокол WOPI
+│   └── yandex_keepalive.py   # Поддержание активной сессии Яндекс
+│
 ├── services/
-│   ├── docx_parser.py        # Word generator (GOST formatting) & Yandex Disk parser
-│   ├── models.py             # Core domain models (Lesson, ExamItem, etc.)
-│   ├── redis_cache.py        # High-level Redis cache & queue manager
-│   ├── schedule_parser.py    # KTMU timetable parser & snapshot builder
-│   └── topic_updater.py      # Topic synchronization & bell alert manager
-└── tests/                    # Comprehensive test suite (445 automated tests)
+│   ├── attendance_manager.py # Логика сессий посещаемости
+│   ├── attendance_stats.py   # Подсчет статистики и лиг посещаемости
+│   ├── classmates_auth.py    # Реестр и авторизация одногруппников
+│   ├── models.py             # Модели данных (Lesson, ExamItem, Session)
+│   ├── notifier.py           # Планирование уведомлений о звонках
+│   ├── schedule_parser.py    # Парсер расписания КТМУ
+│   └── topic_updater.py      # Синхронизация сообщений в топиках
+│
+├── utils/
+│   ├── doc_generator.py      # Сборка готовых документов Word (.docx)
+│   └── time.py               # Утилиты работы со временем и расписанием
+│
+└── tests/                    # Набор тестов (pytest)
 ```
 
 ---
 
-## 🔧 Environment Configuration
+## Переменные окружения
 
-Copy the example configuration file:
+Скопируйте пример файла конфигурации:
 
 ```bash
 cp .env.example .env
 ```
 
-Key configuration variables:
+Основные переменные:
 
-| Variable | Description | Example / Default |
+| Переменная | Описание | Пример значения |
 | :--- | :--- | :--- |
-| `BOT_TOKEN` | Telegram Bot API authentication token | `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` |
-| `API_SECRET_KEY` | Shared secret header (`X-API-Key`) between services | `your_internal_secret_key` |
-| `API_BASE_URL` | Base URL of the internal API service | `http://api:8000` (Docker) or `http://127.0.0.1:8000` |
-| `REDIS_URL` | Redis connection URI | `redis://redis:6379/0` or `redis://localhost:6379/0` |
-| `DEEPSEEK_API_KEY` | DeepSeek LLM API key for homework generation | `sk-xxxxxxxxxxxxxxxxxxxxxxxx` |
-| `YANDEX_DISK_TOKEN` | OAuth token for Yandex Disk attendance & teacher files | `y0_AgAAAA...` |
-| `GROUP_ID` | College group identifier in KTMU API | `e6189916-2591-11ec-8178-000c2941df90` |
-| `ALLOWED_USER_ID` | Telegram user ID of group administrator / headman | `987654321` |
-| `SCHEDULE_API_URL` | Upstream KTMU timetable JSON endpoint | `https://timetable-ktmu.ru/...` |
-| `TIMEZONE` | System scheduling timezone | `Europe/Moscow` |
+| `BOT_TOKEN` | Токен Telegram-бота из @BotFather | `123456:ABC-DEF...` |
+| `API_SECRET_KEY` | Секретный ключ для заголовка `X-API-Key` между сервисами | `secret_internal_key` |
+| `API_BASE_URL` | URL сервиса API | `http://api:8000` (Docker) / `http://127.0.0.1:8000` |
+| `REDIS_URL` | Адрес подключения к Redis | `redis://redis:6379/0` |
+| `DEEPSEEK_API_KEY` | Ключ API DeepSeek | `sk-...` |
+| `YANDEX_DISK_TOKEN` | OAuth-токен Яндекс Диска | `y0_...` |
+| `GROUP_ID` | Идентификатор группы в API колледжа | `e6189916-2591-11ec-8178-000c2941df90` |
+| `ALLOWED_USER_ID` | Telegram ID старосты / администратора | `123456789` |
+| `SCHEDULE_API_URL` | URL API расписания колледжа | `https://timetable-ktmu.ru/...` |
+| `TIMEZONE` | Часовой пояс работы системы | `Europe/Moscow` |
 
 ---
 
-## 🚀 Quick Start & Development Setup
+## Запуск
 
-### Option 1: Local Development with Virtual Environment
+### В контейнерах (рекомендуется)
 
-1. **Clone repository**:
-   ```bash
-   git clone https://github.com/Utkautka1/para.git
-   cd para
-   ```
-
-2. **Configure virtual environment**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-3. **Start local Redis instance**:
-   ```bash
-   docker run -d --name local-redis -p 6379:6379 redis:7-alpine
-   ```
-
-4. **Launch individual services**:
-   ```bash
-   # Terminal 1: Internal API
-   python api.py
-
-   # Terminal 2: Telegram Bot
-   python bot.py
-
-   # Terminal 3: Topic Worker
-   python worker.py
-
-   # Terminal 4: AI Homework Solver
-   python solver.py
-   ```
-
-### Option 2: Production Deployment with Docker Compose
-
-All microservices, healthchecks, CPU/memory quotas, and volume bindings are defined in `compose.yml`:
+Все сервисы упакованы в Docker Compose:
 
 ```bash
-# Build and launch all 5 containers in the background
+# Сборка и фоновый запуск всех 5 контейнеров
 docker compose up -d --build
 
-# Monitor live log streams
+# Просмотр логов
 docker compose logs -f
 
-# Verify container health status
+# Проверка статуса контейнеров
 docker compose ps
 ```
 
+### Локальный запуск для разработки
+
+1. **Создание виртуального окружения**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. **Запуск Redis**:
+   ```bash
+   docker run -d --name para-redis -p 6379:6379 redis:7-alpine
+   ```
+
+3. **Запуск сервисов в отдельных терминалах**:
+   ```bash
+   python api.py      # Внутренний API
+   python bot.py      # Telegram-бот
+   python worker.py   # Планировщик напоминаний
+   python solver.py   # Обработчик очереди задач
+   ```
+
 ---
 
-## 🧪 Testing & Quality Assurance
+## Тестирование
 
-The codebase includes an extensive automated test suite covering API contracts, parser edge-cases, Redis queue resilience, and Telegram message formatting:
+Для запуска тестов используется `pytest`:
 
 ```bash
-# Run all tests
 PYTHONPATH=. ./venv/bin/pytest tests/
-
-# Run with verbose output and duration profiling
-PYTHONPATH=. ./venv/bin/pytest tests/ -v --durations=10
-
-# Run specific performance & resilience suite
-PYTHONPATH=. ./venv/bin/pytest tests/test_performance_and_resilience.py
 ```
 
-### Architectural Quality Invariants
-- **Function Line Limit**: Every function and method is strictly limited to **maximum 25 lines** of code with single responsibility.
-- **Fail-Fast Error Handling**: Specific exceptions are captured before generic handlers; all transient errors log structured diagnostics.
-- **Zero AI-Slop & Clean Code**: Clean, maintainable Python 3.11 idioms with complete type hinting (`Mapped`, `Annotated`, `Pydantic`).
+Запуск с подробным выводом:
+
+```bash
+PYTHONPATH=. ./venv/bin/pytest tests/ -v
+```
 
 ---
 
-## 📡 REST API & WOPI Endpoints
+## Лицензия и конфиденциальность
 
-The internal API (`para-api`) exposes high-performance endpoints secured by `X-API-Key`:
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/schedule/day?target_date=YYYY-MM-DD` | Returns normalized schedule for the given date (`<2ms` with L2 cache) |
-| `GET` | `/schedule/week?monday=YYYY-MM-DD` | Returns schedule for the entire 6-day academic week |
-| `GET` | `/schedule/teachers` | Returns parsed teacher database with contact and Zoom links |
-| `GET` | `/schedule/exams` | Returns upcoming exam and credit dates for the target group |
-| `POST` | `/attendance/init` | Generates a secure temporary WOPI editing session for headman |
-| `GET` | `/wopi/files/{file_id}` | WOPI `CheckFileInfo`: returns permissions, file size, and owner metadata |
-| `GET` | `/wopi/files/{file_id}/contents` | WOPI `GetFile`: streams the binary `.xlsx` attendance spreadsheet |
-| `POST` | `/wopi/files/{file_id}/contents` | WOPI `PutFile`: receives and updates `.xlsx` from the cloud office editor |
-
----
-
-## 📄 License & Privacy
-
-- **License**: This project is licensed under the terms of the [MIT License](LICENSE).
-- **Privacy Policy**: Details regarding user identification, attendance records, and data protection are available in the [Privacy Policy](PRIVACY.md).
-- **Attribution**: Designed and maintained for student group **1-КПД-3**. Architectural and visual design details can be explored in the [Architecture Documentation](docs/UML.md).
+- **Лицензия**: Проект распространяется под лицензией [MIT](LICENSE).
+- **Политика конфиденциальности**: Подробные правила обработки данных пользователей и посещаемости описаны в [PRIVACY.md](PRIVACY.md).

@@ -24,7 +24,7 @@ from config import (
 from core.bot import bot
 from core.logger import get_logger
 from services.attendance_stats import fetch_all_time_attendance
-from services.redis_cache import redis_lock
+from core.redis_cache import redis_lock
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("att_topic_updater")

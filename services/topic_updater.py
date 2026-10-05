@@ -46,13 +46,13 @@ def save_topic_state(msg_id: Optional[int]) -> None:
     import asyncio
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
     if msg_id:
-        from services.redis_cache import set_topic_state_redis
+        from core.redis_cache import set_topic_state_redis
         asyncio.create_task(set_topic_state_redis(msg_id))
 
 
 async def cleanup_expired_messages() -> None:
     """Удаляет просроченные временные сообщения из топика Telegram."""
-    from services.redis_cache import get_expired_messages_for_cleanup
+    from core.redis_cache import get_expired_messages_for_cleanup
     expired = await get_expired_messages_for_cleanup()
     for chat_id, msg_id in expired:
         try:
@@ -69,7 +69,7 @@ async def cleanup_expired_messages() -> None:
 
 async def send_temp_topic_reminder(lesson: Lesson) -> None:
     """Отправляет уведомление за 10 минут до пары с регистрацией на удаление."""
-    from services.redis_cache import register_message_for_cleanup
+    from core.redis_cache import register_message_for_cleanup
     try:
         text = format_reminder_text(lesson)
         kb = get_topic_inline_kb([lesson])
@@ -92,7 +92,7 @@ async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: da
     rem_key = f"{today.isoformat()}_{lesson.period}_{lesson.subgroup}_{lesson.subject}"
     if rem_key in _SENT_REMINDERS:
         return
-    from services.redis_cache import is_reminder_sent, mark_reminder_sent
+    from core.redis_cache import is_reminder_sent, mark_reminder_sent
     if await is_reminder_sent(rem_key):
         _SENT_REMINDERS.add(rem_key)
         return
