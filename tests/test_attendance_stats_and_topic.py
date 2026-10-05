@@ -30,9 +30,10 @@ from services.attendance_stats import (
     parse_workbook_attendance,
 )
 from services.attendance_topic_updater import (
+    extract_short_fio,
     format_attendance_topic_message,
-    format_student_line,
     load_attendance_topic_state,
+    make_progress_bar,
     save_attendance_topic_state,
 )
 
@@ -137,20 +138,30 @@ def test_format_personal_attendance_card():
     assert "83.3%" in card
 
 
+def test_shorten_fio_and_progress_bar():
+    """Проверяет сокращение отчества и генерацию мини прогресс-бара."""
+    assert extract_short_fio("Базаров Аюр Этигэлович") == "Базаров Аюр"
+    assert extract_short_fio("Петров") == "Петров"
+    assert make_progress_bar(100.0) == "▰▰▰▰"
+    assert make_progress_bar(50.0) == "▰▰▱▱"
+    assert make_progress_bar(0.0) == "▱▱▱▱"
+
+
 def test_format_attendance_topic_message():
     """Проверяет форматирование общего сообщения реестра для топика."""
     empty_msg = format_attendance_topic_message({})
-    assert "СВОДНЫЙ РЕЕСТР" in empty_msg
+    assert "ДАШБОРД ПОСЕЩАЕМОСТИ" in empty_msg
     assert "загружаются" in empty_msg
 
     stats = {
-        "Базаров Аюр": {"total": {"П": 2, "О": 0, "У": 0, "Н": 11}},
-        "Барчугова Ева": {"total": {"П": 9, "О": 1, "У": 0, "Н": 2}},
+        "Базаров Аюр Этигэлович": {"total": {"П": 2, "О": 0, "У": 0, "Н": 11}},
+        "Барчугова Ева Алексеевна": {"total": {"П": 9, "О": 1, "У": 0, "Н": 2}},
     }
     msg = format_attendance_topic_message(stats)
     assert "Базаров Аюр" in msg
     assert "Барчугова Ева" in msg
-    assert "Студентов в реестре:</b> 2" in msg
+    assert "Пульс группы:" in msg
+    assert "ЗОНА РИСКА" in msg
 
 
 def test_topic_state_storage(tmp_path):
