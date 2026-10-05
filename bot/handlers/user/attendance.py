@@ -24,11 +24,12 @@ log = get_logger("user_attendance")
 router = Router()
 
 
-def _calculate_attendance_percent(p: int, total: int) -> str:
-    """Вычисляет процент посещения с точностью до десятых."""
+def _calculate_attendance_percent(p: int, o: int, u: int, total: int) -> str:
+    """Вычисляет процент посещения с учетом уважительных причин (У)."""
     if total <= 0:
         return "100.0%"
-    pct = (p / total) * 100.0
+    valid_classes = p + o + u
+    pct = (valid_classes / total) * 100.0
     return f"{pct:.1f}%"
 
 
@@ -54,7 +55,7 @@ def format_personal_attendance_card(fio: str, student_data: Dict[str, Any]) -> s
     u = tot.get("У", 0)
     n = tot.get("Н", 0)
     total_classes = p + o + u + n
-    pct_str = _calculate_attendance_percent(p, total_classes)
+    pct_str = _calculate_attendance_percent(p, o, u, total_classes)
     months_block = _format_personal_month_breakdown(student_data.get("months", {}))
     return (
         f"👤 <b>ТВОЯ ПОСЕЩАЕМОСТЬ: {html.escape(fio)}</b>\n"

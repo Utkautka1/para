@@ -214,10 +214,12 @@ async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
 
 
 async def _post_commit_sync() -> None:
-    """Инвалидирует кэш статистики и обновляет реестр в топике посещаемости."""
+    """Контрольная сверка реестра с Яндекс Документами после сохранения."""
     try:
         from services.attendance_stats import invalidate_attendance_stats_cache
         from services.attendance_topic_updater import sync_attendance_topic_message
+        # 15 сек для сброса OnlyOffice буфера совместного редактирования на диск
+        await asyncio.sleep(15)
         await invalidate_attendance_stats_cache()
         await sync_attendance_topic_message(force_refresh=True)
     except Exception as e:

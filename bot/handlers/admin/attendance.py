@@ -51,20 +51,33 @@ async def _async_commit_and_update(
         log.debug(f"Не удалось обновить статус выгрузки посещаемости: {e}")
 
 
+async def _instant_topic_sync(session) -> None:
+    """Мгновенно применяет оптимистичные отметки и обновляет топик в Telegram."""
+    try:
+        from services.attendance_stats import apply_session_optimistic_update
+        from services.attendance_topic_updater import sync_attendance_topic_message
+        await apply_session_optimistic_update(session)
+        await sync_attendance_topic_message(force_refresh=False)
+        log.info(f"⚡️ Мгновенное обновление топика для пары {session.lesson_num} выполнено")
+    except Exception as e:
+        log.error(f"Ошибка мгновенного обновления топика посещаемости: {e}")
+
+
 async def finish_and_notify(cb: CallbackQuery, session) -> None:
-    """Мгновенно отображает сводку старосте и запускает фоновую выгрузку в Яндекс."""
+    """Мгновенно отображает сводку старосте и запускает параллельную синхронизацию."""
     stats = calculate_summary_stats(session.marks)
     text_saving = (
         format_summary_text(session, stats)
-        + "\n\n⏳ <i>Синхронизация с Яндекс Таблицей в фоне...</i>"
+        + "\n\n⏳ <i>Синхронизация с Яндекс Таблицей и топиком в фоне...</i>"
     )
     if cb.message:
         try:
             await cb.message.edit_text(text_saving)
         except Exception:
             pass
+    asyncio.create_task(_instant_topic_sync(session))
     asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
-    log.info(f"Сводка пары {session.lesson_num} выдана, запущена фоновая запись в Яндекс")
+    log.info(f"Сводка пары {session.lesson_num} выдана, запущены оптимистичный апдейт и выгрузка")
 
 
 @router.message(Command("attendance"))
