@@ -24,6 +24,10 @@ def _build_action_rows() -> list:
             InlineKeyboardButton(text="📑 Обновить экзамены", callback_data="admin:force_exam", style="success"),
             InlineKeyboardButton(text="🔁 Пересоздать", callback_data="admin:recreate_exam", style="danger")
         ],
+        [
+            InlineKeyboardButton(text="📊 Реестр посещаемости", callback_data="admin:force_att_topic", style="success"),
+            InlineKeyboardButton(text="🔁 Пересоздать", callback_data="admin:recreate_att_topic", style="danger")
+        ],
         [InlineKeyboardButton(text="◀️ Вернуться к расписанию", callback_data="sched:today", style="primary")]
     ]
 

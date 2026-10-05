@@ -16,6 +16,7 @@ from core.api_client import close_api_client, get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
+from services.attendance_topic_updater import attendance_topic_sync_loop
 from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
 from services.notifier import schedule_attendance_poll, schedule_lesson_reminder, setup_scheduler, scheduler
@@ -47,6 +48,16 @@ async def shutdown_worker() -> None:
     log.info("Воркер para-worker успешно остановлен.")
 
 
+async def _start_worker_loops() -> None:
+    """Запускает все фоновые циклы синхронизации сервиса."""
+    await asyncio.gather(
+        topic_sync_loop(),
+        exam_topic_sync_loop(),
+        attendance_topic_sync_loop(),
+        birthday_sync_loop(),
+        yandex_session_keepalive_loop()
+    )
+
 
 async def main() -> None:
     """Точка входа фонового сервиса-синхронизатора."""
@@ -57,12 +68,7 @@ async def main() -> None:
     setup_scheduler()
     await schedule_today_reminders()
     try:
-        await asyncio.gather(
-            topic_sync_loop(),
-            exam_topic_sync_loop(),
-            birthday_sync_loop(),
-            yandex_session_keepalive_loop()
-        )
+        await _start_worker_loops()
     except asyncio.CancelledError:
         log.info("Получен сигнал завершения работы воркера.")
     except Exception as e:
