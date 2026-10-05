@@ -149,29 +149,33 @@ def test_shorten_fio_and_progress_bar():
 
 
 def test_format_attendance_topic_message():
-    """Проверяет форматирование общего сообщения реестра для топика."""
+    """Проверяет форматирование дашборда: блок 100% и журнал долгов."""
     empty_msg = format_attendance_topic_message({})
-    assert "ДАШБОРД ПОСЕЩАЕМОСТИ" in empty_msg
+    assert "ПОСЕЩАЕМОСТЬ • 1-КПД-3" in empty_msg
     assert "загружаются" in empty_msg
 
     stats = {
+        "Васильев Василий": {"total": {"П": 12, "О": 0, "У": 0, "Н": 0}},
         "Базаров Аюр Этигэлович": {"total": {"П": 2, "О": 0, "У": 0, "Н": 11}},
         "Барчугова Ева Алексеевна": {"total": {"П": 9, "О": 1, "У": 0, "Н": 2}},
         "Мухамадеев Артём": {"total": {"П": 4, "О": 0, "У": 7, "Н": 1}},
     }
     msg = format_attendance_topic_message(stats)
-    assert "Базаров Аюр" in msg
+    assert "БЕЗ ПРОПУСКОВ (100%):" in msg
+    assert "ЖУРНАЛ ПРОПУСКОВ И ОПОЗДАНИЙ:" in msg
+    assert "Васильев Василий" in msg
     assert "Барчугова Ева" in msg
-    assert "Мухамадеев Артём" in msg
-    assert "1 оп" in msg  # не '1О' (чтобы не путать с 10)
-    assert "ЗОЛОТАЯ ЛИГА" in msg
-    assert "ЗОНА РИСКА" in msg
+    assert "1 оп." in msg  # не '1О'
+    assert "2 прогула" in msg
+    assert "11 прогулов" in msg
 
-    # Проверяем, что Мухамадеев в Золотой лиге (92%), а не в Зоне риска
-    gold_part = msg.split("ЗОЛОТАЯ ЛИГА")[1].split("СЕРЕБРЯНАЯ ЛИГА")[0]
-    risk_part = msg.split("ЗОНА РИСКА")[1]
-    assert "Мухамадеев Артём" in gold_part
-    assert "Мухамадеев Артём" not in risk_part
+    # Проверяем, что Васильев в блоке 100%, а должники в журнале
+    perf_part = msg.split("БЕЗ ПРОПУСКОВ")[1].split("ЖУРНАЛ ПРОПУСКОВ")[0]
+    debt_part = msg.split("ЖУРНАЛ ПРОПУСКОВ")[1]
+    assert "Васильев Василий" in perf_part
+    assert "Мухамадеев Артём" in debt_part
+    assert "7 по справке" in debt_part
+    assert "Базаров Аюр" in debt_part
 
 
 
