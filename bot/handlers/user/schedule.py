@@ -104,9 +104,12 @@ async def cmd_start(message: Message) -> None:
     """Авторизует пользователя и отправляет расписание на сегодня."""
     is_auth, is_just_reg, student = process_user_auth(message.from_user)
     if not is_auth:
+        uid = message.from_user.id if message.from_user else 0
         await message.answer(
             "⛔ <b>Доступ ограничен.</b>\n"
-            "Этот бот работает исключительно для студентов группы 1-КПД-3."
+            "Этот бот работает исключительно для студентов группы 1-КПД-3.\n\n"
+            f"Ваш Telegram ID: <code>{uid}</code>\n"
+            "<i>Если вы студент 1-КПД-3 — передайте ваш ID старосте для активации.</i>"
         )
         return
     if is_just_reg and student:
@@ -281,6 +284,50 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     text, lessons, count = await _refresh_and_format_schedule(now)
     text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis обновлен!</i>"
     await edit_or_answer(callback, text, lessons)
+
+
+def format_help_text(is_admin: bool) -> str:
+    """Формирует справочное сообщение со списком команд бота."""
+    base = (
+        "🏛 <b>Помощник группы 1-КПД-3</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Доступные команды:\n"
+        "• /today — Расписание на сегодня\n"
+        "• /notice — Уведомления за 10 мин до пар\n"
+        "• /my_attendance — Журнал посещаемости\n"
+        "• /help — Справка по функциям бота\n"
+    )
+    if is_admin:
+        base += "• /admin — Панель управления старосты\n• /attendance — Отметка посещаемости\n"
+    base += "\n<i>Для навигации по расписанию используйте кнопки под сообщением.</i>"
+    return base
+
+
+@router.message(Command("help"))
+async def cmd_help(message: Message) -> None:
+    """Выводит список доступных команд для авторизованного пользователя."""
+    if not is_authorized_user(message.from_user):
+        return
+    uid = message.from_user.id if message.from_user else 0
+    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
+    await message.answer(text)
+
+
+@router.message(F.chat.type == "private")
+async def handle_user_text_message(message: Message) -> None:
+    """Отвечает на произвольный текст авторизованного пользователя меню помощи."""
+    if not is_authorized_user(message.from_user):
+        return
+    uid = message.from_user.id if message.from_user else 0
+    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
+    now = datetime.now(TIMEZONE).date()
+    _, lessons = await get_day_schedule_cached(now)
+    is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
+    kb = get_schedule_inline_kb(
+        lessons, is_admin=(uid == ALLOWED_USER_ID),
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
+    )
+    await message.answer(text, reply_markup=kb)
 
 
 

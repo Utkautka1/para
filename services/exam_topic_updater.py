@@ -9,7 +9,7 @@ import asyncio
 import html
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
@@ -21,9 +21,23 @@ from services.models import ExamItem
 
 log = get_logger("exam_topic_updater")
 STATE_FILE = "data/exam_topic_state.json"
-SEMESTER_START = datetime.strptime("2026-09-01", "%Y-%m-%d").date()
+DEFAULT_SEMESTER_START = datetime.strptime("2026-09-01", "%Y-%m-%d").date()
 
 _EXAM_MAIN_MSG_ID: Optional[int] = None
+
+
+async def get_effective_semester_start() -> date:
+    """Определяет актуальную дату старта семестра из расписания КТМУ."""
+    try:
+        from services.schedule_parser import fetch_schedule_data
+        data = await fetch_schedule_data(force_refresh=False)
+        if data:
+            s_str = data.get("config", {}).get("semesterStart")
+            if s_str:
+                return datetime.strptime(s_str, "%Y-%m-%d").date()
+    except Exception as e:
+        log.warning(f"Не удалось получить semesterStart для экзаменов: {e}")
+    return DEFAULT_SEMESTER_START
 
 
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -44,23 +58,22 @@ def save_exam_topic_state(msg_id: Optional[int]) -> None:
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
 
-def get_week_date_range_str(week_num: int) -> str:
-    """
-    Вычисляет диапазон дат для порядкового номера учебной недели.
-    """
-    start_sunday = SEMESTER_START + timedelta(days=(6 - SEMESTER_START.weekday()))
+def get_week_date_range_str(week_num: int, semester_start: Optional[date] = None) -> str:
+    """Вычисляет диапазон дат для порядкового номера учебной недели."""
+    start_d = semester_start or DEFAULT_SEMESTER_START
+    start_sunday = start_d + timedelta(days=(6 - start_d.weekday()))
     if week_num == 1:
-        return f"{SEMESTER_START.strftime('%d.%m')}–{start_sunday.strftime('%d.%m')}"
+        return f"{start_d.strftime('%d.%m')}–{start_sunday.strftime('%d.%m')}"
 
     mon = start_sunday + timedelta(days=1) + timedelta(weeks=week_num - 2)
     sun = mon + timedelta(days=6)
     return f"{mon.strftime('%d.%m')}–{sun.strftime('%d.%m.%Y')}"
 
 
-def format_exam_card(ex: ExamItem) -> str:
+def format_exam_card(ex: ExamItem, semester_start: Optional[date] = None) -> str:
     """Формирует карточку аттестации/экзамена с HTML-экранированием."""
     if ex.weeks:
-        date_ranges = [get_week_date_range_str(w) for w in ex.weeks]
+        date_ranges = [get_week_date_range_str(w, semester_start) for w in ex.weeks]
         weeks_str = f"{', '.join(map(str, ex.weeks))} нед. (🗓 <b>{', '.join(date_ranges)}</b>)"
     else:
         weeks_str = "Дата уточняется"
@@ -80,10 +93,8 @@ def format_exam_card(ex: ExamItem) -> str:
 
 
 
-def format_exams_schedule_message(exams: List[ExamItem]) -> str:
-    """
-    Форматирует расписание экзаменов и аттестаций в чистый HTML.
-    """
+def format_exams_schedule_message(exams: List[ExamItem], semester_start: Optional[date] = None) -> str:
+    """Форматирует расписание экзаменов и аттестаций в чистый HTML."""
     header = (
         "📑 <b>АТТЕСТАЦИИ И ЭКЗАМЕНЫ ГРУППЫ 1-КПД-3</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -91,7 +102,7 @@ def format_exams_schedule_message(exams: List[ExamItem]) -> str:
     if not exams:
         return header + "<i>Информация о зачётах и экзаменах формируется...</i> ☕️"
 
-    blocks = [format_exam_card(ex) for ex in exams]
+    blocks = [format_exam_card(ex, semester_start) for ex in exams]
     return header + "\n\n".join(blocks)
 
 
@@ -187,7 +198,8 @@ async def sync_exam_topic_message() -> bool:
         _EXAM_MAIN_MSG_ID = load_exam_topic_state()
 
     exams = await get_api_exams()
-    text = format_exams_schedule_message(exams)
+    sem_start = await get_effective_semester_start()
+    text = format_exams_schedule_message(exams, sem_start)
     try:
         return await send_or_edit_exam_msg(text)
     except Exception as e:

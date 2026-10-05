@@ -96,6 +96,9 @@ async def create_attendance_session(
     initiator_id: int
 ) -> AttendanceSession:
     """Инициализирует новую сессию опроса и сохраняет в Redis."""
+    active = await get_active_session()
+    if active and active.initiator_id != initiator_id:
+        raise PermissionError(f"Сессия уже занята пользователем {active.initiator_id}")
     students = await fetch_target_students(target_date)
     session = AttendanceSession(
         target_date=target_date.isoformat(),

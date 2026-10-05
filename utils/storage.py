@@ -84,3 +84,19 @@ async def save_json(file_path: str, data: Any) -> bool:
     :return: True при успехе
     """
     return await asyncio.to_thread(sync_atomic_save_json, file_path, data)
+
+
+def resolve_data_path(file_name: str, service: str = "bot") -> str:
+    """
+    Разрешает путь к файлу данных сервиса с fallback на корневой data/.
+
+    Проверяет существование data/{service}/{file_name},
+    если не найден — возвращает data/{file_name}.
+    """
+    scoped = os.path.join("data", service, file_name)
+    if os.path.exists(scoped):
+        return scoped
+    root = os.path.join("data", file_name)
+    if os.path.exists(root):
+        return root
+    return scoped

@@ -357,3 +357,82 @@ async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> Non
     )
     await message.answer(res_text, reply_markup=get_admin_main_kb())
 
+
+class BindStudentState(StatesGroup):
+    waiting_for_tg_id = State()
+
+
+def _build_unbound_students_kb() -> InlineKeyboardMarkup:
+    """Формирует клавиатуру студентов для привязки Telegram ID."""
+    from services.classmates_auth import load_classmates_registry
+    registry = load_classmates_registry()
+    kb_rows = []
+    for idx, student in enumerate(registry):
+        fio = student.get("full_name", f"Студент {idx}")
+        tg_id = student.get("tg_id")
+        status = "✅" if tg_id else "⚠️"
+        btn_text = f"{status} {fio.split()[0]} {fio.split()[1][:1]}."
+        kb_rows.append([InlineKeyboardButton(text=btn_text, callback_data=f"admin:bind_user:{idx}")])
+    kb_rows.append([InlineKeyboardButton(text="◀️ В главную панель", callback_data="admin:menu")])
+    return InlineKeyboardMarkup(inline_keyboard=kb_rows)
+
+
+@router.callback_query(F.data == "admin:bind_student")
+async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None:
+    """Отображает список студентов для привязки Telegram ID."""
+    text = (
+        "👥 <b>Привязка Telegram ID студентов</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Выберите студента, чтобы привязать или изменить его цифровой Telegram ID:\n"
+        "<i>(⚠️ — ID не привязан, ✅ — ID привязан)</i>"
+    )
+    kb = _build_unbound_students_kb()
+    await _safe_edit_admin_message(callback.message, text, kb)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin:bind_user:"))
+async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) -> None:
+    """Запрашивает ввод Telegram ID для выбранного студента."""
+    from services.classmates_auth import load_classmates_registry
+    idx = int(callback.data.split(":")[-1])
+    registry = load_classmates_registry()
+    if idx >= len(registry):
+        await callback.answer("Студент не найден", show_alert=True)
+        return
+    student = registry[idx]
+    fio = student.get("full_name", "")
+    await state.set_state(BindStudentState.waiting_for_tg_id)
+    await state.update_data(student_name=fio)
+    prompt = (
+        f"👤 <b>Привязка ID: {fio}</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Отправьте числовой Telegram ID студента (например, <code>1834107464</code>):"
+    )
+    await _safe_edit_admin_message(callback.message, prompt)
+    await callback.answer()
+
+
+@router.message(BindStudentState.waiting_for_tg_id, F.chat.type == "private")
+async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None:
+    """Фиксирует Telegram ID студента в реестре и завершает FSM."""
+    raw_id = (message.text or "").strip()
+    if not raw_id.isdigit():
+        await message.answer("⚠️ Ошибка: Telegram ID должен состоять только из цифр. Повторите ввод:")
+        return
+    data = await state.get_data()
+    fio = data.get("student_name", "")
+    from services.classmates_auth import bind_student_tg_id
+    updated = bind_student_tg_id(fio, int(raw_id))
+    await state.clear()
+    if not updated:
+        await message.answer(f"❌ Не удалось привязать ID для {fio}.", reply_markup=get_admin_main_kb())
+        return
+    text = (
+        f"🎉 <b>Студент успешно авторизован!</b>\n"
+        f"👤 <b>ФИО:</b> {fio}\n"
+        f"🆔 <b>Telegram ID:</b> <code>{raw_id}</code>\n\n"
+        "<i>Теперь студент имеет доступ ко всем командам бота.</i>"
+    )
+    await message.answer(text, reply_markup=get_admin_main_kb())
+

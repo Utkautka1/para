@@ -77,6 +77,47 @@ classDiagram
         +check_file_info(file_id, token) dict
         +get_file(file_id, token) bytes
         +put_file(file_id, content, token) bool
+        +check_session_ownership(session, user_id) bool
+    }
+
+    class BirthdayService {
+        +check_and_send_birthday_congratulations(bot) void
+        +is_morning_congrats_time(now_dt) bool
+        +format_birthday_registry_text() str
+    }
+
+    class ClassmatesAuthService {
+        +is_classmate(user_id, username) bool
+        +bind_student_tg_id(full_name, tg_id) bool
+        +get_all_classmates() list
+    }
+
+    class ExamTopicUpdater {
+        +sync_exam_topic_message(force_refresh) bool
+        +get_effective_semester_start() date
+        +format_exams_schedule_message(exams, sem_start) str
+    }
+
+    class BaseIntegration {
+        <<abstract>>
+        +str service_name
+        +ping() bool
+        +close() void
+    }
+
+    class BaseServiceManager {
+        <<abstract>>
+        +str name
+        +bool _is_running
+        +start() void
+        +stop() void
+    }
+
+    class DeepSeekIntegration {
+        +client AsyncOpenAI
+        +ping() bool
+        +close() void
+        +solve_homework(image, prompt) str
     }
 
     class RedisStateManager {
@@ -120,6 +161,10 @@ classDiagram
     HomeworkSolverService --> RedisStateManager : BLMOVE HW queue
     HomeworkSolverService --> DeepSeekProvider : generate step solution
     HomeworkSolverService --> TelegramGateway : send docx to student
+    DeepSeekIntegration --|> BaseIntegration : implements
+    WopiAttendanceService --|> BaseIntegration : implements
+    TopicWorkerService --|> BaseServiceManager : implements
+    HomeworkSolverService --|> BaseServiceManager : implements
     WopiAttendanceService --> RedisStateManager : token validation
     WopiAttendanceService --> YandexOfficeProvider : spreadsheet sync
 ```
@@ -451,8 +496,11 @@ classDiagram
         +str group_name
         +date target_date
         +int period
-        +int admin_id
-        +str file_path
+        +int initiator_id
+        +str initiator_name
+        +int current_idx
+        +dict marks
+        +check_session_ownership(user_id) bool
     }
 
     class WopiController {
@@ -514,6 +562,8 @@ classDiagram
 4. **All-Time Multi-Month Tally**: `AttendanceStatsService` scans all historical monthly sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`...), aggregates cumulative counts (`П`, `О`, `У`, `Н`) for each student, and stores the structured result in Redis (`att:stats:all_time`) with a 1-hour TTL. Excused absences (`У`) are considered legitimate and do not lower the academic percentage.
 5. **Academic Leagues Dashboard (Thread ID 7025)**: `AttendanceTopicUpdater` maintains an idempotent pinned message in the dedicated Telegram Topic containing the full group ranking divided into 3 Academic Leagues (Gold 90-100%, Silver 60-89%, Risk Zone <60%), clean single-line rows without line-wrapping, and progress bars. Late arrivals are formatted as `N оп` to eliminate optical confusion with the number 10. Background sync adapts between 3 min (daytime 08-19) and 15 min (night).
 6. **Student Self-Service (`/my_attendance`)**: Students can check their private cumulative record and percentage of attendance in PM without group disclosure.
+7. **Headman Concurrency Isolation**: `create_attendance_session` checks the active session in `att:active_session`. If an uncommitted survey is held by another administrator, creation is rejected (`PermissionError`). All interactive inline callbacks enforce `check_session_ownership(session, cb.from_user.id)` to prevent dual-headman split-brain marking.
+8. **Morning Birthday Dispatch & Dynamic Semester Alignment**: Birthday congratulations are restricted to daylight hours (`is_morning_congrats_time`, >= 07:00 MSK). `ExamTopicUpdater` automatically resolves `semesterStart` from the live KTMU timetable payload, supporting dynamic academic calendars without hardcoded date limits.
 
 ---
 

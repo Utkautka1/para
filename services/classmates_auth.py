@@ -104,6 +104,26 @@ def update_classmate_tg_id(clean_username: str, tg_id: int) -> Optional[Dict[str
     return updated_student
 
 
+def bind_student_tg_id(full_name: str, tg_id: int) -> Optional[Dict[str, Any]]:
+    """Привязывает Telegram ID к студенту по ФИО для студентов без username."""
+    registry = load_classmates_registry()
+    target_clean = full_name.strip().lower()
+    updated = None
+    for student in registry:
+        if student.get("full_name", "").strip().lower() == target_clean:
+            student["tg_id"] = tg_id
+            updated = student
+            break
+    if updated:
+        sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
+        clear_registry_cache()
+        uname = updated.get("username")
+        if uname:
+            add_user_to_cache(uname.lstrip("@").lower(), tg_id)
+        log.info(f"Ручная привязка ID: {updated['full_name']} -> tg_id={tg_id}")
+    return updated
+
+
 def is_authorized_user(user: Optional[User]) -> bool:
     """
     Проверяет, авторизован ли пользователь (Администратор или студент с ID).

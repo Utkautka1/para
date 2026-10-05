@@ -193,7 +193,7 @@ def format_birthday_registry_text(items: List[Dict[str, Any]]) -> str:
         lines.extend(format_season_block(title, months, items))
 
     lines.append("────────────────────────────")
-    lines.append("<i>🔄 Бот ежедневно обновляет реестр и поздравляет в 09:00</i>")
+    lines.append("<i>🔄 Бот ежедневно обновляет реестр и поздравляет в 07:00</i>")
     return "\n".join(lines).strip()
 
 
@@ -287,8 +287,17 @@ async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
     await _send_congrats_telegram(text, person_key, congrats_key, congrats_state)
 
 
+def is_morning_congrats_time(now_dt: datetime) -> bool:
+    """Проверяет наступление утреннего времени поздравлений (07:00 МСК)."""
+    return now_dt.hour >= 7
+
+
 async def check_and_send_birthday_congratulations(items: List[Dict[str, Any]], today: date) -> None:
-    """Проверяет сегодняшних именинников и отправляет поздравления."""
+    """Проверяет сегодняшних именинников и отправляет поздравления строго с 07:00."""
+    now_dt = datetime.now(TIMEZONE)
+    if not is_morning_congrats_time(now_dt):
+        log.debug(f"Поздравления с ДР ожидают наступления 07:00 (сейчас {now_dt.strftime('%H:%M')})")
+        return
     today_str = today.isoformat()
     for item in items:
         if item.get("is_today"):

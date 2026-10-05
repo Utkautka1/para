@@ -118,9 +118,32 @@ def parse_start_callback(data: str):
     return datetime.now(TIMEZONE).date(), int(parts[2])
 
 
+def get_initiator_title(initiator_id: int) -> str:
+    """Возвращает читаемый статус инициатора опроса (Староста / Замстаросты)."""
+    from config import ALLOWED_USER_ID
+    return "Староста" if initiator_id == ALLOWED_USER_ID else "Замстаросты"
+
+
+async def check_session_ownership(cb: CallbackQuery, session) -> bool:
+    """Проверяет принадлежность активной сессии текущему старосте."""
+    if not session:
+        await cb.answer("Сессия завершена или не найдена", show_alert=True)
+        return False
+    if session.initiator_id != cb.from_user.id:
+        title = get_initiator_title(session.initiator_id)
+        await cb.answer(f"⚠️ Опрос сейчас заполняет {title}. Действие отклонено.", show_alert=True)
+        return False
+    return True
+
+
 @router.callback_query(F.data.startswith("att:start:"))
 async def cb_start_attendance(cb: CallbackQuery) -> None:
     """Инициализирует сессию отметки и выводит первого студента."""
+    active = await get_active_session()
+    if active and active.initiator_id != cb.from_user.id:
+        title = get_initiator_title(active.initiator_id)
+        await cb.answer(f"⚠️ Опрос уже проводит {title}! Дождитесь завершения.", show_alert=True)
+        return
     await cb.answer()
     target_date, lesson_num = parse_start_callback(cb.data)
     lessons = await get_api_schedule_for_date(target_date)
@@ -144,6 +167,9 @@ async def cb_start_attendance(cb: CallbackQuery) -> None:
 @router.callback_query(F.data.startswith("att:mark:"))
 async def cb_mark_student(cb: CallbackQuery) -> None:
     """Фиксирует отметку и переключает на следующего студента."""
+    session = await get_active_session()
+    if not await check_session_ownership(cb, session):
+        return
     mark = cb.data.split(":")[2]
     session = await record_student_mark(mark)
     if not session:
@@ -162,6 +188,9 @@ async def cb_mark_student(cb: CallbackQuery) -> None:
 @router.callback_query(F.data == "att:back")
 async def cb_step_back(cb: CallbackQuery) -> None:
     """Возвращает к предыдущему студенту для исправления отметки."""
+    session = await get_active_session()
+    if not await check_session_ownership(cb, session):
+        return
     session = await step_back()
     if not session:
         await cb.answer("Сессия не найдена", show_alert=True)
@@ -177,6 +206,9 @@ async def cb_step_back(cb: CallbackQuery) -> None:
 @router.callback_query(F.data == "att:all_p")
 async def cb_all_present(cb: CallbackQuery) -> None:
     """Проставляет 'П' всем оставшимся студентам и завершает опрос."""
+    session = await get_active_session()
+    if not await check_session_ownership(cb, session):
+        return
     session = await mark_all_remaining_present()
     if not session:
         await cb.answer("Сессия не найдена", show_alert=True)
@@ -198,6 +230,11 @@ async def cb_cancel_lesson(cb: CallbackQuery) -> None:
 @router.callback_query(F.data == "att:abort")
 async def cb_abort_survey(cb: CallbackQuery) -> None:
     """Прерывает активный опрос старостой."""
+    session = await get_active_session()
+    if session and session.initiator_id != cb.from_user.id:
+        title = get_initiator_title(session.initiator_id)
+        await cb.answer(f"⚠️ Опрос проводит {title}. Отменить может только автор.", show_alert=True)
+        return
     await clear_session()
     if cb.message:
         await cb.message.edit_text("❌ Опрос посещаемости прерван.")
