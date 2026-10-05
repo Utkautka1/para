@@ -479,13 +479,30 @@ classDiagram
         +PutFile(access_token, content) bool
     }
 
+    class AttendanceStatsService {
+        +fetch_all_time_attendance(force_refresh) dict
+        +parse_workbook_attendance(workbook) dict
+        +find_student_attendance(stats, target_name) dict
+        +invalidate_attendance_stats_cache() void
+    }
+
+    class AttendanceTopicUpdater {
+        +sync_attendance_topic_message(force_refresh) bool
+        +recreate_attendance_topic_message() bool
+        +format_attendance_topic_message(stats) str
+        +attendance_topic_sync_loop() void
+    }
+
     WopiController --> RedisCacheManager : session token validation
     WopiController --> YandexDiskClient : reads and writes xlsx
     WopiController ..> AttendanceSession : parses session context
     YandexDocsEditor --> WopiController : WOPI REST protocol
+    AttendanceTopicUpdater --> AttendanceStatsService : requests aggregated metrics
+    AttendanceTopicUpdater --> RedisCacheManager : caches snapshot
+    AttendanceStatsService --> YandexDiskClient : downloads workbook sheets
 ```
 
-### WOPI Session Lifecycle
+### WOPI Session Lifecycle & All-Time Registry
 
 1. **Session Provisioning**: When the admin clicks "Mark Attendance", the bot issues a secure access token and creates a session in Redis `att:session:{id}` with a 1-hour TTL.
 2. **Cloud Office Interaction**: Yandex Documents connects to the backend:
@@ -493,7 +510,9 @@ classDiagram
    - `GetFile`: streams the binary `.xlsx` spreadsheet loaded from Yandex Disk;
    - `PutFile`: receives and updates the modified spreadsheet directly back to Yandex Disk storage.
 3. **Optimistic Non-Blocking Commit**: Upon completing attendance input in the Telegram UI, the admin immediately receives the session summary and a pending sync badge (`⏳ Синхронизация...`). An asynchronous task (`_async_commit_and_update`) persists records to the Yandex Table and updates the message in place (`✅ Успешно сохранено`).
-4. **Commit Notification**: Upon successful saving, the backend flags `att:committed:{group}:{date}:{period}` and notifies the group admin in Telegram.
+4. **All-Time Multi-Month Tally**: `AttendanceStatsService` scans all historical monthly sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`...), aggregates cumulative counts (`П`, `О`, `У`, `Н`) for each student, and stores the structured result in Redis (`att:stats:all_time`) with a 1-hour TTL.
+5. **Real-Time Topic Registry (Thread ID 7025)**: `AttendanceTopicUpdater` maintains an idempotent pinned message in the dedicated Telegram Topic containing the full group ranking and visual status badges (`✅`, `⏰`, `📋`, `❌`). On each successful admin commit or button press (`att_topic:refresh`), the topic message updates automatically.
+6. **Student Self-Service (`/my_attendance`)**: Students can check their private cumulative record and percentage of attendance in PM without group disclosure.
 
 ---
 

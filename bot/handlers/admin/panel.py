@@ -99,32 +99,41 @@ async def cb_admin_sync(callback: CallbackQuery) -> None:
     await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 
 
+async def _get_redis_memory_stat() -> str:
+    """Безопасно извлекает объем используемой оперативной памяти Redis."""
+    try:
+        from services.redis_cache import init_redis
+        r = await init_redis()
+        if r:
+            info = await r.info("memory")
+            return info.get("used_memory_human", "OK")
+    except Exception:
+        pass
+    return "N/A"
+
+
 async def _collect_health_summary() -> str:
     """Собирает диагностические метрики всех компонентов системы."""
     from db.subscribers import load_subscribers
+    from services.attendance_topic_updater import load_attendance_topic_state
     from services.classmates_auth import load_classmates_registry
-    from services.redis_cache import init_redis
     from services.yandex_docs import get_effective_yandex_cookie
     subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
     res_t = await fetch_teachers(force_refresh=False)
     teach_cnt = res_t.get("count", 0)
     has_cookie = bool(await get_effective_yandex_cookie())
-    redis_mem = "N/A"
-    try:
-        r = await init_redis()
-        if r:
-            info = await r.info("memory")
-            redis_mem = info.get("used_memory_human", "OK")
-    except Exception:
-        redis_mem = "Ошибка"
+    redis_mem = await _get_redis_memory_stat()
     cookie_badge = "✅ Активна" if has_cookie else "⚠️ Отсутствует"
+    att_id = load_attendance_topic_state()
+    att_badge = f"✅ MSG #{att_id}" if att_id else "⚠️ Не создан"
     return (
         f"📊 <b>ДИАГНОСТИКА СИСТЕМЫ:</b>\n"
         f"• <b>Redis (RAM):</b> <code>{redis_mem}</code>\n"
         f"• <b>Преподаватели:</b> <code>{teach_cnt}</code> контактов\n"
         f"• <b>Одногруппники:</b> <code>{class_cnt}</code> в реестре\n"
         f"• <b>Подписчики ЛС:</b> <code>{subs_cnt}</code> чел.\n"
-        f"• <b>Сессия Яндекс:</b> {cookie_badge}"
+        f"• <b>Сессия Яндекс:</b> {cookie_badge}\n"
+        f"• <b>Топик посещаемости:</b> {att_badge}"
     )
 
 
@@ -176,6 +185,28 @@ async def cb_admin_recreate_exam(callback: CallbackQuery) -> None:
     from services.exam_topic_updater import recreate_exam_topic_message
     success = await recreate_exam_topic_message()
     note = "🔁 Сообщение экзаменов пересоздано!" if success else "⚠️ Ошибка пересоздания."
+    text = format_admin_panel_text(note)
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
+
+
+@router.callback_query(F.data == "admin:force_att_topic")
+async def cb_admin_force_att_topic(callback: CallbackQuery) -> None:
+    """Принудительно обновляет сводный реестр посещаемости в топике."""
+    await _ack_admin_callback(callback, "⏳ Обновляю реестр посещаемости...")
+    from services.attendance_topic_updater import sync_attendance_topic_message
+    success = await sync_attendance_topic_message(force_refresh=True)
+    note = "📊 Реестр посещаемости обновлён!" if success else "⚠️ Не удалось обновить реестр."
+    text = format_admin_panel_text(note)
+    await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
+
+
+@router.callback_query(F.data == "admin:recreate_att_topic")
+async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None:
+    """Удаляет старое сообщение реестра и создаёт новое в топике посещаемости."""
+    await _ack_admin_callback(callback, "🔁 Пересоздаю сообщение посещаемости...")
+    from services.attendance_topic_updater import recreate_attendance_topic_message
+    success = await recreate_attendance_topic_message()
+    note = "🔁 Реестр посещаемости пересоздан!" if success else "⚠️ Ошибка пересоздания."
     text = format_admin_panel_text(note)
     await _safe_edit_admin_message(callback.message, text, get_admin_main_kb())
 

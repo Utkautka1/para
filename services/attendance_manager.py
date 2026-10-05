@@ -213,12 +213,23 @@ async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
     return True
 
 
+async def _post_commit_sync() -> None:
+    """Инвалидирует кэш статистики и обновляет реестр в топике посещаемости."""
+    try:
+        from services.attendance_stats import invalidate_attendance_stats_cache
+        from services.attendance_topic_updater import sync_attendance_topic_message
+        await invalidate_attendance_stats_cache()
+        await sync_attendance_topic_message(force_refresh=True)
+    except Exception as e:
+        log.warning(f"Ошибка пост-коммит обновления топика посещаемости: {e}")
+
+
 async def commit_session_to_table(session: AttendanceSession) -> bool:
     """
     Выгружает все зафиксированные отметки сессии в Яндекс Документы.
 
     До MAX_COMMIT_RETRIES попыток с пересозданием WOPI-сессии.
-    После подтвержденного сохранения сбрасывает сессию и возвращает True.
+    После подтвержденного сохранения сбрасывает сессию и обновляет топик.
     """
     t_date = date.fromisoformat(session.target_date)
     for attempt in range(1, MAX_COMMIT_RETRIES + 1):
@@ -227,6 +238,7 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
             if await _try_commit_once(session, t_date):
                 log.info(f"✅ Посещаемость пары {session.lesson_num} зафиксирована")
                 await clear_session()
+                asyncio.create_task(_post_commit_sync())
                 return True
         except Exception as e:
             log.error(f"Попытка {attempt} провалилась: {type(e).__name__}: {e}")

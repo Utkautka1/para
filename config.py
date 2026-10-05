@@ -57,6 +57,7 @@ EXAM_TOPIC_THREAD_ID: int = int(get_required_env("EXAM_TOPIC_THREAD_ID"))
 FLOOD_TOPIC_THREAD_ID: int = int(os.getenv("FLOOD_TOPIC_THREAD_ID", "4"))
 BIRTHDAY_TOPIC_THREAD_ID: int = int(get_required_env("BIRTHDAY_TOPIC_THREAD_ID"))
 IMPORTANT_TOPIC_THREAD_ID: int = int(get_required_env("IMPORTANT_TOPIC_THREAD_ID"))
+ATTENDANCE_TOPIC_THREAD_ID: int = int(get_required_env("ATTENDANCE_TOPIC_THREAD_ID"))
 EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
 
 # Настройки прокси (опционально)
