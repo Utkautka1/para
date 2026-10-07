@@ -9,7 +9,7 @@ import asyncio
 import io
 import time
 import zipfile
-from typing import Dict, Optional, Tuple, TypedDict
+from typing import Any, Dict, Optional, Tuple, TypedDict
 import httpx
 
 import defusedxml.ElementTree as ET
@@ -56,7 +56,7 @@ async def fetch_docx_bytes() -> Optional[bytes]:
         return None
 
 
-def extract_row_texts(row_elem: ET.Element) -> Tuple[str, str]:
+def extract_row_texts(row_elem: Any) -> Tuple[str, str]:
     """
     Извлекает полное имя преподавателя и строку ссылок из таблицы docx.
 
