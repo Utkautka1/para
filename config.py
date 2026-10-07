@@ -94,3 +94,38 @@ YANDEX_COOKIE: str = os.getenv("YANDEX_COOKIE", "")
 # Ключ хранения актуальных Cookie в Redis и их TTL (60 дней)
 REDIS_YANDEX_COOKIE_KEY: str = "yandex:session_cookie"
 REDIS_COOKIE_TTL_SECONDS: int = 5184000
+
+# Централизованные пути к файлам данных
+BIRTHDAYS_FILE_PATH: str = "data/birthdays.json"
+WISHES_FILE_PATH: str = "data/birthday_wishes.json"
+STAROSTA_WISHES_FILE_PATH: str = "data/starosta_wishes.json"
+BIRTHDAY_TOPIC_STATE_FILE: str = "data/birthday_topic_state.json"
+HISTORY_FILE_PATH: str = "data/birthday_history.json"
+STAROSTA_HISTORY_FILE_PATH: str = "data/starosta_history.json"
+CONGRATS_STATE_FILE_PATH: str = "data/birthday_congrats_state.json"
+EXAM_TOPIC_STATE_FILE: str = "data/exam_topic_state.json"
+ATTENDANCE_TOPIC_STATE_FILE: str = "data/attendance_topic_state.json"
+TOPIC_STATE_FILE: str = "data/topic_state.json"
+USER_CACHE_FILE_PATH: str = "data/user_cache.json"
+CUSTOM_TEACHERS_FILE_PATH: str = "data/custom_teachers.json"
+
+# Лимиты и таймауты фонового решебника ДЗ
+HW_MAX_FILE_SIZE: int = 20 * 1024 * 1024
+HW_MAX_PROMPT_TEXT_LENGTH: int = 15000
+HW_MAX_TASK_RETRIES: int = 3
+HW_QUEUE_KEY: str = "hw:tasks:queue"
+HW_PROCESSING_KEY: str = "hw:tasks:processing"
+HW_DLQ_KEY: str = "hw:tasks:dlq"
+
+# Ключи расписания и отложенной очистки сообщений в Redis
+SNAPSHOT_KEY: str = "schedule:snapshot"
+SNAPSHOT_META_KEY: str = "schedule:snapshot:meta"
+TOPIC_CLEANUP_KEY: str = "cleanup:topic_messages"
+
+# Параметры сессий отметки посещаемости
+ATTENDANCE_SESSION_TTL_SECONDS: int = 7200
+ATTENDANCE_MAX_COMMIT_RETRIES: int = 3
+ATTENDANCE_COMMIT_RETRY_DELAY_SECONDS: int = 5
+ATTENDANCE_STATS_CACHE_TTL_SECONDS: int = 300
+SCHEDULE_COOLDOWN_SECONDS: int = 300
+

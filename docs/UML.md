@@ -87,31 +87,37 @@ classDiagram
     }
 
     class ClassmatesAuthService {
-        +is_classmate(user_id, username) bool
-        +bind_student_tg_id(full_name, tg_id) bool
-        +get_all_classmates() list
+        +is_authorized_user(user) bool
+        +find_classmate_by_tg_id(user_id) dict
+        +find_unregistered_by_username(username) dict
+        +update_classmate_tg_id(username, tg_id) dict
+        +process_user_auth(user) tuple
     }
 
     class ExamTopicUpdater {
         +sync_exam_topic_message(force_refresh) bool
         +get_effective_semester_start() date
+        +get_default_semester_start() date
         +format_exams_schedule_message(exams, sem_start) str
     }
 
     class DeepSeekIntegrationModule {
         +solve_homework(image_bytes, prompt) str
         +build_deepseek_messages(prompt, b64_img) list
-        +encode_image_bytes(image_bytes) str
+        +sanitize_prompt_input(text) str
+        +get_deepseek_client() AsyncOpenAI
+        +close_deepseek_client() void
     }
 
     class RedisStateManager {
         +get_snapshot(key) dict
         +set_snapshot(key, data, ttl) void
         +push_task(queue, item) void
-        +blmove_task(src, dst) str
-        +ack_task(dst, item) bool
-        +check_flag(key) bool
-        +set_flag(key, ttl) void
+        +pop_hw_task(timeout) dict
+        +ack_hw_task(task_data) void
+        +nack_hw_task(task_data, max_retries) bool
+        +recover_stale_hw_tasks() int
+        +redis_lock(key, ttl) AsyncGenerator
         +zadd_cleanup(set, score, item) void
         +zpop_expired(set, max_score) list
     }
@@ -428,8 +434,9 @@ classDiagram
 
     class RedisCacheManager {
         +push_hw_task(task_json) void
-        +pop_hw_task(timeout) str
-        +ack_hw_task(raw_task) bool
+        +pop_hw_task(timeout) dict
+        +ack_hw_task(raw_task) void
+        +nack_hw_task(task_data, max_retries) bool
         +recover_stale_hw_tasks() int
     }
 
@@ -459,7 +466,8 @@ classDiagram
 
 1. **Atomic Ingestion (`BLMOVE`)**: The consumer extracts tasks from `hw:tasks:queue` and simultaneously moves them to `hw:tasks:processing`. If the container crashes mid-computation, the task remains preserved in `processing`.
 2. **Daemon Crash Recovery**: On startup, `recover_stale_hw_tasks` safely relocates any orphaned tasks from `processing` back to `queue` via atomic `RPOPLPUSH`.
-3. **GOST Academic Formatting**: Solved Markdown formulas are translated into Microsoft Word `.docx` documents adhering strictly to Russian academic GOST formatting (Times New Roman 14pt, 1.5 line spacing, 30-15-20-20 mm margins). The task is acknowledged via `LREM` only after document delivery.
+3. **Fault-Tolerant Retries & DLQ**: When a task encounters unrecoverable errors or parsing timeouts, `nack_hw_task` retries up to 3 times before shunting the poisoned task into Dead Letter Queue `hw:tasks:dlq`, alerting admins and keeping the main queue unblocked.
+4. **GOST Academic Formatting**: Solved Markdown formulas are translated into Microsoft Word `.docx` documents adhering strictly to Russian academic GOST formatting (Times New Roman 14pt, 1.5 line spacing, 30-15-20-20 mm margins). The task is acknowledged via `LREM` only after document delivery.
 
 ---
 

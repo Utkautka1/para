@@ -20,12 +20,12 @@ import config
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import init_redis, redis_client
-from integrations.deepseek import solve_homework
+from integrations.deepseek import close_deepseek_client, solve_homework
 from utils.doc_generator import create_solution_docx
-from core.redis_cache import ack_hw_task, pop_hw_task, recover_stale_hw_tasks
+from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task, recover_stale_hw_tasks
 
 log = get_logger("solver_worker")
-MAX_FILE_SIZE = 20 * 1024 * 1024
+MAX_FILE_SIZE = config.HW_MAX_FILE_SIZE
 
 
 def build_post_link(chat_id: int, message_id: int) -> str:
@@ -62,6 +62,8 @@ def extract_docx_data(doc_bytes: bytes) -> Tuple[str, List[bytes]]:
                 paragraphs.append(row_txt)
     images = []
     for rel in doc.part.rels.values():
+        if getattr(rel, "is_external", False):
+            continue
         if "image" in rel.target_ref and hasattr(rel.target_part, "blob"):
             images.append(rel.target_part.blob)
     return "\n".join(paragraphs), images
@@ -94,6 +96,8 @@ def parse_file_payload(doc_bytes: bytes, file_name: str, mime: Optional[str], pr
         return None, combined or None
     if fn.endswith((".txt", ".md", ".py", ".json", ".csv", ".c", ".cpp", ".js", ".java")):
         txt = doc_bytes.decode("utf-8", errors="ignore")
+        if len(txt) > config.HW_MAX_PROMPT_TEXT_LENGTH:
+            txt = txt[:config.HW_MAX_PROMPT_TEXT_LENGTH] + "\n...[Текст обрезан по лимиту]..."
         return None, f"{prompt}\n\n[Содержимое {file_name}]:\n{txt}".strip()
     return None, prompt or None
 
@@ -159,8 +163,9 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
         log.info(f"✅ Решение ДЗ msg_id={msg_id} успешно доставлено в топик решений!")
     except Exception as e:
         log.error(f"❌ Сбой обработки ДЗ msg_id={msg_id}: {e}")
-        await notify_task_error(tg_bot, task)
-        await ack_hw_task(task)
+        requeued = await nack_hw_task(task, max_retries=config.HW_MAX_TASK_RETRIES)
+        if not requeued:
+            await notify_task_error(tg_bot, task)
     finally:
         if os.path.exists(doc_path):
             os.remove(doc_path)
@@ -198,6 +203,7 @@ async def main() -> None:
     try:
         await run_solver_loop()
     finally:
+        await close_deepseek_client()
         if redis_client:
             await redis_client.aclose()
         await bot.session.close()

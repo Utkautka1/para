@@ -13,17 +13,26 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 from aiogram.exceptions import TelegramBadRequest
 
-from config import EXAM_TOPIC_THREAD_ID, TOPIC_CHAT_ID
+from config import EXAM_TOPIC_STATE_FILE, EXAM_TOPIC_THREAD_ID, TOPIC_CHAT_ID
 from core.api_client import get_api_exams
 from core.bot import bot
 from core.logger import get_logger
 from services.models import ExamItem
+from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("exam_topic_updater")
-STATE_FILE = "data/exam_topic_state.json"
-DEFAULT_SEMESTER_START = datetime.strptime("2026-09-01", "%Y-%m-%d").date()
-
+STATE_FILE = EXAM_TOPIC_STATE_FILE
 _EXAM_MAIN_MSG_ID: Optional[int] = None
+
+
+def get_default_semester_start() -> date:
+    """Вычисляет 1 сентября текущего учебного года при недоступности API."""
+    today = date.today()
+    start_year = today.year if today.month >= 8 else today.year - 1
+    return date(start_year, 9, 1)
+
+
+DEFAULT_SEMESTER_START = get_default_semester_start()
 
 
 async def get_effective_semester_start() -> date:
@@ -37,30 +46,23 @@ async def get_effective_semester_start() -> date:
                 return datetime.strptime(s_str, "%Y-%m-%d").date()
     except Exception as e:
         log.warning(f"Не удалось получить semesterStart для экзаменов: {e}")
-    return DEFAULT_SEMESTER_START
-
-
-from utils.storage import sync_atomic_save_json, sync_load_json
+    return get_default_semester_start()
 
 
 def load_exam_topic_state() -> Optional[int]:
-    """
-    Загружает ID главного сообщения топика экзаменов.
-    """
+    """Загружает ID главного сообщения топика экзаменов."""
     data = sync_load_json(STATE_FILE, default={})
     return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
 def save_exam_topic_state(msg_id: Optional[int]) -> None:
-    """
-    Атомарно сохраняет ID главного сообщения топика экзаменов.
-    """
+    """Атомарно сохраняет ID главного сообщения топика экзаменов."""
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
 
 def get_week_date_range_str(week_num: int, semester_start: Optional[date] = None) -> str:
     """Вычисляет диапазон дат для порядкового номера учебной недели."""
-    start_d = semester_start or DEFAULT_SEMESTER_START
+    start_d = semester_start or get_default_semester_start()
     start_sunday = start_d + timedelta(days=(6 - start_d.weekday()))
     if week_num == 1:
         return f"{start_d.strftime('%d.%m')}–{start_sunday.strftime('%d.%m')}"

@@ -33,7 +33,7 @@ def get_redis_pool() -> ConnectionPool:
 async def init_redis() -> Optional[Redis]:
     """
     Инициализирует подключение к Redis через пул соединений.
-ю
+
     :return: Объект Redis или None при сбое сети
     """
     global redis_client
