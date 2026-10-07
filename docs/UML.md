@@ -13,7 +13,18 @@ Technical specification of the distributed system architecture, end-to-end data 
 5. [End-to-End Flow: Reliable AI Homework Solver Queue](#5-end-to-end-flow-reliable-ai-homework-solver-queue)
 6. [End-to-End Flow: Electronic Attendance Registry (WOPI)](#6-end-to-end-flow-electronic-attendance-registry-wopi)
 7. [Data Models & Redis Storage Structure](#7-data-models--redis-storage-structure)
-
+8. [User Interaction Flows & Per-Button Sequence Diagrams](#8-user-interaction-flows--per-button-sequence-diagrams)
+   - 8.1. [Команда /start и Авторизация одногруппника](#81-команда-start-и-авторизация-одногруппника)
+   - 8.2. [Кнопка 📅 Сегодня (sched:today)](#82-кнопка--сегодня-schedtoday)
+   - 8.3. [Кнопка 📆 Завтра (sched:tomorrow)](#83-кнопка--завтра-schedtomorrow)
+   - 8.4. [Кнопки ⏭ Неделя (След.) и ⏮ Неделя (Тек.)](#84-кнопки--неделя-след-и--неделя-тек-schedweek--schedweek_next)
+   - 8.5. [Кнопка 🔄 Обновить (sched:refresh)](#85-кнопка--обновить-schedrefresh)
+   - 8.6. [Кнопка 🔔/🔕 Напоминания и меню /notice](#86-кнопка-bell-напоминания-вклвыкл-schedtoggle_notify-и-меню-notice)
+   - 8.7. [Команда /my_attendance и кнопка 🔄 Обновить мои данные](#87-команда-my_attendance-и-кнопка--обновить-мои-данные-attmy_refresh)
+   - 8.8. [Команда /attendance старосты и пошаговый опрос (Сквозной WOPI)](#88-команда-attendance-старосты-и-пошаговый-опрос-сквозной-wopi)
+   - 8.9. [Кнопка дистанционной пары 🔗 N-я пара](#89-кнопка-дистанционной-пары--n-я-пара)
+   - 8.10. [Автоматический AI-Решебник Домашних Заданий (DeepSeek)](#810-автоматический-ai-решебник-домашних-заданий-deepseek)
+   - 8.11. [Панель управления старосты и администратора /admin](#811-панель-управления-старосты-и-администратора-admin)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -624,3 +635,545 @@ Comprehensive registry of all Redis keys, data structures, expiration policies, 
 | `att:session:{session_id}` | String (JSON) | 1 hour | Backend on headman action | Yandex Documents: ephemeral token validation following WOPI standard |
 | `att:committed:{group}:{date}:{period}` | String (flag) | 24 hours | WOPI controller on save | Bot & Worker: confirmation flag that attendance was marked for the lesson |
 | `topic:schedule_msg_id:{group}` | String (int) | Indefinite | Bot on initial timetable post | Topic Service: pinned main schedule message ID updated in-place |
+
+---
+
+## 8. User Interaction Flows & Per-Button Sequence Diagrams
+
+В данном разделе подробно визуализированы и описаны все сценарии взаимодействия пользователя (студента или старосты/администратора) с Telegram-ботом. Каждая кнопка, команда и фоновый процесс сопровождается отдельной UML Sequence-диаграммой стандарта Mermaid, раскрывающей внутреннюю архитектуру: контроллеры, фильтры авторизации, уровни кэширования L1/L2 Redis, взаимодействие с файловой системой, внешними API КТМУ, Яндекс Документами и очередями задач.
+
+---
+
+### 8.1 /start Command & Classmate Authentication
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Bot as "bot/handlers/user/schedule.py"
+    participant Filter as "ClassmateAuthFilter"
+    participant UserCache as "core/user_cache.py"
+    participant BDay as "data/birthdays.json"
+    participant SchedService as "services/schedule_service.py"
+    participant Redis as "Redis Cache (L1/L2)"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Отправка команды /start
+    TG->>Bot: MessageUpdate (command="/start", user_id, chat_id)
+    Bot->>Filter: check(message)
+    Filter->>BDay: Поиск user_id в списке одногруппников
+    alt user_id не найден в birthdays.json
+        Filter-->>Bot: False (Неавторизован)
+        Bot->>TG: sendMessage("⛔ Доступ запрещен. Бот только для группы 1-КПД-3.")
+        TG-->>Student: Отображение ошибки доступа
+    else user_id найден в birthdays.json
+        Filter-->>Bot: True (Авторизован)
+        Bot->>UserCache: register_user(user_id, username, full_name)
+        UserCache->>Redis: SADD "bot:registered_users" user_id
+        
+        Bot->>SchedService: get_day_schedule(date=today)
+        SchedService->>Redis: GET "sched:day_pack:{today}"
+        alt Кэш L1 существует
+            Redis-->>SchedService: JSON расписания на сегодня
+        else Промах кэша
+            SchedService->>SchedService: Загрузка из API/Excel КТМУ
+            SchedService->>Redis: SETEX "sched:day_pack:{today}" 7200 JSON
+        end
+        SchedService-->>Bot: DayScheduleDTO
+        
+        Bot->>Keyboards: get_main_schedule_keyboard(is_subscribed)
+        Keyboards-->>Bot: InlineKeyboardMarkup (Сегодня, Завтра, Неделя, Обновить, Уведомления)
+        Bot->>TG: sendMessage(text=Приветствие + Расписание, reply_markup=InlineKeyboard)
+        TG-->>Student: Отображение карточки расписания с кнопками
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **Фильтрация и Auth Guard**: `ClassmateAuthFilter` инспектирует `message.from_user.id`. Доступ предоставляется только студентам группы из `data/birthdays.json` или доверенным администраторам из `ADMIN_IDS`.
+2. **Регистрация активности**: Пользователь сохраняется в оперативном сете Redis `bot:registered_users` для рассылок и актуализации профиля.
+3. **Кэширование L1**: Расписание на текущий день извлекается за `<1.5ms` из ключа `sched:day_pack:{date}`.
+4. **Рендеринг интерфейса**: Собирается интерактивная клавиатура с кнопками управления днями, неделями, ссылками на онлайн-пары и тумблером уведомлений.
+
+---
+
+### 8.2 Button «📅 Сегодня» (sched:today)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Callback as "bot/handlers/user/schedule.py"
+    participant Throttle as "ThrottlingMiddleware"
+    participant SchedService as "services/schedule_service.py"
+    participant Redis as "Redis Cache (L1)"
+    participant KTMU as "KTMU Schedule Engine"
+    participant Formatter as "ScheduleFormatter"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Нажатие кнопки "📅 Сегодня"
+    TG->>Callback: CallbackQuery(data="sched:today", message_id)
+    Callback->>Throttle: check_rate_limit(user_id, action="sched")
+    alt Слишком частые клики (< 0.5 сек)
+        Throttle-->>TG: answerCallbackQuery("⏳ Подождите секунду...")
+    else Лимит соблюден
+        Callback->>SchedService: get_schedule_for_date(today)
+        SchedService->>Redis: GET "sched:day_pack:{today}"
+        alt Hit L1 Cache
+            Redis-->>SchedService: Cached DayPack
+        else Miss Cache
+            SchedService->>KTMU: fetch_latest_group_schedule()
+            KTMU-->>SchedService: Raw JSON / Sheets
+            SchedService->>Redis: SETEX "sched:day_pack:{today}" 7200 JSON
+        end
+        SchedService-->>Callback: DayScheduleDTO
+        
+        Callback->>Formatter: format_day_message(DayScheduleDTO)
+        Formatter-->>Callback: formatted_text
+        Callback->>Keyboards: get_main_schedule_keyboard()
+        Keyboards-->>Callback: InlineKeyboardMarkup
+        
+        Callback->>TG: editMessageText(chat_id, message_id, text, reply_markup)
+        TG-->>Student: Мгновенное обновление сообщения расписания
+        Callback->>TG: answerCallbackQuery("✅ Расписание на сегодня")
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **Rate Limiting**: Защита от спам-кликов предотвращает исчерпание лимитов Telegram Bot API.
+2. **In-place Edit**: Бот не спамит новыми сообщениями, а вызывает `editMessageText` того же сообщения, оптимизируя UI.
+3. **Форматирование статусов**: Определяются и подсвечиваются типы занятий (лекция, практика, лабораторная), номер кабинета и ФИО преподавателя.
+
+---
+
+### 8.3 Button «📆 Завтра» (sched:tomorrow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Callback as "bot/handlers/user/schedule.py"
+    participant DateHelper as "utils/date_helper.py"
+    participant SchedService as "services/schedule_service.py"
+    participant Redis as "Redis Cache"
+    participant Formatter as "ScheduleFormatter"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Нажатие кнопки "📆 Завтра"
+    TG->>Callback: CallbackQuery(data="sched:tomorrow")
+    Callback->>DateHelper: get_tomorrow_date(tz="Europe/Moscow")
+    DateHelper-->>Callback: target_date (today + 1 day)
+    
+    Callback->>SchedService: get_schedule_for_date(target_date)
+    SchedService->>Redis: GET "sched:day_pack:{target_date}"
+    alt В кэше Redis найдено
+        Redis-->>SchedService: JSON расписания
+    else Кэш пуст
+        SchedService->>SchedService: Синхронизация дня из мастер-снимка
+        SchedService->>Redis: SETEX "sched:day_pack:{target_date}" 7200 JSON
+    end
+    SchedService-->>Callback: DayScheduleDTO
+    
+    alt target_date — Воскресенье или выходной
+        Callback->>Formatter: format_day_off_message(target_date)
+    else Учебный день
+        Callback->>Formatter: format_day_message(DayScheduleDTO)
+    end
+    Formatter-->>Callback: formatted_text
+    
+    Callback->>Keyboards: get_main_schedule_keyboard()
+    Keyboards-->>Callback: InlineKeyboardMarkup
+    Callback->>TG: editMessageText(text=formatted_text, reply_markup)
+    Callback->>TG: answerCallbackQuery("✅ Завтра: {date}")
+    TG-->>Student: Обновленная карточка с парами на завтра
+```
+
+#### Что происходит «под капотом»:
+1. **Временные зоны**: Расчет даты `target_date` ведется строго по московскому часовому поясу (`Europe/Moscow`).
+2. **Детекция выходных**: Если день выходной, рендерится легкая заглушка об отдыхе без обращения к тяжелым парсерам.
+3. **Обновление ссылок**: Для дистанционных занятий завтрашнего дня динамически подготавливаются URL-кнопки видеоконференций.
+
+---
+
+### 8.4 Buttons «⏭ Неделя (След.)» & «⏮ Неделя (Тек.)» (sched:week / sched:week_next)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Callback as "bot/handlers/user/schedule.py"
+    participant WeekCalc as "utils/academic_calendar.py"
+    participant SchedService as "services/schedule_service.py"
+    participant Redis as "Redis Cache (L2)"
+    participant Formatter as "ScheduleFormatter"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Нажатие кнопки "⏭ Неделя (След.)"
+    TG->>Callback: CallbackQuery(data="sched:week_next")
+    Callback->>WeekCalc: get_monday_of_week(offset_weeks=1)
+    WeekCalc-->>Callback: monday_date, week_number, parity (Числитель/Знаменатель)
+    
+    Callback->>SchedService: get_week_schedule(monday_date)
+    SchedService->>Redis: GET "sched:week:{monday_date}"
+    alt L2 Cache Hit
+        Redis-->>SchedService: FullWeekDTO (JSON)
+    else L2 Cache Miss
+        SchedService->>SchedService: Сборка всех 6 учебных дней недели
+        SchedService->>Redis: SETEX "sched:week:{monday_date}" 14400 FullWeekDTO
+    end
+    SchedService-->>Callback: FullWeekDTO
+    
+    Callback->>Formatter: format_week_summary(FullWeekDTO, week_number, parity)
+    Formatter-->>Callback: long_text_message
+    
+    Callback->>Keyboards: get_week_navigation_keyboard(current_offset=1)
+    Keyboards-->>Callback: InlineKeyboardMarkup (кнопки переключения недели)
+    
+    Callback->>TG: editMessageText(text=long_text_message, reply_markup)
+    Callback->>TG: answerCallbackQuery("📅 Расписание недели загружено")
+    TG-->>Student: Полное расписание на неделю по дням с разделителями
+```
+
+#### Что происходит «под капотом»:
+1. **Четность недели**: Рассчитывается статус числитель/знаменатель согласно академическому календарю колледжа.
+2. **L2 Кэширование**: Недельный дамп кэшируется целиком под ключом `sched:week:{monday}` с TTL 4 часа.
+3. **Интеллектуальная клавиатура**: Кнопка переключения недели динамически меняет свой текст и callback_data на «⏮ Текущая неделя», позволяя студенту бесшовно переключаться туда и обратно.
+
+---
+
+### 8.5 Button «🔄 Обновить» (sched:refresh)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Callback as "bot/handlers/user/schedule.py"
+    participant Redis as "Redis Cache"
+    participant KTMUEngine as "services/ktmu_client.py"
+    participant SchedService as "services/schedule_service.py"
+    participant Formatter as "ScheduleFormatter"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Нажатие кнопки "🔄 Обновить"
+    TG->>Callback: CallbackQuery(data="sched:refresh")
+    Callback->>TG: answerCallbackQuery("🔄 Проверяю обновления на сервере КТМУ...")
+    
+    Callback->>Redis: DEL "sched:day_pack:{today}"
+    Callback->>Redis: DEL "sched:week:{current_monday}"
+    Callback->>Redis: DEL "sched:group:snapshot"
+    
+    Callback->>KTMUEngine: fetch_fresh_schedule_force()
+    alt Сервер КТМУ ответил успехом (200 OK)
+        KTMUEngine-->>SchedService: Новые сырые данные расписания
+        SchedService->>SchedService: Валидация и нормализация
+        SchedService->>Redis: SETEX "sched:group:snapshot" 14400 NormalizedData
+        SchedService-->>Callback: Updated DayScheduleDTO
+        
+        Callback->>Formatter: format_day_message(Updated DayScheduleDTO)
+        Formatter-->>Callback: updated_text
+        Callback->>Keyboards: get_main_schedule_keyboard()
+        Keyboards-->>Callback: InlineKeyboardMarkup
+        
+        Callback->>TG: editMessageText(text=updated_text, reply_markup)
+        TG-->>Student: Отображение актуализированного расписания с отметкой времени
+    else Ошибка сети / Сервер КТМУ недоступен
+        KTMUEngine-->>Callback: Error / Timeout
+        Callback->>TG: answerCallbackQuery("⚠️ Сервер колледжа временно недоступен. Показана сохраненная копия.")
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **Принудительный Cache Invalidation**: Удаляются устаревшие ключи из Redis (`DEL`), предотвращая показ закэшированных замен.
+2. **Сетевая синхронизация**: Выполняется асинхронный HTTP-запрос к API/порталу КТМУ.
+3. **Resilience & Fallback**: При недоступности серверов колледжа бот не падает, а возвращает пользователю уведомление с последней валидной копией данных.
+
+---
+
+### 8.6 Button «🔔/🔕 Напоминания» (sched:toggle_notify)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Callback as "bot/handlers/user/schedule.py"
+    participant SubManager as "services/subscription_manager.py"
+    participant SubFile as "data/subscribers.json"
+    participant Redis as "Redis Cache"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Нажатие кнопки "🔔 Напоминания"
+    TG->>Callback: CallbackQuery(data="sched:toggle_notify", user_id)
+    Callback->>SubManager: toggle_subscription(user_id)
+    
+    SubManager->>SubFile: Чтение текущего списка подписчиков
+    alt user_id уже подписан
+        SubManager->>SubFile: Удаление user_id из списка
+        SubManager->>Redis: SREM "bot:subscribers" user_id
+        SubManager-->>Callback: False (Отписан)
+        Callback->>TG: answerCallbackQuery("🔕 Уведомления о парах выключены.")
+    else user_id не подписан
+        SubManager->>SubFile: Добавление user_id в список
+        SubManager->>Redis: SADD "bot:subscribers" user_id
+        SubManager-->>Callback: True (Подписан)
+        Callback->>TG: answerCallbackQuery("🔔 Уведомления о парах включены! Будут приходить за 15 мин.")
+    end
+    
+    Callback->>Keyboards: get_main_schedule_keyboard(is_subscribed=new_status)
+    Keyboards-->>Callback: InlineKeyboardMarkup (обновленный текст кнопки "🔔" / "🔕")
+    Callback->>TG: editMessageReplyMarkup(chat_id, message_id, reply_markup)
+    TG-->>Student: Мгновенное обновление иконки на кнопке без дергания текста
+```
+
+#### Что происходит «под капотом»:
+1. **Двойная персистентность**: Подписка моментально обновляется в Redis Set (`bot:subscribers`) для быстрых проверок воркерами и дублируется в `data/subscribers.json` для сохранения между перезапусками контейнеров.
+2. **Мгновенный отклик UI**: Вызывается метод `editMessageReplyMarkup`, обновляющий только кнопки клавиатуры без перерисовки текста сообщения.
+
+---
+
+### 8.7 Command /my_attendance & Button «🔄 Обновить мои данные» (att:my_refresh)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Server"
+    participant Handler as "bot/handlers/user/attendance.py"
+    participant BDay as "data/birthdays.json"
+    participant AttStats as "services/attendance_stats_service.py"
+    participant Redis as "Redis Cache"
+    participant Formatter as "AttendanceDashboardFormatter"
+    participant Keyboards as "bot/templates/user/keyboards.py"
+
+    Student->>TG: Отправка команды /my_attendance (или клик "🔄 Обновить")
+    TG->>Handler: Message / CallbackQuery(user_id, chat_id)
+    
+    alt Команда вызвана в публичной группе/топике
+        Handler->>TG: sendMessage("🔒 Личная статистика отправлена вам в ЛС в целях приватности!")
+        Handler->>TG: sendMessage(chat_id=user_id, text="Ваша статистика...")
+    else Команда вызвана в ЛС с ботом
+        Handler->>BDay: find_student_by_tg_id(user_id)
+        alt Студент не найден
+            Handler->>TG: sendMessage("❌ Ваш Telegram ID не привязан к списку группы.")
+        else Студент найден (student_name)
+            Handler->>AttStats: get_student_full_stats(student_name)
+            AttStats->>Redis: GET "att:stats:student:{student_name}"
+            alt Hit Cache
+                Redis-->>AttStats: StudentStatsDTO
+            else Miss Cache
+                AttStats->>AttStats: Агрегация всех месяцев из таблицы посещаемости
+                AttStats->>Redis: SETEX "att:stats:student:{student_name}" 1800 StatsDTO
+            end
+            AttStats-->>Handler: StudentStatsDTO (Всего, П, О, У, Н, Пульс, Месяцы)
+            
+            Handler->>Formatter: format_student_personal_card(StudentStatsDTO)
+            Formatter-->>Handler: formatted_message (Лига, Статусы, Учет 'У' вне риска)
+            
+            Handler->>Keyboards: get_my_attendance_keyboard()
+            Keyboards-->>Handler: InlineKeyboardMarkup ("🔄 Обновить мои данные")
+            
+            alt Это Callback от кнопки "Обновить"
+                Handler->>TG: editMessageText(text=formatted_message, reply_markup)
+                Handler->>TG: answerCallbackQuery("✅ Данные посещаемости обновлены!")
+            else Это первичная команда /my_attendance
+                Handler->>TG: sendMessage(text=formatted_message, reply_markup)
+            end
+            TG-->>Student: Детальная карточка студента с процентами и разбивкой по месяцам
+        end
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **Конфиденциальность (Privacy Guard)**: Если студент запрашивает `/my_attendance` в общей беседе группы, бот защищает персональные данные и перенаправляет карточку в личные сообщения.
+2. **Бизнес-правило уважительных причин ('У')**: Пропуски с уважительной причиной не влияют на штрафные баллы и не переводят студента в красную «Зону риска».
+3. **Помесячный срез**: Подсчитываются часы присутствия и пропусков за каждый учебный месяц (сентябрь, октябрь, ноябрь и т.д.).
+
+---
+
+### 8.8 Headman Attendance Flow (/attendance & Interactive Buttons)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Headman as "Староста"
+    participant TG as "Telegram Server"
+    participant Handler as "bot/handlers/admin/attendance.py"
+    participant Auth as "AttendanceAuthFilter"
+    participant Redis as "Redis Cache (Session)"
+    participant Keyboards as "bot/templates/admin/attendance_kb.py"
+    participant TopicWorker as "services/attendance_topic_updater.py"
+    participant YandexDocs as "integrations/yandex_documents.py"
+
+    Headman->>TG: Отправка команды /attendance
+    TG->>Handler: Message(user_id, text="/attendance")
+    Handler->>Auth: is_headman_or_admin(user_id)
+    alt Нет прав старосты
+        Auth-->>Handler: False
+        Handler->>TG: sendMessage("⛔ Команда доступна только старосте группы.")
+    else Права подтверждены
+        Auth-->>Handler: True
+        Handler->>Redis: SETEX "att:session:{headman_id}" 3600 InitialSession(student_idx=0)
+        Handler->>Keyboards: get_student_marking_keyboard(current_student)
+        Keyboards-->>Handler: InlineKeyboard ([🟢 П] [🟡 О] [🔵 У] [🔴 Н] [⬅️ Назад] [💾 Завершить])
+        Handler->>TG: sendMessage("Студент 1/26: Васильев Василий", reply_markup)
+        
+        loop Для каждого студента по списку
+            Headman->>TG: Клик по кнопке статуса (например "🟢 П")
+            TG->>Handler: CallbackQuery(data="att:mark:P")
+            Handler->>Redis: HSET "att:session:{headman_id}:marks" student_name "P"
+            Handler->>Redis: INCR "att:session:{headman_id}:idx"
+            Handler->>TG: editMessageText("Студент 2/26: Журавлёва Ева", next_keyboard)
+        end
+        
+        Headman->>TG: Клик "💾 Завершить и опубликовать"
+        TG->>Handler: CallbackQuery(data="att:submit")
+        Handler->>TG: editMessageText("⏳ Сохранение в таблицу и обновление топика...")
+        
+        par Мгновенное локальное обновление топика (Optimistic UI)
+            Handler->>TopicWorker: trigger_instant_topic_update()
+            TopicWorker->>TopicWorker: Генерация дашборда группы
+            TopicWorker->>TG: editMessageText(topic_chat_id, topic_message_id, dashboard_text)
+            TG-->>Headman: Обновление сообщения в топике за 1 секунду!
+        and Фоновая синхронизация с облачным диском
+            Handler->>YandexDocs: commit_marks_to_excel(marks_data)
+            YandexDocs->>YandexDocs: WOPI / API запись в ячейки Excel
+            YandexDocs-->>Handler: Commit OK
+        end
+        
+        Handler->>Redis: DEL "att:session:{headman_id}"
+        Handler->>TG: sendMessage("✅ Посещаемость успешно сохранена в ведомость!")
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **FSM в Redis**: Сессия опроса хранится в Redis с возможностью отката шага назад (`⬅️ Назад`) без потери введенных данных.
+2. **Параллельный Optimistic UI**: Обновление витрины посещаемости в топике группы происходит моментально (< 1 сек), не блокируя интерфейс долгими операциями сетевого ввода/вывода.
+3. **WOPI / Cloud Persistence**: Фоновый воркер производит запись в официальную ведомость группы на Яндекс Диске.
+
+---
+
+### 8.9 Remote Lesson Direct Join Button («🔗 N-я пара»)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Client"
+    participant Bot as "bot/templates/user/keyboards.py"
+    participant SchedService as "services/schedule_service.py"
+    participant VCS as "Платформа ВКС (Сферум / VK Teams / Телемост)"
+
+    Note over Bot: Во время рендеринга карточки расписания
+    Bot->>SchedService: check_is_remote(lesson)
+    alt Занятие дистанционное и есть ссылка
+        SchedService-->>Bot: url = "https://sferum.ru/..."
+        Bot->>Bot: Создание InlineKeyboardButton(text="🔗 2 пара: Сферум", url=url)
+    end
+    
+    Student->>TG: Клик по кнопке "🔗 2 пара: Сферум"
+    TG->>TG: Проверка протокола URL (HTTPS)
+    TG->>VCS: Прямой переход в браузер / клиент ВКС
+    VCS-->>Student: Вход в видеоконференцию занятия без ввода паролей
+```
+
+#### Что происходит «под капотом»:
+1. **Native Inline URL**: Кнопка не генерирует callback на сервер бота, экономя сетевые запросы и сетевую задержку.
+2. **Динамический маппинг**: Ссылки на кабинеты преподавателей автоматически сопоставляются с базой ссылок кафедры.
+
+---
+
+### 8.10 AI Homework Solver Workflow (Topic 405)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as "Студент"
+    participant TG as "Telegram Topic 405 (ДЗ)"
+    participant Bot as "bot/handlers/user/hw_solver.py"
+    participant Redis as "Redis Task Queue"
+    participant Worker as "services/hw_solver_worker.py"
+    participant DeepSeek as "DeepSeek Vision / LLM API"
+    participant DocxGen as "services/docx_generator.py"
+
+    Student->>TG: Отправка фото или текста задания в топик ДЗ
+    TG->>Bot: MessageUpdate (photo/document/text, topic_id=405)
+    Bot->>Bot: Проверка формата и генерация task_id
+    Bot->>Redis: LPUSH "hw:tasks:queue" task_payload (JSON)
+    Bot->>TG: sendMessage("🤖 Задание принято в очередь! Начинаю генерацию решения...")
+    
+    Worker->>Redis: BLMOVE "hw:tasks:queue" "hw:tasks:processing" 30
+    Redis-->>Worker: task_payload
+    
+    Worker->>DeepSeek: OCR + Решение задачи (Chain of Thought + Markdown)
+    DeepSeek-->>Worker: Подробное решение с формулами и пояснениями
+    
+    Worker->>DocxGen: create_academic_docx(solution_text, subject)
+    DocxGen->>DocxGen: Форматирование титульной страницы, шрифты Times New Roman 14pt, ГОСТ
+    DocxGen-->>Worker: Generated solution.docx
+    
+    Worker->>TG: sendDocument(chat_id, topic_id=405, document=solution.docx, caption="✅ Решение готово!")
+    Worker->>Redis: LREM "hw:tasks:processing" 1 task_payload
+    TG-->>Student: Студент скачивает готовый оформленный файл с решением
+```
+
+#### Что происходит «под капотом»:
+1. **Атомарная очередь `BLMOVE`**: Гарантирует надежность обработки (At-least-once delivery). Если воркер аварийно упадет в процессе работы, задача останется в списке `hw:tasks:processing` и будет восстановлена.
+2. **DeepSeek Multi-modal**: Распознавание рукописных конспектов, графиков и формул на фотографиях заданий.
+3. **ГОСТ-оформление**: Генерация готового документа Microsoft Word (`.docx`) с соблюдением академических отступов, колонтитулов и стилей.
+
+---
+
+### 8.11 Admin Control Panel (/admin & Action Buttons)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as "Администратор"
+    participant TG as "Telegram Server"
+    participant Panel as "bot/handlers/admin/panel.py"
+    participant AdminAuth as "AdminAuthFilter"
+    participant Keyboards as "bot/templates/admin/panel_kb.py"
+    participant SchedPush as "services/schedule_broadcaster.py"
+    participant TopicSync as "services/attendance_topic_updater.py"
+    participant SysMonitor as "services/system_monitor.py"
+
+    Admin->>TG: Отправка команды /admin
+    TG->>Panel: Message(user_id, text="/admin")
+    Panel->>AdminAuth: is_super_admin(user_id)
+    alt ID отсутствует в ADMIN_IDS
+        AdminAuth-->>Panel: False
+        Panel->>TG: sendMessage("⛔ Доступ в панель управления запрещен.")
+    else Доступ разрешен
+        AdminAuth-->>Panel: True
+        Panel->>Keyboards: get_admin_panel_keyboard()
+        Keyboards-->>Panel: InlineKeyboardMarkup (7 кнопок управления)
+        Panel->>TG: sendMessage("⚙️ Панель администратора группы 1-КПД-3", reply_markup)
+        
+        alt Клик: "📢 Экстренная рассылка расписания" (adm:push_sched)
+            Admin->>TG: CallbackQuery("adm:push_sched")
+            Panel->>SchedPush: broadcast_today_schedule()
+            SchedPush->>TG: Массовая отправка всем подписчикам
+            Panel->>TG: answerCallbackQuery("✅ Рассылка запущена!")
+        else Клик: "🔄 Форсировать обновление топика" (adm:force_topic)
+            Admin->>TG: CallbackQuery("adm:force_topic")
+            Panel->>TopicSync: force_full_resync_topic()
+            TopicSync->>TG: editMessageText(топик группы обновлен)
+            Panel->>TG: answerCallbackQuery("✅ Топик посещаемости принудительно обновлен!")
+        else Клик: "📊 Системная статистика" (adm:system_stats)
+            Admin->>TG: CallbackQuery("adm:system_stats")
+            Panel->>SysMonitor: get_system_health()
+            SysMonitor-->>Panel: Uptime, Memory, Redis Keys, Celery Workers, Error Rate
+            Panel->>TG: editMessageText("🖥 Состояние системы:\nRAM: 42%\nUptime: 14 дней...")
+        end
+    end
+```
+
+#### Что происходит «под капотом»:
+1. **Строгий RBAC**: Проверка ID в неизменяемом кортеже `ADMIN_IDS` из защищенных переменных окружения.
+2. **Административные триггеры**: Ручное управление жизненным циклом фоновых демонов, принудительная синхронизация топиков и запуск аварийных рассылок при смене пар.
+3. **Мониторинг здоровья системы**: Сбор ключевых телеметрических показателей (состояние памяти, размер очередей Redis, доступность внешних API).
+
