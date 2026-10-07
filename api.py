@@ -6,6 +6,7 @@
 API доступен только внутри Docker-сети, порт наружу не публикуется.
 """
 
+import os
 import uvicorn
 from fastapi import FastAPI
 
