@@ -155,7 +155,7 @@ async def get_active_wopi_lock(resource_url: str, token: str) -> str:
     headers = {"X-WOPI-Override": "PUT", "Content-Type": "application/octet-stream"}
     async with httpx.AsyncClient(timeout=15.0) as client:
         res = await client.post(url, headers=headers, content=b"")
-        lock = res.headers.get("x-wopi-lock", "volga:prod-35")
+        lock = res.headers.get("x-wopi-lock") or f"wopi-lock-{uuid.uuid4().hex[:8]}"
         log.debug(f"Получен WOPI lock: {lock} (HTTP {res.status_code})")
         return lock
 

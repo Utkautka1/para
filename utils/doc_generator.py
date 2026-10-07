@@ -11,7 +11,8 @@
 """
 import io
 import re
-from typing import Dict, List, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -19,6 +20,7 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 from docx.shared import Cm, Pt, RGBColor
 
+from config import GROUP_NAME
 from core.logger import get_logger
 
 log = get_logger("doc_generator")
@@ -53,28 +55,39 @@ def setup_gost_styles(doc: Document) -> None:
     font.color.rgb = RGBColor(0, 0, 0)
 
 
-def add_title_signature_table(doc: Document) -> None:
+def format_table_row_cells(row, left_txt: str, right_txt: str) -> None:
+    """Заполняет и форматирует ячейки строки таблицы подписей."""
+    row.cells[0].text, row.cells[1].text = left_txt, right_txt
+    for cell in row.cells:
+        for p in cell.paragraphs:
+            p.paragraph_format.line_spacing = 1.15
+            for run in p.runs:
+                run.font.name = "Times New Roman"
+                run.font.size = Pt(14)
+
+
+def add_title_signature_table(
+    doc: Document,
+    student_name: str = "Студент",
+    teacher_name: str = "Преподаватель",
+    year: Optional[int] = None,
+    group_name: Optional[str] = None,
+) -> None:
     """Добавляет аккуратную таблицу подписей Выполнил/Проверил по образцу ГОСТ."""
+    target_year = year or datetime.now().year
+    target_group = group_name or GROUP_NAME
     tbl = doc.add_table(rows=2, cols=2)
     tbl.style = "Normal Table"
-    cell_data = [
-        ("Выполнил студент группы 1-КПД-3:", "______________ Иван Иванов\n«___» ____________ 2026 г."),
-        ("Проверил преподаватель:", "______________ Иван Иванов\n«___» ____________ 2026 г.")
+    rows_data = [
+        (f"Выполнил студент группы {target_group}:", f"______________ {student_name}\n«___» ____________ {target_year} г."),
+        ("Проверил преподаватель:", f"______________ {teacher_name}\n«___» ____________ {target_year} г.")
     ]
-    for r_idx, (left_txt, right_txt) in enumerate(cell_data):
-        row = tbl.rows[r_idx]
-        row.cells[0].text = left_txt
-        row.cells[1].text = right_txt
-        for cell in row.cells:
-            for p in cell.paragraphs:
-                p.paragraph_format.line_spacing = 1.15
-                for run in p.runs:
-                    run.font.name = "Times New Roman"
-                    run.font.size = Pt(14)
+    for idx, (ltxt, rtxt) in enumerate(rows_data):
+        format_table_row_cells(tbl.rows[idx], ltxt, rtxt)
 
 
-def create_title_page(doc: Document) -> None:
-    """Создает официальный титульный лист по образцу ГОСТ (Страница 1)."""
+def add_title_header(doc: Document) -> None:
+    """Добавляет официальную шапку Министерства и Университета на титульный лист."""
     p_hdr = doc.add_paragraph()
     p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_hdr.paragraph_format.line_spacing = 1.15
@@ -83,16 +96,25 @@ def create_title_page(doc: Document) -> None:
     p_hdr.add_run("Санкт-Петербургский государственный университет промышленных технологий и дизайна\n").bold = True
     p_hdr.add_run("Направление: Разработка и управление программным обеспечением\n\n").bold = True
 
+
+def create_title_page(
+    doc: Document,
+    student_name: str = "Студент",
+    teacher_name: str = "Преподаватель",
+    year: Optional[int] = None,
+    group_name: Optional[str] = None,
+) -> None:
+    """Создает официальный титульный лист по образцу ГОСТ (Страница 1)."""
+    target_year = year or datetime.now().year
+    add_title_header(doc)
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_title.add_run("ОТЧЕТ ПО ВЫПОЛНЕНИЮ ЗАДАНИЯ\n\n").bold = True
-
-    add_title_signature_table(doc)
-
+    add_title_signature_table(doc, student_name, teacher_name, target_year, group_name)
     p_ftr = doc.add_paragraph()
     p_ftr.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_ftr.paragraph_format.space_before = Pt(80)
-    p_ftr.add_run("Санкт-Петербург – 2026")
+    p_ftr.add_run(f"Санкт-Петербург – {target_year}")
     doc.add_page_break()
 
 
@@ -283,22 +305,31 @@ def add_formatted_paragraph(doc: Document, line: str) -> None:
             p.add_run(part)
 
 
-def create_solution_docx(solution_text: str, output_path: str = "/tmp/solution.docx") -> str:
-    """Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ по образцу."""
-    log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
+def init_gost_document() -> Document:
+    """Инициализирует документ Word с ГОСТ полями, стилями и нумерацией."""
     doc = Document()
     setup_gost_margins(doc)
     setup_gost_styles(doc)
     setup_page_numbering(doc)
+    return doc
 
-    create_title_page(doc)
+
+def create_solution_docx(
+    solution_text: str,
+    output_path: str = "/tmp/solution.docx",
+    student_name: str = "Студент",
+    teacher_name: str = "Преподаватель",
+    year: Optional[int] = None,
+    group_name: Optional[str] = None,
+) -> str:
+    """Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ по образцу."""
+    log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
+    doc = init_gost_document()
+    create_title_page(doc, student_name, teacher_name, year, group_name)
     headings = extract_headings_from_text(solution_text)
     build_table_of_contents(doc, headings)
-
     heading_map = {h[0]: (h[1], h[2], h[3]) for h in headings}
-    lines = solution_text.split("\n")
-    process_document_content_lines(doc, lines, heading_map)
-
+    process_document_content_lines(doc, solution_text.split("\n"), heading_map)
     doc.save(output_path)
     log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {output_path}")
     return output_path

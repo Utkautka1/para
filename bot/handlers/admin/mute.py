@@ -46,30 +46,30 @@ async def _find_in_admins(bot, chat_id: int, clean: str) -> Optional[Tuple[int, 
     return None
 
 
-async def _find_in_members(bot, chat_id: int, clean: str) -> Optional[Tuple[int, str]]:
-    """Ищет пользователя через запрос get_chat_member."""
-    try:
-        member = await bot.get_chat_member(chat_id, f"@{clean}")
-        if member and member.user:
-            add_user_to_cache(clean, member.user.id)
-            return member.user.id, f"<b>{html.escape(member.user.full_name)}</b>"
-    except TelegramBadRequest as e:
-        log.debug(f"Пользователь @{clean} не найден среди участников: {e}")
-    except Exception as e:
-        log.debug(f"Ошибка поиска участника @{clean}: {e}")
+def _find_in_registry(clean: str) -> Optional[Tuple[int, str]]:
+    """Ищет пользователя в реестре студентов по username."""
+    from services.classmates_auth import load_classmates_registry
+    registry = load_classmates_registry()
+    for student in registry:
+        uname = student.get("username")
+        if uname and uname.lower() == clean and student.get("tg_id"):
+            tg_id = student["tg_id"]
+            add_user_to_cache(clean, tg_id)
+            return tg_id, f"<b>{html.escape(student.get('full_name', f'@{clean}'))}</b>"
     return None
 
 
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
-    """Находит ID пользователя по юзернейму через кэш, админов или API."""
+    """Находит ID пользователя по юзернейму через кэш, реестр или админов."""
     clean = username.lstrip("@").lower()
     cached_id = get_cached_user_id(clean)
     if cached_id:
         return cached_id, f"<b>@{clean}</b>"
-    admin_match = await _find_in_admins(bot, chat_id, clean)
-    if admin_match:
-        return admin_match
-    return await _find_in_members(bot, chat_id, clean)
+    reg_match = _find_in_registry(clean)
+    if reg_match:
+        return reg_match
+    return await _find_in_admins(bot, chat_id, clean)
+
 
 
 def _resolve_from_entities(message: Message) -> Optional[Tuple[int, str]]:

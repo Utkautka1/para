@@ -8,16 +8,14 @@ from contextlib import asynccontextmanager
 import json
 import time
 from typing import AsyncGenerator, List, Optional, Tuple
-from config import ALLOWED_USER_ID, REDIS_CACHE_TTL_SECONDS
+from config import (
+    ALLOWED_USER_ID, HW_DLQ_KEY, HW_PROCESSING_KEY, HW_QUEUE_KEY,
+    REDIS_CACHE_TTL_SECONDS, SNAPSHOT_KEY, SNAPSHOT_META_KEY, TOPIC_CLEANUP_KEY
+)
 from core.logger import get_logger
 from core.redis import init_redis
 
 log = get_logger("redis_cache")
-HW_QUEUE_KEY = "hw:tasks:queue"
-HW_PROCESSING_KEY = "hw:tasks:processing"
-SNAPSHOT_KEY = "sched:group:snapshot"
-SNAPSHOT_META_KEY = "sched:group:meta"
-TOPIC_CLEANUP_KEY = "topic:cleanup_messages"
 
 
 async def cache_get(key: str) -> Optional[str]:
@@ -305,18 +303,29 @@ async def get_expired_messages_for_cleanup() -> List[Tuple[int, int]]:
     return results
 
 
+LUA_RELEASE_LOCK = """
+if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+else
+    return 0
+end
+"""
+
+
 @asynccontextmanager
 async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
     """
-    Асинхронный распределенный лок Redis с автоматическим освобождением.
+    Атомарный распределенный лок Redis с валидацией токена владельца (Lua).
 
-    Предотвращает одновременную работу bot и worker над общими ресурсами.
+    Предотвращает ошибочное удаление чужого лока при превышении TTL.
     """
+    import uuid
     client = await init_redis()
+    token = str(uuid.uuid4())
     acquired = False
     if client:
         try:
-            acquired = bool(await client.set(key, "1", nx=True, ex=ttl))
+            acquired = bool(await client.set(key, token, nx=True, ex=ttl))
         except Exception as e:
             log.warning(f"Ошибка захвата лока Redis ({key}): {e}")
     try:
@@ -324,8 +333,27 @@ async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
     finally:
         if acquired and client:
             try:
-                await client.delete(key)
+                await client.eval(LUA_RELEASE_LOCK, 1, key, token)
             except Exception as e:
                 log.debug(f"Ошибка освобождения лока Redis ({key}): {e}")
+
+
+async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool:
+    """Возвращает упавшую задачу в очередь или отправляет в DLQ."""
+    client = await init_redis()
+    if not client:
+        return False
+    retries = task_data.get("retries", 0) + 1
+    task_data["retries"] = retries
+    raw = json.dumps(task_data, ensure_ascii=False)
+    await client.lrem(HW_PROCESSING_KEY, 1, raw)
+    if retries <= max_retries:
+        await client.rpush(HW_QUEUE_KEY, raw)
+        log.warning(f"⚠️ Задача ДЗ {task_data.get('message_id')} на повтор (#{retries}/{max_retries})")
+        return True
+    await client.rpush(HW_DLQ_KEY, raw)
+    log.error(f"❌ Задача ДЗ {task_data.get('message_id')} превысила {max_retries} попыток -> DLQ")
+    return False
+
 
 

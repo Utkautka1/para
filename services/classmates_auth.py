@@ -10,7 +10,7 @@
 
 from typing import Any, Dict, List, Optional
 from aiogram.types import User
-from config import ALLOWED_USER_ID
+from config import ALLOWED_USER_ID, BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
 from services.user_cache import add_user_to_cache
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -18,7 +18,7 @@ from utils.storage import sync_atomic_save_json, sync_load_json
 import os
 
 log = get_logger("classmates_auth")
-BIRTHDAYS_FILE_PATH = "data/birthdays.json"
+
 
 _REGISTRY_CACHE: Optional[List[Dict[str, Any]]] = None
 _REGISTRY_MTIME: float = 0.0
@@ -142,7 +142,8 @@ def process_user_auth(user: Optional[User]) -> tuple[bool, bool, Optional[Dict[s
     """
     Основная логика аутентификации пользователя при входе в бота.
 
-    Возвращает кортеж: (is_auth, is_just_registered, student_info).
+    Политикой Варианта А разрешен доступ только проверенным студентам
+    с подтвержденным tg_id или главному администратору.
     """
     if not user:
         return False, False, None
@@ -151,9 +152,5 @@ def process_user_auth(user: Optional[User]) -> tuple[bool, bool, Optional[Dict[s
     existing = find_classmate_by_tg_id(user.id)
     if existing:
         return True, False, existing
-    if user.username:
-        clean = user.username.lstrip("@").lower()
-        new_student = update_classmate_tg_id(clean, user.id)
-        if new_student:
-            return True, True, new_student
     return False, False, None
+

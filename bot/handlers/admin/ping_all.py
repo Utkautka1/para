@@ -3,11 +3,11 @@
 
 Позволяет администратору (ALLOWED_USER_ID) пинговать всех одногруппников
 в любом топике группы от лица бота. Список одногруппников подтягивается
-из единого источника data/birthdays.json.
+из единого источника birthdays.json.
 
 Особенности реализации:
-  1. Теги упаковываются в Telegram-спойлер (<tg-spoiler>), чтобы не спамить
-     простыней текста, при этом каждый упомянутый получает уведомление.
+  1. Теги упоминаний прикрепляются открытым текстом внизу сообщения без
+     спойлеров для мгновенной видимости и отправки push-уведомлений.
   2. Для пользователей с username используется @username, без username —
      кликабельная ссылка <a href="tg://user?id=...">Имя</a>.
   3. Отправитель команды автоматически исключается из пинга.
@@ -24,6 +24,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import Message, User
 from bot.filters.auth import AuthFilter
+from config import BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
 from services.user_cache import get_cached_user_id
 from utils.storage import load_json
@@ -31,8 +32,6 @@ from utils.storage import load_json
 log = get_logger("admin_ping_all")
 router = Router()
 router.message.filter(AuthFilter())
-
-BIRTHDAYS_FILE_PATH = "data/birthdays.json"
 
 
 async def load_classmates_list() -> List[Dict[str, Any]]:

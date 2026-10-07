@@ -111,16 +111,14 @@ def test_is_authorized_user_classmates() -> None:
         assert is_authorized_user(stranger) is False
 
 
-def test_process_user_auth_first_time() -> None:
-    """Проверяет разовую авторизацию нового студента при первом нажатии /start."""
-    with patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None), \
-         patch("services.classmates_auth.update_classmate_tg_id") as mock_update:
-        mock_update.return_value = {"full_name": "Калинкевич Арсений", "tg_id": 12345}
+def test_process_user_auth_unregistered_rejected() -> None:
+    """Проверяет, что студент без привязанного старостой ID не авторизуется автоматически."""
+    with patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None):
         user = User(id=12345, is_bot=False, first_name="Arseniy", username="etow0ndes")
         is_auth, is_just_reg, student = process_user_auth(user)
-        assert is_auth is True
-        assert is_just_reg is True
-        assert student["full_name"] == "Калинкевич Арсений"
+        assert is_auth is False
+        assert is_just_reg is False
+        assert student is None
 
 
 def test_process_user_auth_stranger_rejected() -> None:
