@@ -107,8 +107,8 @@ async def _get_redis_memory_stat() -> str:
         if r:
             info = await r.info("memory")
             return info.get("used_memory_human", "OK")
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Не удалось получить статистику памяти Redis: {e}")
     return "N/A"
 
 

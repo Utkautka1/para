@@ -43,5 +43,6 @@ if __name__ == "__main__":
     log.info("ЗАПУСК Internal API (para-api)")
     log.info("  Порт: 8000 | Docs: отключены | Auth: X-API-Key")
     log.info("=" * 60)
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
+    api_host = os.getenv("API_HOST", "0.0.0.0")  # nosec B104
+    uvicorn.run(app, host=api_host, port=8000, log_level="warning")
 

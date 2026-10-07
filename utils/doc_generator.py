@@ -10,7 +10,9 @@
 6. Выравнивание основного текста по ширине (Justified), Times New Roman 14 pt, 1.5 интервал.
 """
 import io
+import os
 import re
+import tempfile
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -316,20 +318,21 @@ def init_gost_document() -> Document:
 
 def create_solution_docx(
     solution_text: str,
-    output_path: str = "/tmp/solution.docx",
+    output_path: Optional[str] = None,
     student_name: str = "Студент",
     teacher_name: str = "Преподаватель",
     year: Optional[int] = None,
     group_name: Optional[str] = None,
 ) -> str:
     """Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ по образцу."""
-    log.debug(f"Создание DOCX документа решения по ГОСТ: {output_path}")
+    target_path = output_path or os.path.join(tempfile.gettempdir(), "solution.docx")
+    log.debug(f"Создание DOCX документа решения по ГОСТ: {target_path}")
     doc = init_gost_document()
     create_title_page(doc, student_name, teacher_name, year, group_name)
     headings = extract_headings_from_text(solution_text)
     build_table_of_contents(doc, headings)
     heading_map = {h[0]: (h[1], h[2], h[3]) for h in headings}
     process_document_content_lines(doc, solution_text.split("\n"), heading_map)
-    doc.save(output_path)
-    log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {output_path}")
-    return output_path
+    doc.save(target_path)
+    log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {target_path}")
+    return target_path

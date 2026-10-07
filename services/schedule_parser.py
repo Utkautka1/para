@@ -307,10 +307,10 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
     При ошибке сети включает 5-минутный кулдаун для предотвращения спама.
     """
     global _IS_REFRESHING, _COOLDOWN_UNTIL
-    if _IS_REFRESHING:
+    now = time.time()
+    if _IS_REFRESHING or (now < _COOLDOWN_UNTIL and not force):
         return
     _IS_REFRESHING = True
-    now = time.time()
     try:
         res = await _fetch_remote_schedule()
         await process_api_response(res, now)

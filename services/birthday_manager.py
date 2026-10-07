@@ -207,7 +207,7 @@ def pick_unique_wish(person_key: str, wishes: List[str], history_file: str = HIS
     if not available:
         used_indices.clear()
         available = list(range(len(wishes)))
-    choice_idx = random.choice(available)
+    choice_idx = random.choice(available)  # nosec B311
     used_indices.add(choice_idx)
     history[person_key] = list(used_indices)
     save_json_file(history_file, history)

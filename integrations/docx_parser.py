@@ -8,10 +8,11 @@
 import asyncio
 import io
 import time
-import xml.etree.ElementTree as ET
 import zipfile
 from typing import Dict, Optional, Tuple, TypedDict
 import httpx
+
+import defusedxml.ElementTree as ET
 
 from config import DOCX_CACHE_TTL_SECONDS, YANDEX_DOC_PUBLIC_URL
 from core.logger import get_logger
