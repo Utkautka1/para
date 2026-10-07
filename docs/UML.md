@@ -640,7 +640,7 @@ Comprehensive registry of all Redis keys, data structures, expiration policies, 
 
 ## 8. User Interaction Flows & Per-Button Architecture Diagrams
 
-This section specifies the component architecture, data flow contracts, and execution mechanics for every Telegram user action (commands, inline button clicks, background queues, and administrative tools). All diagrams strictly follow the UML Class/Component structure established in Sections 1–3 (`direction TB`), detailing ingress controllers, middleware guards, Redis storage structures, domain DTOs, and upstream integrations. All interface text and technical descriptors are standardized in English, preserving exact Russian button labels (`Button "📅 Сегодня"`, `Button "📆 Завтра"`, etc.) for direct mapping to the Telegram user interface.
+This section specifies the component architecture, data flow contracts, and execution mechanics for every Telegram user action (commands, inline button clicks, background queues, and administrative tools). All diagrams strictly follow the UML Class/Component structure established in Sections 1–3 (`direction TB`), detailing ingress controllers, middleware guards, Redis storage structures, domain DTOs, and upstream integrations. All interface text and technical descriptors are standardized in English, preserving exact Russian button labels (`Button Сегодня`, `Button Завтра`, etc.) for direct mapping to the Telegram user interface.
 
 ---
 
@@ -699,16 +699,16 @@ classDiagram
         +List~Lesson~ lessons
     }
 
-    TelegramGateway --> ClassmateAuthFilter : incoming /start update
-    ClassmateAuthFilter --> UserStartHandler : authorized group member (1-КПД-3)
-    ClassmateAuthFilter --> TelegramGateway : unauthorized -> send_access_denied
+    TelegramGateway --> ClassmateAuthFilter : incoming start command update
+    ClassmateAuthFilter --> UserStartHandler : authorizes student via birthdays or admin ID
+    ClassmateAuthFilter --> TelegramGateway : unauthorized user sends access denied
     UserStartHandler --> UserCacheManager : records active session
-    UserCacheManager --> RedisCacheManager : SADD "bot:registered_users"
+    UserCacheManager --> RedisCacheManager : persists to registered users set
     UserStartHandler --> ScheduleApiService : requests today schedule
-    ScheduleApiService --> RedisCacheManager : L1 lookup key "sched:day_pack:{today}"
+    ScheduleApiService --> RedisCacheManager : checks L1 today schedule cache
     ScheduleApiService ..> DayScheduleResponse : returns timetable DTO
-    UserStartHandler --> ScheduleKeyboardBuilder : attaches Button [📅 Сегодня], Button [📆 Завтра], Button [⏭ Неделя (След.)], Button [🔄 Обновить], Button [🔔 Напоминания]
-    UserStartHandler --> TelegramGateway : dispatches greeting card and inline controls
+    UserStartHandler --> ScheduleKeyboardBuilder : attaches buttons Сегодня, Завтра, Неделя След, Обновить, Напоминания
+    UserStartHandler --> TelegramGateway : dispatches greeting card and controls
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -716,7 +716,7 @@ classDiagram
 1. **Authentication Guard**: Ingress updates for `/start` pass through `ClassmateAuthFilter`. The filter cross-checks `user_id` against `data/birthdays.json` using an in-memory mtime cache and validates against `ADMIN_IDS`. Unregistered users receive an immediate polite denial message (`⛔ Access Denied: 1-КПД-3 only`).
 2. **Activity Registration**: Verified users are added to the Redis Set `bot:registered_users` via `UserCacheManager`, updating profile metadata without blocking disk writes.
 3. **L1 Timetable Hydration**: `ScheduleApiService` queries Redis for `sched:day_pack:{today}`. If present, the payload is retrieved in `<2ms`. If absent, the normalized snapshot is parsed and cached with a 7200s TTL.
-4. **Interactive UI Assembly**: `ScheduleKeyboardBuilder` constructs the default inline markup containing buttons `📅 Сегодня`, `📆 Завтра`, `⏭ Неделя (След.)`, `🔄 Обновить`, and `🔔 Напоминания`, delivering a frictionless greeting interface.
+4. **Interactive UI Assembly**: `ScheduleKeyboardBuilder` constructs the default inline markup containing buttons `Сегодня`, `Завтра`, `Неделя (След.)`, `Обновить`, and `Напоминания`, delivering a frictionless greeting interface.
 
 ---
 
@@ -770,14 +770,14 @@ classDiagram
         +List~Lesson~ lessons
     }
 
-    TelegramGateway --> CallbackThrottleMiddleware : clicks Button [📅 Сегодня]
-    CallbackThrottleMiddleware --> TodayCallbackHandler : throttled event (cooldown >= 0.5s)
-    TodayCallbackHandler --> ScheduleApiService : query schedule for current date
-    ScheduleApiService --> RedisCacheManager : reads L1 key "sched:day_pack:{today}"
+    TelegramGateway --> CallbackThrottleMiddleware : clicks button Сегодня
+    CallbackThrottleMiddleware --> TodayCallbackHandler : throttles rapid clicks with cooldown
+    TodayCallbackHandler --> ScheduleApiService : queries schedule for current date
+    ScheduleApiService --> RedisCacheManager : reads L1 today schedule cache
     ScheduleApiService ..> DayScheduleResponse : returns day schedule DTO
     TodayCallbackHandler --> ScheduleFormatter : formats lessons, types, and classrooms
     TodayCallbackHandler --> ScheduleKeyboardBuilder : attaches navigation buttons
-    TodayCallbackHandler --> TelegramGateway : in-place editMessageText without chat flicker
+    TodayCallbackHandler --> TelegramGateway : updates message in place via editMessageText
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -832,13 +832,13 @@ classDiagram
         +attach_vcs_links(lessons) void
     }
 
-    TelegramGateway --> TomorrowCallbackHandler : clicks Button [📆 Завтра]
-    TomorrowCallbackHandler --> AcademicDateResolver : computes target date (today + 1d in Europe/Moscow)
-    AcademicDateResolver --> TomorrowCallbackHandler : evaluates weekend / holiday flag
+    TelegramGateway --> TomorrowCallbackHandler : clicks button Завтра
+    TomorrowCallbackHandler --> AcademicDateResolver : computes target date in Moscow timezone
+    AcademicDateResolver --> TomorrowCallbackHandler : evaluates weekend and holiday flag
     TomorrowCallbackHandler --> ScheduleApiService : queries timetable for tomorrow
-    ScheduleApiService --> RedisCacheManager : reads L1 key "sched:day_pack:{tomorrow}"
+    ScheduleApiService --> RedisCacheManager : reads L1 tomorrow schedule cache
     TomorrowCallbackHandler --> ScheduleFormatter : renders timetable or weekend resting view
-    TomorrowCallbackHandler --> ScheduleKeyboardBuilder : attaches VCS join buttons if remote
+    TomorrowCallbackHandler --> ScheduleKeyboardBuilder : attaches conference links if remote
     TomorrowCallbackHandler --> TelegramGateway : updates message via editMessageText
 ```
 
@@ -898,13 +898,13 @@ classDiagram
         +List~DayScheduleResponse~ days
     }
 
-    TelegramGateway --> WeekNavigationHandler : clicks Button [⏭ Неделя (След.)] or Button [⏮ Неделя (Тек.)]
-    WeekNavigationHandler --> AcademicCalendarService : computes target Monday & parity (Числитель / Знаменатель)
-    WeekNavigationHandler --> ScheduleApiService : requests 6-day academic timetable
-    ScheduleApiService --> RedisCacheManager : reads L2 key "sched:week:{monday}"
+    TelegramGateway --> WeekNavigationHandler : clicks button Неделя След or Неделя Тек
+    WeekNavigationHandler --> AcademicCalendarService : computes target Monday and parity
+    WeekNavigationHandler --> ScheduleApiService : requests 6 day academic timetable
+    ScheduleApiService --> RedisCacheManager : reads L2 week schedule cache
     ScheduleApiService ..> WeekScheduleResponse : returns full week payload
     WeekNavigationHandler --> WeekScheduleFormatter : formats weekly report with dividers
-    WeekNavigationHandler --> ScheduleKeyboardBuilder : toggles button label between Button [⏭ Неделя (След.)] and Button [⏮ Неделя (Тек.)]
+    WeekNavigationHandler --> ScheduleKeyboardBuilder : toggles button between Неделя След and Неделя Тек
     WeekNavigationHandler --> TelegramGateway : updates view via editMessageText
 ```
 
@@ -959,13 +959,13 @@ classDiagram
         +get_main_schedule_keyboard(is_subscribed) InlineKeyboardMarkup
     }
 
-    TelegramGateway --> RefreshScheduleHandler : clicks Button [🔄 Обновить]
-    RefreshScheduleHandler --> TelegramGateway : displays toast "🔄 Checking KTMU server updates..."
-    RefreshScheduleHandler --> ScheduleCacheInvalidator : triggers force eviction
-    ScheduleCacheInvalidator --> RedisCacheManager : executes DEL for "sched:day_pack:*", "sched:week:*"
-    RefreshScheduleHandler --> KTMUUpstreamClient : fetches raw payload with timeout=60s
-    KTMUUpstreamClient --> RedisCacheManager : stores fresh snapshot key "sched:group:snapshot"
-    RefreshScheduleHandler --> ScheduleFormatter : compiles refreshed timetable with fresh timestamp
+    TelegramGateway --> RefreshScheduleHandler : clicks button Обновить
+    RefreshScheduleHandler --> TelegramGateway : displays progress toast checking updates
+    RefreshScheduleHandler --> ScheduleCacheInvalidator : triggers force cache eviction
+    ScheduleCacheInvalidator --> RedisCacheManager : executes DEL for cached schedule keys
+    RefreshScheduleHandler --> KTMUUpstreamClient : fetches raw payload with timeout 60s
+    KTMUUpstreamClient --> RedisCacheManager : stores fresh snapshot in Redis
+    RefreshScheduleHandler --> ScheduleFormatter : compiles refreshed timetable with timestamp
     RefreshScheduleHandler --> TelegramGateway : updates message via editMessageText
 ```
 
@@ -1018,13 +1018,13 @@ classDiagram
         +get_main_schedule_keyboard(is_subscribed) InlineKeyboardMarkup
     }
 
-    TelegramGateway --> NotificationToggleHandler : clicks Button [🔔 Напоминания] or Button [🔕 Напоминания]
+    TelegramGateway --> NotificationToggleHandler : clicks button Напоминания
     NotificationToggleHandler --> SubscriptionService : requests subscription state toggle
-    SubscriptionService --> FileStorageManager : persists to disk file "data/subscribers.json"
-    SubscriptionService --> RedisCacheManager : updates volatile Set "bot:subscribers" (SADD / SREM)
-    NotificationToggleHandler --> TelegramGateway : alerts user via toast ("🔔 Enabled" or "🔕 Disabled")
-    NotificationToggleHandler --> ScheduleKeyboardBuilder : updates button label between Button [🔔 Напоминания] and Button [🔕 Напоминания]
-    NotificationToggleHandler --> TelegramGateway : updates markup via editMessageReplyMarkup without redrawing message text
+    SubscriptionService --> FileStorageManager : persists to disk file subscribers json
+    SubscriptionService --> RedisCacheManager : updates volatile subscribers set
+    NotificationToggleHandler --> TelegramGateway : alerts user via confirmation toast
+    NotificationToggleHandler --> ScheduleKeyboardBuilder : updates button label icon
+    NotificationToggleHandler --> TelegramGateway : updates markup without redrawing message text
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -1085,13 +1085,13 @@ classDiagram
         +get_my_attendance_keyboard() InlineKeyboardMarkup
     }
 
-    TelegramGateway --> PrivacyGuardFilter : enters /my_attendance or clicks Button [🔄 Обновить мои данные]
-    PrivacyGuardFilter --> MyAttendanceHandler : routes payload to private chat (PM)
-    MyAttendanceHandler --> ClassmatesDirectory : maps user_id -> student full name via birthdays.json
-    MyAttendanceHandler --> AttendanceStatsService : retrieves cumulative all-time stats from "att:stats:all_time"
-    AttendanceStatsService --> ExcusedAbsencePolicy : excused 'У' excluded from penalties & risk zone
-    MyAttendanceHandler --> PersonalAttendanceFormatter : compiles league badge, pulse bar, and monthly counts
-    MyAttendanceHandler --> AttendanceKeyboardBuilder : attaches Button [🔄 Обновить мои данные]
+    TelegramGateway --> PrivacyGuardFilter : enters command my_attendance or clicks button Обновить мои данные
+    PrivacyGuardFilter --> MyAttendanceHandler : routes payload to private chat PM
+    MyAttendanceHandler --> ClassmatesDirectory : maps user id to student name via birthdays
+    MyAttendanceHandler --> AttendanceStatsService : retrieves cumulative all time stats from Redis
+    AttendanceStatsService --> ExcusedAbsencePolicy : excused absence excluded from risk zone
+    MyAttendanceHandler --> PersonalAttendanceFormatter : compiles league badge and monthly counts
+    MyAttendanceHandler --> AttendanceKeyboardBuilder : attaches button Обновить мои данные
     MyAttendanceHandler --> TelegramGateway : delivers private card to student
 ```
 
@@ -1157,16 +1157,16 @@ classDiagram
         +commit_marks_to_excel_async(session) void
     }
 
-    TelegramGateway --> AttendanceAuthFilter : enters /attendance command
+    TelegramGateway --> AttendanceAuthFilter : enters attendance command
     AttendanceAuthFilter --> AttendanceWorkflowHandler : validates headman role
     AttendanceWorkflowHandler --> AttendanceSessionManager : creates session in Redis
-    AttendanceSessionManager --> RedisCacheManager : stores state in key "att:session:{headman_id}"
-    AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays marking controls: Button [🟢 П], Button [🟡 О], Button [🔵 У], Button [🔴 Н], Button [⬅️ Назад], Button [💾 Завершить]
-    TelegramGateway --> AttendanceWorkflowHandler : clicks mark button Button [🟢 П], Button [🟡 О], Button [🔵 У], or Button [🔴 Н]
+    AttendanceSessionManager --> RedisCacheManager : stores state in Redis session key
+    AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays controls buttons П, О, У, Н, Назад, Завершить
+    TelegramGateway --> AttendanceWorkflowHandler : clicks mark button П or О or У or Н
     AttendanceWorkflowHandler --> AttendanceSessionManager : updates student record and advances index
-    TelegramGateway --> AttendanceWorkflowHandler : clicks Button [💾 Завершить]
-    AttendanceWorkflowHandler --> OptimisticTopicUpdater : immediately updates Topic 7025 in ~1s (Optimistic UI)
-    AttendanceWorkflowHandler --> WopiCloudOfficeClient : triggers background async WOPI PUT commit to Yandex Disk
+    TelegramGateway --> AttendanceWorkflowHandler : clicks button Завершить
+    AttendanceWorkflowHandler --> OptimisticTopicUpdater : immediately updates attendance topic in 1s
+    AttendanceWorkflowHandler --> WopiCloudOfficeClient : triggers background async WOPI PUT commit
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -1211,10 +1211,10 @@ classDiagram
         +join_session_room(meeting_id) void
     }
 
-    ScheduleKeyboardBuilder --> RemoteLinkInspector : inspects lesson.is_remote attribute
-    RemoteLinkInspector --> TeacherContactsDirectory : matches teacher with official VCS conference URL
-    RemoteLinkInspector --> ScheduleKeyboardBuilder : builds native URL Button [🔗 2 пара: Сферум] or Button [🔗 3 пара: Телемост]
-    TelegramClientUI --> VideoConferenceSystem : student clicks Button [🔗 2 пара: Сферум] for direct browser launch without bot backend round-trip
+    ScheduleKeyboardBuilder --> RemoteLinkInspector : inspects lesson remote attribute
+    RemoteLinkInspector --> TeacherContactsDirectory : matches teacher with official conference URL
+    RemoteLinkInspector --> ScheduleKeyboardBuilder : builds native URL button Сферум or Телемост
+    TelegramClientUI --> VideoConferenceSystem : clicks button Сферум for direct browser launch
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -1271,12 +1271,12 @@ classDiagram
         -render_math_formulas(doc, text) void
     }
 
-    TelegramGateway --> HomeworkTopicHandler : student submits task photo/text to Topic 405
+    TelegramGateway --> HomeworkTopicHandler : student submits task photo or text to Topic 405
     HomeworkTopicHandler --> HomeworkQueueManager : wraps task into DTO
-    HomeworkQueueManager --> RedisCacheManager : enqueues via LPUSH "hw:tasks:queue"
-    HomeworkSolverWorker --> RedisCacheManager : dequeues via BLMOVE into "hw:tasks:processing"
-    HomeworkSolverWorker --> DeepSeekVisionClient : performs OCR & step reasoning
-    HomeworkSolverWorker --> GostDocxCompiler : compiles formatted .docx (Times New Roman 14pt, 1.5 line spacing)
+    HomeworkQueueManager --> RedisCacheManager : enqueues task via LPUSH
+    HomeworkSolverWorker --> RedisCacheManager : dequeues task via BLMOVE into processing
+    HomeworkSolverWorker --> DeepSeekVisionClient : performs OCR and step reasoning
+    HomeworkSolverWorker --> GostDocxCompiler : compiles formatted academic docx
     HomeworkSolverWorker --> TelegramGateway : delivers solution document back into Topic 405
     HomeworkSolverWorker --> RedisCacheManager : acknowledges task completion via LREM
 ```
@@ -1333,15 +1333,15 @@ classDiagram
         +get_redis_queue_depths() dict
     }
 
-    TelegramGateway --> AdminAuthFilter : enters command /admin
-    AdminAuthFilter --> AdminPanelHandler : verifies user_id in ADMIN_IDS
-    AdminPanelHandler --> AdminKeyboardBuilder : attaches Button [📢 Экстренная рассылка], Button [🔄 Форсировать обновление топика], Button [📊 Системная статистика], Button [📋 Экзамены], Button [👥 База подписчиков]
-    TelegramGateway --> AdminPanelHandler : clicks Button [📢 Экстренная рассылка]
-    AdminPanelHandler --> ScheduleBroadcaster : triggers urgent timetable broadcast to subscribers
-    TelegramGateway --> AdminPanelHandler : clicks Button [🔄 Форсировать обновление топика]
-    AdminPanelHandler --> AttendanceTopicSyncWorker : triggers full resync of attendance Topic 7025
-    TelegramGateway --> AdminPanelHandler : clicks Button [📊 Системная статистика]
-    AdminPanelHandler --> SystemTelemetryCollector : collects uptime, memory usage, and Redis key counts
+    TelegramGateway --> AdminAuthFilter : enters command admin
+    AdminAuthFilter --> AdminPanelHandler : verifies user id in admin list
+    AdminPanelHandler --> AdminKeyboardBuilder : attaches admin control buttons
+    TelegramGateway --> AdminPanelHandler : clicks button Экстренная рассылка
+    AdminPanelHandler --> ScheduleBroadcaster : triggers urgent timetable broadcast
+    TelegramGateway --> AdminPanelHandler : clicks button Форсировать обновление топика
+    AdminPanelHandler --> AttendanceTopicSyncWorker : triggers full resync of attendance topic
+    TelegramGateway --> AdminPanelHandler : clicks button Системная статистика
+    AdminPanelHandler --> SystemTelemetryCollector : collects uptime and memory usage metrics
     AdminPanelHandler --> TelegramGateway : updates message with system health dashboard
 ```
 
