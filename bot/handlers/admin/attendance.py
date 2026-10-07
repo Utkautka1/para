@@ -73,8 +73,8 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
     if cb.message:
         try:
             await cb.message.edit_text(text_saving)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"Не удалось обновить статус сообщения посещаемости: {e}")
     asyncio.create_task(_instant_topic_sync(session))
     asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
     log.info(f"Сводка пары {session.lesson_num} выдана, запущены оптимистичный апдейт и выгрузка")

@@ -6,7 +6,7 @@
 """
 
 import re
-from typing import Optional, Tuple
+from typing import Optional
 
 
 def parse_duration_to_seconds(time_str: str) -> Optional[int]:

@@ -12,6 +12,7 @@
 import asyncio
 import io
 import os
+import tempfile
 import uuid
 from typing import List, Optional, Tuple
 from aiogram import Bot
@@ -153,7 +154,8 @@ async def notify_task_error(tg_bot: Bot, task: dict) -> None:
 async def execute_single_task(tg_bot: Bot, task: dict) -> None:
     """Обрабатывает одну задачу: решает ДЗ в DeepSeek и отправляет документ."""
     msg_id = task.get("message_id", 0)
-    doc_path = f"/tmp/solution_{uuid.uuid4().hex[:8]}_{msg_id}.docx"
+    filename = f"solution_{uuid.uuid4().hex[:8]}_{msg_id}.docx"
+    doc_path = os.path.join(tempfile.gettempdir(), filename)
     try:
         img_bytes, prompt = await resolve_task_payload(tg_bot, task)
         solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)

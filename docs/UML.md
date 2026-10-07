@@ -52,12 +52,14 @@ classDiagram
         +get_teacher_links(force_refresh) dict
         -_fetch_and_cache_teachers(now) dict
         -_is_cache_fresh(now, force) bool
+        +parse_docx_xml(docx_bytes) dict
     }
 
     class ScheduleApiService {
         +get_day_schedule(group, date) DayScheduleResponse
         +get_week_schedule(group, week) WeekScheduleResponse
         +get_exams(group) ExamsResponse
+        +refresh_schedule_in_background(force) void
     }
 
     class TopicWorkerService {

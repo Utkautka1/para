@@ -13,13 +13,14 @@ import html
 import io
 import json
 import re
-import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
 import uuid
 import httpx
 import openpyxl
+
+import defusedxml.ElementTree as ET
 from openpyxl.worksheet.worksheet import Worksheet
 
 from config import ATTENDANCE_DOC_URL, REDIS_COOKIE_TTL_SECONDS, REDIS_YANDEX_COOKIE_KEY
