@@ -3,6 +3,7 @@
 .gitignore
 .idea/
 .vscode/
+.ruff_cache/
 
 # Python cache and environments
 __pycache__/
