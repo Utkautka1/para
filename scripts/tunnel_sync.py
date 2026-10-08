@@ -56,17 +56,17 @@ async def monitor_tunnel_stream(proc: asyncio.subprocess.Process) -> None:
         found_url = parse_tunnel_url(line)
         if found_url and found_url != last_url:
             last_url = found_url
-            print(f"[TUNNEL] Обнаружен активный URL: {found_url}")
+            print(f"[TUNNEL] Обнаружен активный URL: {found_url}", flush=True)
             if update_env_miniapp_url(found_url):
-                print(f"[TUNNEL] Обновлен .env: MINIAPP_URL={found_url}/miniapp")
+                print(f"[TUNNEL] Обновлен .env: MINIAPP_URL={found_url}/miniapp", flush=True)
                 restart_bot_service()
-                print("[TUNNEL] para-bot успешно перезапущен с новым URL!")
+                print("[TUNNEL] para-bot успешно перезапущен с новым URL!", flush=True)
 
 
 async def run_tunnel_process() -> None:
     """Запускает и удерживает SSH-процесс туннеля localhost.run."""
     cmd = [
-        "ssh", "-NT",
+        "ssh",
         "-o", "ExitOnForwardFailure=yes",
         "-o", "ServerAliveInterval=15",
         "-o", "ServerAliveCountMax=3",
@@ -85,13 +85,13 @@ async def run_tunnel_process() -> None:
 
 async def main() -> None:
     """Основной бесконечный цикл с авто-восстановлением соединения."""
-    print("🚀 Запуск службы синхронизации HTTPS-туннеля для Swagger Mini App")
+    print("🚀 Запуск службы синхронизации HTTPS-туннеля для Swagger Mini App", flush=True)
     while True:
         try:
             await run_tunnel_process()
         except (OSError, asyncio.SubprocessError) as exc:
-            print(f"[TUNNEL] Ошибка процесса туннеля: {exc}")
-        print("[TUNNEL] Переподключение через 5 секунд...")
+            print(f"[TUNNEL] Ошибка процесса туннеля: {exc}", flush=True)
+        print("[TUNNEL] Переподключение через 5 секунд...", flush=True)
         await asyncio.sleep(5)
 
 
