@@ -2,48 +2,80 @@ syntax = "proto3";
 
 package para;
 
+// LessonProto represents an individual academic class/lesson slot in the timetable.
 message LessonProto {
+  // Lesson slot index (typically 0-5).
   int32 period = 1;
+  // Human-readable time range string (e.g., "10:10–11:40").
   string time_str = 2;
+  // Academic discipline title.
   string subject = 3;
+  // Lesson category (e.g., "Лек", "Пр", "Лаб").
   string lesson_type = 4;
+  // Full name of the instructing lecturer or teacher.
   string teacher = 5;
+  // Flag indicating if the class is conducted remotely/online.
   bool is_remote = 6;
+  // Classroom or lecture hall number.
   string room = 7;
+  // Physical campus or building address.
   string address = 8;
+  // Target student subgroup (0: whole group, 1: subgroup 1, 2: subgroup 2).
   int32 subgroup = 9;
+  // Stream indicator for combined cross-group lectures.
   bool is_stream = 10;
+  // URL for online meeting platform (Zoom/VK/Teams/Sferum).
   string remote_link = 11;
+  // Passcode required to enter remote meeting room.
   string remote_passcode = 12;
+  // Conference or meeting identifier.
   string remote_meeting_id = 13;
 }
 
+// DayScheduleRequest queries timetable for a specific calendar date.
 message DayScheduleRequest {
+  // Target ISO date string formatted as YYYY-MM-DD.
   string target_date = 1;
+  // Flag to bypass Redis L1/L2 caches and force upstream fetch.
   bool force_refresh = 2;
 }
 
+// DayScheduleResponse contains ordered lessons for a single academic day.
 message DayScheduleResponse {
+  // Target ISO date string formatted as YYYY-MM-DD.
   string date = 1;
+  // Ordered sequence of scheduled lessons for the day.
   repeated LessonProto lessons = 2;
 }
 
+// WeekDayProto encapsulates timetable entries for a specific day within a weekly view.
 message WeekDayProto {
+  // ISO date string formatted as YYYY-MM-DD.
   string date = 1;
+  // List of lessons scheduled on this day.
   repeated LessonProto lessons = 2;
 }
 
+// WeekScheduleRequest queries timetable for a full 6-day academic week.
 message WeekScheduleRequest {
+  // Monday starting date in ISO format YYYY-MM-DD.
   string monday = 1;
+  // Flag to bypass cache and re-parse upstream schedule.
   bool force_refresh = 2;
 }
 
+// WeekScheduleResponse contains daily schedules grouped across the requested week.
 message WeekScheduleResponse {
+  // Starting Monday ISO date string.
   string monday = 1;
+  // Grouped daily schedule entries.
   repeated WeekDayProto days = 2;
 }
 
+// ScheduleService defines RPC methods for querying student timetables.
 service ScheduleService {
+  // Retrieves lessons for an individual calendar day.
   rpc GetDaySchedule(DayScheduleRequest) returns (DayScheduleResponse);
+  // Retrieves lessons for a 6-day academic week starting from Monday.
   rpc GetWeekSchedule(WeekScheduleRequest) returns (WeekScheduleResponse);
 }

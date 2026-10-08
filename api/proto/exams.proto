@@ -2,26 +2,42 @@ syntax = "proto3";
 
 package para;
 
+// ExamItemProto represents an individual examination or credit test event.
 message ExamItemProto {
+  // Academic discipline title.
   string subject = 1;
+  // Type of evaluation (e.g., "Экзамен", "Зачет", "Консультация").
   string exam_type = 2;
+  // Full name of the examining teacher or professor.
   string teacher = 3;
+  // Classroom or examination auditorium.
   string room = 4;
+  // Building address of the campus venue.
   string address = 5;
+  // Academic study weeks when the exam is scheduled.
   repeated int32 weeks = 6;
+  // Target student subgroup (0: whole group, 1: subgroup 1, 2: subgroup 2).
   int32 subgroup = 7;
+  // Format descriptor (e.g., "Очно" or "Дистанционно").
   string format_str = 8;
 }
 
+// ExamsRequest initiates query for all upcoming group examinations.
 message ExamsRequest {
+  // Flag to bypass cache and force reload from KTMU server.
   bool force_refresh = 1;
 }
 
+// ExamsResponse contains the collection of scheduled examinations.
 message ExamsResponse {
+  // Total number of scheduled exam items.
   int32 count = 1;
+  // Ordered sequence of examination entries.
   repeated ExamItemProto exams = 2;
 }
 
+// ExamsService provides RPC methods for querying academic examination schedules.
 service ExamsService {
+  // Retrieves upcoming examinations and credit tests for the student group.
   rpc GetExams(ExamsRequest) returns (ExamsResponse);
 }
