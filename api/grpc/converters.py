@@ -1,0 +1,99 @@
+"""
+Конвертеры между доменными Pydantic-моделями и Protobuf-сообщениями.
+
+Обеспечивают строгую валидацию и чистую трансляцию данных без дублирования
+логики сериализации между REST и gRPC.
+"""
+
+from datetime import date
+
+from api.proto.exams_pb2 import ExamItemProto
+from api.proto.schedule_pb2 import LessonProto, WeekDayProto
+from api.proto.teachers_pb2 import TeacherItemProto, TeachersResponse
+from services.models import ExamItem, Lesson
+
+
+def lesson_to_proto(lesson: Lesson) -> LessonProto:
+    """Конвертирует Pydantic-модель Lesson в Protobuf-сообщение LessonProto."""
+    return LessonProto(
+        period=lesson.period,
+        time_str=lesson.time_str,
+        subject=lesson.subject,
+        lesson_type=lesson.lesson_type,
+        teacher=lesson.teacher,
+        is_remote=lesson.is_remote,
+        room=lesson.room,
+        address=lesson.address,
+        subgroup=lesson.subgroup,
+        is_stream=lesson.is_stream,
+        remote_link=lesson.remote_link or "",
+        remote_passcode=lesson.remote_passcode or "",
+        remote_meeting_id=lesson.remote_meeting_id or "",
+    )
+
+
+def proto_to_lesson(proto: LessonProto) -> Lesson:
+    """Конвертирует Protobuf-сообщение LessonProto в модель Lesson."""
+    return Lesson(
+        period=proto.period,
+        time_str=proto.time_str,
+        subject=proto.subject,
+        lesson_type=proto.lesson_type,
+        teacher=proto.teacher,
+        is_remote=proto.is_remote,
+        room=proto.room,
+        address=proto.address,
+        subgroup=proto.subgroup,
+        is_stream=proto.is_stream,
+        remote_link=proto.remote_link or None,
+        remote_passcode=proto.remote_passcode or None,
+        remote_meeting_id=proto.remote_meeting_id or None,
+    )
+
+
+def week_days_to_proto(raw_days: list[tuple[date, list[Lesson]]]) -> list[WeekDayProto]:
+    """Конвертирует список кортежей (дата, пары) в список WeekDayProto."""
+    result: list[WeekDayProto] = []
+    for day_date, lessons in raw_days:
+        proto_lessons = [lesson_to_proto(item) for item in lessons]
+        result.append(WeekDayProto(date=day_date.isoformat(), lessons=proto_lessons))
+    return result
+
+
+def exam_item_to_proto(exam: ExamItem) -> ExamItemProto:
+    """Конвертирует ExamItem в Protobuf-сообщение ExamItemProto."""
+    return ExamItemProto(
+        subject=exam.subject,
+        exam_type=exam.exam_type,
+        teacher=exam.teacher,
+        room=exam.room,
+        address=exam.address,
+        weeks=list(exam.weeks),
+        subgroup=exam.subgroup,
+        format_str=exam.format_str,
+    )
+
+
+def proto_to_exam_item(proto: ExamItemProto) -> ExamItem:
+    """Конвертирует ExamItemProto в Pydantic-модель ExamItem."""
+    return ExamItem(
+        subject=proto.subject,
+        exam_type=proto.exam_type,
+        teacher=proto.teacher,
+        room=proto.room,
+        address=proto.address,
+        weeks=list(proto.weeks),
+        subgroup=proto.subgroup,
+        format_str=proto.format_str,
+    )
+
+
+def teachers_dict_to_proto(raw: dict[str, dict]) -> TeachersResponse:
+    """Конвертирует словарь преподавателей в TeachersResponse."""
+    teachers_map: dict[str, TeacherItemProto] = {}
+    for name, data in raw.items():
+        teachers_map[name] = TeacherItemProto(
+            full_name=data.get("full_name", name),
+            link_info=data.get("link_info", ""),
+        )
+    return TeachersResponse(count=len(teachers_map), teachers=teachers_map)

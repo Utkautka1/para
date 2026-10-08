@@ -4,7 +4,6 @@ Pydantic-схемы ответов для роутера преподавате�
 Переиспользует TeacherData из docx_parser (TypedDict → Pydantic).
 """
 
-from typing import Dict
 
 from pydantic import BaseModel
 
@@ -18,4 +17,4 @@ class TeacherItem(BaseModel):
 class TeachersResponse(BaseModel):
     """Словарь контактов преподавателей (ключ — фамилия)."""
     count: int
-    teachers: Dict[str, TeacherItem]
+    teachers: dict[str, TeacherItem]

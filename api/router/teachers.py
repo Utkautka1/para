@@ -6,11 +6,11 @@
 
 from fastapi import APIRouter, Depends, Query
 
-from api.deps import verify_api_key
+from api.deps import verify_api_or_tester
 from api.schemas.teachers import TeacherItem, TeachersResponse
 from integrations.docx_parser import get_teacher_links
 
-router = APIRouter(tags=["Teachers"], prefix="/teachers", dependencies=[Depends(verify_api_key)])
+router = APIRouter(tags=["Teachers"], prefix="/teachers", dependencies=[Depends(verify_api_or_tester)])
 
 
 @router.get("", response_model=TeachersResponse)

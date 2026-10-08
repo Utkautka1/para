@@ -22,6 +22,7 @@ def register_all_routers() -> None:
     from bot.handlers.admin.mute import router as mute_router
     from bot.handlers.admin.panel import router as admin_router
     from bot.handlers.admin.ping_all import router as ping_all_router
+    from bot.handlers.admin.testers import router as testers_router
     from bot.handlers.user.attendance import router as user_att_router
     from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
@@ -30,6 +31,7 @@ def register_all_routers() -> None:
     dp.include_router(attendance_router)
     dp.include_router(mute_router)
     dp.include_router(ping_all_router)
+    dp.include_router(testers_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
     dp.include_router(admin_router)

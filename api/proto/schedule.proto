@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package para;
+
+message LessonProto {
+  int32 period = 1;
+  string time_str = 2;
+  string subject = 3;
+  string lesson_type = 4;
+  string teacher = 5;
+  bool is_remote = 6;
+  string room = 7;
+  string address = 8;
+  int32 subgroup = 9;
+  bool is_stream = 10;
+  string remote_link = 11;
+  string remote_passcode = 12;
+  string remote_meeting_id = 13;
+}
+
+message DayScheduleRequest {
+  string target_date = 1;
+  bool force_refresh = 2;
+}
+
+message DayScheduleResponse {
+  string date = 1;
+  repeated LessonProto lessons = 2;
+}
+
+message WeekDayProto {
+  string date = 1;
+  repeated LessonProto lessons = 2;
+}
+
+message WeekScheduleRequest {
+  string monday = 1;
+  bool force_refresh = 2;
+}
+
+message WeekScheduleResponse {
+  string monday = 1;
+  repeated WeekDayProto days = 2;
+}
+
+service ScheduleService {
+  rpc GetDaySchedule(DayScheduleRequest) returns (DayScheduleResponse);
+  rpc GetWeekSchedule(WeekScheduleRequest) returns (WeekScheduleResponse);
+}

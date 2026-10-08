@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package para;
+
+message ExamItemProto {
+  string subject = 1;
+  string exam_type = 2;
+  string teacher = 3;
+  string room = 4;
+  string address = 5;
+  repeated int32 weeks = 6;
+  int32 subgroup = 7;
+  string format_str = 8;
+}
+
+message ExamsRequest {
+  bool force_refresh = 1;
+}
+
+message ExamsResponse {
+  int32 count = 1;
+  repeated ExamItemProto exams = 2;
+}
+
+service ExamsService {
+  rpc GetExams(ExamsRequest) returns (ExamsResponse);
+}

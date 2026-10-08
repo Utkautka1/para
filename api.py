@@ -1,49 +1,41 @@
 """
-Точка входа сервиса para-api (FastAPI + Uvicorn).
+Точка входа сервиса para-api (FastAPI + gRPC Server + Swagger UI).
 
 Единая точка доступа к данным расписания, экзаменов и преподавателей.
-Все эндпоинты (кроме /health) защищены X-API-Key.
-API доступен только внутри Docker-сети, порт наружу не публикуется.
+Поддерживает gRPC (порт GRPC_PORT) и HTTP REST со Swagger UI (порт 8000).
 """
 
-import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
 
-from api.router.exams import router as exams_router
-from api.router.health import router as health_router
-from api.router.schedule import router as schedule_router
-from api.router.teachers import router as teachers_router
+from api import create_app
+from api.grpc.server import create_grpc_server, start_grpc_server, stop_grpc_server
+from config import GRPC_HOST, GRPC_PORT
 from core.logger import get_logger
 
 log = get_logger("api_main")
 
 
-def create_app() -> FastAPI:
-    """Собирает FastAPI-приложение с роутерами и метаданными."""
-    app = FastAPI(
-        title="para-api",
-        description="Внутренний API парсинга расписания КТМУ",
-        version="1.0.0",
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
-    )
-    app.include_router(health_router)
-    app.include_router(schedule_router)
-    app.include_router(exams_router)
-    app.include_router(teachers_router)
-    return app
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Управляет жизненным циклом gRPC-сервера параллельно с FastAPI."""
+    grpc_server = create_grpc_server()
+    await start_grpc_server(grpc_server, GRPC_HOST, GRPC_PORT)
+    log.info(f"⚡ gRPC сервер активен на {GRPC_HOST}:{GRPC_PORT}")
+    try:
+        yield
+    finally:
+        await stop_grpc_server(grpc_server)
 
 
 app = create_app()
-
+app.router.lifespan_context = lifespan
 
 if __name__ == "__main__":
     log.info("=" * 60)
-    log.info("ЗАПУСК Internal API (para-api)")
-    log.info("  Порт: 8000 | Docs: отключены | Auth: X-API-Key")
+    log.info(f"ЗАПУСК Dual-Protocol API: HTTP :8000 | gRPC :{GRPC_PORT}")
+    log.info("  Swagger UI: /docs | Telegram Mini App: /miniapp")
     log.info("=" * 60)
-    api_host = os.getenv("API_HOST", "0.0.0.0")  # nosec B104
-    uvicorn.run(app, host=api_host, port=8000, log_level="warning")
-
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")  # nosec B104

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package para;
+
+message TeacherItemProto {
+  string full_name = 1;
+  string link_info = 2;
+}
+
+message TeachersRequest {
+  bool force_refresh = 1;
+}
+
+message TeachersResponse {
+  int32 count = 1;
+  map<string, TeacherItemProto> teachers = 2;
+}
+
+service TeachersService {
+  rpc GetTeachers(TeachersRequest) returns (TeachersResponse);
+}

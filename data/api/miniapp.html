@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>para-api — Swagger UI Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --success: #10b981;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg) 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .header-bar {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-dev { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .badge-status { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 10px #34d399;
+      animation: pulseAnim 2s infinite;
+    }
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 40px var(--accent-glow);
+      text-align: center;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+      font-size: 28px;
+    }
+    .icon-loading { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.4); }
+    .icon-denied { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .title { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+    .desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; }
+
+    .user-info-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      text-align: left;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px 18px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* Swagger Dark Overrides */
+    #swagger-wrapper {
+      display: none;
+      width: 100%;
+      background: #0f172a;
+      flex: 1;
+    }
+    .swagger-ui {
+      filter: invert(88%) hue-rotate(180deg);
+      padding: 8px;
+    }
+    .swagger-ui .topbar { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-weight:700; font-size:15px; letter-spacing:-0.02em;">para-api</span>
+      <span class="badge badge-dev">gRPC + OpenAPI</span>
+    </div>
+    <div id="live-badge" class="badge badge-status" style="display:none;">
+      <span class="pulse"></span>
+      <span>Live</span>
+    </div>
+  </div>
+
+  <div id="auth-state" class="container">
+    <div id="loader-card" class="card">
+      <div class="icon-wrap icon-loading">⚡</div>
+      <h2 class="title">Проверка прав доступа</h2>
+      <p class="desc">Аутентификация через Telegram WebApp и валидация HMAC-SHA256 подписи...</p>
+    </div>
+
+    <div id="denied-card" class="card" style="display:none;">
+      <div class="icon-wrap icon-denied">🔒</div>
+      <h2 class="title">Доступ ограничен</h2>
+      <p class="desc">Вы не добавлены в список доверенных тестировщиков Swagger UI. Обратитесь к администратору для предоставления прав.</p>
+      <div class="user-info-box">
+        <div>
+          <div style="color:var(--text-muted);">Ваш Telegram ID:</div>
+          <div id="denied-uid" style="font-weight:600; font-size:14px; color:#fff;">—</div>
+        </div>
+        <button id="copy-btn" class="badge badge-dev" style="cursor:pointer;" onclick="copyUserId()">Копировать</button>
+      </div>
+      <button class="btn btn-primary" onclick="closeWebApp()">Закрыть окно</button>
+    </div>
+  </div>
+
+  <div id="swagger-wrapper">
+    <div id="swagger-ui"></div>
+  </div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js"></script>
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    let currentUserId = null;
+
+    async function authenticate() {
+      const initData = tg && tg.initData ? tg.initData : new URLSearchParams(window.location.search).get('init_data') || '';
+      try {
+        const resp = await fetch('/miniapp/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: initData })
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          currentUserId = data.user_id;
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          showSwagger();
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          currentUserId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : (errData.user_id || 'Неизвестен');
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+          showDenied();
+        }
+      } catch (e) {
+        showDenied();
+      }
+    }
+
+    function showSwagger() {
+      document.getElementById('auth-state').style.display = 'none';
+      document.getElementById('swagger-wrapper').style.display = 'block';
+      document.getElementById('live-badge').style.display = 'inline-flex';
+
+      SwaggerUIBundle({
+        url: "/openapi.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIBundle.SwaggerUIStandalonePreset
+        ],
+        layout: "BaseLayout"
+      });
+    }
+
+    function showDenied() {
+      document.getElementById('loader-card').style.display = 'none';
+      document.getElementById('denied-card').style.display = 'block';
+      document.getElementById('denied-uid').innerText = currentUserId || 'ID не определен';
+    }
+
+    function copyUserId() {
+      if (currentUserId) {
+        navigator.clipboard.writeText(String(currentUserId));
+        const btn = document.getElementById('copy-btn');
+        btn.innerText = 'Скопировано!';
+        setTimeout(() => { btn.innerText = 'Копировать'; }, 2000);
+      }
+    }
+
+    function closeWebApp() {
+      if (tg) tg.close();
+      else window.close();
+    }
+
+    authenticate();
+  </script>
+</body>
+</html>

@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 
-from api.deps import verify_api_key
+from api.deps import verify_api_or_tester
 from api.schemas.schedule import (
     DayScheduleResponse,
     WeekDayItem,
@@ -18,7 +18,7 @@ from api.schemas.schedule import (
 from config import TIMEZONE
 from services.schedule_parser import get_schedule_for_date, get_week_schedule
 
-router = APIRouter(tags=["Schedule"], prefix="/schedule", dependencies=[Depends(verify_api_key)])
+router = APIRouter(tags=["Schedule"], prefix="/schedule", dependencies=[Depends(verify_api_or_tester)])
 
 
 @router.get("/day", response_model=DayScheduleResponse)
