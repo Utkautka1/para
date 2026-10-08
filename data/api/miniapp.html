@@ -149,16 +149,17 @@
     }
     .btn-primary:active { transform: scale(0.98); }
 
-    /* Swagger Dark Overrides */
+    /* Swagger Container */
     #swagger-wrapper {
       display: none;
       width: 100%;
-      background: #0f172a;
+      background: #ffffff;
       flex: 1;
+      min-height: 100vh;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
     }
     .swagger-ui {
-      filter: invert(88%) hue-rotate(180deg);
-      padding: 8px;
+      padding: 12px;
     }
     .swagger-ui .topbar { display: none !important; }
   </style>
@@ -249,7 +250,11 @@
           SwaggerUIBundle.presets.apis,
           SwaggerUIBundle.SwaggerUIStandalonePreset
         ],
-        layout: "BaseLayout"
+        layout: "BaseLayout",
+        requestInterceptor: (req) => {
+          req.credentials = 'include';
+          return req;
+        }
       });
     }
 
