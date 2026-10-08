@@ -20,6 +20,7 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
     )
     app.include_router(health_router)
     app.include_router(schedule_router)
