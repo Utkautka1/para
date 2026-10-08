@@ -80,7 +80,14 @@ HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID
 
 # Настройки внутреннего API (para-api)
 API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
-API_BASE_URL: str = os.getenv("API_BASE_URL", "http://api:8000")
+API_BASE_URL: str = get_required_env("API_BASE_URL")
+GRPC_HOST: str = get_required_env("GRPC_HOST")
+GRPC_PORT: int = int(get_required_env("GRPC_PORT"))
+GRPC_SERVER_ADDRESS: str = get_required_env("GRPC_SERVER_ADDRESS")
+GRPC_MAX_MESSAGE_LENGTH: int = int(get_required_env("GRPC_MAX_MESSAGE_LENGTH"))
+MINIAPP_URL: str = get_required_env("MINIAPP_URL")
+REDIS_TESTERS_KEY: str = get_required_env("REDIS_TESTERS_KEY")
+SESSION_MAX_AGE_SECONDS: int = int(get_required_env("SESSION_MAX_AGE_SECONDS"))
 
 # Настройки отметки посещаемости (староста и замстаросты)
 DEPUTY_USER_ID: int = int(get_required_env("DEPUTY_USER_ID"))

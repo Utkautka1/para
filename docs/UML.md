@@ -25,6 +25,10 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.9. [Remote Lesson Direct Join Button «🔗 N-я пара» Flow](#89-remote-lesson-direct-join-button-n-я-пара-flow)
    - 8.10. [AI Homework Solver Workflow in Topic 405 (DeepSeek & GOST .docx)](#810-ai-homework-solver-workflow-in-topic-405-deepseek--gost-docx)
    - 8.11. [Headman & Admin Control Panel /admin Flow](#811-headman--admin-control-panel-admin-flow)
+9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
+   - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
+   - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
+   - 9.3. [Tester Whitelist Management Flow](#93-tester-whitelist-management-flow)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -1352,4 +1356,205 @@ classDiagram
 3. **Emergency Schedule Push**: Clicking Button `📢 Экстренная рассылка` initiates an asynchronous broadcast of the day's timetable to all active subscribers via `services/notifier.py` with semaphore concurrency control.
 4. **Forced Topic Rebuild**: Clicking Button `🔄 Форсировать обновление топика` triggers a full re-computation of the pinned Topic 7025 message directly from live sheets.
 5. **System Telemetry**: Clicking Button `📊 Системная статистика` displays server metrics, active Redis connections, queue lengths, and memory footprint.
+
+---
+
+## 9. Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture
+
+The dual-protocol architecture combines a high-speed gRPC server (HTTP/2 binary Protobuf) for internal inter-service communication between `para-bot`, `para-worker`, `para-solver`, and `para-api`, alongside a FastAPI REST engine exposing interactive **Swagger UI** (`/docs`, `/openapi.json`) and a **Telegram Mini App** gateway with cryptographic HMAC-SHA256 verification and Redis whitelist access control.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class GrpcServerManager {
+        -_server aio_Server
+        +create_grpc_server() aio_Server
+        +start_grpc_server(server, host, port) void
+        +stop_grpc_server(server, grace) void
+    }
+
+    class ScheduleServiceServicer {
+        +GetDaySchedule(request, context) DayScheduleResponse
+        +GetWeekSchedule(request, context) WeekScheduleResponse
+        -_resolve_day(raw_date) date
+        -_resolve_monday(raw_monday) date
+    }
+
+    class ExamsServiceServicer {
+        +GetExams(request, context) ExamsResponse
+    }
+
+    class TeachersServiceServicer {
+        +GetTeachers(request, context) TeachersResponse
+    }
+
+    class GrpcConverters {
+        +lesson_to_proto(lesson) LessonProto
+        +proto_to_lesson(proto) Lesson
+        +week_days_to_proto(raw_days) list
+        +exam_item_to_proto(exam) ExamItemProto
+        +proto_to_exam_item(proto) ExamItem
+        +teachers_dict_to_proto(raw) TeachersResponse
+    }
+
+    class ApiClientGrpc {
+        -_CHANNEL aio_Channel
+        -_CLIENT AsyncClient
+        +_get_grpc_channel() aio_Channel
+        +fetch_day_schedule(target_date, force_refresh) dict
+        +fetch_week_schedule(monday, force_refresh) dict
+        +fetch_exams(force_refresh) dict
+        +fetch_teachers(force_refresh) dict
+        +close_api_client() void
+    }
+
+    class MiniappRouter {
+        +serve_miniapp_page() HTMLResponse
+        +authenticate_miniapp(payload, response) MiniappAuthResponse
+        +check_tester_status(session) MiniappCheckResponse
+        +list_api_testers() TesterListResponse
+        +api_add_tester(user_id) dict
+        +api_remove_tester(user_id) dict
+    }
+
+    class MiniappAuthService {
+        +validate_telegram_init_data(init_data) dict
+        +generate_tester_session(user_id) str
+        +verify_tester_session(token, max_age) int
+        -_compute_init_data_hash(data_check_str) str
+        -_is_auth_date_valid(auth_date_str) bool
+    }
+
+    class TestersManager {
+        -_ADMIN_TESTERS set
+        +add_tester(user_id) bool
+        +remove_tester(user_id) bool
+        +is_tester_allowed(user_id) bool
+        +get_all_testers() list
+    }
+
+    class AdminTestersHandler {
+        +cmd_list_testers(message) void
+        +cmd_add_tester(message) void
+        +cmd_del_tester(message) void
+        +cmd_open_swagger(message) void
+        +cb_admin_testers(callback) void
+        +process_tester_id_input(message, state) void
+    }
+
+    GrpcServerManager --> ScheduleServiceServicer : registers servicer
+    GrpcServerManager --> ExamsServiceServicer : registers servicer
+    GrpcServerManager --> TeachersServiceServicer : registers servicer
+    ScheduleServiceServicer --> GrpcConverters : converts models
+    ExamsServiceServicer --> GrpcConverters : converts models
+    TeachersServiceServicer --> GrpcConverters : converts models
+    ApiClientGrpc --> ScheduleServiceServicer : RPC HTTP/2 stream
+    ApiClientGrpc --> ExamsServiceServicer : RPC HTTP/2 stream
+    ApiClientGrpc --> TeachersServiceServicer : RPC HTTP/2 stream
+    MiniappRouter --> MiniappAuthService : validates HMAC initData
+    MiniappRouter --> TestersManager : checks tester whitelist in Redis
+    AdminTestersHandler --> TestersManager : manages whitelist via Bot FSM
+```
+
+---
+
+### 9.1. gRPC Microservices Ingress & Protobuf Multiplexing Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Caller as para-bot / para-worker
+    participant Client as core/api_client.py
+    participant Channel as grpc.aio.Channel (:50051)
+    participant Servicer as ScheduleServiceServicer
+    participant Parser as services/schedule_parser.py
+    participant RedisStore as Redis L1/L2 Cache
+
+    Caller->>Client: get_api_schedule_for_date(target_date)
+    Client->>Channel: ScheduleServiceStub.GetDaySchedule(DayScheduleRequest)
+    Channel->>Servicer: Ingest binary protobuf RPC frame
+    Servicer->>Parser: get_schedule_for_date(day, force_refresh)
+    Parser->>RedisStore: GET schedule:snapshot / L1 memory cache
+    RedisStore-->>Parser: Return cached schedule / live parse
+    Parser-->>Servicer: List[Lesson] domain models
+    Servicer->>Servicer: lesson_to_proto() converter
+    Servicer-->>Channel: DayScheduleResponse (binary frame)
+    Channel-->>Client: Receive Protobuf response
+    Client->>Client: proto_to_lesson() deserialization
+    Client-->>Caller: List[Lesson] Pydantic models
+```
+
+---
+
+### 9.2. Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tester as Tester (Telegram App)
+    participant WebApp as Telegram Mini App (/miniapp)
+    participant ApiRouter as api/router/miniapp.py
+    participant AuthService as utils/miniapp_auth.py
+    participant TestersMgr as services/testers_manager.py
+    participant RedisStore as Redis (api:testers:whitelist)
+    participant SwaggerUI as Swagger UI Bundle (/docs)
+    participant ApiEndpoints as api/router/schedule.py
+
+    Tester->>WebApp: Opens WebApp from Bot button
+    WebApp->>WebApp: Reads window.Telegram.WebApp.initData
+    WebApp->>ApiRouter: POST /miniapp/auth {init_data}
+    ApiRouter->>AuthService: validate_telegram_init_data(init_data)
+    AuthService->>AuthService: HMAC-SHA256(secret="WebAppData", BOT_TOKEN)
+    AuthService->>AuthService: Verify hash == computed_hash
+    AuthService->>AuthService: Verify auth_date <= 86400s (Replay guard)
+    AuthService-->>ApiRouter: Valid user {id: 12345, first_name: "Alex"}
+    ApiRouter->>TestersMgr: is_tester_allowed(12345)
+    TestersMgr->>RedisStore: SISMEMBER api:testers:whitelist 12345
+    RedisStore-->>TestersMgr: 1 (Allowed)
+    TestersMgr-->>ApiRouter: True (Authorized Tester)
+    ApiRouter->>AuthService: generate_tester_session(12345)
+    AuthService-->>ApiRouter: Signed token "12345:ts:hmac"
+    ApiRouter-->>WebApp: Set-Cookie: para_session=token; HttpOnly; Secure
+    WebApp->>SwaggerUI: Mount Swagger UI with /openapi.json
+    SwaggerUI->>SwaggerUI: Fetch /openapi.json schema
+    SwaggerUI-->>Tester: Render interactive API documentation
+    Tester->>SwaggerUI: Click "Try it out" -> Execute GET /schedule/day
+    SwaggerUI->>ApiEndpoints: GET /schedule/day (with para_session cookie)
+    ApiEndpoints->>ApiRouter: verify_api_or_tester() validates cookie
+    ApiEndpoints-->>SwaggerUI: 200 OK {lessons: [...]}
+    SwaggerUI-->>Tester: Display live JSON response
+```
+
+---
+
+### 9.3. Tester Whitelist Management Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Headman / Admin
+    participant Bot as para-bot
+    participant Handler as bot/handlers/admin/testers.py
+    participant TestersMgr as services/testers_manager.py
+    participant RedisStore as Redis (api:testers:whitelist)
+
+    Admin->>Bot: /add_tester 987654321
+    Bot->>Handler: cmd_add_tester(message)
+    Handler->>Handler: Validate numeric Telegram ID
+    Handler->>TestersMgr: add_tester(987654321)
+    TestersMgr->>RedisStore: SADD api:testers:whitelist "987654321"
+    RedisStore-->>TestersMgr: OK
+    TestersMgr-->>Handler: True
+    Handler-->>Admin: "✅ Пользователь 987654321 добавлен в тестеры API!"
+    
+    Admin->>Bot: /testers
+    Bot->>Handler: cmd_list_testers(message)
+    Handler->>TestersMgr: get_all_testers()
+    TestersMgr->>RedisStore: SMEMBERS api:testers:whitelist
+    RedisStore-->>TestersMgr: {"987654321"}
+    TestersMgr-->>Handler: [ALLOWED_USER_ID, DEPUTY_USER_ID, 987654321]
+    Handler-->>Admin: Render interactive testers list + Delete buttons
+```
+
 

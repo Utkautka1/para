@@ -7,11 +7,11 @@
 
 from fastapi import APIRouter, Depends
 
-from api.deps import verify_api_key
+from api.deps import verify_api_or_tester
 from api.schemas.exams import ExamsResponse
 from services.exam_parser import get_group_exams
 
-router = APIRouter(tags=["Exams"], prefix="/exams", dependencies=[Depends(verify_api_key)])
+router = APIRouter(tags=["Exams"], prefix="/exams", dependencies=[Depends(verify_api_or_tester)])
 
 
 @router.get("", response_model=ExamsResponse)
