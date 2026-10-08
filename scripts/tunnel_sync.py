@@ -40,8 +40,8 @@ def update_env_miniapp_url(new_url: str) -> bool:
 
 
 def restart_bot_service() -> None:
-    """Перезапускает контейнер para-bot для применения нового MINIAPP_URL."""
-    cmd = ["docker", "compose", "restart", "bot"]
+    """Перезапускает контейнер para-bot с перечитыванием .env."""
+    cmd = ["docker", "compose", "up", "-d", "bot"]
     subprocess.run(cmd, cwd=ENV_FILE.parent, check=False)  # nosec B603
 
 
