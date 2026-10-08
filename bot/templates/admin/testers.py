@@ -9,7 +9,7 @@
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-from config import MINIAPP_URL
+from config import MINIAPP_URL, SWAGGER_URL
 
 
 class AddTesterState(StatesGroup):
@@ -20,26 +20,32 @@ class AddTesterState(StatesGroup):
 def format_testers_text(testers: list[int]) -> str:
     """Формирует HTML-текст со списком текущих тестировщиков."""
     items = "\n".join(f"  • <code>{uid}</code>" for uid in testers) or "  <i>(Список пуст)</i>"
-    url_info = f"<code>{MINIAPP_URL}</code>" if MINIAPP_URL else "<i>(Не задан в .env)</i>"
+    web_url = f"<code>{SWAGGER_URL}</code>" if SWAGGER_URL else "<i>(Не задан)</i>"
     return (
-        "🧪 <b>УПРАВЛЕНИЕ ТЕСТЕРАМИ SWAGGER UI</b>\n"
+        "🧪 <b>УПРАВЛЕНИЕ SWAGGER UI И ТЕСТЕРАМИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌐 <b>Mini App URL:</b> {url_info}\n\n"
+        f"🌐 <b>Swagger UI:</b> {web_url}\n\n"
         f"👥 <b>Авторизованные тестеры ({len(testers)}):</b>\n{items}\n\n"
-        "💡 <i>Тестеры могут запускать Mini App и вызывать все методы API.</i>"
+        "💡 <i>Нажмите кнопку ниже, чтобы открыть веб-интерфейс Swagger UI.</i>"
     )
 
 
-def get_swagger_launch_btn() -> InlineKeyboardButton:
-    """Формирует кнопку запуска Mini App или информационную ссылку."""
+def get_swagger_buttons() -> list[InlineKeyboardButton]:
+    """Формирует кнопки запуска веб-интерфейса Swagger UI и Mini App."""
+    btns = []
+    if SWAGGER_URL:
+        btns.append(InlineKeyboardButton(text="🚀 Открыть Swagger UI", url=SWAGGER_URL))
     if MINIAPP_URL.startswith("https://"):
-        return InlineKeyboardButton(text="🚀 Открыть Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))
-    return InlineKeyboardButton(text="🚀 Ссылка на Swagger UI", callback_data="admin:show_swagger_link")
+        btns.append(InlineKeyboardButton(text="📱 Mini App", web_app=WebAppInfo(url=MINIAPP_URL)))
+    return btns
 
 
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру управления списком тестеров Swagger UI."""
-    rows: list = [[get_swagger_launch_btn()]]
+    rows: list = []
+    top_btns = get_swagger_buttons()
+    if top_btns:
+        rows.append(top_btns)
     rows.append([
         InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
         InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),

@@ -7,8 +7,8 @@
 
 import os
 from zoneinfo import ZoneInfo
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 # Загружаем переменные окружения из файла .env
 load_dotenv()
@@ -81,6 +81,8 @@ HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID
 # Настройки внутреннего API (para-api)
 API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
 API_BASE_URL: str = get_required_env("API_BASE_URL")
+API_EXTERNAL_PORT: int = int(get_required_env("API_EXTERNAL_PORT"))
+SWAGGER_URL: str = get_required_env("SWAGGER_URL")
 GRPC_HOST: str = get_required_env("GRPC_HOST")
 GRPC_PORT: int = int(get_required_env("GRPC_PORT"))
 GRPC_SERVER_ADDRESS: str = get_required_env("GRPC_SERVER_ADDRESS")
