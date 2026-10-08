@@ -2,20 +2,30 @@ syntax = "proto3";
 
 package para;
 
+// TeacherItemProto encapsulates teacher contact and remote meeting details.
 message TeacherItemProto {
+  // Full name of the faculty member or instructor.
   string full_name = 1;
+  // Extracted direct URL or instructions for remote consultation/lecture.
   string link_info = 2;
 }
 
+// TeachersRequest queries remote lecture links and faculty registry.
 message TeachersRequest {
+  // Flag to bypass cache and re-download fresh data from Yandex Disk.
   bool force_refresh = 1;
 }
 
+// TeachersResponse returns mapped teacher credentials and online meeting endpoints.
 message TeachersResponse {
+  // Total count of registered teachers.
   int32 count = 1;
+  // Key-value mapping of normalized teacher names to contact metadata.
   map<string, TeacherItemProto> teachers = 2;
 }
 
+// TeachersService provides RPC methods for resolving faculty remote links.
 service TeachersService {
+  // Retrieves teacher registry and remote lecture links parsed from cloud documents.
   rpc GetTeachers(TeachersRequest) returns (TeachersResponse);
 }

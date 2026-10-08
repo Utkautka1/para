@@ -639,6 +639,7 @@ Comprehensive registry of all Redis keys, data structures, expiration policies, 
 | `att:session:{session_id}` | String (JSON) | 1 hour | Backend on headman action | Yandex Documents: ephemeral token validation following WOPI standard |
 | `att:committed:{group}:{date}:{period}` | String (flag) | 24 hours | WOPI controller on save | Bot & Worker: confirmation flag that attendance was marked for the lesson |
 | `topic:schedule_msg_id:{group}` | String (int) | Indefinite | Bot on initial timetable post | Topic Service: pinned main schedule message ID updated in-place |
+| `api:testers:whitelist` | Set (Strings) | Indefinite | Bot / Admin (`/add_tester`) | MiniApp Auth Router: O(1) membership check for authorized Swagger UI testers |
 
 ---
 
@@ -1461,6 +1462,8 @@ classDiagram
 
 ### 9.1. gRPC Microservices Ingress & Protobuf Multiplexing Flow
 
+Architecture governing high-performance binary RPC data exchange between microservices (`para-bot`, `para-worker`, `para-solver`) and `para-api` over HTTP/2 multiplexed streams with low-latency binary serialization.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -1485,9 +1488,19 @@ sequenceDiagram
     Client-->>Caller: List[Lesson] Pydantic models
 ```
 
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Persistent Channel Multiplexing**: `ApiClientGrpc` maintains a persistent HTTP/2 connection channel (`grpc.aio.insecure_channel`) directed to `api:50051`, eliminating TCP handshake overhead for recurring timetable checks.
+2. **Binary Frame Ingress**: Methods such as `get_api_schedule_for_date` construct typed `DayScheduleRequest` protobuf structures, achieving high compression and zero JSON parsing CPU overhead.
+3. **Servicer Dispatch**: `ScheduleServiceServicer.GetDaySchedule` unpacks request parameters, delegates timetable resolution to `services/schedule_parser.py`, and inspects Redis L1/L2 snapshot caches.
+4. **Data Mapping & Serialization**: Domain `Lesson` objects are mapped to Protobuf structures by `GrpcConverters.lesson_to_proto`, preserving subgroup partitioning, stream markers, and remote lecture identifiers.
+5. **High Availability & HTTP Fallback**: If gRPC experiences communication disruption (`grpc.RpcError`), `ApiClientGrpc` intercepts the error and executes transparent fallback to legacy REST endpoints, ensuring zero downtime for end users.
+
 ---
 
 ### 9.2. Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow
+
+Architecture governing cryptographic authentication via Telegram WebApp `initData`, session token minting, and embedding interactive OpenAPI Swagger UI within the Telegram client for authorized testers.
 
 ```mermaid
 sequenceDiagram
@@ -1503,32 +1516,43 @@ sequenceDiagram
 
     Tester->>WebApp: Opens WebApp from Bot button
     WebApp->>WebApp: Reads window.Telegram.WebApp.initData
-    WebApp->>ApiRouter: POST /miniapp/auth {init_data}
+    WebApp->>ApiRouter: POST /miniapp/auth (init_data)
     ApiRouter->>AuthService: validate_telegram_init_data(init_data)
-    AuthService->>AuthService: HMAC-SHA256(secret="WebAppData", BOT_TOKEN)
-    AuthService->>AuthService: Verify hash == computed_hash
+    AuthService->>AuthService: HMAC-SHA256(secret=WebAppData, BOT_TOKEN)
+    AuthService->>AuthService: Verify hash equals computed_hash
     AuthService->>AuthService: Verify auth_date <= 86400s (Replay guard)
-    AuthService-->>ApiRouter: Valid user {id: 12345, first_name: "Alex"}
+    AuthService-->>ApiRouter: Valid user data (id=12345, first_name=Alex)
     ApiRouter->>TestersMgr: is_tester_allowed(12345)
     TestersMgr->>RedisStore: SISMEMBER api:testers:whitelist 12345
     RedisStore-->>TestersMgr: 1 (Allowed)
     TestersMgr-->>ApiRouter: True (Authorized Tester)
     ApiRouter->>AuthService: generate_tester_session(12345)
-    AuthService-->>ApiRouter: Signed token "12345:ts:hmac"
-    ApiRouter-->>WebApp: Set-Cookie: para_session=token; HttpOnly; Secure
+    AuthService-->>ApiRouter: Signed token 12345:ts:hmac
+    ApiRouter-->>WebApp: Set-Cookie para_session=token (HttpOnly, Secure)
     WebApp->>SwaggerUI: Mount Swagger UI with /openapi.json
     SwaggerUI->>SwaggerUI: Fetch /openapi.json schema
     SwaggerUI-->>Tester: Render interactive API documentation
-    Tester->>SwaggerUI: Click "Try it out" -> Execute GET /schedule/day
+    Tester->>SwaggerUI: Click Try it out and Execute GET /schedule/day
     SwaggerUI->>ApiEndpoints: GET /schedule/day (with para_session cookie)
     ApiEndpoints->>ApiRouter: verify_api_or_tester() validates cookie
-    ApiEndpoints-->>SwaggerUI: 200 OK {lessons: [...]}
+    ApiEndpoints-->>SwaggerUI: 200 OK (lessons list)
     SwaggerUI-->>Tester: Display live JSON response
 ```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Telegram WebApp Initialization**: When a user clicks the Mini App button inside Telegram, the WebApp platform injects cryptographically signed `window.Telegram.WebApp.initData` containing user attributes, query timestamp, and signature hash.
+2. **HMAC-SHA256 Cryptographic Verification**: The backend sorts parameters alphabetically to construct a deterministic `data_check_string`, computes `secret_key = HMAC-SHA256("WebAppData", BOT_TOKEN)`, and compares the derived digest against the provided `hash` using timing-attack safe comparison (`hmac.compare_digest`).
+3. **Replay Attack Defense**: `MiniappAuthService` validates `auth_date` against `SESSION_MAX_AGE_SECONDS` (86400 seconds). Payloads older than 24 hours are rejected immediately with HTTP 401.
+4. **RBAC Whitelist Enforcement**: `TestersManager.is_tester_allowed(user_id)` checks the Redis set `api:testers:whitelist` in O(1) time complexity. Unwhitelisted accounts are rejected with HTTP 403 Forbidden.
+5. **Signed Session Token Minting**: `generate_tester_session(user_id)` constructs a tamper-proof session token format `<user_id>:<timestamp>:<signature>` and binds it to the browser via an HTTP-only secure cookie `para_session`.
+6. **Embedded Swagger UI Execution**: The Mini App mounts Swagger UI Bundle pointing to `/openapi.json`. Every test request executed via "Try it out" automatically passes credentials through `verify_api_or_tester()`, providing seamless live API testing without manual API key entry.
 
 ---
 
 ### 9.3. Tester Whitelist Management Flow
+
+Administrative control flow for managing authorized testers in the Redis whitelist via Telegram Bot commands (`/testers`, `/add_tester`, `/del_tester`) and interactive FSM dialogs.
 
 ```mermaid
 sequenceDiagram
@@ -1543,18 +1567,26 @@ sequenceDiagram
     Bot->>Handler: cmd_add_tester(message)
     Handler->>Handler: Validate numeric Telegram ID
     Handler->>TestersMgr: add_tester(987654321)
-    TestersMgr->>RedisStore: SADD api:testers:whitelist "987654321"
+    TestersMgr->>RedisStore: SADD api:testers:whitelist 987654321
     RedisStore-->>TestersMgr: OK
     TestersMgr-->>Handler: True
-    Handler-->>Admin: "✅ Пользователь 987654321 добавлен в тестеры API!"
+    Handler-->>Admin: Confirmation alert (User 987654321 added to API testers)
     
     Admin->>Bot: /testers
     Bot->>Handler: cmd_list_testers(message)
     Handler->>TestersMgr: get_all_testers()
     TestersMgr->>RedisStore: SMEMBERS api:testers:whitelist
-    RedisStore-->>TestersMgr: {"987654321"}
-    TestersMgr-->>Handler: [ALLOWED_USER_ID, DEPUTY_USER_ID, 987654321]
-    Handler-->>Admin: Render interactive testers list + Delete buttons
+    RedisStore-->>TestersMgr: Set of tester IDs
+    TestersMgr-->>Handler: Whitelisted IDs list
+    Handler-->>Admin: Render interactive testers list with deletion controls
 ```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access. Unauthorized attempts are dropped silently or answered with an access denial alert.
+2. **Atomic Whitelist Insertion**: The `/add_tester <id>` command or interactive FSM prompt parses the numeric Telegram ID and executes an atomic `SADD` operation on the Redis key `api:testers:whitelist`.
+3. **Immutable Administrator Protection**: `TestersManager.remove_tester` prevents accidental removal of core system administrators (`ALLOWED_USER_ID`, `DEPUTY_USER_ID`), guaranteeing persistent admin access.
+4. **Interactive Tester Management Dashboard**: The `/testers` command queries `SMEMBERS` from Redis and renders an inline keyboard with individual delete buttons for each tester and a direct WebApp launcher button for Swagger UI testing.
+
 
 
