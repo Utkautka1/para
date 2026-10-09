@@ -139,3 +139,46 @@ async def test_miniapp_auth_endpoint() -> None:
             stranger_raw = _build_test_init_data({"id": 999999}, now_ts)
             forbidden_resp = await client.post("/miniapp/auth", json={"init_data": stranger_raw})
             assert forbidden_resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_openapi_spec_protection_and_servers_masking() -> None:
+    """Проверяет защиту /openapi.json от неавторизованного доступа и маскирование хостов."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Анонимный доступ блокируется
+        unauth_resp = await client.get("/openapi.json")
+        assert unauth_resp.status_code == 401
+
+        # 2. Авторизованный доступ по X-API-Key отдаёт спецификацию
+        from config import API_SECRET_KEY
+        auth_resp = await client.get("/openapi.json", headers={"X-API-Key": API_SECRET_KEY})
+        assert auth_resp.status_code == 200
+        schema = auth_resp.json()
+        assert schema["servers"] == [{"url": "/", "description": "API Gateway"}]
+        raw_schema = json.dumps(schema)
+        assert "45-81-154-175" not in raw_schema
+        assert "sslip.io" not in raw_schema
+
+
+@pytest.mark.asyncio
+async def test_docs_redirect_to_miniapp() -> None:
+    """Проверяет перенаправление со стандартного /docs на защищенный /miniapp."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=False) as client:
+        resp = await client.get("/docs")
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/miniapp"
+
+
+def test_miniapp_html_security_elements() -> None:
+    """Проверяет правила скрытия ссылки openapi.json и IP-маскирования в miniapp.html."""
+    from pathlib import Path
+    html_content = Path("data/api/miniapp.html").read_text(encoding="utf-8")
+    assert ".swagger-ui .info .url" in html_content
+    assert "CleanSwaggerPlugin" in html_content
+    assert "InfoUrl" in html_content
+    assert "req.url = req.url.replace" in html_content
+    assert "hostSanitizer" in html_content

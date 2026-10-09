@@ -7,10 +7,12 @@ FastAPI-приложение para-api — фабрика приложения с
 """
 
 from typing import Any, Dict
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse, RedirectResponse
 
+from api.deps import verify_api_or_tester
 from api.handlers import register_exception_handlers
 from api.router.attendance import router as attendance_router
 from api.router.birthdays import router as birthdays_router
@@ -24,7 +26,11 @@ from api.router.subscribers import router as subscribers_router
 from api.router.system import router as system_router
 from api.router.teachers import router as teachers_router
 from api.schemas.errors import COMMON_API_RESPONSES
-from config import GZIP_MIN_SIZE_BYTES
+from config import (
+    GZIP_MIN_SIZE_BYTES,
+    SWAGGER_SERVERS_DESCRIPTION,
+    SWAGGER_SERVERS_URL,
+)
 
 
 def _register_routers(app: FastAPI) -> None:
@@ -40,6 +46,11 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(subscribers_router)
     app.include_router(system_router)
     app.include_router(miniapp_router)
+
+
+def _configure_openapi_servers(schema: Dict[str, Any]) -> None:
+    """Устанавливает относительный URL сервера без публичных IP и абсолютных хостов."""
+    schema["servers"] = [{"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}]
 
 
 def _configure_openapi_security(schema: Dict[str, Any]) -> None:
@@ -67,24 +78,39 @@ def _custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
         routes=app.routes,
     )
     _configure_openapi_security(schema)
+    _configure_openapi_servers(schema)
     app.openapi_schema = schema
     return app.openapi_schema
 
 
+def _register_protected_docs(app: FastAPI) -> None:
+    """Регистрирует защищенную отдачу схемы спецификации и редирект на Mini App."""
+    @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
+    async def get_openapi_spec() -> JSONResponse:
+        """Отдаёт схему OpenAPI только авторизованным тестировщикам по сессии или ключу."""
+        return JSONResponse(content=_custom_openapi_schema(app))
+
+    @app.get("/docs", include_in_schema=False)
+    async def get_docs_portal() -> RedirectResponse:
+        """Перенаправляет пользователя в защищенный Mini App портал."""
+        return RedirectResponse(url="/miniapp")
+
+
 def create_app() -> FastAPI:
-    """Фабрика создания высокоскоростного FastAPI приложения с ORJSON и GZip."""
+    """Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами."""
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         version="2.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
         responses=COMMON_API_RESPONSES,
-        swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
     )
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
     _register_routers(app)
+    _register_protected_docs(app)
     register_exception_handlers(app)
     app.openapi = lambda: _custom_openapi_schema(app)
     return app
+
