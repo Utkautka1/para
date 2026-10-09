@@ -1641,15 +1641,15 @@ classDiagram
     class TeachersRouter {
         +GET /teachers
         +GET /teachers/search
-        +GET /teachers/{last_name}
+        +GET /teachers/:last_name
         +POST /teachers/custom
-        +DELETE /teachers/custom/{last_name}
+        +DELETE /teachers/custom/:last_name
         +POST /teachers/refresh
     }
 
     class AttendanceRouter {
         +GET /attendance/stats
-        +GET /attendance/student/{fio}
+        +GET /attendance/student/:fio
         +GET /attendance/session
         +POST /attendance/session/start
         +POST /attendance/session/mark
@@ -1660,7 +1660,7 @@ classDiagram
 
     class ClassmatesRouter {
         +GET /classmates
-        +GET /classmates/{student_id}
+        +GET /classmates/:student_id
     }
 
     class BirthdaysRouter {
@@ -1672,16 +1672,16 @@ classDiagram
     class SolverRouter {
         +GET /solver/status
         +POST /solver/solve
-        +GET /solver/task/{msg_id}
+        +GET /solver/task/:msg_id
         +POST /solver/queue/clear
     }
 
     class SubscribersRouter {
         +GET /subscribers
         +GET /subscribers/count
-        +GET /subscribers/{chat_id}
-        +POST /subscribers/{chat_id}
-        +DELETE /subscribers/{chat_id}
+        +GET /subscribers/:chat_id
+        +POST /subscribers/:chat_id
+        +DELETE /subscribers/:chat_id
     }
 
     class SystemRouter {
@@ -1694,8 +1694,8 @@ classDiagram
         +POST /miniapp/auth
         +GET /miniapp/status
         +GET /miniapp/testers
-        +POST /miniapp/testers/{uid}
-        +DELETE /miniapp/testers/{uid}
+        +POST /miniapp/testers/:uid
+        +DELETE /miniapp/testers/:uid
     }
 
     class HealthRouter {
