@@ -38,6 +38,9 @@ def update_env_urls(new_url: str) -> bool:
     return True
 
 
+update_env_miniapp_url = update_env_urls
+
+
 def restart_bot_service() -> None:
     """Перезапускает контейнер para-bot с перечитыванием обновленного .env."""
     cmd = ["docker", "compose", "up", "-d", "bot"]
