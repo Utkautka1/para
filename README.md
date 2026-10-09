@@ -109,67 +109,106 @@ Para follows a clean, canonical architecture ensuring single responsibility and 
 
 ```
 para/
-├── api.py                    # Entry point: FastAPI REST + gRPC Dual-Protocol server
-├── api.dockerfile            # Hardened Dockerfile for API container
+├── api.py                    # Entry point: Dual-Protocol FastAPI REST + gRPC server
+├── api.dockerfile            # Production container definition for API service
 ├── bot.py                    # Entry point: Telegram Bot long-polling gateway
-├── bot.dockerfile            # Hardened Dockerfile for Bot container
-├── worker.py                 # Entry point: APScheduler background task daemon
-├── worker.dockerfile         # Hardened Dockerfile for Worker container
-├── solver.py                 # Entry point: DeepSeek HW queue consumer
-├── solver.dockerfile         # Hardened Dockerfile for Solver container
-├── compose.yml               # Multi-container Docker Compose specification
+├── bot.dockerfile            # Production container definition for Bot service
+├── worker.py                 # Entry point: APScheduler background task worker
+├── worker.dockerfile         # Production container definition for Worker service
+├── solver.py                 # Entry point: DeepSeek async homework queue consumer
+├── solver.dockerfile         # Production container definition for Solver service
+├── compose.yml               # Multi-container Docker Compose cluster specification
 ├── config.py                 # Centralized type-safe environment configuration
-├── requirements.txt          # Production dependencies
+├── requirements.txt          # Production runtime dependencies
 ├── requirements-dev.txt      # Development, testing, and linting dependencies
 ├── pyproject.toml            # Tooling configuration (Ruff, Pytest, Bandit)
 │
 ├── api/                      # REST & gRPC Presentation Tier
 │   ├── deps.py               # Dependency injection & HMAC/API-Key security guards
-│   ├── grpc/                 # gRPC server implementation & client adapters
-│   ├── proto/                # Protocol Buffers (.proto) definitions & generated stubs
-│   ├── router/               # FastAPI route controllers (schedule, attendance, testers)
-│   └── schemas/              # Pydantic v2 validation and transfer schemas
+│   ├── handlers.py           # Custom HTTP exception and validation handlers
+│   ├── grpc/                 # gRPC implementation tier:
+│   │   ├── converters.py     # Pydantic to Protobuf message serializers
+│   │   ├── server.py         # Async gRPC server lifecycle (HTTP/2 persistent socket)
+│   │   └── servicers.py      # Schedule, Exams, and Teachers gRPC RPC implementations
+│   ├── proto/                # Protocol Buffers definitions & generated stubs:
+│   │   ├── exams.proto       # Exams RPC service contract
+│   │   ├── schedule.proto    # Day & Week schedule binary RPC contract
+│   │   └── teachers.proto    # Teacher contacts & directory RPC contract
+│   ├── router/               # FastAPI route controllers:
+│   │   ├── attendance.py     # WOPI electronic attendance registry endpoints
+│   │   ├── birthdays.py      # Student birthday management endpoints
+│   │   ├── classmates.py     # Group member authentication & registry routes
+│   │   ├── exams.py          # Examination timetable endpoints
+│   │   ├── health.py         # Kubernetes/Docker readiness & liveness probes
+│   │   ├── miniapp.py        # Telegram Mini App HMAC-SHA256 handshake & auth
+│   │   ├── schedule.py       # Day/Week schedule REST queries with L1/L2 cache
+│   │   ├── solver.py         # Homework solving task ingress & queue status
+│   │   ├── subscribers.py    # Notification subscriber registry endpoints
+│   │   ├── system.py         # Safe cache flushing & Redis diagnostic routes
+│   │   └── teachers.py       # Instructor directory & custom remote link routes
+│   └── schemas/              # Pydantic v2 validation and transfer schemas (DTO)
 │
 ├── bot/                      # Telegram Ingress & Interaction Tier
-│   ├── filters/              # Custom aiogram authorization and context filters
+│   ├── commands.py           # Interactive command menu registration (bot.set_my_commands)
+│   ├── filters/              # Custom aiogram authorization and context filters:
+│   │   └── auth.py           # Classmates, Headman, and Deputy access control filters
 │   ├── handlers/             # Modular event routers:
-│   │   ├── admin/            # Administrative handlers (attendance, panel, mute, ping_all)
-│   │   └── user/             # Student handlers (schedule, calendar, homework, copy)
-│   ├── middlewares/          # Anti-flood rate limiting & retry-after middleware
-│   └── templates/            # Semantic message formatting & inline keyboard builders
+│   │   ├── admin/            # Administrative handlers (attendance, mute, panel, ping_all, testers)
+│   │   ├── user/             # Student handlers (schedule, attendance, hw_solver, public_copy)
+│   │   └── errors.py         # Global exception trapper & user-facing alert fallback
+│   ├── middlewares/          # Event interceptors:
+│   │   ├── retry.py          # Telegram FloodControl 429 backoff middleware
+│   │   └── throttling.py     # Callback query and command rate limiter
+│   └── templates/            # Semantic message formatting & inline keyboard builders:
+│       ├── admin/            # Admin poll keyboards, student cards, and tester menus
+│       └── user/             # Timetable grids, day navigation, and action buttons
 │
 ├── core/                     # Distributed Foundation Tier
 │   ├── api_client.py         # Resilient HTTP/gRPC internal client with circuit breaking
-│   ├── bot.py                # Bot and Dispatcher singletons with Redis FSM storage
+│   ├── bot.py                # Bot and Dispatcher singletons with RedisStorage FSM
 │   ├── logger.py             # Structured rotating file & console logger
 │   ├── redis.py              # Low-level connection pool manager
 │   └── redis_cache.py        # Distributed locks, atomic snapshots, and task queues
 │
+├── data/                     # Local file data storage (birthdays, wish registry, miniapp.html)
+├── db/                       # Local database adapters:
+│   └── subscribers.py        # Atomic JSON subscriber persistence with fsync
+│
 ├── integrations/             # External Upstream Integrations
-│   ├── base.py               # Abstract integration contract with health probes
-│   ├── deepseek.py           # DeepSeek LLM vision API client
-│   ├── docx_parser.py        # Remote instructor contact parser
+│   ├── deepseek.py           # Multimodal DeepSeek LLM vision API client
+│   ├── docx_parser.py        # Remote instructor contact parser from Yandex Disk
 │   ├── yandex_docs.py        # WOPI protocol implementation for Yandex Documents
 │   └── yandex_keepalive.py   # Autonomous session keep-alive loop
 │
+├── scripts/                  # DevOps & Utility Scripts
+│   └── tunnel_sync.py        # Automated Cloudflare/SSH tunnel synchronization
+│
 ├── services/                 # Business Logic & Orchestration Tier
 │   ├── attendance_manager.py # State machine for electronic attendance sessions
+│   ├── attendance_stats.py   # Statistical aggregator & attendance league calculator
 │   ├── attendance_topic_updater.py # Adaptive polling & pinned registry updater
 │   ├── birthday_manager.py   # Automated celebratory greeting dispatcher
 │   ├── classmates_auth.py    # Identity registry & cryptographic Telegram binding
-│   ├── exam_topic_updater.py # Examination schedule parser and synchronizer
+│   ├── custom_teachers.py    # Custom instructor contact persistence
+│   ├── exam_parser.py        # Upstream examination timetable parser
+│   ├── exam_topic_updater.py # Pinned examination topic updater
+│   ├── models.py             # Core dataclass domain models (Lesson, ExamItem, Session)
 │   ├── notifier.py           # APScheduler bell notifications (10-min pre-class alarms)
-│   ├── schedule_parser.py    # Resilient KTMU college schedule parser & parser engine
-│   └── topic_updater.py      # Pinned schedule message updater & ZSET message cleaner
+│   ├── schedule_parser.py    # Resilient KTMU college timetable parser & parser engine
+│   ├── testers_manager.py    # Mini App Swagger UI tester whitelist manager
+│   ├── topic_updater.py      # Pinned schedule message updater & ZSET message cleaner
+│   └── user_cache.py         # Fast JSON-backed Telegram user identity cache
 │
 ├── utils/                    # Shared Utility Libraries
 │   ├── doc_generator.py      # GOST 7.32-2017 compliant Word document builder
-│   ├── storage.py            # Atomic JSON serialization with fsync guarantees
-│   └── time.py               # Timezone-aware date/time resolution helpers
+│   ├── miniapp_auth.py       # HMAC-SHA256 cryptographic initData validator
+│   ├── mute_parser.py        # Natural language duration parser for moderation (/mute)
+│   └── storage.py            # Atomic JSON serialization with temp file & fsync guarantees
 │
 ├── docs/                     # Architectural Documentation
 │   ├── UML.md                # Comprehensive Mermaid UML architectural specification
-│   └── PRIVACY.md            # Data privacy & user telemetry policy
+│   ├── PRIVACY.md            # Data privacy & user telemetry policy
+│   └── puml/                 # Visual PlantUML diagrams and SVG architecture artifacts
 │
 └── tests/                    # Comprehensive Test Suite (546 tests, 100% passing)
     ├── conftest.py           # Pytest fixtures and mock objects
