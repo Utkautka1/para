@@ -88,8 +88,21 @@ classDiagram
 
     class TopicWorkerService {
         +run_check_cycle() void
+        +topic_sync_loop() void
+        +sync_topic_main_message(force_refresh, target_date) bool
+        +resolve_target_date(now_dt, ignore_restriction) date
+        +get_next_working_day(target_date) date
+        +is_too_early_to_publish(lessons, now_dt, today, ignore_restriction) bool
         +send_bell_reminder() void
         +cleanup_old_messages() void
+    }
+
+    class NotifierService {
+        +schedule_lesson_reminder(today, lesson, now_dt) void
+        +schedule_attendance_poll(today, lesson, now_dt) void
+        +send_attendance_prompt(lesson) void
+        +auto_close_attendance_session(lesson_num) void
+        +send_daily_schedule_job() void
     }
 
     class HomeworkSolverService {
@@ -170,6 +183,8 @@ classDiagram
     TopicWorkerService --> ScheduleApiService : query today schedule
     TopicWorkerService --> RedisStateManager : verify flags and ZSET
     TopicWorkerService --> TelegramGateway : publish bell reminders
+    NotifierService --> TelegramGateway : send personal reminders and polls
+    NotifierService --> ScheduleApiService : fetch daily schedule for broadcasts
     ScheduleApiService --> RedisStateManager : L2 snapshot cache
     ScheduleApiService --> DocxParserService : singleflight contact sync (30s cooldown)
     DocxParserService --> YandexOfficeProvider : public disk download

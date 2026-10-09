@@ -6,7 +6,7 @@
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from datetime import time as dtime
 from typing import Any
 
@@ -143,7 +143,7 @@ async def send_single_reminder(lesson: Lesson) -> None:
     await asyncio.gather(*tasks, return_exceptions=True)
 
 
-def schedule_lesson_reminder(today: datetime.date, lesson: Lesson, now_dt: datetime) -> None:
+def schedule_lesson_reminder(today: date, lesson: Lesson, now_dt: datetime) -> None:
     """
     Планирует таймер напоминания за 10 минут до пары.
 
@@ -198,7 +198,7 @@ async def auto_close_attendance_session(lesson_num: int) -> None:
     log.info(f"Сессия посещаемости пары {lesson_num} закрыта по окончании пары")
 
 
-def schedule_attendance_poll(today: datetime.date, lesson: Lesson, now_dt: datetime) -> None:
+def schedule_attendance_poll(today: date, lesson: Lesson, now_dt: datetime) -> None:
     """Планирует опрос через 30 минут от старта пары и автозавершение в конце."""
     start_t = parse_lesson_start_time(lesson.time_str)
     end_t = parse_lesson_end_time(lesson.time_str)
