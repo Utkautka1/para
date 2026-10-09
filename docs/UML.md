@@ -1615,6 +1615,18 @@ classDiagram
         +_custom_openapi_schema(app) dict
     }
 
+    class ErrorDetail {
+        +detail str
+        +code Optional~str~
+        +timestamp str
+    }
+
+    class ExceptionHandlers {
+        +http_exception_handler(request, exc) JSONResponse
+        +validation_exception_handler(request, exc) JSONResponse
+        +unhandled_exception_handler(request, exc) JSONResponse
+    }
+
     class SecurityDependencies {
         +verify_api_or_tester(key, bearer, cookie) str
         +verify_admin_access(auth_identity) str
