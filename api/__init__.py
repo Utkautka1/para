@@ -42,17 +42,20 @@ def _custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
     if app.openapi_schema:
         return app.openapi_schema
     schema = get_openapi(
-        title="para-api",
-        version="2.0.0",
+        title="para-api", version="2.0.0",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         routes=app.routes,
     )
-    comps = schema.setdefault("components", {})
-    comps["securitySchemes"] = {
-        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "Статический API ключ"},
-        "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Сессионный токен тестера para_session"},
+    schema.setdefault("components", {})["securitySchemes"] = {
+        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
+        "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
     }
-    schema["security"] = [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+    public_paths = {"/health", "/miniapp", "/miniapp/auth", "/miniapp/status"}
+    for path, methods in schema.get("paths", {}).items():
+        for m, op in methods.items():
+            if m.lower() in {"get", "post", "put", "delete", "patch"}:
+                op["security"] = [] if path in public_paths else [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+    schema.pop("security", None)
     app.openapi_schema = schema
     return app.openapi_schema
 

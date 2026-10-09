@@ -17,8 +17,8 @@ from utils.miniapp_auth import verify_tester_session
 
 log = get_logger("api_auth")
 
-_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-_bearer_scheme = HTTPBearer(auto_error=False)
+_api_key_header = APIKeyHeader(name="X-API-Key", scheme_name="ApiKeyAuth", auto_error=False)
+_bearer_scheme = HTTPBearer(scheme_name="BearerAuth", auto_error=False)
 
 
 async def _resolve_key_identity(key: Optional[str]) -> Optional[str]:
