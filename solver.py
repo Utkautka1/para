@@ -179,8 +179,7 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
             os.remove(doc_path)
 
 
-MAX_CONCURRENT_TASKS = 3
-_SOLVER_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+_SOLVER_SEMAPHORE = asyncio.Semaphore(config.SOLVER_MAX_CONCURRENT_TASKS)
 
 
 async def _guarded_execute_task(tg_bot: Bot, task: dict) -> None:
@@ -196,7 +195,7 @@ async def run_solver_loop() -> None:
     while True:
         try:
             active_tasks = {t for t in active_tasks if not t.done()}
-            if len(active_tasks) >= MAX_CONCURRENT_TASKS:
+            if len(active_tasks) >= config.SOLVER_MAX_CONCURRENT_TASKS:
                 await asyncio.sleep(0.5)
                 continue
             task = await pop_hw_task(timeout=2)

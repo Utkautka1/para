@@ -15,6 +15,7 @@ from typing import Any
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
+from config import MARKS_CACHE_TTL_SECONDS, REDIS_MARKS_CACHE_PREFIX
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from integrations.yandex_docs import (
@@ -156,7 +157,7 @@ def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark:
 
 async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
     """Считывает ранее сохраненный срез отметок пары из Redis."""
-    raw = await cache_get(f"att:marks:{t_date}:{l_num}")
+    raw = await cache_get(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}")
     if not raw:
         return {}
     try:
@@ -166,9 +167,9 @@ async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
 
 
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None:
-    """Сохраняет срез отметок пары в Redis на 30 дней для защиты от задвоений."""
+    """Сохраняет срез отметок пары в Redis с настроенным TTL для защиты от задвоений."""
     payload = json.dumps(marks, ensure_ascii=False)
-    await cache_set(f"att:marks:{t_date}:{l_num}", payload, ttl=2592000)
+    await cache_set(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}", payload, ttl=MARKS_CACHE_TTL_SECONDS)
 
 
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]:

@@ -101,3 +101,66 @@ async def test_fetch_target_students_redis_caching() -> None:
         assert len(res) == 2
         assert res[0] == (5, "Иванов И.И.")
         mock_wopi.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_schedule_l1_in_memory_caching() -> None:
+    """Проверяет мгновенную отдачу из L1 _RESOLVED_DAY_CACHE без повторного парсинга."""
+    from datetime import date
+    from services.models import Lesson
+    from services.schedule_parser import (
+        _RESOLVED_DAY_CACHE,
+        clear_resolved_day_cache,
+        get_schedule_for_date,
+    )
+
+    target = date(2026, 10, 19)
+    clear_resolved_day_cache()
+    assert target not in _RESOLVED_DAY_CACHE
+
+    fake_lesson = Lesson(
+        period=1, time_str="10:10-11:40", subject="Философия",
+        lesson_type="Лек", teacher="Смирнов", is_remote=False,
+        room="202", address="Цветочная", subgroup=0, is_stream=False
+    )
+    with patch("services.schedule_parser.fetch_schedule_data", new=AsyncMock(return_value={"schedule": {}})), \
+         patch("services.schedule_parser._extract_lessons_for_day", return_value=[fake_lesson]) as mock_ext:
+        res1 = await get_schedule_for_date(target)
+        assert len(res1) == 1
+        assert res1[0].subject == "Философия"
+        assert mock_ext.call_count == 1
+
+        # Второй вызов должен взять данные из L1 кэша без вызова extract
+        res2 = await get_schedule_for_date(target)
+        assert res2 == res1
+        assert mock_ext.call_count == 1
+
+        clear_resolved_day_cache()
+        assert target not in _RESOLVED_DAY_CACHE
+
+
+@pytest.mark.asyncio
+async def test_system_flush_clears_l1_schedule_cache() -> None:
+    """Проверяет, что сброс кэша sched:* очищает локальный L1 кэш уроков."""
+    from datetime import date
+    from services.models import Lesson
+    from services.schedule_parser import _RESOLVED_DAY_CACHE
+
+    app = create_app()
+    target = date(2026, 10, 20)
+    fake_lesson = Lesson(
+        period=1, time_str="10:10-11:40", subject="Информатика",
+        lesson_type="Пр", teacher="Петров", is_remote=False,
+        room="101", address="Вознесенский", subgroup=0, is_stream=False
+    )
+    _RESOLVED_DAY_CACHE[target] = [fake_lesson]
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        with patch("api.deps.verify_admin_access", return_value=True), \
+             patch("api.router.system.cache_flush", new=AsyncMock(return_value=5)):
+            headers = {"X-API-Key": API_SECRET_KEY}
+            res = await client.post("/system/cache/flush", json={"pattern": "sched:*"}, headers=headers)
+            assert res.status_code == 200
+            assert target not in _RESOLVED_DAY_CACHE
+

@@ -10,7 +10,14 @@ import grpc
 
 from api.grpc.servicers import ExamsServicer, ScheduleServicer, TeachersServicer
 from api.proto import exams_pb2_grpc, schedule_pb2_grpc, teachers_pb2_grpc
-from config import GRPC_MAX_MESSAGE_LENGTH
+from config import (
+    GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA,
+    GRPC_HTTP2_MIN_PING_INTERVAL_MS,
+    GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS,
+    GRPC_KEEPALIVE_TIME_MS,
+    GRPC_KEEPALIVE_TIMEOUT_MS,
+    GRPC_MAX_MESSAGE_LENGTH,
+)
 from core.logger import get_logger
 
 log = get_logger("grpc_server")
@@ -24,10 +31,15 @@ def _register_servicers(server: grpc.aio.Server) -> None:
 
 
 def create_grpc_server() -> grpc.aio.Server:
-    """Создает и настраивает экземпляр gRPC сервера."""
+    """Создает и настраивает экземпляр gRPC сервера с HTTP/2 keepalive опциями."""
     options = [
         ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_LENGTH),
         ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_LENGTH),
+        ("grpc.keepalive_time_ms", GRPC_KEEPALIVE_TIME_MS),
+        ("grpc.keepalive_timeout_ms", GRPC_KEEPALIVE_TIMEOUT_MS),
+        ("grpc.keepalive_permit_without_calls", GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS),
+        ("grpc.http2.max_pings_without_data", GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA),
+        ("grpc.http2.min_ping_interval_without_data_ms", GRPC_HTTP2_MIN_PING_INTERVAL_MS),
     ]
     server = grpc.aio.server(options=options)
     _register_servicers(server)
