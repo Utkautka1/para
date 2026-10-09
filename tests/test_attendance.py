@@ -499,3 +499,57 @@ async def test_commit_session_to_table_clears_on_success():
         assert ok is True
         mock_clear.assert_called_once()
 
+
+def test_get_partner_admin_id_logic():
+    """Проверяет определение Telegram ID второго администратора."""
+    from bot.handlers.admin.attendance import get_partner_admin_id
+    assert get_partner_admin_id(ALLOWED_USER_ID) == DEPUTY_USER_ID
+    assert get_partner_admin_id(DEPUTY_USER_ID) == ALLOWED_USER_ID
+    assert get_partner_admin_id(999999999) is None
+
+
+@pytest.mark.asyncio
+async def test_notify_partner_about_attendance_success():
+    """Проверяет отправку полного отчёта о посещаемости напарнику в Telegram."""
+    from bot.handlers.admin.attendance import notify_partner_about_attendance
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=1, lesson_title="Высшая математика",
+        students=[(5, "Иванов Иван"), (6, "Петров Петр")], marks={"5": "П", "6": "Н"}, initiator_id=ALLOWED_USER_ID
+    )
+    stats = {"П": 1, "О": 0, "У": 0, "Н": 1}
+    with patch("core.bot.bot.send_message", new_callable=AsyncMock) as mock_send:
+        await notify_partner_about_attendance(session, stats, user_full_name="Иван Староста")
+        mock_send.assert_called_once()
+        sent_to, sent_text = mock_send.call_args[0][0], mock_send.call_args[0][1]
+        assert sent_to == DEPUTY_USER_ID
+        assert "Иван Староста" in sent_text
+        assert "Высшая математика" in sent_text
+        assert "Петров П. (Н)" in sent_text
+
+
+@pytest.mark.asyncio
+async def test_notify_partner_about_attendance_resilience():
+    """Проверяет отказоустойчивость при ошибке доставки сообщения партнеру."""
+    from bot.handlers.admin.attendance import notify_partner_about_attendance
+    session = AttendanceSession(
+        target_date="2026-09-29", lesson_num=1, lesson_title="Физика",
+        students=[(5, "Иванов Иван")], marks={"5": "П"}, initiator_id=DEPUTY_USER_ID
+    )
+    with patch("core.bot.bot.send_message", side_effect=RuntimeError("Telegram Network Error")):
+        # Не должно вызывать исключение
+        await notify_partner_about_attendance(session, {"П": 1}, user_full_name="Зам Старосты")
+
+
+@pytest.mark.asyncio
+async def test_notify_partner_about_cancellation_success():
+    """Проверяет отправку уведомления об отмене пары напарнику."""
+    from bot.handlers.admin.attendance import notify_partner_about_cancellation
+    with patch("core.bot.bot.send_message", new_callable=AsyncMock) as mock_send:
+        await notify_partner_about_cancellation(3, ALLOWED_USER_ID, user_full_name="Староста")
+        mock_send.assert_called_once()
+        sent_to, sent_text = mock_send.call_args[0][0], mock_send.call_args[0][1]
+        assert sent_to == DEPUTY_USER_ID
+        assert "Староста" in sent_text
+        assert "3" in sent_text
+
+

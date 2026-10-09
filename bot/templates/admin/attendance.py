@@ -88,6 +88,34 @@ def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> st
     )
 
 
+def format_partner_attendance_report(
+    session: AttendanceSession, stats: dict[str, int], initiator_title: str
+) -> str:
+    """
+    Формирует полный отчёт посещаемости для второго администратора.
+
+    Показывает, кто провел отметку, предмет, баланс присутствующих и список отсутствующих.
+    """
+    base_summary = format_summary_text(session, stats)
+    return (
+        f"📋 <b>Уведомление о посещаемости</b>\n"
+        f"👤 <b>Отметил:</b> {initiator_title}\n"
+        f"📖 <b>Пара:</b> {session.lesson_title}\n\n"
+        f"{base_summary}"
+    )
+
+
+def format_partner_cancel_report(lesson_num: int | str, initiator_title: str) -> str:
+    """
+    Формирует уведомление об отмене пары для второго администратора.
+    """
+    return (
+        f"ℹ️ <b>Уведомление об отмене пары</b>\n\n"
+        f"👤 <b>Инициатор:</b> {initiator_title}\n"
+        f"❌ Отметка для пары <b>{lesson_num}</b> отменена (пары нет / отменена)."
+    )
+
+
 def get_days_select_kb() -> InlineKeyboardMarkup:
     """Генерирует инлайн-кнопки выбора учебных дней для отметки посещаемости."""
     from datetime import datetime, timedelta

@@ -1187,6 +1187,12 @@ classDiagram
         +commit_marks_to_excel_async(session) void
     }
 
+    class PartnerNotificationDispatcher {
+        +get_partner_admin_id(current_user_id) int
+        +notify_partner_about_attendance(session, stats, user_name) void
+        +notify_partner_about_cancellation(lesson_num, user_id, user_name) void
+    }
+
     TelegramGateway --> AttendanceAuthFilter : enters attendance command
     AttendanceAuthFilter --> AttendanceWorkflowHandler : validates headman role
     AttendanceWorkflowHandler --> AttendanceSessionManager : creates session in Redis
@@ -1197,6 +1203,8 @@ classDiagram
     TelegramGateway --> AttendanceWorkflowHandler : clicks button Завершить
     AttendanceWorkflowHandler --> OptimisticTopicUpdater : immediately updates attendance topic in 1s
     AttendanceWorkflowHandler --> WopiCloudOfficeClient : triggers background async WOPI PUT commit
+    AttendanceWorkflowHandler --> PartnerNotificationDispatcher : asynchronously notifies peer administrator
+    PartnerNotificationDispatcher --> TelegramGateway : sends direct DM with detailed stats or cancellation
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -1205,6 +1213,7 @@ classDiagram
 2. **Interactive Survey State Machine**: Each student is presented sequentially with status buttons: `🟢 П` (Present), `🟡 О` (Late), `🔵 У` (Excused), `🔴 Н` (Unexcused), plus `⬅️ Назад` (Undo) and `💾 Завершить` (Submit).
 3. **1-Second Optimistic Topic Update**: When the headman submits, `apply_session_optimistic_update` adjusts student statistics in Redis memory and refreshes the pinned Topic message within ~1 second.
 4. **Asynchronous Cloud Commit**: `_async_commit_and_update` executes a background task to write records into the remote Excel workbook on Yandex Disk via WOPI without blocking the Telegram bot.
+5. **Mutual Headman & Deputy Statistics Notification**: Upon completing the survey or cancelling a lesson, `notify_partner_about_attendance` asynchronously dispatches a comprehensive breakdown (present, late, excused, unexcused counts and names of absent students) directly to the peer administrator's direct messages.
 
 ---
 
