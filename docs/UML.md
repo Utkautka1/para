@@ -1588,5 +1588,135 @@ sequenceDiagram
 3. **Immutable Administrator Protection**: `TestersManager.remove_tester` prevents accidental removal of core system administrators (`ALLOWED_USER_ID`, `DEPUTY_USER_ID`), guaranteeing persistent admin access.
 4. **Interactive Tester Management Dashboard**: The `/testers` command queries `SMEMBERS` from Redis and renders an inline keyboard with individual delete buttons for each tester and a direct WebApp launcher button for Swagger UI testing.
 
+---
+
+### 9.4. Full REST OpenAPI & Security Architecture (11 Subsystems & Schemas)
+
+Comprehensive architecture diagram mapping the 11 integrated subsystem routers, typed Pydantic V2 request/response schemas, security dependencies, and data flow layers in `para-api`.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class FastApiApplication {
+        +title str = "para-api"
+        +version str = "2.0.0"
+        +openapi_schema dict
+        +_register_routers(app) void
+        +_custom_openapi_schema(app) dict
+    }
+
+    class SecurityDependencies {
+        +verify_api_key(key) str
+        +verify_api_or_tester(key, bearer, cookie) str
+        +verify_admin_access(auth_identity) str
+        -_is_valid_api_key(key) bool
+        -_resolve_tester_id(cookie, bearer) int
+    }
+
+    class ScheduleRouter {
+        +GET /schedule/day
+        +GET /schedule/today
+        +GET /schedule/tomorrow
+        +GET /schedule/week
+        +GET /schedule/current
+        +POST /schedule/refresh
+    }
+
+    class ExamsRouter {
+        +GET /exams
+        +GET /exams/upcoming
+        +POST /exams/refresh
+    }
+
+    class TeachersRouter {
+        +GET /teachers
+        +GET /teachers/search
+        +GET /teachers/{last_name}
+        +POST /teachers/custom
+        +DELETE /teachers/custom/{last_name}
+        +POST /teachers/refresh
+    }
+
+    class AttendanceRouter {
+        +GET /attendance/stats
+        +GET /attendance/student/{fio}
+        +GET /attendance/session
+        +POST /attendance/session/start
+        +POST /attendance/session/mark
+        +POST /attendance/session/batch_present
+        +POST /attendance/session/commit
+        +DELETE /attendance/session
+    }
+
+    class ClassmatesRouter {
+        +GET /classmates
+        +GET /classmates/{student_id}
+    }
+
+    class BirthdaysRouter {
+        +GET /birthdays
+        +GET /birthdays/upcoming
+        +GET /birthdays/today
+    }
+
+    class SolverRouter {
+        +GET /solver/status
+        +POST /solver/solve
+        +GET /solver/task/{msg_id}
+        +POST /solver/queue/clear
+    }
+
+    class SubscribersRouter {
+        +GET /subscribers
+        +GET /subscribers/count
+        +GET /subscribers/{chat_id}
+        +POST /subscribers/{chat_id}
+        +DELETE /subscribers/{chat_id}
+    }
+
+    class SystemRouter {
+        +GET /system/info
+        +POST /system/cache/flush
+    }
+
+    class MiniappRouter {
+        +GET /miniapp
+        +POST /miniapp/auth
+        +GET /miniapp/status
+        +GET /miniapp/testers
+        +POST /miniapp/testers/{uid}
+        +DELETE /miniapp/testers/{uid}
+    }
+
+    class HealthRouter {
+        +GET /health
+    }
+
+    FastApiApplication --> SecurityDependencies : enforces OpenAPI SecuritySchemes
+    FastApiApplication --> ScheduleRouter : mounts
+    FastApiApplication --> ExamsRouter : mounts
+    FastApiApplication --> TeachersRouter : mounts
+    FastApiApplication --> AttendanceRouter : mounts
+    FastApiApplication --> ClassmatesRouter : mounts
+    FastApiApplication --> BirthdaysRouter : mounts
+    FastApiApplication --> SolverRouter : mounts
+    FastApiApplication --> SubscribersRouter : mounts
+    FastApiApplication --> SystemRouter : mounts
+    FastApiApplication --> MiniappRouter : mounts
+    FastApiApplication --> HealthRouter : mounts
+
+    ScheduleRouter ..> SecurityDependencies : verify_api_or_tester
+    ExamsRouter ..> SecurityDependencies : verify_api_or_tester
+    TeachersRouter ..> SecurityDependencies : verify_api_or_tester
+    AttendanceRouter ..> SecurityDependencies : verify_api_or_tester
+    ClassmatesRouter ..> SecurityDependencies : verify_api_or_tester
+    BirthdaysRouter ..> SecurityDependencies : verify_api_or_tester
+    SolverRouter ..> SecurityDependencies : verify_api_or_tester
+    SubscribersRouter ..> SecurityDependencies : verify_api_or_tester
+    SystemRouter ..> SecurityDependencies : verify_api_or_tester
+    MiniappRouter ..> SecurityDependencies : verify_api_or_tester
+```
+
 
 
