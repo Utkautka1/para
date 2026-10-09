@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 125" width="100%" height="125">
+  <defs>
+    <linearGradient id="neon-cyan-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00D2FF">
+        <animate attributeName="stop-color" values="#00D2FF;#3a7bd5;#00F2FE;#4FACFE;#00D2FF" dur="8s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" stop-color="#00F2FE">
+        <animate attributeName="stop-color" values="#00F2FE;#00D2FF;#4FACFE;#3a7bd5;#00F2FE" dur="8s" repeatCount="indefinite" />
+      </stop>
+    </linearGradient>
+    <filter id="terminal-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    .term-window {
+      fill: #0d1117;
+      stroke: #30363d;
+      stroke-width: 1.5;
+      rx: 10px;
+    }
+    .header-bar {
+      fill: #161b22;
+      stroke: #30363d;
+      stroke-width: 1;
+    }
+    .term-title {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      font-size: 12px;
+      font-weight: 600;
+      fill: #8b949e;
+      letter-spacing: 0.5px;
+    }
+    .term-prompt {
+      font-family: "JetBrains Mono", "Fira Code", Monaco, Consolas, monospace;
+      font-size: 14px;
+      font-weight: 700;
+      fill: #3fb950;
+    }
+    .term-tag {
+      font-family: "JetBrains Mono", "Fira Code", Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 600;
+      fill: #8b949e;
+    }
+    .feature-text {
+      font-family: "JetBrains Mono", "Fira Code", Monaco, Consolas, monospace;
+      font-size: 15px;
+      font-weight: 700;
+      fill: url(#neon-cyan-grad);
+      filter: url(#terminal-glow);
+    }
+    .cursor {
+      fill: #00D2FF;
+      animation: term-blink 0.8s infinite;
+    }
+    @keyframes term-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+
+  <!-- Terminal Window Background -->
+  <rect x="5" y="5" width="810" height="115" class="term-window" />
+
+  <!-- Top Header Bar -->
+  <path d="M5,15 Q5,5 15,5 L805,5 Q815,5 815,15 L815,32 L5,32 Z" class="header-bar" />
+
+  <!-- Window Control Dots -->
+  <circle cx="25" cy="18" r="5" fill="#ff5f56" />
+  <circle cx="43" cy="18" r="5" fill="#ffbd2e" />
+  <circle cx="61" cy="18" r="5" fill="#27c93f" />
+
+  <!-- Window Title -->
+  <text x="410" y="22" text-anchor="middle" class="term-title">⚡ para-telemetry-engine ~ production ~ v2.4.0</text>
+
+  <!-- Command Line Prompt -->
+  <text x="24" y="56" class="term-prompt">❯ para cluster --status</text>
+  <text x="220" y="56" class="term-tag">[mesh: healthy | 5 services active]</text>
+
+  <!-- Rotating Active Feature Lines -->
+  <!-- Line 1: 0% - 20% (0s - 3s) -->
+  <g>
+    <text x="24" y="90" class="term-tag">● FEATURE:</text>
+    <text x="110" y="90" class="feature-text">
+      Dual-Protocol gRPC HTTP/2 + REST Microservices Mesh
+      <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;0.17;0.20;1" dur="15s" repeatCount="indefinite" />
+    </text>
+  </g>
+
+  <!-- Line 2: 20% - 40% (3s - 6s) -->
+  <g>
+    <text x="110" y="90" class="feature-text">
+      Sub-Millisecond L1 RAM + L2 Redis Schedule Ingress
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.20;0.23;0.37;0.40;1" dur="15s" repeatCount="indefinite" />
+    </text>
+  </g>
+
+  <!-- Line 3: 40% - 60% (6s - 9s) -->
+  <g>
+    <text x="110" y="90" class="feature-text">
+      WOPI Cloud Spreadsheet (OnlyOffice) + Peer Telemetry Sync
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.40;0.43;0.57;0.60;1" dur="15s" repeatCount="indefinite" />
+    </text>
+  </g>
+
+  <!-- Line 4: 60% - 80% (9s - 12s) -->
+  <g>
+    <text x="110" y="90" class="feature-text">
+      Reliable At-Least-Once DeepSeek Queue + GOST .docx Generator
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.60;0.63;0.77;0.80;1" dur="15s" repeatCount="indefinite" />
+    </text>
+  </g>
+
+  <!-- Line 5: 80% - 100% (12s - 15s) -->
+  <g>
+    <text x="110" y="90" class="feature-text">
+      Autonomous APScheduler Bell Alerts + Ephemeral ZSET GC
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.80;0.83;0.97;1" dur="15s" repeatCount="indefinite" />
+    </text>
+  </g>
+
+  <!-- Blinking Cursor -->
+  <rect x="735" y="75" width="9" height="18" class="cursor" />
+</svg>
