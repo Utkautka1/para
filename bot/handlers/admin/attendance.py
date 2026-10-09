@@ -14,6 +14,8 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.filters.auth import AttendanceAuthFilter
 from bot.templates.admin.attendance import (
+    format_partner_attendance_report,
+    format_partner_cancel_report,
     format_student_card,
     format_summary_text,
     get_lesson_select_kb,
@@ -70,6 +72,37 @@ async def _instant_topic_sync(session) -> None:
         log.error(f"Ошибка мгновенного обновления топика посещаемости: {e}")
 
 
+def get_partner_admin_id(current_user_id: int) -> int | None:
+    """Возвращает Telegram ID второго администратора (староста/замстаросты)."""
+    from config import ALLOWED_USER_ID, DEPUTY_USER_ID
+
+    if current_user_id == ALLOWED_USER_ID:
+        return DEPUTY_USER_ID if DEPUTY_USER_ID != ALLOWED_USER_ID else None
+    if current_user_id == DEPUTY_USER_ID:
+        return ALLOWED_USER_ID
+    return None
+
+
+async def notify_partner_about_attendance(
+    session, stats: dict[str, int], user_full_name: str | None = None
+) -> None:
+    """Отправляет полный отчёт об отметке пары второму администратору в ЛС."""
+    partner_id = get_partner_admin_id(session.initiator_id)
+    if not partner_id:
+        return
+    title = get_initiator_title(session.initiator_id)
+    if user_full_name:
+        title = f"{title} ({user_full_name})"
+    text = format_partner_attendance_report(session, stats, title)
+    try:
+        from core.bot import bot
+
+        await bot.send_message(partner_id, text)
+        log.info(f"Статистика пары {session.lesson_num} отправлена партнеру {partner_id}")
+    except Exception as e:
+        log.warning(f"Не удалось доставить статистику партнеру {partner_id}: {e}")
+
+
 async def finish_and_notify(cb: CallbackQuery, session) -> None:
     """Мгновенно отображает сводку старосте и запускает параллельную синхронизацию."""
     stats = calculate_summary_stats(session.marks)
@@ -84,6 +117,7 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
             log.debug(f"Не удалось обновить статус сообщения посещаемости: {e}")
     asyncio.create_task(_instant_topic_sync(session))
     asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
+    asyncio.create_task(notify_partner_about_attendance(session, stats, cb.from_user.full_name))
     log.info(f"Сводка пары {session.lesson_num} выдана, запущены оптимистичный апдейт и выгрузка")
 
 
@@ -224,13 +258,36 @@ async def cb_all_present(cb: CallbackQuery) -> None:
     await finish_and_notify(cb, session)
 
 
+async def notify_partner_about_cancellation(
+    lesson_num: int | str, user_id: int, user_full_name: str | None = None
+) -> None:
+    """Оповещает второго администратора об отмене проведения пары."""
+    partner_id = get_partner_admin_id(user_id)
+    if not partner_id:
+        return
+    title = get_initiator_title(user_id)
+    if user_full_name:
+        title = f"{title} ({user_full_name})"
+    text = format_partner_cancel_report(lesson_num, title)
+    try:
+        from core.bot import bot
+
+        await bot.send_message(partner_id, text)
+        log.info(f"Уведомление об отмене пары {lesson_num} отправлено партнеру {partner_id}")
+    except Exception as e:
+        log.warning(f"Не удалось доставить уведомление об отмене партнеру {partner_id}: {e}")
+
+
 @router.callback_query(F.data.startswith("att:cancel:"))
 async def cb_cancel_lesson(cb: CallbackQuery) -> None:
-    """Отменяет опрос для указанной пары."""
+    """Отменяет опрос для указанной пары и уведомляет напарника."""
     lesson_num = cb.data.split(":")[2]
     await clear_session()
     if cb.message:
         await cb.message.edit_text(f"❌ Отметка посещаемости за пару {lesson_num} отменена.")
+    asyncio.create_task(
+        notify_partner_about_cancellation(lesson_num, cb.from_user.id, cb.from_user.full_name)
+    )
     await cb.answer()
 
 
