@@ -1,14 +1,16 @@
 """
 FastAPI-приложение para-api — фабрика приложения со Swagger UI и OpenAPI.
 
-Объединяет все 11 подсистем проекта (расписание, экзамены, преподаватели,
-посещаемость, одногруппники, дни рождения, AI solver, подписчики, система, miniapp).
+Зачем существует этот модуль:
+Объединяет все 11 подсистем проекта, нативно регистрирует Pydantic-схемы
+всех кодов ошибок и схемы аутентификации ApiKeyAuth / BearerAuth.
 """
 
 from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
+from api.handlers import register_exception_handlers
 from api.router.attendance import router as attendance_router
 from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
@@ -20,6 +22,7 @@ from api.router.solver import router as solver_router
 from api.router.subscribers import router as subscribers_router
 from api.router.system import router as system_router
 from api.router.teachers import router as teachers_router
+from api.schemas.errors import COMMON_API_RESPONSES
 
 
 def _register_routers(app: FastAPI) -> None:
@@ -37,56 +40,37 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(miniapp_router)
 
 
-_HTTP_ERROR_RESPONSES: Dict[str, Dict[str, Any]] = {
-    "400": {"description": "Некорректный запрос (Bad Request)"},
-    "401": {"description": "Неавторизован: недействительный API-ключ / токен (Unauthorized)"},
-    "403": {"description": "Доступ запрещен: требуются права администратора (Forbidden)"},
-    "404": {"description": "Запрашиваемый ресурс не найден (Not Found)"},
-    "405": {"description": "HTTP-метод не поддерживается (Method Not Allowed)"},
-    "408": {"description": "Время ожидания запроса истекло (Request Timeout)"},
-    "422": {"description": "Ошибка валидации параметров запроса (Validation Error)"},
-    "429": {"description": "Превышен лимит запросов (Too Many Requests / Rate Limit)"},
-    "500": {"description": "Внутренняя ошибка сервера (Internal Server Error)"},
-    "502": {"description": "Ошибочный шлюз: туннель или внешний сервис недоступен (Bad Gateway)"},
-    "503": {"description": "Сервис временно недоступен: сбой Redis / БД (Service Unavailable)"},
-    "504": {"description": "Время ожидания внешнего сервиса истекло (Gateway Timeout)"},
-}
-
-
-def _inject_route_security_and_errors(schema: Dict[str, Any]) -> None:
-    """Внедряет схемы авторизации и полную документацию всех кодов ошибок во все маршруты."""
+def _configure_openapi_security(schema: Dict[str, Any]) -> None:
+    """Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме."""
+    schema.setdefault("components", {})["securitySchemes"] = {
+        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
+        "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
+    }
     public_paths = {"/health", "/miniapp", "/miniapp/auth", "/miniapp/status"}
     for path, methods in schema.get("paths", {}).items():
         for m, op in methods.items():
             if m.lower() in {"get", "post", "put", "delete", "patch"}:
                 op["security"] = [] if path in public_paths else [{"ApiKeyAuth": []}, {"BearerAuth": []}]
-                resps = op.setdefault("responses", {})
-                for code, desc in _HTTP_ERROR_RESPONSES.items():
-                    if code not in resps:
-                        resps[code] = desc
+    schema.pop("security", None)
 
 
 def _custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
-    """Генерирует полную OpenAPI 3.1 схему со схемами безопасности и кодами ошибок."""
+    """Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием."""
     if app.openapi_schema:
         return app.openapi_schema
     schema = get_openapi(
-        title="para-api", version="2.0.0",
+        title="para-api",
+        version="2.0.0",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         routes=app.routes,
     )
-    schema.setdefault("components", {})["securitySchemes"] = {
-        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
-        "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
-    }
-    schema.pop("security", None)
-    _inject_route_security_and_errors(schema)
+    _configure_openapi_security(schema)
     app.openapi_schema = schema
     return app.openapi_schema
 
 
 def create_app() -> FastAPI:
-    """Фабрика создания экземпляра приложения FastAPI."""
+    """Фабрика создания экземпляра приложения FastAPI со всеми кодами ошибок."""
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
@@ -94,8 +78,10 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        responses=COMMON_API_RESPONSES,
         swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
     )
     _register_routers(app)
+    register_exception_handlers(app)
     app.openapi = lambda: _custom_openapi_schema(app)
     return app
