@@ -8,9 +8,8 @@ Unit-тесты модуля генерации клавиатур Telegram (bot
   4. Генерацию полных клавиатур для ЛС и топиков (get_schedule_inline_kb, get_topic_inline_kb)
 """
 
-from typing import List
+
 import pytest
-from aiogram.types import InlineKeyboardButton
 
 from bot.templates.user.keyboards import (
     _build_nav_rows,
@@ -22,7 +21,12 @@ from bot.templates.user.keyboards import (
 from services.models import Lesson
 
 
-def make_test_lesson(period: int = 0, subgroup: int = 0, is_remote: bool = False, link: str = None) -> Lesson:
+def make_test_lesson(
+    period: int = 0,
+    subgroup: int = 0,
+    is_remote: bool = False,
+    link: str | None = None,
+) -> Lesson:
     """Вспомогательная функция для создания объекта Lesson."""
     return Lesson(
         period=period,
@@ -71,7 +75,7 @@ def test_chunk_link_buttons_empty_and_offline() -> None:
         (5, 3, [2, 2, 1]),
     ],
 )
-def test_chunk_link_buttons_grouping(links_count: int, expected_rows: int, expected_row_lengths: List[int]) -> None:
+def test_chunk_link_buttons_grouping(links_count: int, expected_rows: int, expected_row_lengths: list[int]) -> None:
     """Проверяет разбивку кнопок максимум по 2 в ряду."""
     lessons = [
         make_test_lesson(period=i, is_remote=True, link=f"https://zoom.us/j/{i}")

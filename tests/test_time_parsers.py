@@ -8,7 +8,7 @@ Unit-тесты для парсеров времени и вспомогател
 """
 
 from datetime import time as dtime
-from typing import Optional
+
 import pytest
 
 from services.notifier import (

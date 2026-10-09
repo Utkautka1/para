@@ -7,6 +7,7 @@ Unit-тесты для парсера длительности мута (utils/m
 """
 
 import pytest
+
 from utils.mute_parser import parse_duration_to_seconds
 
 

@@ -12,10 +12,15 @@ Unit-тесты для парсеров расписания и аттестац
 """
 
 from datetime import date
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
 import pytest
 
-from services.exam_parser import extract_load_weeks, is_assessment_type, resolve_teacher_name
+from services.exam_parser import (
+    extract_load_weeks,
+    is_assessment_type,
+    resolve_teacher_name,
+)
 from services.schedule_parser import (
     calculate_week_number,
     clean_subject_title,
@@ -110,7 +115,7 @@ def test_calculate_week_number(target_date: date, expected_week: int) -> None:
     ],
 )
 def test_is_instance_active_for_week(
-    pattern: str, custom_weeks: List[int], week_num: int, expected_active: bool
+    pattern: str, custom_weeks: list[int], week_num: int, expected_active: bool
 ) -> None:
     """Проверяет активность занятия по четным, нечетным и кастомным неделям."""
     inst = {"weekPattern": pattern, "customWeeks": custom_weeks}
@@ -128,7 +133,7 @@ def test_is_instance_active_for_week(
         ({}, "g1", False),
     ],
 )
-def test_is_item_for_group(item: Dict[str, Any], group_id: str, expected: bool) -> None:
+def test_is_item_for_group(item: dict[str, Any], group_id: str, expected: bool) -> None:
     """Проверяет принадлежность элемента целевой группе (включая потоки)."""
     assert is_item_for_group(item, group_id) == expected
 
@@ -142,7 +147,7 @@ def test_is_item_for_group(item: Dict[str, Any], group_id: str, expected: bool) 
         ({}, False),
     ],
 )
-def test_is_stream_lesson(inst: Dict[str, Any], expected_is_stream: bool) -> None:
+def test_is_stream_lesson(inst: dict[str, Any], expected_is_stream: bool) -> None:
     """Проверяет детекцию потокового занятия по наличию потоковых идентификаторов."""
     assert is_stream_lesson(inst) == expected_is_stream
 

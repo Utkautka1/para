@@ -10,11 +10,14 @@ Unit-тесты для модуля админ-панели (bot/handlers/admin/
 
 import inspect
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from bot.handlers.admin.panel import (
     _build_custom_teachers_view,
     cb_admin_list_custom,
+)
+from bot.handlers.admin.panel import (
     router as panel_router,
 )
 from integrations.yandex_docs import extract_client_config

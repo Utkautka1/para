@@ -8,11 +8,25 @@ Unit-тесты для модулей хранения подписчиков, �
 """
 
 from unittest.mock import patch
+
 import pytest
 
-from db.subscribers import add_subscriber, load_subscribers, remove_subscriber, save_subscribers
-from services.custom_teachers import delete_custom_teacher, load_custom_teachers, save_custom_teacher
-from services.user_cache import add_user_to_cache, get_cached_user_id, load_user_cache, save_user_cache
+from db.subscribers import (
+    add_subscriber,
+    load_subscribers,
+    remove_subscriber,
+    save_subscribers,
+)
+from services.custom_teachers import (
+    delete_custom_teacher,
+    load_custom_teachers,
+    save_custom_teacher,
+)
+from services.user_cache import (
+    add_user_to_cache,
+    get_cached_user_id,
+    load_user_cache,
+)
 
 
 def test_subscribers_lifecycle(tmp_path) -> None:
@@ -46,7 +60,7 @@ def test_subscribers_deduplication(tmp_path) -> None:
     """Проверяет сохранение уникального множества подписчиков."""
     file_path = str(tmp_path / "subs_dedup.json")
     with patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path):
-        save_subscribers({10, 20, 30, 10})
+        save_subscribers({10, 20, 30})
         loaded = load_subscribers()
         assert len(loaded) == 3
         assert loaded == {10, 20, 30}

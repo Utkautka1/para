@@ -11,17 +11,20 @@ Unit-тесты для комплексной проверки и исправл
 
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from aiogram.types import CallbackQuery, Message, User
+from aiogram.types import CallbackQuery, User
 
 from bot.handlers.admin.attendance import check_session_ownership, get_initiator_title
 from bot.handlers.user.schedule import format_help_text
 from config import ALLOWED_USER_ID, DEPUTY_USER_ID, TIMEZONE
 from services.attendance_manager import AttendanceSession, create_attendance_session
-from services.birthday_manager import check_and_send_birthday_congratulations, is_morning_congrats_time
+from services.birthday_manager import (
+    check_and_send_birthday_congratulations,
+    is_morning_congrats_time,
+)
 from services.classmates_auth import bind_student_tg_id
 from services.exam_topic_updater import get_week_date_range_str
-from services.models import ExamItem
 
 
 def test_is_morning_congrats_time() -> None:
@@ -94,11 +97,13 @@ async def test_create_session_collision_protection() -> None:
         target_date="2026-10-05", lesson_num=1, lesson_title="Тест",
         students=[(5, "Студент")], initiator_id=ALLOWED_USER_ID
     )
-    with patch("services.attendance_manager.get_active_session", return_value=existing_session):
-        with pytest.raises(PermissionError):
-            await create_attendance_session(
-                date(2026, 10, 5), 1, "Новая пара", initiator_id=DEPUTY_USER_ID
-            )
+    with (
+        patch("services.attendance_manager.get_active_session", return_value=existing_session),
+        pytest.raises(PermissionError),
+    ):
+        await create_attendance_session(
+            date(2026, 10, 5), 1, "Новая пара", initiator_id=DEPUTY_USER_ID
+        )
 
 
 def test_bind_student_tg_id() -> None:

@@ -9,17 +9,20 @@
   - Хэндлеры команд и инлайн-кнопок пользователя и администратора
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
+
 import openpyxl
 import pytest
 from aiogram.types import CallbackQuery, Chat, Message, User
 
-from bot.handlers.admin.panel import cb_admin_force_att_topic, cb_admin_recreate_att_topic
+from bot.handlers.admin.panel import (
+    cb_admin_force_att_topic,
+    cb_admin_recreate_att_topic,
+)
 from bot.handlers.user.attendance import (
     _calculate_attendance_percent,
     _format_personal_month_breakdown,
     cb_att_topic_refresh,
-    cb_my_attendance_refresh,
     cmd_my_attendance,
     format_personal_attendance_card,
 )
@@ -240,8 +243,8 @@ async def test_admin_att_topic_callbacks():
 @pytest.mark.asyncio
 async def test_optimistic_update_and_deduplication():
     """Проверяет оптимистичное обновление и защиту от задвоения отметок."""
-    from services.attendance_stats import apply_session_optimistic_update
     from services.attendance_manager import AttendanceSession
+    from services.attendance_stats import apply_session_optimistic_update
 
     initial_stats = {
         "Базаров Аюр": {"fio": "Базаров Аюр", "total": {"П": 5, "О": 0, "У": 0, "Н": 1}, "months": {}},

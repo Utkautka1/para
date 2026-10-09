@@ -9,7 +9,7 @@ Unit-тесты модуля форматирования сообщений и 
 """
 
 from datetime import date
-from typing import Optional, Tuple
+
 import pytest
 
 from bot.templates.user.messages import (
@@ -77,7 +77,7 @@ def test_format_minutes_parametrized(minutes: int, expected: str) -> None:
         ("16:40-18:10", (1000, 1090)),
     ],
 )
-def test_parse_time_interval_valid(time_str: str, expected: Tuple[int, int]) -> None:
+def test_parse_time_interval_valid(time_str: str, expected: tuple[int, int]) -> None:
     """Проверяет корректное извлечение минут начала и конца для валидных строк."""
     assert _parse_time_interval_minutes(time_str) == expected
 

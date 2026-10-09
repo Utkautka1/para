@@ -10,8 +10,8 @@ Unit-тесты для сервиса дней рождения (services/birthd
 """
 
 from datetime import date
-from typing import Any, Dict
-from unittest.mock import patch
+from typing import Any
+
 import pytest
 
 from services.birthday_manager import (
@@ -120,7 +120,7 @@ def test_format_age_badge(age: int, expected_str: str) -> None:
         ({"full_name": "Дмитрий"}, "Дмитрий"),
     ],
 )
-def test_format_person_tag(item: Dict[str, Any], expected_tag: str) -> None:
+def test_format_person_tag(item: dict[str, Any], expected_tag: str) -> None:
     """Проверяет формирование ссылки или юзернейма для карточки."""
     assert format_person_tag(item) == expected_tag
 
