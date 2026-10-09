@@ -495,6 +495,9 @@ Para features an **enterprise-grade, exhaustive documentation suite** authored u
 | **🧠 Core & Storage** | [`docs/core/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | Redis L2 Distributed Cache, Distributed Locks, Connection Pool, Telemetry Logger, Internal RPC Client. |
 | **🔌 Integrations & Utils** | [`docs/integrations/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | DeepSeek-V3/R1 Client, WOPI Yandex Docs Session Host, GOST 7.32-2017 Word Builder, WebApp Auth. |
 | **📊 UML Architectural Spec** | [`docs/UML.md`](docs/UML.md) | Complete 2,200+ line UML specification (Sequence, Class, Deployment & State Diagrams). |
+| **📦 Community Standards** | [`CONTRIBUTING.md`](CONTRIBUTING.md) • [`SECURITY.md`](SECURITY.md) • [`CHANGELOG.md`](CHANGELOG.md) | Engineering contribution rules, security disclosure policy, and semantic release changelog. |
+| **🛠️ Developer Tooling** | [`Makefile`](Makefile) • [`.devcontainer`](.devcontainer/devcontainer.json) | One-command build automation & one-click GitHub Codespaces development container. |
+| **📑 API Schemas & Postman** | [`docs/openapi.json`](docs/openapi.json) • [`api/collection`](api/para_api_collection.json) | Static OpenAPI 3.1.0 specification & Postman/Bruno test suite collection. |
 
 ---
 

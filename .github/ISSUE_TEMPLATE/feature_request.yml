@@ -1,0 +1,44 @@
+name: "💡 Feature Request"
+description: "Propose an architectural enhancement or new academic feature for Para"
+title: "[FEAT]: "
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose an architectural enhancement, new automation flow, or operational capability for **Para**.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a specific operational problem or student workflow bottleneck?
+      placeholder: "Managing student timetable updates is currently difficult when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution & Architectural Impact
+      description: Describe the solution you'd like to see and how it affects the microservice mesh (gRPC/REST/Redis/Bot).
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative designs or workarounds you considered and why you rejected them.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Invariant Adherence
+      options:
+        - label: "This feature will adhere to the ≤ 25 lines per method constraint."
+          required: true
+        - label: "This feature will maintain zero host port exposure."
+          required: true

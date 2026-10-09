@@ -1,0 +1,138 @@
+{
+  "info": {
+    "_postman_id": "4cd6a70b-1afd-47e9-949f-535d069c914f",
+    "name": "Para Microservices API Suite",
+    "description": "Comprehensive Postman/Bruno API test suite for Para Academic Operations Platform.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System & Health",
+      "item": [
+        {
+          "name": "Healthcheck",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedule Operations",
+      "item": [
+        {
+          "name": "Get Day Schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/schedule/day?target_date=2026-10-10&force_refresh=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedule", "day"],
+              "query": [
+                {"key": "target_date", "value": "2026-10-10"},
+                {"key": "force_refresh", "value": "false"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Week Schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/schedule/week?monday=2026-10-05&force_refresh=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["schedule", "week"],
+              "query": [
+                {"key": "monday", "value": "2026-10-05"},
+                {"key": "force_refresh", "value": "false"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance Operations",
+      "item": [
+        {
+          "name": "Get Attendance Records",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/records?target_date=2026-10-10",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "records"],
+              "query": [
+                {"key": "target_date", "value": "2026-10-10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attendance Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attendance/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["attendance", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams & Birthdays",
+      "item": [
+        {
+          "name": "Upcoming Exams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exams/upcoming?weeks_ahead=4",
+              "host": ["{{baseUrl}}"],
+              "path": ["exams", "upcoming"],
+              "query": [
+                {"key": "weeks_ahead", "value": "4"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upcoming Birthdays",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/birthdays/upcoming?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["birthdays", "upcoming"],
+              "query": [
+                {"key": "days", "value": "30"}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}
