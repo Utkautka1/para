@@ -11,7 +11,7 @@ Telegram Mini App и удаленные тестировщики требуют 
 import asyncio
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 
 TARGET_PORT = 8080
