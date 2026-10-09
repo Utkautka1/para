@@ -86,7 +86,7 @@ async def send_temp_topic_reminder(lesson: Lesson) -> None:
         log.error(f"Ошибка отправки временного уведомления: {e}")
 
 
-async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: datetime.date) -> None:
+async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: date) -> None:
     """Проверяет время до пары и спавнит таску с защитой от дублей в Redis."""
     rem_key = f"{today.isoformat()}_{lesson.period}_{lesson.subgroup}_{lesson.subject}"
     if rem_key in _SENT_REMINDERS:
@@ -106,7 +106,7 @@ async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: da
         asyncio.create_task(send_temp_topic_reminder(lesson))
 
 
-def get_next_working_day(target_date: datetime.date) -> datetime.date:
+def get_next_working_day(target_date: date) -> date:
     """
     Возвращает следующий рабочий день (пропускает воскресенье, сдвигая на понедельник).
 
@@ -119,7 +119,7 @@ def get_next_working_day(target_date: datetime.date) -> datetime.date:
     return next_d
 
 
-async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> datetime.date | None:
+async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> date | None:
     """
     Вычисляет целевую дату: при завершении всех пар на сегодня переключает на следующий день.
 
@@ -144,7 +144,7 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> dat
     return today
 
 
-def is_too_early_to_publish(lessons: list[Lesson], now_dt: datetime, today: datetime.date, ignore_restriction: bool) -> bool:
+def is_too_early_to_publish(lessons: list[Lesson], now_dt: datetime, today: date, ignore_restriction: bool) -> bool:
     """
     Проверяет, не рано ли публиковать расписание (за 1 час до 1-й пары).
 
