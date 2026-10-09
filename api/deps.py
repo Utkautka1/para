@@ -1,20 +1,18 @@
 """
-Зависимости FastAPI: авторизация по X-API-Key, Bearer токенам и сессиям тестеров.
+Зависимости FastAPI: авторизация по персональным API-ключам тестеров и сессиям.
 
-Зачем существует этот модуль:
-Предоставляет гибкую систему доступа: тестеры получают доступ к рабочим эндпоинтам,
-а деструктивные и системные методы защищены проверкой статуса администратора.
+Обеспечивает сквозной аудит: логирует кто (ID тестера), когда и какой метод вызвал.
 """
 
 import hmac
 from typing import Optional
 
-from fastapi import Cookie, Depends, HTTPException, Security, status
+from fastapi import Cookie, Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
-from config import ALLOWED_USER_ID, API_SECRET_KEY, DEPUTY_USER_ID
+from config import ALLOWED_USER_ID, API_SECRET_KEY, API_TESTER_KEY_PREFIX, DEPUTY_USER_ID
 from core.logger import get_logger
-from services.testers_manager import is_tester_allowed
+from services.testers_manager import get_tester_by_key, is_tester_allowed
 from utils.miniapp_auth import verify_tester_session
 
 log = get_logger("api_auth")
@@ -23,68 +21,60 @@ _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def _is_valid_api_key(key: Optional[str]) -> bool:
-    """Безопасно проверяет совпадение статического API-ключа."""
-    return bool(key and hmac.compare_digest(key, API_SECRET_KEY))
-
-
-async def _resolve_tester_id(
-    session_cookie: Optional[str],
-    bearer_creds: Optional[HTTPAuthorizationCredentials],
-) -> Optional[int]:
-    """Извлекает и проверяет ID тестера из сессионной куки или Bearer-токена."""
-    token = session_cookie
-    if not token and bearer_creds:
-        token = bearer_creds.credentials
-    if not token:
+async def _resolve_key_identity(key: Optional[str]) -> Optional[str]:
+    """Определяет владельца API-ключа (мастер-ключ или персональный ключ тестера)."""
+    if not key:
         return None
-    user_id = verify_tester_session(token)
-    if user_id and await is_tester_allowed(user_id):
-        return user_id
+    if hmac.compare_digest(key, API_SECRET_KEY):
+        return "master_admin"
+    uid = await get_tester_by_key(key)
+    if uid and await is_tester_allowed(uid):
+        return f"tester:{uid}"
     return None
 
 
-async def verify_api_key(key: Optional[str] = Security(_api_key_header)) -> str:
-    """Требует статический API-ключ в заголовке X-API-Key."""
-    if not _is_valid_api_key(key):
-        log.warning("⚠️ Отклонён запрос: требуется статический API-ключ")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or missing X-API-Key",
-        )
-    return str(key)
+async def _resolve_token_identity(token: Optional[str]) -> Optional[str]:
+    """Проверяет токен (сессия Mini App или персональный ключ в Bearer)."""
+    if not token:
+        return None
+    if token.startswith(API_TESTER_KEY_PREFIX):
+        uid = await get_tester_by_key(token)
+        return f"tester:{uid}" if uid and await is_tester_allowed(uid) else None
+    uid = verify_tester_session(token)
+    return f"tester:{uid}" if uid and await is_tester_allowed(uid) else None
+
+
+def _log_audit_access(identity: str, request: Request) -> None:
+    """Записывает событие успешного доступа в системный журнал аудита."""
+    client_ip = request.client.host if request.client else "unknown"
+    log.info(f"🔎 [AUDIT] {identity} -> {request.method} {request.url.path} (IP: {client_ip})")
 
 
 async def verify_api_or_tester(
+    request: Request,
     key: Optional[str] = Security(_api_key_header),
     bearer: Optional[HTTPAuthorizationCredentials] = Security(_bearer_scheme),
     para_session: Optional[str] = Cookie(default=None),
 ) -> str:
-    """Разрешает доступ владельцам API-ключа либо авторизованным тестерам."""
-    if _is_valid_api_key(key):
-        return f"apikey:{key[:6]}..."
-    tester_id = await _resolve_tester_id(para_session, bearer)
-    if tester_id is not None:
-        return f"tester:{tester_id}"
-    log.warning("⚠️ Отклонён неавторизованный запрос к защищённому эндпоинту")
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required: provide X-API-Key, Bearer token, or session cookie",
-    )
+    """Универсальная авторизация по API-ключу, Bearer-токену или cookie с аудитом."""
+    ident = await _resolve_key_identity(key)
+    if not ident:
+        token = bearer.credentials if bearer else para_session
+        ident = await _resolve_token_identity(token)
+    if ident:
+        _log_audit_access(ident, request)
+        return ident
+    log.warning(f"⚠️ Неавторизованный запрос к {request.method} {request.url.path}")
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key or session")
 
 
-async def verify_admin_access(
-    auth_identity: str = Depends(verify_api_or_tester),
-) -> str:
-    """Разрешает доступ только администраторам (по X-API-Key или ID старосты)."""
-    if auth_identity.startswith("apikey:"):
+async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)) -> str:
+    """Ограничивает доступ только системным администраторам и мастер-ключу."""
+    if auth_identity == "master_admin":
         return auth_identity
     if auth_identity.startswith("tester:"):
         uid = int(auth_identity.split(":")[1])
         if uid in {ALLOWED_USER_ID, DEPUTY_USER_ID}:
             return auth_identity
-    log.warning(f"🚫 Отклонён вызов привилегированного метода: {auth_identity}")
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Administrator privilege required",
-    )
+    log.warning(f"🚫 Попытка несанкционированного доступа: {auth_identity}")
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")

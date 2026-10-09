@@ -17,14 +17,18 @@ from bot.templates.admin.testers import (
     get_testers_management_kb,
 )
 from core.logger import get_logger
-from services.testers_manager import add_tester, get_all_testers, remove_tester
+from services.testers_manager import (
+    add_tester,
+    generate_or_get_tester_key,
+    get_all_testers,
+    remove_tester,
+)
 
 log = get_logger("admin_testers")
 
 router = Router()
 router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
-
 
 
 @router.message(Command("testers"))
@@ -37,14 +41,18 @@ async def cmd_list_testers(message: Message) -> None:
 
 @router.message(Command("add_tester"))
 async def cmd_add_tester(message: Message) -> None:
-    """Добавляет тестера по команде /add_tester <id>."""
+    """Добавляет тестера по команде /add_tester <id> с генерацией ключа."""
     parts = (message.text or "").split()
     if len(parts) < 2 or not parts[1].isdigit():
         await message.answer("⚠️ Использование: <code>/add_tester &lt;telegram_id&gt;</code>")
         return
     uid = int(parts[1])
     await add_tester(uid)
-    await message.answer(f"✅ Пользователь <code>{uid}</code> добавлен в тестеры API!")
+    key = await generate_or_get_tester_key(uid)
+    await message.answer(
+        f"✅ Пользователь <code>{uid}</code> добавлен в тестеры API!\n"
+        f"🔑 Персональный <b>API-ключ</b>:\n<code>{key}</code>"
+    )
 
 
 @router.message(Command("del_tester"))
@@ -93,9 +101,11 @@ async def process_tester_id_input(message: Message, state: FSMContext) -> None:
         return
     uid = int(text)
     await add_tester(uid)
+    key = await generate_or_get_tester_key(uid)
     await state.clear()
     testers = await get_all_testers()
-    await message.answer(f"✅ Пользователь <code>{uid}</code> успешно добавлен!", reply_markup=get_testers_management_kb(testers))
+    msg = f"✅ Пользователь <code>{uid}</code> добавлен!\n🔑 Персональный <b>API-ключ</b>:\n<code>{key}</code>"
+    await message.answer(msg, reply_markup=get_testers_management_kb(testers))
 
 
 @router.callback_query(F.data.startswith("admin:del_tester:"))
