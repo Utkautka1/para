@@ -26,11 +26,18 @@ services:
       dockerfile: api.dockerfile
     container_name: para-api
     restart: always
+    stop_grace_period: 15s
     ports:
       - "${API_EXTERNAL_PORT:-8080}:8000"
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     env_file:
       - .env
     volumes:
