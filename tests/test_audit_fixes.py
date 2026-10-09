@@ -9,7 +9,7 @@ Unit-тесты для проверки устранения уязвимост�
   5. Кэширование списка студентов в services/attendance_manager.py.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -103,38 +103,35 @@ async def test_fetch_target_students_redis_caching() -> None:
         mock_wopi.assert_not_called()
 
 
+def _make_fake_lesson():
+    """Создает тестовый объект занятия для проверки L1 кэша."""
+    from services.models import Lesson
+    return Lesson(
+        period=1, time_str="10:10-11:40", subject="Философия",
+        lesson_type="Лек", teacher="Смирнов", is_remote=False,
+        room="202", address="Цветочная", subgroup=0, is_stream=False
+    )
+
+
 @pytest.mark.asyncio
 async def test_schedule_l1_in_memory_caching() -> None:
     """Проверяет мгновенную отдачу из L1 _RESOLVED_DAY_CACHE без повторного парсинга."""
     from datetime import date
-    from services.models import Lesson
+
     from services.schedule_parser import (
         _RESOLVED_DAY_CACHE,
         clear_resolved_day_cache,
         get_schedule_for_date,
     )
-
     target = date(2026, 10, 19)
     clear_resolved_day_cache()
-    assert target not in _RESOLVED_DAY_CACHE
-
-    fake_lesson = Lesson(
-        period=1, time_str="10:10-11:40", subject="Философия",
-        lesson_type="Лек", teacher="Смирнов", is_remote=False,
-        room="202", address="Цветочная", subgroup=0, is_stream=False
-    )
+    fake_lesson = _make_fake_lesson()
     with patch("services.schedule_parser.fetch_schedule_data", new=AsyncMock(return_value={"schedule": {}})), \
          patch("services.schedule_parser._extract_lessons_for_day", return_value=[fake_lesson]) as mock_ext:
         res1 = await get_schedule_for_date(target)
-        assert len(res1) == 1
-        assert res1[0].subject == "Философия"
-        assert mock_ext.call_count == 1
-
-        # Второй вызов должен взять данные из L1 кэша без вызова extract
+        assert len(res1) == 1 and res1[0].subject == "Философия"
         res2 = await get_schedule_for_date(target)
-        assert res2 == res1
-        assert mock_ext.call_count == 1
-
+        assert res2 == res1 and mock_ext.call_count == 1
         clear_resolved_day_cache()
         assert target not in _RESOLVED_DAY_CACHE
 
@@ -143,6 +140,7 @@ async def test_schedule_l1_in_memory_caching() -> None:
 async def test_system_flush_clears_l1_schedule_cache() -> None:
     """Проверяет, что сброс кэша sched:* очищает локальный L1 кэш уроков."""
     from datetime import date
+
     from services.models import Lesson
     from services.schedule_parser import _RESOLVED_DAY_CACHE
 
@@ -163,4 +161,35 @@ async def test_system_flush_clears_l1_schedule_cache() -> None:
             res = await client.post("/system/cache/flush", json={"pattern": "sched:*"}, headers=headers)
             assert res.status_code == 200
             assert target not in _RESOLVED_DAY_CACHE
+
+
+@pytest.mark.asyncio
+async def test_toggle_notify_uses_cached_schedule() -> None:
+    """Проверяет, что тумблер уведомлений берет пары из кэша без сетевого запроса к API."""
+    from bot.handlers.user.schedule import cb_toggle_notify
+    cb = MagicMock()
+    cb.from_user.id = 111
+    cb.message = AsyncMock()
+    cb.answer = AsyncMock()
+
+    with patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True), \
+         patch("bot.handlers.user.schedule.get_day_schedule_cached", new=AsyncMock(return_value=("текст", []))) as mock_cache, \
+         patch("bot.handlers.user.schedule.get_api_schedule_for_date", new=AsyncMock()) as mock_api:
+        await cb_toggle_notify(cb)
+        mock_cache.assert_awaited_once()
+        mock_api.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_public_copy_shows_alert() -> None:
+    """Проверяет, что копирование реквизитов открывает всплывающее окно (show_alert=True)."""
+    from bot.handlers.user.public_copy import cb_public_copy_value
+    cb = MagicMock()
+    cb.data = "copy:123456"
+    cb.from_user.id = 111
+    cb.answer = AsyncMock()
+
+    await cb_public_copy_value(cb)
+    cb.answer.assert_awaited_once_with("Скопировано: 123456", show_alert=True)
+
 

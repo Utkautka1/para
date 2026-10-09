@@ -25,6 +25,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.9. [Remote Lesson Direct Join Button «🔗 N-я пара» Flow](#89-remote-lesson-direct-join-button-n-я-пара-flow)
    - 8.10. [AI Homework Solver Workflow in Topic 405 (DeepSeek & GOST .docx)](#810-ai-homework-solver-workflow-in-topic-405-deepseek--gost-docx)
    - 8.11. [Headman & Admin Control Panel /admin Flow](#811-headman--admin-control-panel-admin-flow)
+   - 8.12. [Unauthenticated Ingress & Fallback Flow (auth_fallback.py)](#812-unauthenticated-ingress--fallback-flow-auth_fallbackpy)
 9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
@@ -1362,6 +1363,47 @@ classDiagram
 3. **Emergency Schedule Push**: Clicking Button `📢 Экстренная рассылка` initiates an asynchronous broadcast of the day's timetable to all active subscribers via `services/notifier.py` with semaphore concurrency control.
 4. **Forced Topic Rebuild**: Clicking Button `🔄 Форсировать обновление топика` triggers a full re-computation of the pinned Topic 7025 message directly from live sheets.
 5. **System Telemetry**: Clicking Button `📊 Системная статистика` displays server metrics, active Redis connections, queue lengths, and memory footprint.
+
+---
+
+### 8.12 Unauthenticated Ingress & Fallback Flow (auth_fallback.py)
+
+Architecture safeguarding the group assistant by isolating unauthorized direct messages, extracting caller identity safely, and displaying onboarding diagnostics.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class TelegramGateway {
+        +handle_private_message(user_id, text) void
+        +answer_message(chat_id, html_text) Message
+    }
+
+    class UnauthFallbackHandler {
+        +unauth_fallback(message) void
+        -_validate_caller_identity(user) bool
+    }
+
+    class ClassmatesAuthService {
+        +is_authorized_user(user) bool
+        +load_classmates_registry() list
+    }
+
+    class TestersManager {
+        +is_tester_allowed(user_id) bool
+    }
+
+    TelegramGateway --> UnauthFallbackHandler : sends private message
+    UnauthFallbackHandler --> ClassmatesAuthService : checks is_authorized_user(user)
+    UnauthFallbackHandler --> TestersManager : checks is_tester_allowed(user_id)
+    UnauthFallbackHandler --> TelegramGateway : sends access denied message with user_id
+```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Identity Extraction & Safe Guard**: The handler extracts `uid = user.id` before executing authorization filters and logging, preventing variable binding errors (`NameError`).
+2. **Authorized User & Tester Bypass**: If the sender is an authorized classmate or an active API tester (`is_tester_allowed`), the handler silently passes without interruption.
+3. **Diagnostic Access Denied Rendering**: For unauthorized strangers, the handler sends a structured HTML card containing the user's numeric `Telegram ID` (`<code>{uid}</code>`), instructing them to forward the ID to the headman for registry binding.
 
 ---
 

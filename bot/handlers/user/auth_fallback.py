@@ -4,10 +4,10 @@
 Срабатывает, если Telegram ID отправителя не совпадает с ALLOWED_USER_ID.
 """
 
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.types import Message
-from core.logger import get_logger
 
+from core.logger import get_logger
 from services.classmates_auth import is_authorized_user
 from services.testers_manager import is_tester_allowed
 
@@ -22,6 +22,7 @@ async def unauth_fallback(message: Message) -> None:
     user = message.from_user
     if not user or is_authorized_user(user) or await is_tester_allowed(user.id):
         return
+    uid = user.id
     uname = f"@{user.username}" if user.username else "нет username"
     log.warning(f"⛔ Доступ ограничен: id={uid}, username={uname}")
     await message.answer(

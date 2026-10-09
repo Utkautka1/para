@@ -6,16 +6,16 @@
 """
 
 import os
-from typing import Dict, Optional
+
 from config import USER_CACHE_FILE_PATH
 from core.logger import get_logger
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("user_cache")
 CACHE_FILE_PATH: str = USER_CACHE_FILE_PATH
-_USER_CACHE: Optional[Dict[str, int]] = None
+_USER_CACHE: dict[str, int] | None = None
 _USER_CACHE_MTIME: float = 0.0
-_USER_CACHE_PATH: Optional[str] = None
+_USER_CACHE_PATH: str | None = None
 
 
 def clear_user_cache_memory() -> None:
@@ -26,7 +26,7 @@ def clear_user_cache_memory() -> None:
     _USER_CACHE_PATH = None
 
 
-def load_user_cache() -> Dict[str, int]:
+def load_user_cache() -> dict[str, int]:
     """Загружает кэш пользователей с in-memory буферизацией по mtime."""
     global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH
     try:
@@ -41,7 +41,7 @@ def load_user_cache() -> Dict[str, int]:
     return _USER_CACHE
 
 
-def save_user_cache(cache: Dict[str, int]) -> None:
+def save_user_cache(cache: dict[str, int]) -> None:
     """Атомарно сохраняет словарь кэша пользователей на диск и в память."""
     global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH
     _USER_CACHE = cache
@@ -53,7 +53,7 @@ def save_user_cache(cache: Dict[str, int]) -> None:
         _USER_CACHE_MTIME = 0.0
 
 
-def get_cached_user_id(username: str) -> Optional[int]:
+def get_cached_user_id(username: str) -> int | None:
     """Возвращает Telegram ID из постоянного кэша по юзернейму."""
     clean = username.lstrip("@").lower()
     return load_user_cache().get(clean)

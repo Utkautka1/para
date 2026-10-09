@@ -180,7 +180,7 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
     await _ack_callback(callback, ans_text)
     now = datetime.now(TIMEZONE).date()
-    lessons = await get_api_schedule_for_date(now)
+    _, lessons = await get_day_schedule_cached(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
     is_test = await is_tester_allowed(uid)
     kb = get_schedule_inline_kb(
@@ -267,7 +267,7 @@ async def cb_week(callback: CallbackQuery) -> None:
 
     days_data = await get_api_week_schedule(monday)
     text = format_week_schedule(days_data)
-    await cache_set(cache_key, text)
+    await cache_set(cache_key, text, ttl=600)
     await edit_or_answer(callback, text, week_offset=0)
 
 
@@ -287,20 +287,8 @@ async def cb_week_next(callback: CallbackQuery) -> None:
 
     days_data = await get_api_week_schedule(next_monday)
     text = format_week_schedule(days_data)
-    await cache_set(cache_key, text)
+    await cache_set(cache_key, text, ttl=600)
     await edit_or_answer(callback, text, week_offset=1)
-
-
-@router.callback_query(F.data.startswith("copy:"))
-async def cb_copy_value(callback: CallbackQuery) -> None:
-    """
-    Всплывающее уведомление для копирования значение в буфер обмена.
-
-    :param callback: CallbackQuery
-    """
-    val = callback.data.split("copy:", 1)[1]
-    log.debug(f"Нажато копирование реквизитов: {val}")
-    await callback.answer(f"Скопировано: {val}", show_alert=True)
 
 
 async def _refresh_and_format_schedule(now: date) -> Tuple[str, List[Lesson], int]:
