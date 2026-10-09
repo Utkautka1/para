@@ -15,7 +15,12 @@ from aiogram.types import CallbackQuery, Message
 
 from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID, TIMEZONE
 from bot.filters.auth import ClassmateAuthFilter
-from bot.templates.user.keyboards import get_notice_settings_kb, get_schedule_inline_kb
+from bot.templates.user.keyboards import (
+    get_notice_settings_kb,
+    get_schedule_inline_kb,
+    get_tester_cabinet_kb,
+)
+from services.testers_manager import generate_or_get_tester_key, is_tester_allowed
 from bot.templates.user.messages import (
     format_day_schedule,
     format_notice_settings_text,
@@ -73,9 +78,11 @@ async def edit_or_answer(
     """Безопасно обновляет содержимое текущего сообщения с учетом прав и подписки."""
     uid = callback.from_user.id if callback.from_user else 0
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
+    is_test = await is_tester_allowed(uid)
     kb = get_schedule_inline_kb(
         lessons, week_offset=week_offset, is_admin=(uid == ALLOWED_USER_ID),
-        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att,
+        is_tester=is_test
     )
     try:
         if callback.message:
@@ -98,31 +105,71 @@ async def _greet_new_student(message: Message, student: dict) -> None:
     )
 
 
+async def _show_access_denied(message: Message, uid: int) -> None:
+    """Информирует неавторизованного пользователя об отказе в доступе."""
+    await message.answer(
+        "⛔ <b>Доступ ограничен.</b>\n"
+        "Этот бот работает исключительно для студентов группы 1-КПД-3.\n\n"
+        f"Ваш Telegram ID: <code>{uid}</code>\n"
+        "<i>Если вы студент 1-КПД-3 — передайте ваш ID старосте для активации.</i>"
+    )
+
+
+async def _show_tester_cabinet(message: Message, uid: int) -> None:
+    """Отправляет экран личного кабинета тестировщика API со ссылками."""
+    key = await generate_or_get_tester_key(uid)
+    text = (
+        "🧪 <b>Кабинет тестировщика para-api</b>\n\n"
+        "Вы успешно авторизованы как тестировщик API!\n\n"
+        f"🔑 Ваш персональный <b>API-ключ</b>:\n<code>{key}</code>\n\n"
+        "💡 <i>Вставьте ключ в Swagger UI (Authorize -> ApiKeyAuth)"
+    )
+    await message.answer(text, reply_markup=get_tester_cabinet_kb())
+
+
 @router.message(CommandStart())
 @router.message(Command("today"))
 async def cmd_start(message: Message) -> None:
-    """Авторизует пользователя и отправляет расписание на сегодня."""
+    """Авторизует пользователя, проверяет права тестера и отправляет меню."""
     is_auth, is_just_reg, student = process_user_auth(message.from_user)
-    if not is_auth:
-        uid = message.from_user.id if message.from_user else 0
-        await message.answer(
-            "⛔ <b>Доступ ограничен.</b>\n"
-            "Этот бот работает исключительно для студентов группы 1-КПД-3.\n\n"
-            f"Ваш Telegram ID: <code>{uid}</code>\n"
-            "<i>Если вы студент 1-КПД-3 — передайте ваш ID старосте для активации.</i>"
-        )
+    uid = message.from_user.id if message.from_user else 0
+    is_tester = await is_tester_allowed(uid)
+    if not is_auth and not is_tester:
+        await _show_access_denied(message, uid)
+        return
+    if not is_auth and is_tester:
+        await _show_tester_cabinet(message, uid)
         return
     if is_just_reg and student:
         await _greet_new_student(message, student)
-    uid = message.from_user.id if message.from_user else 0
     now = datetime.now(TIMEZONE).date()
     text, lessons = await get_day_schedule_cached(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
     kb = get_schedule_inline_kb(
         lessons, is_admin=(uid == ALLOWED_USER_ID),
-        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att,
+        is_tester=is_tester
     )
     await message.answer(text, reply_markup=kb)
+
+
+@router.message(Command("swagger"))
+@router.message(Command("api_key"))
+async def cmd_my_api_key(message: Message) -> None:
+    """Показывает персональный API-ключ и кнопки запуска Swagger UI."""
+    uid = message.from_user.id if message.from_user else 0
+    if not await is_tester_allowed(uid):
+        await message.answer("⛔ Вы не являетесь авторизованным тестером.")
+        return
+    await _show_tester_cabinet(message, uid)
+
+
+@router.callback_query(F.data == "tester:my_key")
+async def cb_show_tester_key(callback: CallbackQuery) -> None:
+    """Отправляет всплывающее уведомление с персональным ключом тестера."""
+    uid = callback.from_user.id if callback.from_user else 0
+    key = await generate_or_get_tester_key(uid)
+    await callback.answer(f"Ваш ключ: {key}", show_alert=True)
 
 
 @router.callback_query(F.data == "sched:toggle_notify")
@@ -135,9 +182,11 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     now = datetime.now(TIMEZONE).date()
     lessons = await get_api_schedule_for_date(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
+    is_test = await is_tester_allowed(uid)
     kb = get_schedule_inline_kb(
         lessons, is_admin=(uid == ALLOWED_USER_ID),
-        is_subscribed=new_sub, is_attendance_admin=is_att
+        is_subscribed=new_sub, is_attendance_admin=is_att,
+        is_tester=is_test,
     )
     try:
         if callback.message:
@@ -323,9 +372,11 @@ async def handle_user_text_message(message: Message) -> None:
     now = datetime.now(TIMEZONE).date()
     _, lessons = await get_day_schedule_cached(now)
     is_att = bool(uid in ALLOWED_ATTENDANCE_USER_IDS)
+    is_test = await is_tester_allowed(uid)
     kb = get_schedule_inline_kb(
         lessons, is_admin=(uid == ALLOWED_USER_ID),
-        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att
+        is_subscribed=is_subscribed(uid), is_attendance_admin=is_att,
+        is_tester=is_test,
     )
     await message.answer(text, reply_markup=kb)
 

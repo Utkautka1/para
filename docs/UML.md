@@ -1550,9 +1550,9 @@ sequenceDiagram
 
 ---
 
-### 9.3. Tester Whitelist Management Flow
+### 9.3. Tester Whitelist Management & Personal API Key Flow
 
-Administrative control flow for managing authorized testers in the Redis whitelist via Telegram Bot commands (`/testers`, `/add_tester`, `/del_tester`) and interactive FSM dialogs.
+Administrative control flow for managing authorized testers in Redis, automatic personal API key generation (`para_test_<token_hex>`), and end-to-end request audit logging.
 
 ```mermaid
 sequenceDiagram
@@ -1561,32 +1561,41 @@ sequenceDiagram
     participant Bot as para-bot
     participant Handler as bot/handlers/admin/testers.py
     participant TestersMgr as services/testers_manager.py
-    participant RedisStore as Redis (api:testers:whitelist)
+    participant RedisStore as Redis Cache
+    actor Tester as External Tester (e.g. 8894263260)
+    participant ApiServer as para-api (FastAPI)
 
-    Admin->>Bot: /add_tester 987654321
+    Admin->>Bot: /add_tester 8894263260
     Bot->>Handler: cmd_add_tester(message)
     Handler->>Handler: Validate numeric Telegram ID
-    Handler->>TestersMgr: add_tester(987654321)
-    TestersMgr->>RedisStore: SADD api:testers:whitelist 987654321
-    RedisStore-->>TestersMgr: OK
-    TestersMgr-->>Handler: True
-    Handler-->>Admin: Confirmation alert (User 987654321 added to API testers)
+    Handler->>TestersMgr: add_tester(8894263260)
+    TestersMgr->>RedisStore: SADD api:testers:whitelist 8894263260
+    TestersMgr->>TestersMgr: generate_or_get_tester_key(8894263260)
+    TestersMgr->>RedisStore: SET api:uid_to_key:8894263260 para_test_xxx
+    TestersMgr->>RedisStore: SET api:key_to_uid:para_test_xxx 8894263260
+    TestersMgr-->>Handler: Return True & Generated Key
+    Handler-->>Admin: Alert with tester ID & Personal API Key
     
-    Admin->>Bot: /testers
-    Bot->>Handler: cmd_list_testers(message)
-    Handler->>TestersMgr: get_all_testers()
-    TestersMgr->>RedisStore: SMEMBERS api:testers:whitelist
-    RedisStore-->>TestersMgr: Set of tester IDs
-    TestersMgr-->>Handler: Whitelisted IDs list
-    Handler-->>Admin: Render interactive testers list with deletion controls
+    Tester->>Bot: /start or /swagger
+    Bot->>Bot: Check is_tester_allowed(8894263260) == True
+    Bot-->>Tester: Render Tester Cabinet with Key & Swagger UI buttons
+    
+    Tester->>ApiServer: Request with Header X-API-Key or Bearer para_test_xxx
+    ApiServer->>TestersMgr: get_tester_by_key(para_test_xxx)
+    TestersMgr->>RedisStore: GET api:key_to_uid:para_test_xxx -> 8894263260
+    ApiServer->>ApiServer: _log_audit_access("tester:8894263260", request)
+    ApiServer-->>Tester: 200 OK Response
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access. Unauthorized attempts are dropped silently or answered with an access denial alert.
-2. **Atomic Whitelist Insertion**: The `/add_tester <id>` command or interactive FSM prompt parses the numeric Telegram ID and executes an atomic `SADD` operation on the Redis key `api:testers:whitelist`.
-3. **Immutable Administrator Protection**: `TestersManager.remove_tester` prevents accidental removal of core system administrators (`ALLOWED_USER_ID`, `DEPUTY_USER_ID`), guaranteeing persistent admin access.
-4. **Interactive Tester Management Dashboard**: The `/testers` command queries `SMEMBERS` from Redis and renders an inline keyboard with individual delete buttons for each tester and a direct WebApp launcher button for Swagger UI testing.
+1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access.
+2. **Atomic Whitelist & Key Minting**: The `/add_tester <id>` command adds the user ID to `api:testers:whitelist` and generates an cryptographically secure 16-byte hex token prefixed with `API_TESTER_KEY_PREFIX`.
+3. **Bidirectional O(1) Indexing**: Redis stores dual keys:
+   - `{REDIS_TESTER_UID_TO_KEY_PREFIX}{uid}` -> `api_key`
+   - `{REDIS_TESTER_KEY_TO_UID_PREFIX}{api_key}` -> `uid`
+4. **Security Audit Logging**: Every incoming request passing through `verify_api_or_tester()` resolves the caller to `tester:<uid>` or `master_admin` and writes an audit record to the structured log: `[AUDIT] {identity} -> {method} {path} (IP: {client_ip})`.
+5. **Cabinet Access for Non-Students**: If an authorized tester is not a student in group 1-КПД-3, `cmd_start` does not reject them, but automatically displays their Tester Cabinet with Swagger UI and API key.
 
 ---
 
@@ -1607,11 +1616,11 @@ classDiagram
     }
 
     class SecurityDependencies {
-        +verify_api_key(key) str
         +verify_api_or_tester(key, bearer, cookie) str
         +verify_admin_access(auth_identity) str
-        -_is_valid_api_key(key) bool
-        -_resolve_tester_id(cookie, bearer) int
+        -_resolve_key_identity(key) str
+        -_resolve_token_identity(token) str
+        -_log_audit_access(identity, request) void
     }
 
     class ScheduleRouter {
