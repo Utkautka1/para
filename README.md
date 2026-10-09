@@ -54,7 +54,9 @@
   <b><a href="#-core-subsystems--deep-dives">Deep-Dives</a></b> •
   <b><a href="#-benchmarks--telemetry">Benchmarks</a></b> •
   <b><a href="#-code-highlights">Code Highlights</a></b> •
-  <b><a href="#-deployment--quickstart">Quickstart</a></b>
+  <b><a href="#-deployment--quickstart">Quickstart</a></b> •
+  <b><a href="docs/index.md">Full Function Docs (625+)</a></b> •
+  <b><a href="docs/UML.md">UML Spec</a></b>
 </p>
 
 ---
