@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" width="100%" height="120" fill="none">
+  <defs>
+    <linearGradient id="header-wave-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#0d1b33" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#053366" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="header-accent-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00D2FF" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#3a7bd5" stop-opacity="0.7"/>
+      <stop offset="80%" stop-color="#6f42c1" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#00F2FE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="header-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00D2FF" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#00D2FF" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#3a7bd5" stop-opacity="1"/>
+      <stop offset="75%" stop-color="#8a2be2" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#00F2FE" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M0,0 L1200,0 L1200,65 C1060,98 920,35 770,68 C620,102 470,38 320,72 C170,106 60,50 0,65 Z" fill="url(#header-wave-bg)"/>
+  <path d="M0,0 L1200,0 L1200,48 C1080,82 930,22 790,56 C650,90 490,32 350,62 C210,92 90,42 0,52 Z" fill="url(#header-accent-grad)" opacity="0.4"/>
+  <path d="M0,65 C60,50 170,106 320,72 C470,38 620,102 770,68 C920,35 1060,98 1200,65" stroke="url(#header-glow)" stroke-width="2.5" fill="none"/>
+</svg>

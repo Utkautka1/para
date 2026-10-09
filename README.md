@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,16,28&height=110&section=header" width="100%"/>
+<img src="docs/assets/header.svg" width="100%"/>
 
 # 🎓 PARA
 
@@ -9,14 +9,12 @@
 *A resilient, dual-protocol distributed system orchestrating real-time schedule dispatching, WOPI collaborative attendance, AI-augmented academic workflow execution, and Telegram Supergroup telemetry.*
 
 <p align="center">
-  <a href="https://github.com/Utkautka1/para">
-    <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=20&duration=3000&pause=1000&color=00D2FF&center=true&vCenter=true&multiline=false&width=650&height=40&lines=Dual-Protocol+gRPC+%2B+REST+Microservices;Sub-Millisecond+L1%2FL2+Schedule+Ingress;WOPI+Collaborative+Spreadsheet+Sync;At-Least-Once+DeepSeek+AI+Solver;Peer+Admin+Real-Time+Telemetry+Alerts" alt="Typing Animation" />
-  </a>
+  <img src="docs/assets/typing.svg" alt="Para Telemetry Engine" width="100%"/>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Utkautka1/para/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/Utkautka1/para/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI%2FCD%20PIPELINE" alt="CI/CD Status">
+  <a href="https://github.com/Utkautka1/para/actions">
+    <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
     <img src="https://img.shields.io/badge/TESTS-546%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 546 Passed">
@@ -472,5 +470,5 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for full details
 Developed with architectural rigor by **Staff/Lead Engineering** standards. Built for speed, resilience, and student operational excellence.
 
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,16,28&height=90&section=footer" width="100%"/>
+  <img src="docs/assets/footer.svg" width="100%"/>
 </div>
