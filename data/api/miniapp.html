@@ -162,6 +162,14 @@
       padding: 12px;
     }
     .swagger-ui .topbar { display: none !important; }
+    /* Скрытие открытого файла openapi.json и селектора серверов */
+    .swagger-ui .info .url,
+    .swagger-ui .info a.link,
+    .swagger-ui .info a[href*="openapi.json"],
+    .swagger-ui .info a:has(.url),
+    .swagger-ui .servers {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -242,6 +250,12 @@
       document.getElementById('swagger-wrapper').style.display = 'block';
       document.getElementById('live-badge').style.display = 'inline-flex';
 
+      const CleanSwaggerPlugin = () => ({
+        wrapComponents: {
+          InfoUrl: () => () => null
+        }
+      });
+
       SwaggerUIBundle({
         url: "/openapi.json",
         dom_id: '#swagger-ui',
@@ -250,12 +264,31 @@
           SwaggerUIBundle.presets.apis,
           SwaggerUIBundle.SwaggerUIStandalonePreset
         ],
+        plugins: [
+          CleanSwaggerPlugin
+        ],
         layout: "BaseLayout",
         requestInterceptor: (req) => {
           req.credentials = 'include';
+          if (req.url) {
+            req.url = req.url.replace(/^https?:\/\/[^\/]+/, '');
+          }
           return req;
         }
       });
+
+      const hostSanitizer = new MutationObserver(() => {
+        const root = document.getElementById('swagger-ui');
+        if (!root) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.nodeValue && (node.nodeValue.includes('45-81-154-175') || node.nodeValue.includes('sslip.io'))) {
+            node.nodeValue = node.nodeValue.replace(/https?:\/\/45[-.]81[-.]154[-.]175[^\/\s'"]*/g, '');
+          }
+        }
+      });
+      hostSanitizer.observe(document.getElementById('swagger-ui'), { childList: true, subtree: true, characterData: true });
     }
 
     function showDenied() {

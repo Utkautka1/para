@@ -1534,14 +1534,17 @@ sequenceDiagram
     ApiRouter->>AuthService: generate_tester_session(12345)
     AuthService-->>ApiRouter: Signed token 12345:ts:hmac
     ApiRouter-->>WebApp: Set-Cookie para_session=token (HttpOnly, Secure)
-    WebApp->>SwaggerUI: Mount Swagger UI with /openapi.json
-    SwaggerUI->>SwaggerUI: Fetch /openapi.json schema
-    SwaggerUI-->>Tester: Render interactive API documentation
+    WebApp->>SwaggerUI: Mount Swagger UI with CleanSwaggerPlugin & relative gateway
+    SwaggerUI->>ApiRouter: GET /openapi.json (para_session cookie authenticated)
+    ApiRouter-->>SwaggerUI: 200 OK (OpenAPI 3.1 schema without server IP)
+    SwaggerUI->>SwaggerUI: CleanSwaggerPlugin disables InfoUrl (no /openapi.json link)
+    SwaggerUI-->>Tester: Render clean interactive API documentation (IP masked)
     Tester->>SwaggerUI: Click Try it out and Execute GET /schedule/day
+    SwaggerUI->>SwaggerUI: requestInterceptor strips VPS host/IP -> relative URL
     SwaggerUI->>ApiEndpoints: GET /schedule/day (with para_session cookie)
     ApiEndpoints->>ApiRouter: verify_api_or_tester() validates cookie
     ApiEndpoints-->>SwaggerUI: 200 OK (lessons list)
-    SwaggerUI-->>Tester: Display live JSON response
+    SwaggerUI-->>Tester: Display clean Curl & Request URL (no IP exposed)
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
@@ -1551,7 +1554,7 @@ sequenceDiagram
 3. **Replay Attack Defense**: `MiniappAuthService` validates `auth_date` against `SESSION_MAX_AGE_SECONDS` (86400 seconds). Payloads older than 24 hours are rejected immediately with HTTP 401.
 4. **RBAC Whitelist Enforcement**: `TestersManager.is_tester_allowed(user_id)` checks the Redis set `api:testers:whitelist` in O(1) time complexity. Unwhitelisted accounts are rejected with HTTP 403 Forbidden.
 5. **Signed Session Token Minting**: `generate_tester_session(user_id)` constructs a tamper-proof session token format `<user_id>:<timestamp>:<signature>` and binds it to the browser via an HTTP-only secure cookie `para_session`.
-6. **Embedded Swagger UI Execution**: The Mini App mounts Swagger UI Bundle pointing to `/openapi.json`. Every test request executed via "Try it out" automatically passes credentials through `verify_api_or_tester()`, providing seamless live API testing without manual API key entry.
+6. **Embedded Swagger UI Execution & Host Sanitization**: The Mini App mounts Swagger UI Bundle pointing to `/openapi.json` with `CleanSwaggerPlugin` removing the `/openapi.json` header link, CSS hiding server selectors, and `requestInterceptor` stripping public VPS IP addresses and absolute hosts (`45-81-154-175.sslip.io`) to relative routes (`/schedule/day`). The `/openapi.json` endpoint itself is strictly guarded by `verify_api_or_tester()`, preventing unauthorized schema leakage.
 
 ---
 
