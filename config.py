@@ -81,6 +81,8 @@ HW_OUTPUT_TOPIC_THREAD_ID: int = int(get_required_env("HW_OUTPUT_TOPIC_THREAD_ID
 # Настройки внутреннего API (para-api)
 API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
 API_BASE_URL: str = get_required_env("API_BASE_URL")
+API_HOST: str = get_required_env("API_HOST")
+API_PORT: int = int(get_required_env("API_PORT"))
 API_EXTERNAL_PORT: int = int(get_required_env("API_EXTERNAL_PORT"))
 SWAGGER_URL: str = get_required_env("SWAGGER_URL")
 GRPC_HOST: str = get_required_env("GRPC_HOST")
