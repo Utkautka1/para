@@ -13,7 +13,7 @@ from fastapi import FastAPI
 
 from api import create_app
 from api.grpc.server import create_grpc_server, start_grpc_server, stop_grpc_server
-from config import GRPC_HOST, GRPC_PORT
+from config import API_HOST, API_PORT, GRPC_HOST, GRPC_PORT
 from core.logger import get_logger
 
 log = get_logger("api_main")
@@ -43,14 +43,15 @@ app.router.lifespan_context = lifespan
 if __name__ == "__main__":
     logging.getLogger("uvicorn.error").addFilter(_InvalidHttpFilter())
     log.info("=" * 60)
-    log.info(f"ЗАПУСК Dual-Protocol API: HTTP :8000 | gRPC :{GRPC_PORT}")
+    log.info(f"ЗАПУСК Dual-Protocol API: HTTP :{API_PORT} | gRPC :{GRPC_PORT}")
     log.info("  Swagger UI: /docs | Telegram Mini App: /miniapp")
     log.info("=" * 60)
     uvicorn.run(
         app,
-        host="0.0.0.0",
-        port=8000,
+        host=API_HOST,
+        port=API_PORT,
         loop="uvloop",
         http="httptools",
         log_level="warning",
-    )  # nosec B104
+    )
+
