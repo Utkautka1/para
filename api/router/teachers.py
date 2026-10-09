@@ -5,7 +5,6 @@
 из официального документа Яндекс Диска и пользовательских настроек.
 """
 
-from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -15,9 +14,9 @@ from api.schemas.teachers import (
     TeacherItem,
     TeacherSearchItem,
     TeacherSearchResponse,
+    TeacherSingleResponse,
     TeachersRefreshResponse,
     TeachersResponse,
-    TeacherSingleResponse,
 )
 from integrations.docx_parser import get_teacher_links
 from services.custom_teachers import delete_custom_teacher, save_custom_teacher
@@ -57,17 +56,18 @@ async def get_teacher(last_name: str) -> TeacherSingleResponse:
     return TeacherSingleResponse(key=key, teacher=item)
 
 
-@router.post("/custom", response_model=TeacherSingleResponse)
+@router.post("/custom", response_model=TeacherSingleResponse, dependencies=[Depends(verify_admin_access)])
 async def add_custom_teacher(payload: CustomTeacherCreateRequest) -> TeacherSingleResponse:
-    """Добавление или обновление персональной ссылки преподавателя."""
+    """Добавление или обновление персональной ссылки преподавателя (Admin only)."""
     key = payload.last_name.strip().lower()
     save_custom_teacher(key, payload.full_name, payload.link_info)
     item = TeacherItem(full_name=payload.full_name, link_info=payload.link_info)
     return TeacherSingleResponse(key=key, teacher=item)
 
 
+
 @router.delete("/custom/{last_name}", dependencies=[Depends(verify_admin_access)])
-async def remove_custom_teacher(last_name: str) -> Dict[str, str]:
+async def remove_custom_teacher(last_name: str) -> dict[str, str]:
     """Удаление кастомного преподавателя (Admin only)."""
     delete_custom_teacher(last_name.strip().lower())
     return {"status": "ok", "deleted": last_name}

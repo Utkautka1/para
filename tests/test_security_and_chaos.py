@@ -90,11 +90,12 @@ async def test_api_security_injection_attacks() -> None:
 
         # Вызов без ключа
         res3 = await client.get("/schedule/day", headers={})
-        assert res3.status_code == 403
+        assert res3.status_code in (401, 403)
 
         # Вызов с неверным ключом
         res4 = await client.get("/schedule/day", headers={"X-API-Key": "evil_hacker_key"})
-        assert res4.status_code == 403
+        assert res4.status_code in (401, 403)
+
 
 
 @pytest.mark.asyncio

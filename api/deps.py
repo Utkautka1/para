@@ -5,12 +5,16 @@
 """
 
 import hmac
-from typing import Optional
 
 from fastapi import Cookie, Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
-from config import ALLOWED_USER_ID, API_SECRET_KEY, API_TESTER_KEY_PREFIX, DEPUTY_USER_ID
+from config import (
+    ALLOWED_USER_ID,
+    API_SECRET_KEY,
+    API_TESTER_KEY_PREFIX,
+    DEPUTY_USER_ID,
+)
 from core.logger import get_logger
 from services.testers_manager import get_tester_by_key, is_tester_allowed
 from utils.miniapp_auth import verify_tester_session
@@ -21,7 +25,7 @@ _api_key_header = APIKeyHeader(name="X-API-Key", scheme_name="ApiKeyAuth", auto_
 _bearer_scheme = HTTPBearer(scheme_name="BearerAuth", auto_error=False)
 
 
-async def _resolve_key_identity(key: Optional[str]) -> Optional[str]:
+async def _resolve_key_identity(key: str | None) -> str | None:
     """Определяет владельца API-ключа (мастер-ключ или персональный ключ тестера)."""
     if not key:
         return None
@@ -33,7 +37,7 @@ async def _resolve_key_identity(key: Optional[str]) -> Optional[str]:
     return None
 
 
-async def _resolve_token_identity(token: Optional[str]) -> Optional[str]:
+async def _resolve_token_identity(token: str | None) -> str | None:
     """Проверяет токен (сессия Mini App или персональный ключ в Bearer)."""
     if not token:
         return None
@@ -52,9 +56,9 @@ def _log_audit_access(identity: str, request: Request) -> None:
 
 async def verify_api_or_tester(
     request: Request,
-    key: Optional[str] = Security(_api_key_header),
-    bearer: Optional[HTTPAuthorizationCredentials] = Security(_bearer_scheme),
-    para_session: Optional[str] = Cookie(default=None),
+    key: str | None = Security(_api_key_header),
+    bearer: HTTPAuthorizationCredentials | None = Security(_bearer_scheme),
+    para_session: str | None = Cookie(default=None),
 ) -> str:
     """Универсальная авторизация по API-ключу, Bearer-токену или cookie с аудитом."""
     ident = await _resolve_key_identity(key)
@@ -78,3 +82,17 @@ async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)
             return auth_identity
     log.warning(f"🚫 Попытка несанкционированного доступа: {auth_identity}")
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+
+async def verify_api_key(key: str | None = Security(_api_key_header)) -> str:
+    """
+    Проверяет статический API-ключ мастер-администратора (legacy-совместимость).
+
+    Использует hmac.compare_digest для защиты от атак по времени (timing attack).
+    Возвращает строку ключа или выбрасывает HTTP 403 Forbidden.
+    """
+    if not key or not hmac.compare_digest(key, API_SECRET_KEY):
+        log.warning("⚠️ Неверный или отсутствующий статический API-ключ")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing API key")
+    return key
+

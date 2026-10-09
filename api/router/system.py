@@ -4,7 +4,7 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.system import (
@@ -43,8 +43,22 @@ async def get_system_info() -> SystemInfoResponse:
     )
 
 
+SAFE_FLUSH_PREFIXES = ("sched:", "att:", "teachers:", "exams:", "hw_hash:", "rem:")
+
+
+def _validate_flush_pattern(pattern: str) -> None:
+    """Проверяет безопасность маски для предотвращения сброса служебных ключей Redis."""
+    clean = pattern.strip()
+    if clean in ("*", "", "*:*") or any(clean.startswith(d) for d in ("api:", "hw:tasks:", "user:")):
+        raise HTTPException(status_code=400, detail="Unsafe pattern: flushing critical system keys is forbidden")
+    if not any(clean.startswith(p) for p in SAFE_FLUSH_PREFIXES):
+        raise HTTPException(status_code=400, detail="Pattern must start with safe prefix (sched, att, teachers, exams)")
+
+
 @router.post("/cache/flush", response_model=CacheFlushResponse, dependencies=[Depends(verify_admin_access)])
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
-    """Принудительная очистка ключей Redis по маске (Admin only)."""
+    """Принудительная очистка ключей Redis по безопасной маске (Admin only)."""
+    _validate_flush_pattern(payload.pattern)
     count = await cache_flush(pattern=payload.pattern)
     return CacheFlushResponse(status="ok", pattern=payload.pattern, deleted_keys=count)
+

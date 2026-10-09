@@ -28,7 +28,7 @@ services:
     restart: always
     stop_grace_period: 15s
     ports:
-      - "${API_EXTERNAL_PORT:-8080}:8000"
+      - "127.0.0.1:${API_EXTERNAL_PORT:-8080}:8000"
     depends_on:
       redis:
         condition: service_healthy

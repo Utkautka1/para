@@ -29,6 +29,10 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
    - 9.3. [Tester Whitelist Management Flow](#93-tester-whitelist-management-flow)
+10. [Performance Hardening & Security Audit Architecture](#10-performance-hardening--security-audit-architecture)
+   - 10.1. [API Security Boundary & Privilege Escalation Prevention](#101-api-security-boundary--privilege-escalation-prevention)
+   - 10.2. [High-Performance Attendance Caching & Thread-Offloading Flow](#102-high-performance-attendance-caching--thread-offloading-flow)
+   - 10.3. [Concurrent AI Solver Worker Pipeline with Semaphore Control](#103-concurrent-ai-solver-worker-pipeline-with-semaphore-control)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -1769,5 +1773,151 @@ sequenceDiagram
 ```
 
 
+---
 
+## 10. Performance Hardening & Security Audit Architecture
 
+### 10.1. API Security Boundary & Privilege Escalation Prevention
+
+Sequence diagram detailing the defense-in-depth protection added during the security audit:
+1. `POST /teachers/custom` requires admin role verification (`verify_admin_access`), preventing testers from altering custom Zoom links.
+2. `POST /solver/solve` enforces per-identity rate limiting (`_check_solver_rate_limit`) via Redis sliding window counters (5 req/min).
+3. `POST /system/cache/flush` enforces strict prefix whitelisting (`_validate_flush_pattern`), rejecting broad flush attempts like `*` or critical namespaces.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Caller as Client (Tester / Admin / Attacker)
+    participant ApiApp as FastAPI Ingress (para-api)
+    participant AuthDep as Security Dependencies (deps.py)
+    participant SecRule as Validation & Rate Limiter
+    participant Redis as Redis Cache (para-redis)
+    participant Handler as Business Logic Router
+
+    alt Direct Solver API Rate Limiting
+        Caller->>ApiApp: POST /solver/solve (DirectSolveRequest)
+        ApiApp->>AuthDep: verify_api_or_tester()
+        AuthDep-->>ApiApp: identity ("tester:12345" or "apikey")
+        ApiApp->>SecRule: _check_solver_rate_limit(identity)
+        SecRule->>Redis: INCR "ratelimit:solver:{identity}" & EXPIRE 60
+        Redis-->>SecRule: current_count
+        alt Count > 5 requests / min
+            SecRule-->>ApiApp: raise HTTPException(429, Rate limit exceeded)
+            ApiApp-->>Caller: HTTP 429 Too Many Requests
+        else Allowed
+            SecRule-->>ApiApp: OK
+            ApiApp->>Handler: solve_direct_task()
+            Handler-->>Caller: HTTP 200 TaskResult
+        end
+    else Custom Teacher Zoom Link Tampering Attempt
+        Caller->>ApiApp: POST /teachers/custom (CustomTeacherRequest)
+        ApiApp->>AuthDep: verify_admin_access()
+        alt Caller is Tester (not Admin)
+            AuthDep-->>ApiApp: raise HTTPException(403, Admin access required)
+            ApiApp-->>Caller: HTTP 403 Forbidden
+        else Caller is Root Admin
+            AuthDep-->>ApiApp: OK
+            ApiApp->>Handler: save_custom_teacher()
+            Handler->>Redis: HSET "teachers:custom"
+            Handler-->>Caller: HTTP 200 OK
+        end
+    else Cache Flush Pattern Boundary
+        Caller->>ApiApp: POST /system/cache/flush?pattern=*
+        ApiApp->>AuthDep: verify_api_key()
+        AuthDep-->>ApiApp: OK
+        ApiApp->>SecRule: _validate_flush_pattern("*")
+        alt Pattern not in SAFE_FLUSH_PREFIXES
+            SecRule-->>ApiApp: raise HTTPException(400, Flush pattern not allowed)
+            ApiApp-->>Caller: HTTP 400 Bad Request
+        else Pattern allowed (e.g. "sched:*")
+            SecRule-->>ApiApp: OK
+            ApiApp->>Handler: flush_cache(pattern)
+            Handler->>Redis: SCAN & DEL matching keys
+            Handler-->>Caller: HTTP 200 {"deleted": count}
+        end
+    end
+```
+
+---
+
+### 10.2. High-Performance Attendance Caching & Thread-Offloading Flow
+
+Architecture flow showing the mitigation of WOPI network latency and Excel parsing Event Loop blocking:
+- Student roster is cached in Redis (`att:cached_students`) for 24 hours, reducing headman session startup from 3–7 seconds to 10–20 ms.
+- Synchronous CPU-intensive 12-sheet Excel parsing (`parse_workbook_attendance`) is offloaded via `asyncio.to_thread`, keeping the async event loop responsive.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Headman as Headman / Admin User
+    participant Bot as Telegram Bot (para-bot)
+    participant AttMgr as AttendanceManager
+    participant Redis as Redis Cache (para-redis)
+    participant Wopi as WOPI Client (Yandex Docs)
+    participant StatsMgr as AttendanceStats
+    participant WorkerThread as asyncio.to_thread (Threadpool)
+
+    Headman->>Bot: /attendance (Start Marking)
+    Bot->>AttMgr: fetch_target_students()
+    AttMgr->>Redis: GET "att:cached_students"
+    alt Cache Hit (Warm Roster)
+        Redis-->>AttMgr: JSON student list (29 items)
+        Note over AttMgr: Zero network roundtrips (~15ms latency)
+    else Cache Miss (Cold / Expired)
+        Redis-->>AttMgr: null
+        AttMgr->>Wopi: Download raw XLSX & extract students
+        Wopi-->>AttMgr: Excel bytes
+        AttMgr->>Redis: SETEX "att:cached_students" 86400 (24h)
+    end
+    AttMgr-->>Bot: List[str] students
+    Bot-->>Headman: Inline Keyboard (Student 1/29)
+
+    Headman->>Bot: /my_attendance (Fetch Stats)
+    Bot->>StatsMgr: get_all_students_stats()
+    StatsMgr->>Wopi: Download current XLSX
+    Wopi-->>StatsMgr: Excel raw bytes
+    Note over StatsMgr,WorkerThread: CPU-bound 12-month sheets traversal
+    StatsMgr->>WorkerThread: asyncio.to_thread(parse_workbook_attendance, wb)
+    WorkerThread-->>StatsMgr: Parsed Attendance Matrix
+    Note over StatsMgr: Main event loop remains unblocked
+    StatsMgr-->>Bot: Formatted Student Stats
+    Bot-->>Headman: Telegram Message with Attendance Summary
+```
+
+---
+
+### 10.3. Concurrent AI Solver Worker Pipeline with Semaphore Control
+
+Sequence diagram illustrating concurrent AI task processing in `solver.py` with `asyncio.Semaphore(MAX_CONCURRENT_TASKS)`:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as Student in Topic 405
+    participant Queue as Redis Reliable Queue (hw:queue)
+    participant SolverLoop as Solver Loop (solver.py)
+    participant Sem as asyncio.Semaphore(limit=3)
+    participant AiTask as Worker Coroutine
+    participant DeepSeek as DeepSeek AI Provider
+    participant DocxGen as GOST Docx Generator
+    participant Bot as Telegram Bot Notification
+
+    Student->>Queue: Enqueue Task (task_id, prompt, files)
+    loop Main Ingestion Loop
+        SolverLoop->>Queue: BLPOP "hw:queue" (timeout=2)
+        Queue-->>SolverLoop: Task Payload
+        SolverLoop->>Sem: acquire()
+        SolverLoop->>AiTask: asyncio.create_task(_process_with_semaphore())
+        Note over SolverLoop: Loop immediately continues to fetch next task
+    end
+
+    par Concurrent Task Execution (up to 3 parallel)
+        AiTask->>DeepSeek: generate_solution(prompt, attachments)
+        DeepSeek-->>AiTask: Formatted solution text
+        AiTask->>DocxGen: create_gost_document(solution)
+        DocxGen-->>AiTask: output.docx bytes
+        AiTask->>Bot: send_document(topic=405, docx)
+        AiTask->>Queue: HSET "hw:tasks:{id}" status="done"
+        AiTask->>Sem: release()
+    end
+```

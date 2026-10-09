@@ -5,7 +5,6 @@
 """
 
 import base64
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -35,7 +34,7 @@ async def get_solver_queue_status() -> SolverQueueStatusResponse:
     return SolverQueueStatusResponse(pending_tasks=q_len, processing_tasks=p_len, dlq_tasks=d_len, worker_online=client is not None)
 
 
-def _decode_image_payload(b64: Optional[str]) -> Optional[bytes]:
+def _decode_image_payload(b64: str | None) -> bytes | None:
     """Декодирует строку Base64 в бинарные данные изображения."""
     if not b64:
         return None
@@ -46,14 +45,33 @@ def _decode_image_payload(b64: Optional[str]) -> Optional[bytes]:
         return None
 
 
+async def _check_solver_rate_limit(identity: str) -> None:
+    """Ограничивает частоту вызовов DeepSeek API (макс. 5 запросов в минуту на пользователя)."""
+    if identity == "master_admin":
+        return
+    client = await init_redis()
+    if client:
+        key = f"api_rate:solver:{identity}"
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, 60)
+        if count > 5:
+            raise HTTPException(status_code=429, detail="Too many solver requests (max 5 per minute)")
+
+
 @router.post("/solve", response_model=DirectSolveResponse)
-async def solve_task_direct(payload: DirectSolveRequest) -> DirectSolveResponse:
-    """Прямое решение задачи через DeepSeek API."""
+async def solve_task_direct(
+    payload: DirectSolveRequest,
+    identity: str = Depends(verify_api_or_tester)
+) -> DirectSolveResponse:
+    """Прямое решение задачи через DeepSeek API с rate limiting."""
+    await _check_solver_rate_limit(identity)
     img_bytes = _decode_image_payload(payload.image_base64)
     solution = await solve_homework(image_bytes=img_bytes, text_prompt=payload.prompt)
     if not solution or "Не удалось получить решение" in solution:
         raise HTTPException(status_code=502, detail="DeepSeek service failed to provide answer")
     return DirectSolveResponse(status="ok", solution_text=solution, model=DEEPSEEK_MODEL_NAME)
+
 
 
 @router.get("/task/{message_id}", response_model=TaskStatusResponse)
