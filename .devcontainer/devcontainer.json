@@ -1,0 +1,43 @@
+{
+  "name": "Para Distributed System (Python 3.12)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableDockerInit": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "tests"
+        ],
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        }
+      },
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        "zxh404.vscode-proto3",
+        "bierner.markdown-mermaid"
+      ]
+    }
+  },
+  "forwardPorts": [
+    8000,
+    50051,
+    6379
+  ],
+  "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt -r requirements-dev.txt && cp -n .env.ci .env || true",
+  "remoteUser": "vscode"
+}
