@@ -6,32 +6,31 @@
 """
 
 import asyncio
-import json
-import os
 from datetime import date, datetime, timedelta
-from typing import Any, List, Optional
+from typing import Any
+
 from aiogram.exceptions import TelegramBadRequest
 
+from bot.templates.user.keyboards import get_topic_inline_kb
+from bot.templates.user.messages import format_day_schedule, format_reminder_text
 from config import TIMEZONE, TOPIC_CHAT_ID, TOPIC_THREAD_ID
 from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
 from services.models import Lesson
-from bot.templates.user.keyboards import get_topic_inline_kb
-from bot.templates.user.messages import format_day_schedule, format_reminder_text
 from services.notifier import parse_lesson_end_time, parse_lesson_start_time
 
 log = get_logger("topic_updater")
 STATE_FILE = "data/topic_state.json"
 
-_TOPIC_MAIN_MSG_ID: Optional[int] = None
+_TOPIC_MAIN_MSG_ID: int | None = None
 _SENT_REMINDERS: set = set()
 
 
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 
-def load_topic_state() -> Optional[int]:
+def load_topic_state() -> int | None:
     """
     Загружает сохраненный ID главного сообщения из JSON файла.
 
@@ -41,7 +40,7 @@ def load_topic_state() -> Optional[int]:
     return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
-def save_topic_state(msg_id: Optional[int]) -> None:
+def save_topic_state(msg_id: int | None) -> None:
     """Атомарно сохраняет ID главного сообщения в JSON файл и Redis."""
     import asyncio
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
@@ -120,7 +119,7 @@ def get_next_working_day(target_date: datetime.date) -> datetime.date:
     return next_d
 
 
-async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Optional[datetime.date]:
+async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> datetime.date | None:
     """
     Вычисляет целевую дату: при завершении всех пар на сегодня переключает на следующий день.
 
@@ -145,7 +144,7 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> Opt
     return today
 
 
-def is_too_early_to_publish(lessons: List[Lesson], now_dt: datetime, today: datetime.date, ignore_restriction: bool) -> bool:
+def is_too_early_to_publish(lessons: list[Lesson], now_dt: datetime, today: datetime.date, ignore_restriction: bool) -> bool:
     """
     Проверяет, не рано ли публиковать расписание (за 1 час до 1-й пары).
 
@@ -171,7 +170,6 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
 
     :return: True если сообщение обновлено/создано, False при ошибке
     """
-    global _TOPIC_MAIN_MSG_ID
     try:
         if _TOPIC_MAIN_MSG_ID is None:
             return await _send_new_topic_message(text, kb)
@@ -303,7 +301,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
     return await update_topic_message_payload(text, kb)
 
 
-_API_FAIL_START_TIME: Optional[datetime] = None
+_API_FAIL_START_TIME: datetime | None = None
 _API_ALERT_SENT: bool = False
 
 

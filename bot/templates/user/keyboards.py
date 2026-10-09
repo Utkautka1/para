@@ -5,8 +5,9 @@
 Ссылки группируются максимум по 2 в ряд для аккуратного отображения в топике.
 """
 
-from typing import List, Optional
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
 from config import MINIAPP_URL, SWAGGER_URL
 from services.models import Lesson
 
@@ -22,7 +23,7 @@ def format_lesson_button_text(lesson: Lesson) -> str:
     return f"🔗 {lesson.period + 1}-я пара{sg}"
 
 
-def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]]:
+def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]]:
     """
     Разбивает кнопки ссылок на дистанционные пары по 2 кнопки в ряд.
 
@@ -42,7 +43,7 @@ def chunk_link_buttons(lessons: List[Lesson]) -> List[List[InlineKeyboardButton]
     return [btns[i:i + 2] for i in range(0, len(btns), 2)]
 
 
-def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> List[List[InlineKeyboardButton]]:
+def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[list[InlineKeyboardButton]]:
     """Формирует кнопки администратора и старосты для навигации."""
     rows = []
     if is_attendance_admin or is_admin:
@@ -55,7 +56,7 @@ def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> List[Lis
 def _build_nav_rows(
     week_offset: int, is_admin: bool = False, is_subscribed: bool = True,
     is_attendance_admin: bool = False, is_tester: bool = False,
-) -> List[List[InlineKeyboardButton]]:
+) -> list[list[InlineKeyboardButton]]:
     """Формирует основные кнопки навигации по календарю и неделям со стилями."""
     w_text = "⏭ Неделя (След.)" if week_offset == 0 else "⏮ Неделя (Тек.)"
     w_data = "sched:week_next" if week_offset == 0 else "sched:week"
@@ -74,7 +75,7 @@ def _build_nav_rows(
 
 
 def get_schedule_inline_kb(
-    lessons: Optional[List[Lesson]] = None,
+    lessons: list[Lesson] | None = None,
     week_offset: int = 0,
     is_admin: bool = False,
     is_subscribed: bool = True,
@@ -103,7 +104,7 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
     )
 
 
-def get_topic_inline_kb(lessons: Optional[List[Lesson]] = None) -> Optional[InlineKeyboardMarkup]:
+def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None:
     """
     Генерирует чистую инлайн-клавиатуру исключительно для топика группы.
 

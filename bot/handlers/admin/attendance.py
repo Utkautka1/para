@@ -7,23 +7,30 @@
 
 import asyncio
 from datetime import datetime
-from typing import Dict, Optional
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from bot.filters.auth import AttendanceAuthFilter
 from bot.templates.admin.attendance import (
-    format_confirm_text, format_student_card, format_summary_text,
-    get_lesson_confirm_kb, get_lesson_select_kb, get_student_poll_kb
+    format_student_card,
+    format_summary_text,
+    get_lesson_select_kb,
+    get_student_poll_kb,
 )
 from config import TIMEZONE
 from core.api_client import get_api_schedule_for_date
 from core.logger import get_logger
 from services.attendance_manager import (
-    calculate_summary_stats, clear_session, commit_session_to_table,
-    create_attendance_session, get_active_session, mark_all_remaining_present,
-    record_student_mark, step_back
+    calculate_summary_stats,
+    clear_session,
+    commit_session_to_table,
+    create_attendance_session,
+    get_active_session,
+    mark_all_remaining_present,
+    record_student_mark,
+    step_back,
 )
 
 log = get_logger("attendance_handlers")
@@ -34,7 +41,7 @@ router.callback_query.filter(AttendanceAuthFilter())
 
 
 async def _async_commit_and_update(
-    message: Optional[Message], session, stats: Dict[str, int]
+    message: Message | None, session, stats: dict[str, int]
 ) -> None:
     """Фоновая асинхронная запись в Яндекс Таблицу с обновлением статуса."""
     success = await commit_session_to_table(session)

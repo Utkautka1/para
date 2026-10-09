@@ -2,7 +2,6 @@
 Pydantic-схемы ответов и запросов для роутера преподавателей.
 """
 
-from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -15,7 +14,7 @@ class TeacherItem(BaseModel):
 class TeachersResponse(BaseModel):
     """Реестр преподавателей (ключ словаря — фамилия в нижнем регистре)."""
     count: int = Field(..., description="Общее число преподавателей в справочнике")
-    teachers: Dict[str, TeacherItem] = Field(..., description="Словарь преподавателей")
+    teachers: dict[str, TeacherItem] = Field(..., description="Словарь преподавателей")
 
 
 class TeacherSingleResponse(BaseModel):
@@ -35,7 +34,7 @@ class TeacherSearchResponse(BaseModel):
     """Результаты поисковой выдачи преподавателей."""
     query: str = Field(..., description="Поисковый запрос")
     count: int = Field(..., description="Количество найденных записей")
-    results: List[TeacherSearchItem] = Field(default_factory=list, description="Список совпадений")
+    results: list[TeacherSearchItem] = Field(default_factory=list, description="Список совпадений")
 
 
 class CustomTeacherCreateRequest(BaseModel):

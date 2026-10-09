@@ -6,7 +6,6 @@
 """
 
 from datetime import datetime
-from typing import List
 
 from fastapi import APIRouter, Depends, Query
 
@@ -42,7 +41,7 @@ async def upcoming_exams(
     """Ближайшие предстоящие экзамены и зачёты."""
     cur_week = await _resolve_current_week()
     exams = await get_group_exams()
-    filtered: List[ExamItem] = [
+    filtered: list[ExamItem] = [
         e for e in exams if any(cur_week <= w <= cur_week + weeks_ahead for w in e.weeks)
     ]
     return UpcomingExamsResponse(current_week=cur_week, count=len(filtered), upcoming_exams=filtered)

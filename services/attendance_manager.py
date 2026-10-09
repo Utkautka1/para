@@ -9,6 +9,7 @@
 """
 
 import asyncio
+import gc
 import json
 from datetime import date
 
@@ -228,7 +229,7 @@ async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
     wb = await _prepare_updated_workbook(wopi, t_date, session)
     upload_ok = await upload_workbook(wopi, wb)
     del wb
-    import gc; gc.collect()
+    gc.collect()
     if not upload_ok:
         return False
     verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)

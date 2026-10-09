@@ -5,9 +5,10 @@
 Поддерживает gRPC (порт GRPC_PORT) и HTTP REST со Swagger UI (порт 8000).
 """
 
-from contextlib import asynccontextmanager
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 

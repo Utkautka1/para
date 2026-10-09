@@ -9,11 +9,17 @@
 """
 
 import html
-from typing import Any, Dict, Optional
+from typing import Any
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 from core.logger import get_logger
 from services.attendance_stats import fetch_all_time_attendance, find_student_attendance
@@ -33,7 +39,7 @@ def _calculate_attendance_percent(p: int, o: int, u: int, total: int) -> str:
     return f"{pct:.1f}%"
 
 
-def _format_personal_month_breakdown(months: Dict[str, Dict[str, int]]) -> str:
+def _format_personal_month_breakdown(months: dict[str, dict[str, int]]) -> str:
     """Формирует компактный блок помесячной посещаемости."""
     if not months:
         return "<i>Нет данных по месяцам</i>"
@@ -47,7 +53,7 @@ def _format_personal_month_breakdown(months: Dict[str, Dict[str, int]]) -> str:
     return "\n".join(lines)
 
 
-def format_personal_attendance_card(fio: str, student_data: Dict[str, Any]) -> str:
+def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> str:
     """Формирует HTML-карточку персональной посещаемости студента."""
     tot = student_data.get("total", {})
     p = tot.get("П", 0)
@@ -80,7 +86,7 @@ def get_personal_attendance_kb() -> InlineKeyboardMarkup:
     ]])
 
 
-def _resolve_student_fio(user, student: Optional[Dict[str, Any]] = None) -> Optional[str]:
+def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | None:
     """Определяет ФИО авторизованного студента по реестру одногруппников."""
     if student and student.get("full_name"):
         return student["full_name"]

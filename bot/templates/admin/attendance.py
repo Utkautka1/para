@@ -7,8 +7,9 @@
   - Форматирование карточек студентов и итоговой сводки
 """
 
-from typing import Dict, List
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 from services.attendance_manager import AttendanceSession
 
 
@@ -68,15 +69,15 @@ def format_student_card(session: AttendanceSession) -> str:
     )
 
 
-def format_summary_text(session: AttendanceSession, stats: Dict[str, int]) -> str:
+def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> str:
     """Формирует финальный отчёт после сохранения посещаемости."""
-    absent_names: List[str] = []
+    absent_names: list[str] = []
     for row_idx, fio in session.students:
         mark = session.marks.get(str(row_idx))
         if mark in {"Н", "У", "О"}:
             short_name = fio.split()[0] + " " + fio.split()[1][:1] + "."
             absent_names.append(f"{short_name} ({mark})")
-    absent_str = f"\n\nОтсутствующие / Опоздавшие:\n• " + "\n• ".join(absent_names) if absent_names else ""
+    absent_str = "\n\nОтсутствующие / Опоздавшие:\n• " + "\n• ".join(absent_names) if absent_names else ""
     return (
         f"✅ <b>Посещаемость за пару {session.lesson_num} сохранена!</b>\n\n"
         f"🟢 Присутствуют (П): <b>{stats.get('П', 0)}</b>\n"
@@ -90,6 +91,7 @@ def format_summary_text(session: AttendanceSession, stats: Dict[str, int]) -> st
 def get_days_select_kb() -> InlineKeyboardMarkup:
     """Генерирует инлайн-кнопки выбора учебных дней для отметки посещаемости."""
     from datetime import datetime, timedelta
+
     from config import TIMEZONE
     today = datetime.now(TIMEZONE).date()
     weekdays_ru = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -108,6 +110,7 @@ def get_days_select_kb() -> InlineKeyboardMarkup:
 def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarkup:
     """Формирует список пар на выбор для указанной даты."""
     from datetime import datetime
+
     from config import TIMEZONE
     d_obj = chosen_date or datetime.now(TIMEZONE).date()
     d_str = d_obj.isoformat()

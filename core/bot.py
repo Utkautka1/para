@@ -35,7 +35,7 @@ def create_fsm_storage():
         key_builder = DefaultKeyBuilder(prefix="fsm")
         log.info("FSM Storage: подключено персистентное хранилище RedisStorage")
         return RedisStorage(redis=r, key_builder=key_builder)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning(f"⚠️ Не удалось подключить RedisStorage ({e}), используется MemoryStorage")
         from aiogram.fsm.storage.memory import MemoryStorage
         return MemoryStorage()

@@ -6,9 +6,9 @@
 """
 
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import sys
+from logging.handlers import RotatingFileHandler
 
 # Максимальный размер лог-файла (10 МБ) и количество архивных файлов
 MAX_LOG_BYTES = 10 * 1024 * 1024

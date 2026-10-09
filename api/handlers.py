@@ -33,7 +33,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Перехватывает любые непредвиденные сбои, логирует стек и возвращает HTTP 500."""
-    log.error(f"❌ Критический сбой при вызове {request.method} {request.url.path}: {exc}", exc_info=True)
+    log.error(f"❌ Критический сбой при вызове {request.method} {request.url.path}: {exc}", exc_info=exc)
     payload = ErrorDetail(detail="Внутренняя ошибка сервера", code="INTERNAL_SERVER_ERROR")
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload.model_dump())
 

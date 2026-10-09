@@ -3,7 +3,6 @@
 """
 
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -40,7 +39,7 @@ async def list_classmates() -> ClassmatesListResponse:
     return ClassmatesListResponse(count=len(items), classmates=items)
 
 
-def _find_student_in_registry(registry: List[dict], identifier: int) -> Optional[dict]:
+def _find_student_in_registry(registry: list[dict], identifier: int) -> dict | None:
     """Ищет студента по порядковому номеру в журнале либо Telegram ID."""
     for s in registry:
         if s.get("id") == identifier or s.get("tg_id") == identifier:

@@ -8,11 +8,10 @@
 """
 
 import asyncio
-import json
-import os
 import random
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from aiogram.exceptions import TelegramBadRequest
 
 from config import (
@@ -35,10 +34,11 @@ STAROSTA_HISTORY_FILE = "data/starosta_history.json"
 CONGRATS_STATE_FILE = "data/birthday_congrats_state.json"
 
 
-from utils.storage import sync_atomic_save_json as save_json_file, sync_load_json as load_json_file
+from utils.storage import sync_atomic_save_json as save_json_file
+from utils.storage import sync_load_json as load_json_file
 
 
-def calculate_days_and_age(item: Dict[str, Any], today: date) -> Dict[str, Any]:
+def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]:
     """Вычисляет оставшиеся дни до дня рождения и возраст именинника."""
     b_day, b_month, b_year = item["day"], item["month"], item["year"]
     try:
@@ -68,7 +68,7 @@ SEASONS_INFO = [
 ]
 
 
-def format_person_tag(item: Dict[str, Any]) -> str:
+def format_person_tag(item: dict[str, Any]) -> str:
     """
     Формирует кликабельное имя человека (через username или tg://user?id).
     """
@@ -101,7 +101,7 @@ def format_days_left_badge(days: int) -> str:
     return f"через {days} дней"
 
 
-def format_today_block(today_items: List[Dict[str, Any]]) -> List[str]:
+def format_today_block(today_items: list[dict[str, Any]]) -> list[str]:
     """
     Формирует праздничный блок для именинников сегодняшнего дня.
     """
@@ -130,7 +130,7 @@ def format_age_badge(age: int) -> str:
     return f"{age} лет"
 
 
-def format_upcoming_block(items: List[Dict[str, Any]]) -> List[str]:
+def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]:
     """
     Формирует блок ближайших именинников в цитате.
     """
@@ -152,14 +152,14 @@ def format_upcoming_block(items: List[Dict[str, Any]]) -> List[str]:
     return lines
 
 
-def season_sort_key(item: Dict[str, Any], months: List[int]) -> int:
+def season_sort_key(item: dict[str, Any], months: list[int]) -> int:
     """
     Вычисляет индекс сортировки даты внутри сезона.
     """
     return months.index(item["month"]) * 100 + item["day"]
 
 
-def format_season_block(title: str, months: List[int], all_items: List[Dict[str, Any]]) -> List[str]:
+def format_season_block(title: str, months: list[int], all_items: list[dict[str, Any]]) -> list[str]:
     """
     Форматирует список именинников для одного сезона с указанием возраста.
     """
@@ -178,7 +178,7 @@ def format_season_block(title: str, months: List[int], all_items: List[Dict[str,
     return lines
 
 
-def format_birthday_registry_text(items: List[Dict[str, Any]]) -> str:
+def format_birthday_registry_text(items: list[dict[str, Any]]) -> str:
     """
     Формирует двухуровневый реестр дней рождения с сезонами и ближайшими.
     """
@@ -197,11 +197,11 @@ def format_birthday_registry_text(items: List[Dict[str, Any]]) -> str:
     return "\n".join(lines).strip()
 
 
-def pick_unique_wish(person_key: str, wishes: List[str], history_file: str = HISTORY_FILE) -> str:
+def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HISTORY_FILE) -> str:
     """Выбирает случайное неповторяющееся поздравление для участника."""
     if not wishes:
         return "Желаем счастья, здоровья, успехов в учёбе и исполнения всех желаний!"
-    history: Dict[str, List[int]] = load_json_file(history_file, {})
+    history: dict[str, list[int]] = load_json_file(history_file, {})
     used_indices = set(history.get(person_key, []))
     available = [idx for idx in range(len(wishes)) if idx not in used_indices]
     if not available:
@@ -214,7 +214,7 @@ def pick_unique_wish(person_key: str, wishes: List[str], history_file: str = HIS
     return wishes[choice_idx]
 
 
-def get_person_mention(item: Dict[str, Any]) -> str:
+def get_person_mention(item: dict[str, Any]) -> str:
     """
     Формирует кликабельное упоминание для персонального поздравления.
     """
@@ -227,7 +227,7 @@ def get_person_mention(item: Dict[str, Any]) -> str:
     return item["full_name"]
 
 
-def format_starosta_block(starosta_text: Optional[str]) -> str:
+def format_starosta_block(starosta_text: str | None) -> str:
     """Формирует блок слова старосты, если он задан."""
     if not starosta_text:
         return ""
@@ -238,7 +238,7 @@ def format_starosta_block(starosta_text: Optional[str]) -> str:
 
 
 def format_congrats_message(
-    item: Dict[str, Any], wish_text: str, starosta_text: Optional[str] = None
+    item: dict[str, Any], wish_text: str, starosta_text: str | None = None
 ) -> str:
     """Формирует праздничное персональное поздравление от группы и старосты."""
     mention = get_person_mention(item)
@@ -258,7 +258,7 @@ def format_congrats_message(
 
 
 async def _send_congrats_telegram(
-    text: str, person_key: str, key: str, state: Dict[str, bool]
+    text: str, person_key: str, key: str, state: dict[str, bool]
 ) -> None:
     """Отправляет поздравление в Telegram и фиксирует статус."""
     try:
@@ -272,9 +272,9 @@ async def _send_congrats_telegram(
         log.error(f"❌ Ошибка отправки поздравления для {person_key}: {e}")
 
 
-async def send_congrats_for_item(item: Dict[str, Any], today_str: str) -> None:
+async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None:
     """Отправляет персональное поздравление в топик 'Важное' (ID: 2)."""
-    congrats_state: Dict[str, bool] = load_json_file(CONGRATS_STATE_FILE, {})
+    congrats_state: dict[str, bool] = load_json_file(CONGRATS_STATE_FILE, {})
     person_key = item["full_name"]
     congrats_key = f"{today_str}_{person_key}"
     if congrats_state.get(congrats_key):
@@ -292,7 +292,7 @@ def is_morning_congrats_time(now_dt: datetime) -> bool:
     return now_dt.hour >= 7
 
 
-async def check_and_send_birthday_congratulations(items: List[Dict[str, Any]], today: date) -> None:
+async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], today: date) -> None:
     """Проверяет сегодняшних именинников и отправляет поздравления строго с 07:00."""
     now_dt = datetime.now(TIMEZONE)
     if not is_morning_congrats_time(now_dt):
@@ -348,7 +348,7 @@ async def sync_birthdays_topic() -> bool:
     """Основной цикл синхронизации реестра ДР и проверки поздравлений."""
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
-    raw_birthdays: List[Dict[str, Any]] = load_json_file(BIRTHDAYS_FILE, [])
+    raw_birthdays: list[dict[str, Any]] = load_json_file(BIRTHDAYS_FILE, [])
     if not raw_birthdays:
         log.warning("Список дней рождения пуст в data/birthdays.json")
         return False

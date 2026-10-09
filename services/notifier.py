@@ -6,23 +6,29 @@
 """
 
 import asyncio
-from datetime import datetime, timedelta, time as dtime
-from typing import Any, List, Optional, Tuple
+from datetime import datetime, timedelta
+from datetime import time as dtime
+from typing import Any
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from bot.templates.admin.attendance import format_confirm_text, get_lesson_confirm_kb
+from bot.templates.user.keyboards import get_schedule_inline_kb
+from bot.templates.user.messages import format_reminder_text
 from config import (
-    ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID,
-    DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE, REMINDER_OFFSET_MINUTES, TIMEZONE
+    ALLOWED_ATTENDANCE_USER_IDS,
+    ALLOWED_USER_ID,
+    DAILY_NOTIFY_HOUR,
+    DAILY_NOTIFY_MINUTE,
+    REMINDER_OFFSET_MINUTES,
+    TIMEZONE,
 )
 from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
-from services.models import Lesson
-from bot.templates.admin.attendance import format_confirm_text, get_lesson_confirm_kb
-from bot.templates.user.keyboards import get_schedule_inline_kb
-from bot.templates.user.messages import format_day_schedule, format_reminder_text
 from services.attendance_manager import clear_session, get_active_session
+from services.models import Lesson
 
 log = get_logger("notifier")
 scheduler = AsyncIOScheduler(timezone=TIMEZONE)
@@ -31,7 +37,7 @@ scheduler = AsyncIOScheduler(timezone=TIMEZONE)
 _NOTIFIED_MISSING_TEACHERS: set = set()
 
 
-def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> Tuple[str, InlineKeyboardMarkup]:
+def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, InlineKeyboardMarkup]:
     """
     Формирует текст и клавиатуру предупреждения об отсутствии преподавателя.
     """
@@ -76,7 +82,7 @@ async def send_to_user(text: str, reply_markup=None) -> None:
         log.error(f"Ошибка отправки сообщения пользователю {ALLOWED_USER_ID}: {e}")
 
 
-def parse_lesson_start_time(time_str: str) -> Optional[dtime]:
+def parse_lesson_start_time(time_str: str) -> dtime | None:
     """
     Парсит время начала пары из строки любого формата ('08:30–09:55', '8:30-09:55').
 
@@ -94,7 +100,7 @@ def parse_lesson_start_time(time_str: str) -> Optional[dtime]:
     return None
 
 
-def parse_lesson_end_time(time_str: str) -> Optional[dtime]:
+def parse_lesson_end_time(time_str: str) -> dtime | None:
     """
     Парсит время окончания пары из строки любого формата ('08:30–09:55').
 

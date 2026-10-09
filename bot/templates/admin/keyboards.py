@@ -5,8 +5,9 @@
 а также списком тестировщиков и запуском Swagger UI Mini App.
 """
 
-from typing import List
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
 from config import MINIAPP_URL
 
 
@@ -57,7 +58,7 @@ def get_swagger_launch_btn() -> InlineKeyboardButton:
     return InlineKeyboardButton(text="🚀 Ссылка на Swagger UI", callback_data="admin:show_swagger_link")
 
 
-def get_testers_management_kb(testers: List[int]) -> InlineKeyboardMarkup:
+def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру управления списком тестеров Swagger UI."""
     rows: list = [[get_swagger_launch_btn()]]
     rows.append([

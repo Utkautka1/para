@@ -13,14 +13,13 @@ import html
 import io
 import json
 import re
+import uuid
 import zipfile
 from datetime import date, datetime
-from typing import Dict, List, Optional, Tuple
-import uuid
-import httpx
-import openpyxl
 
 import defusedxml.ElementTree as ET
+import httpx
+import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
 from config import ATTENDANCE_DOC_URL, REDIS_COOKIE_TTL_SECONDS, REDIS_YANDEX_COOKIE_KEY
@@ -29,7 +28,7 @@ from core.logger import get_logger
 log = get_logger("yandex_docs")
 
 # Соответствие порядкового номера месяца короткому имени вкладки
-MONTH_SHEET_MAP: Dict[int, str] = {
+MONTH_SHEET_MAP: dict[int, str] = {
     1: "ЯНВ", 2: "ФЕВР", 3: "МАРТ", 4: "АПР", 5: "МАЙ", 6: "ИЮН",
     7: "ИЮЛ", 8: "АВГ", 9: "СЕНТ", 10: "ОКТ", 11: "НОЯБ", 12: "ДЕК"
 }
@@ -47,7 +46,7 @@ class WopiSession:
         self.lock_id = lock_id
 
 
-def extract_client_config(html_content: str) -> Dict:
+def extract_client_config(html_content: str) -> dict:
     """
     Извлекает JSON конфигурации редактора из HTML страницы.
 
@@ -62,7 +61,7 @@ def extract_client_config(html_content: str) -> Dict:
     raise ValueError("Тег client-config не найден в DOM Яндекс Документов")
 
 
-def merge_cookie_header(current_cookie: str, new_cookies: Dict[str, str]) -> str:
+def merge_cookie_header(current_cookie: str, new_cookies: dict[str, str]) -> str:
     """Объединяет текущие Cookie с обновленными значениями из ответа сервера."""
     cookie_map = {}
     for part in current_cookie.split(";"):
@@ -188,7 +187,7 @@ def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook:
         return openpyxl.load_workbook(io.BytesIO(content))
 
 
-def compute_sheet_summary_counts(sheet: Worksheet) -> Dict[Tuple[str, int], int]:
+def compute_sheet_summary_counts(sheet: Worksheet) -> dict[tuple[str, int], int]:
     """Подсчитывает количество отметок О, У, Н для каждой строки студента."""
     mc = sheet.max_column
     if mc < 4:
@@ -206,7 +205,7 @@ def compute_sheet_summary_counts(sheet: Worksheet) -> Dict[Tuple[str, int], int]
     return counts
 
 
-def patch_sheet_xml_counts(xml_text: str, counts: Dict[Tuple[str, int], int]) -> str:
+def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) -> str:
     """Заменяет пустые значения <v></v> на вычисленные количества в XML листа."""
     def repl(m):
         col, r = m.group(1), int(m.group(2))
@@ -364,7 +363,7 @@ async def verify_upload(
     session: WopiSession,
     target_date: date,
     lesson_num: int,
-    expected_marks: Dict[str, str],
+    expected_marks: dict[str, str],
 ) -> bool:
     """
     Выполняет легковесную валидацию сохранения через скачивание raw-байтов.
@@ -391,7 +390,7 @@ async def _download_raw_bytes(session: WopiSession) -> bytes:
         return res.content
 
 
-def _find_sheet_rid(wb_xml: str, sheet_name: str) -> Optional[str]:
+def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None:
     """
     Находит relationship ID (r:id) листа по его имени в workbook.xml.
 
@@ -411,7 +410,7 @@ def _find_sheet_rid(wb_xml: str, sheet_name: str) -> Optional[str]:
         return None
 
 
-def _resolve_sheet_target_path(rels_xml: str, rid: str) -> Optional[str]:
+def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None:
     """
     Определяет относительный путь к XML листа в архиве по его r:id.
 
@@ -430,7 +429,7 @@ def _resolve_sheet_target_path(rels_xml: str, rid: str) -> Optional[str]:
         return None
 
 
-def _extract_sheet_xml(raw: bytes, sheet_name: str) -> Optional[str]:
+def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None:
     """
     Извлекает XML нужного листа по имени из xlsx zip-архива.
 
@@ -468,7 +467,7 @@ def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool:
 
 
 def _marks_found_in_xml(
-    xml_text: str, check_marks: Dict[str, str]
+    xml_text: str, check_marks: dict[str, str]
 ) -> bool:
     """
     Проверяет наличие ожидаемых отметок посещаемости в XML листа.
@@ -492,7 +491,7 @@ def _marks_found_in_xml(
 
 
 def _verify_marks_in_raw(
-    raw: bytes, target_date: date, expected_marks: Dict[str, str]
+    raw: bytes, target_date: date, expected_marks: dict[str, str]
 ) -> bool:
     """
     Проверяет наличие отметок в бинарном содержимом таблицы.
@@ -525,7 +524,7 @@ def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet:
     return wb[sheet_name]
 
 
-def parse_date_cell(cell_value: object) -> Optional[str]:
+def parse_date_cell(cell_value: object) -> str | None:
     """Приводит значение ячейки даты к строковому формату ДД.ММ."""
     if isinstance(cell_value, (datetime, date)):
         return cell_value.strftime("%d.%m")
@@ -534,7 +533,7 @@ def parse_date_cell(cell_value: object) -> Optional[str]:
     return None
 
 
-def find_date_column_start(sheet: Worksheet, target_date: date) -> Optional[int]:
+def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None:
     """
     Ищет начальную колонку даты во 2-й строке таблицы.
 
@@ -549,7 +548,7 @@ def find_date_column_start(sheet: Worksheet, target_date: date) -> Optional[int]
     return None
 
 
-def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> Optional[int]:
+def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> int | None:
     """
     Определяет точную колонку для указанной даты и номера пары.
 
@@ -573,13 +572,13 @@ def normalize_fio(name: str) -> str:
     return name.replace("\xa0", " ").strip()
 
 
-def get_students_list(sheet: Worksheet) -> List[Tuple[int, str]]:
+def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]:
     """
     Извлекает список студентов из колонки B, начиная с 5-й строки.
 
     Возвращает список кортежей (номер_строки, ФИО).
     """
-    students: List[Tuple[int, str]] = []
+    students: list[tuple[int, str]] = []
     for row in range(5, sheet.max_row + 1):
         val = sheet.cell(row, 2).value
         if not val:
@@ -590,7 +589,7 @@ def get_students_list(sheet: Worksheet) -> List[Tuple[int, str]]:
     return students
 
 
-def find_student_row(sheet: Worksheet, student_name: str) -> Optional[int]:
+def find_student_row(sheet: Worksheet, student_name: str) -> int | None:
     """
     Находит номер строки студента в колонке B по ФИО.
 

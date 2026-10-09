@@ -2,14 +2,14 @@
 Модуль локального хранения персональных контактов преподавателей.
 """
 
-from typing import Dict
+
 from integrations.docx_parser import TeacherData
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 CUSTOM_TEACHERS_FILE = "data/custom_teachers.json"
 
 
-def load_custom_teachers() -> Dict[str, TeacherData]:
+def load_custom_teachers() -> dict[str, TeacherData]:
     """
     Загружает кастомные контакты преподавателей из JSON.
 

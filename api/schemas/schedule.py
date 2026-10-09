@@ -6,7 +6,6 @@ Pydantic-схемы ответов для роутера расписания.
 """
 
 from datetime import date as DateType
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,27 +15,27 @@ from services.models import Lesson
 class DayScheduleResponse(BaseModel):
     """Расписание занятий на конкретный учебный день."""
     date: DateType = Field(..., description="Дата учебного дня (YYYY-MM-DD)")
-    lessons: List[Lesson] = Field(default_factory=list, description="Список занятий дня")
+    lessons: list[Lesson] = Field(default_factory=list, description="Список занятий дня")
 
 
 class WeekDayItem(BaseModel):
     """Один учебный день в недельном расписании."""
     date: DateType = Field(..., description="Дата учебного дня")
-    lessons: List[Lesson] = Field(default_factory=list, description="Список занятий дня")
+    lessons: list[Lesson] = Field(default_factory=list, description="Список занятий дня")
 
 
 class WeekScheduleResponse(BaseModel):
     """Полное расписание на учебную неделю (пн—сб)."""
     monday: DateType = Field(..., description="Понедельник выбранной недели")
-    days: List[WeekDayItem] = Field(default_factory=list, description="Дни недели с занятиями")
+    days: list[WeekDayItem] = Field(default_factory=list, description="Дни недели с занятиями")
 
 
 class CurrentLessonResponse(BaseModel):
     """Информация о текущем и ближайшем занятии."""
     is_active_now: bool = Field(..., description="Идёт ли пара прямо сейчас")
-    current_lesson: Optional[Lesson] = Field(None, description="Текущее занятие")
-    next_lesson: Optional[Lesson] = Field(None, description="Следующее занятие")
-    time_remaining_minutes: Optional[int] = Field(None, description="Минут до завершения или начала")
+    current_lesson: Lesson | None = Field(None, description="Текущее занятие")
+    next_lesson: Lesson | None = Field(None, description="Следующее занятие")
+    time_remaining_minutes: int | None = Field(None, description="Минут до завершения или начала")
 
 
 class ScheduleRefreshResponse(BaseModel):

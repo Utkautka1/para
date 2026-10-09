@@ -4,14 +4,15 @@
 Предоставляет синглтон клиента Redis для асинхронного кэширования.
 """
 
-from typing import Optional
+
 from redis.asyncio import ConnectionPool, Redis
+
 from config import REDIS_HOST, REDIS_PORT
 from core.logger import get_logger
 
 log = get_logger("redis")
-redis_client: Optional[Redis] = None
-_pool: Optional[ConnectionPool] = None
+redis_client: Redis | None = None
+_pool: ConnectionPool | None = None
 
 
 def get_redis_pool() -> ConnectionPool:
@@ -30,7 +31,7 @@ def get_redis_pool() -> ConnectionPool:
     return _pool
 
 
-async def init_redis() -> Optional[Redis]:
+async def init_redis() -> Redis | None:
     """
     Инициализирует подключение к Redis через пул соединений.
 
@@ -49,14 +50,13 @@ async def init_redis() -> Optional[Redis]:
     return redis_client
 
 
-async def get_redis() -> Optional[Redis]:
+async def get_redis() -> Redis | None:
     """
     Возвращает синглтон клиента Redis, подключаясь при необходимости.
 
     Позволяет безопасно получать активное соединение из любых модулей
     без риска захвата неинициализированной ссылки во время импорта.
     """
-    global redis_client
     if redis_client is None:
         await init_redis()
     return redis_client

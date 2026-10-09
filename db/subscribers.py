@@ -5,7 +5,7 @@
 Обеспечивает атомарную запись через временный файл и fsync.
 """
 
-from typing import Set
+
 from config import SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -13,7 +13,7 @@ from utils.storage import sync_atomic_save_json, sync_load_json
 log = get_logger("subscribers")
 
 
-def load_subscribers() -> Set[int]:
+def load_subscribers() -> set[int]:
     """
     Загружает множество ID подписанных пользователей из файла.
 
@@ -23,7 +23,7 @@ def load_subscribers() -> Set[int]:
     return set(data) if isinstance(data, list) else set()
 
 
-def save_subscribers(subs: Set[int]) -> bool:
+def save_subscribers(subs: set[int]) -> bool:
     """
     Атомарно сохраняет актуальное множество подписчиков в JSON файл.
 

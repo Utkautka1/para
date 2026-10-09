@@ -9,10 +9,10 @@ import asyncio
 import json
 import re
 import time
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import date, timedelta
+from typing import Any
+
 import httpx
-from pydantic import BaseModel
 
 from config import (
     CAMPUS_ADDRESS_REMOTE,
@@ -32,9 +32,9 @@ from services.models import Lesson
 
 log = get_logger("schedule_parser")
 
-_DATA_CACHE: Tuple[float, Optional[Dict[str, Any]]] = (0.0, None)
-_LAST_PUBLISHED_AT: Optional[str] = None
-_RESOLVED_DAY_CACHE: Dict[date, List[Lesson]] = {}
+_DATA_CACHE: tuple[float, dict[str, Any] | None] = (0.0, None)
+_LAST_PUBLISHED_AT: str | None = None
+_RESOLVED_DAY_CACHE: dict[date, list[Lesson]] = {}
 
 
 def clear_resolved_day_cache() -> None:
@@ -52,7 +52,7 @@ def resolve_room_address(room_name: str, is_remote: bool) -> str:
     return CAMPUS_ADDRESS_TSVETOCHNAYA
 
 
-def extract_zoom_creds(text: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def extract_zoom_creds(text: str) -> tuple[str | None, str | None, str | None]:
     """
     Извлекает URL, ID конференции и пароль Zoom/Телемоста.
 
@@ -92,7 +92,7 @@ def calculate_week_number(target_date: date, semester_start_str: str) -> int:
     :param semester_start_str: Старт семестра
     :return: Номер недели
     """
-    start_date = datetime.strptime(semester_start_str, "%Y-%m-%d").date()
+    start_date = date.fromisoformat(semester_start_str)
     start_monday = start_date - timedelta(days=start_date.weekday())
     days_diff = (target_date - start_monday).days
     if days_diff < 0:
@@ -100,7 +100,7 @@ def calculate_week_number(target_date: date, semester_start_str: str) -> int:
     return (days_diff // 7) + 1
 
 
-def is_instance_active_for_week(inst: Dict[str, Any], week_num: int) -> bool:
+def is_instance_active_for_week(inst: dict[str, Any], week_num: int) -> bool:
     """
     Проверяет проведение пары на неделе.
 
@@ -118,7 +118,7 @@ def is_instance_active_for_week(inst: Dict[str, Any], week_num: int) -> bool:
     return True
 
 
-def is_item_for_group(item: Dict[str, Any], group_id: str) -> bool:
+def is_item_for_group(item: dict[str, Any], group_id: str) -> bool:
     """
     Проверяет принадлежность занятия или нагрузки к целевой группе, включая потоки.
 
@@ -136,7 +136,7 @@ def is_item_for_group(item: Dict[str, Any], group_id: str) -> bool:
     return any(p.get("groupId") == group_id for p in participants if isinstance(p, dict))
 
 
-def is_stream_lesson(inst: Dict[str, Any]) -> bool:
+def is_stream_lesson(inst: dict[str, Any]) -> bool:
     """
     Определяет, является ли занятие потоковым (объединяет несколько групп).
 
@@ -152,7 +152,7 @@ def is_stream_lesson(inst: Dict[str, Any]) -> bool:
     return bool(inst.get("streamId"))
 
 
-def extract_subgroup(inst: Dict[str, Any], group_id: str) -> int:
+def extract_subgroup(inst: dict[str, Any], group_id: str) -> int:
     """
     Извлекает номер подгруппы для целевой группы с учетом участия в потоке.
 
@@ -170,7 +170,7 @@ def extract_subgroup(inst: Dict[str, Any], group_id: str) -> int:
     return int(inst.get("subgroup", 0) or 0)
 
 
-def _lookup_period_time(times_list: List[str], period_idx: int) -> Optional[str]:
+def _lookup_period_time(times_list: list[str], period_idx: int) -> str | None:
     """Извлекает время пары по индексу, если оно задано в списке звонков."""
     if period_idx < len(times_list) and times_list[period_idx]:
         return times_list[period_idx]
@@ -178,11 +178,11 @@ def _lookup_period_time(times_list: List[str], period_idx: int) -> Optional[str]
 
 
 def get_period_time_str(
-    group_data: Dict[str, Any],
+    group_data: dict[str, Any],
     day_idx: int,
     period_idx: int,
     week_num: int,
-    global_config: Optional[Dict[str, Any]] = None
+    global_config: dict[str, Any] | None = None
 ) -> str:
     """Определяет интервал времени пары строго из API КТМУ."""
     parity = "even" if week_num % 2 == 0 else "odd"
@@ -199,9 +199,9 @@ def get_period_time_str(
     return "Время уточняется"
 
 
-_HTTP_CLIENT: Optional[httpx.AsyncClient] = None
-_LAST_ETAG: Optional[str] = None
-_LAST_MODIFIED: Optional[str] = None
+_HTTP_CLIENT: httpx.AsyncClient | None = None
+_LAST_ETAG: str | None = None
+_LAST_MODIFIED: str | None = None
 _COOLDOWN_UNTIL: float = 0.0
 _COOLDOWN_SECONDS: float = float(SCHEDULE_COOLDOWN_SECONDS)
 
@@ -238,11 +238,11 @@ def update_cache_headers(headers: httpx.Headers) -> None:
         _LAST_MODIFIED = headers["last-modified"]
 
 
-def filter_snapshot_for_target_group(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]:
     """Очищает сырой 40 МБ JSON от чужих групп с сохранением потоковых пар."""
     sched = snapshot.get("schedule", {})
     group_insts = [i for i in sched.get("instances", []) if is_item_for_group(i, GROUP_ID)]
-    group_ids = set(i["instId"] for i in group_insts if "instId" in i)
+    group_ids = {i["instId"] for i in group_insts if "instId" in i}
     group_assigns = {k: v for k, v in sched.get("assignment", {}).items() if k in group_ids}
 
     # loads — нагрузки (аттестации/экзамены), сохраняем с учетом потоков
@@ -258,7 +258,7 @@ def filter_snapshot_for_target_group(snapshot: Dict[str, Any]) -> Dict[str, Any]
     }
 
 
-def _parse_and_clean_payload(content: bytes) -> Tuple[Optional[str], Dict[str, Any]]:
+def _parse_and_clean_payload(content: bytes) -> tuple[str | None, dict[str, Any]]:
     """
     Синхронно в пуле потоков парсит 50 МБ JSON и фильтрует целевую группу.
 
@@ -272,14 +272,14 @@ def _parse_and_clean_payload(content: bytes) -> Tuple[Optional[str], Dict[str, A
     return pub_at, cleaned
 
 
-def _persist_snapshot_to_redis(snapshot: Dict[str, Any]) -> None:
+def _persist_snapshot_to_redis(snapshot: dict[str, Any]) -> None:
     """В фоновом режиме сохраняет снимок и ETag в Redis."""
     from core.redis_cache import save_schedule_snapshot
     meta = {"etag": _LAST_ETAG, "last_modified": _LAST_MODIFIED, "published_at": _LAST_PUBLISHED_AT}
     asyncio.create_task(save_schedule_snapshot(snapshot, meta))
 
 
-async def process_api_response(res: httpx.Response, now: float) -> Optional[Dict[str, Any]]:
+async def process_api_response(res: httpx.Response, now: float) -> dict[str, Any] | None:
     """
     Обрабатывает ответ API КТМУ (304 или 200) без блокировки основного потока.
 
@@ -358,7 +358,7 @@ async def init_schedule_cache_from_redis(now: float) -> bool:
     return False
 
 
-async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str, Any]]:
+async def fetch_schedule_data(force_refresh: bool = False) -> dict[str, Any] | None:
     """
     Отдаёт расписание из памяти/Redis или обновляет данные с учетом кулдауна.
 
@@ -383,7 +383,7 @@ async def fetch_schedule_data(force_refresh: bool = False) -> Optional[Dict[str,
     return _DATA_CACHE[1]
 
 
-def extract_entity_maps(data: Dict[str, Any]) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
+def extract_entity_maps(data: dict[str, Any]) -> tuple[dict, dict, dict, dict, dict]:
     """
     Извлекает маппинги предмет/учитель/кабинет/группа/типы пар.
 
@@ -400,10 +400,10 @@ def extract_entity_maps(data: Dict[str, Any]) -> Tuple[Dict, Dict, Dict, Dict, D
 
 def resolve_teacher_contact_info(
     raw_teacher: str,
-    teacher_data_map: Dict[str, TeacherData],
+    teacher_data_map: dict[str, TeacherData],
     is_remote: bool,
     subj_name: str
-) -> Tuple[str, Optional[str], Optional[str], Optional[str]]:
+) -> tuple[str, str | None, str | None, str | None]:
     """
     Получает актуальные ФИО преподавателя и ссылки на видеоконференцию.
     """
@@ -417,12 +417,13 @@ def resolve_teacher_contact_info(
         return (name, *creds)
     if is_remote:
         import asyncio
+
         from services.notifier import notify_missing_teacher
         asyncio.create_task(notify_missing_teacher(raw_teacher, subj_name))
     return raw_teacher, None, None, None
 
 
-def resolve_room_name(asgn: Dict[str, Any], inst: Dict[str, Any], rms: Dict[str, str], is_remote: bool) -> str:
+def resolve_room_name(asgn: dict[str, Any], inst: dict[str, Any], rms: dict[str, str], is_remote: bool) -> str:
     """Определяет наименование аудитории или бейдж дистанта."""
     if is_remote:
         return "Дистанционно"
@@ -431,8 +432,8 @@ def resolve_room_name(asgn: Dict[str, Any], inst: Dict[str, Any], rms: Dict[str,
 
 
 def build_lesson_object(
-    inst: Dict[str, Any], asgn: Dict[str, Any], maps: Tuple[Dict, Dict, Dict, Dict, Dict],
-    day_idx: int, week_num: int, teacher_map: Dict[str, TeacherData], cfg: Optional[Dict[str, Any]] = None
+    inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict],
+    day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None
 ) -> Lesson:
     """Собирает объект Lesson с точным расписанием звонков и признаком потока."""
     subjs, teachs, rms, group_data, l_types = maps
@@ -450,7 +451,7 @@ def build_lesson_object(
     )
 
 
-def is_placed_lesson_active(inst: Dict[str, Any], asgn: Optional[Dict[str, Any]], day_idx: int, week_num: int) -> bool:
+def is_placed_lesson_active(inst: dict[str, Any], asgn: dict[str, Any] | None, day_idx: int, week_num: int) -> bool:
     """Проверяет, размещено ли занятие в сетке на указанный день и неделю."""
     if not asgn:
         return False
@@ -458,13 +459,13 @@ def is_placed_lesson_active(inst: Dict[str, Any], asgn: Optional[Dict[str, Any]]
 
 
 def _extract_lessons_for_day(
-    data: Dict[str, Any], day_idx: int, week_num: int, links: Dict[str, TeacherData]
-) -> List[Lesson]:
+    data: dict[str, Any], day_idx: int, week_num: int, links: dict[str, TeacherData]
+) -> list[Lesson]:
     """Извлекает и упорядочивает список занятий для группы на указанный день недели."""
     sched = data.get("schedule", {})
     insts, asgns = sched.get("instances", []), sched.get("assignment", {})
     maps, cfg = extract_entity_maps(data), data.get("config", {})
-    lessons: List[Lesson] = []
+    lessons: list[Lesson] = []
     for inst in insts:
         if not is_item_for_group(inst, GROUP_ID):
             continue
@@ -475,7 +476,7 @@ def _extract_lessons_for_day(
     return lessons
 
 
-async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> List[Lesson]:
+async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> list[Lesson]:
     """
     Формирует список пар для группы на дату с двухуровневым L1/L2 кэшированием.
 
@@ -494,14 +495,14 @@ async def get_schedule_for_date(target_date: date, force_refresh: bool = False) 
     return lessons
 
 
-async def get_week_schedule(monday_date: date, force_refresh: bool = False) -> List[Tuple[date, List[Lesson]]]:
+async def get_week_schedule(monday_date: date, force_refresh: bool = False) -> list[tuple[date, list[Lesson]]]:
     """
     Быстро формирует недельное расписание с сохранением L1-кэша каждого дня.
     """
     if force_refresh:
         clear_resolved_day_cache()
         await fetch_schedule_data(force_refresh=True)
-    result: List[Tuple[date, List[Lesson]]] = []
+    result: list[tuple[date, list[Lesson]]] = []
     for i in range(6):
         day_date = monday_date + timedelta(days=i)
         lessons = await get_schedule_for_date(day_date, force_refresh=False)

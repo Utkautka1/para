@@ -10,7 +10,7 @@
 """
 
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -64,8 +64,8 @@ def test_init_data_fuzzing_rejected(malicious_init_data: str) -> None:
         "123:456:789:000",
         f"{ALLOWED_USER_ID}:100:bad_sig",
         f"{ALLOWED_USER_ID}:not_int:good_sig",
-        f"hack_id:{int(datetime.now(timezone.utc).timestamp())}:123",
-        f"{ALLOWED_USER_ID}:{int(datetime.now(timezone.utc).timestamp()) - 200000}:valid_format_but_expired",
+        f"hack_id:{int(datetime.now(UTC).timestamp())}:123",
+        f"{ALLOWED_USER_ID}:{int(datetime.now(UTC).timestamp()) - 200000}:valid_format_but_expired",
     ],
 )
 def test_session_token_tampering_rejected(forged_session: str) -> None:

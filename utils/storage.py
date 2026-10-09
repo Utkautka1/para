@@ -11,6 +11,7 @@ import json
 import os
 import tempfile
 from typing import Any
+
 from core.logger import get_logger
 
 log = get_logger("storage")
@@ -27,7 +28,7 @@ def sync_load_json(file_path: str, default: Any = None) -> Any:
     if not os.path.exists(file_path):
         return default
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         log.error(f"Ошибка чтения JSON файла {file_path}: {e}")
@@ -38,18 +39,19 @@ def _write_temp_and_replace(file_path: str, data: Any) -> bool:
     """Записывает данные во временный файл и атомарно заменяет целевой файл."""
     dir_name = os.path.dirname(os.path.abspath(file_path))
     os.makedirs(dir_name, exist_ok=True)
-    temp_file = tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8")
+    temp_path = None
     try:
-        json.dump(data, temp_file, ensure_ascii=False, indent=2)
-        temp_file.flush()
-        os.fsync(temp_file.fileno())
-        temp_file.close()
-        os.replace(temp_file.name, file_path)
+        with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as temp_file:
+            temp_path = temp_file.name
+            json.dump(data, temp_file, ensure_ascii=False, indent=2)
+            temp_file.flush()
+            os.fsync(temp_file.fileno())
+        os.replace(temp_path, file_path)
         return True
     except Exception as e:
         log.error(f"Ошибка атомарной записи в {file_path}: {e}")
-        if os.path.exists(temp_file.name):
-            os.remove(temp_file.name)
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
         return False
 
 

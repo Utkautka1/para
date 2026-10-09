@@ -4,13 +4,20 @@
 Отвечает за сохранение и извлечение кэшированных данных кнопок бота.
 """
 
-from contextlib import asynccontextmanager
 import json
 import time
-from typing import AsyncGenerator, List, Optional, Tuple
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 from config import (
-    ALLOWED_USER_ID, HW_DLQ_KEY, HW_PROCESSING_KEY, HW_QUEUE_KEY,
-    REDIS_CACHE_TTL_SECONDS, SNAPSHOT_KEY, SNAPSHOT_META_KEY, TOPIC_CLEANUP_KEY
+    ALLOWED_USER_ID,
+    HW_DLQ_KEY,
+    HW_PROCESSING_KEY,
+    HW_QUEUE_KEY,
+    REDIS_CACHE_TTL_SECONDS,
+    SNAPSHOT_KEY,
+    SNAPSHOT_META_KEY,
+    TOPIC_CLEANUP_KEY,
 )
 from core.logger import get_logger
 from core.redis import init_redis
@@ -18,7 +25,7 @@ from core.redis import init_redis
 log = get_logger("redis_cache")
 
 
-async def cache_get(key: str) -> Optional[str]:
+async def cache_get(key: str) -> str | None:
     """
     Извлекает строковое значение из Redis по ключу.
 
@@ -37,7 +44,7 @@ async def cache_get(key: str) -> Optional[str]:
     return None
 
 
-async def cache_set(key: str, value: str, ttl: Optional[int] = REDIS_CACHE_TTL_SECONDS) -> None:
+async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None:
     """
     Сохраняет строковое значение в Redis с опциональным TTL (сек).
 
@@ -167,7 +174,7 @@ async def push_hw_task(task_data: dict) -> bool:
     return False
 
 
-async def pop_hw_task(timeout: int = 2) -> Optional[dict]:
+async def pop_hw_task(timeout: int = 2) -> dict | None:
     """Атомарно перемещает задачу из очереди в processing и возвращает словарь."""
     try:
         client = await init_redis()
@@ -238,7 +245,7 @@ async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -
         log.error(f"Ошибка сохранения снимка расписания в Redis: {e}")
 
 
-async def load_schedule_snapshot() -> Tuple[Optional[dict], Optional[dict]]:
+async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
     """Загружает сохраненный срез расписания и метаданные из Redis."""
     try:
         client = await init_redis()
@@ -264,7 +271,7 @@ async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None:
     await cache_set(f"rem:sent:{rem_key}", "1", ttl=ttl)
 
 
-async def get_topic_state_redis(key: str = "topic:main_msg_id") -> Optional[int]:
+async def get_topic_state_redis(key: str = "topic:main_msg_id") -> int | None:
     """Извлекает сохраненный ID сообщения топика из Redis."""
     val = await cache_get(key)
     return int(val) if val and val.isdigit() else None
@@ -287,9 +294,9 @@ async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int
         log.error(f"Ошибка регистрации сообщения на удаление: {e}")
 
 
-async def get_expired_messages_for_cleanup() -> List[Tuple[int, int]]:
+async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]:
     """Извлекает и удаляет из ZSET сообщения, чей срок хранения истёк."""
-    results: List[Tuple[int, int]] = []
+    results: list[tuple[int, int]] = []
     try:
         client = await init_redis()
         if client:

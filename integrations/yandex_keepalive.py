@@ -7,6 +7,7 @@
 """
 
 import asyncio
+
 from config import ATTENDANCE_DOC_URL
 from core.logger import get_logger
 from integrations.yandex_docs import extract_client_config, fetch_page_dom

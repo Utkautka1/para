@@ -57,7 +57,7 @@ def create_mock_workbook() -> openpyxl.Workbook:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "СЕНТ"
-    ws.cell(2, 3, datetime(2026, 9, 29, 0, 0))  # noqa: DTZ001
+    ws.cell(2, 3, datetime(2026, 9, 29, 0, 0))
     for p in range(1, 7):
         ws.cell(4, 2 + p, p)
     ws.cell(5, 2, "\xa0Иванов Иван Иванович")
@@ -111,7 +111,7 @@ def test_get_month_sheet_not_found():
 
 def test_parse_date_cell_variants():
     """Проверяет парсинг даты из различных типов значений ячейки."""
-    assert parse_date_cell(datetime(2026, 9, 29)) == "29.09"  # noqa: DTZ001
+    assert parse_date_cell(datetime(2026, 9, 29)) == "29.09"
     assert parse_date_cell(date(2026, 9, 29)) == "29.09"
     assert parse_date_cell(" 29.09 ") == "29.09"
     assert parse_date_cell(None) is None

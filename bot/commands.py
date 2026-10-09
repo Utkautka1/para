@@ -43,5 +43,5 @@ async def register_bot_commands(bot: Bot) -> None:
         await bot.set_my_commands(get_default_user_commands(), scope=BotCommandScopeDefault())
         await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=ALLOWED_USER_ID))
         log.info("✅ Системное меню команд бота успешно зарегистрировано в Telegram")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning(f"⚠️ Не удалось зарегистрировать системное меню команд: {e}")

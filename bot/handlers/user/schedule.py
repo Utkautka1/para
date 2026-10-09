@@ -7,35 +7,35 @@ sched:week, sched:refresh с редактированием существующ
 
 import json
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Tuple
-from aiogram import Router, F
+
+from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, Message
 
-from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID, TIMEZONE
 from bot.filters.auth import ClassmateAuthFilter
 from bot.templates.user.keyboards import (
     get_notice_settings_kb,
     get_schedule_inline_kb,
     get_tester_cabinet_kb,
 )
-from services.testers_manager import generate_or_get_tester_key, is_tester_allowed
 from bot.templates.user.messages import (
     format_day_schedule,
     format_notice_settings_text,
     format_week_schedule,
 )
+from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID, TIMEZONE
 from core.api_client import (
     fetch_teachers,
     get_api_schedule_for_date,
     get_api_week_schedule,
 )
 from core.logger import get_logger
+from core.redis_cache import cache_flush, cache_get, cache_set
 from db.subscribers import is_subscribed, toggle_subscriber
 from services.classmates_auth import is_authorized_user, process_user_auth
 from services.models import Lesson
-from core.redis_cache import cache_flush, cache_get, cache_set
+from services.testers_manager import generate_or_get_tester_key, is_tester_allowed
 
 log = get_logger("user_schedule")
 
@@ -43,7 +43,7 @@ router = Router()
 router.callback_query.filter(ClassmateAuthFilter())
 
 
-async def get_day_schedule_cached(target_date: date) -> Tuple[str, List[Lesson]]:
+async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]:
     """Возвращает отформатированный текст и пары с Redis-кэшированием на 180с."""
     cache_key = f"sched:day_pack:{target_date.isoformat()}"
     cached = await cache_get(cache_key)
@@ -61,7 +61,7 @@ async def get_day_schedule_cached(target_date: date) -> Tuple[str, List[Lesson]]
     return text, lessons
 
 
-async def _ack_callback(callback: CallbackQuery, text: Optional[str] = None) -> None:
+async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> None:
     """Мгновенно подтверждает callback в Telegram, гася анимацию ожидания."""
     try:
         await callback.answer(text)
@@ -73,7 +73,7 @@ async def _ack_callback(callback: CallbackQuery, text: Optional[str] = None) -> 
 
 
 async def edit_or_answer(
-    callback: CallbackQuery, text: str, lessons: List[Lesson] = None, week_offset: int = 0
+    callback: CallbackQuery, text: str, lessons: list[Lesson] | None = None, week_offset: int = 0
 ) -> None:
     """Безопасно обновляет содержимое текущего сообщения с учетом прав и подписки."""
     uid = callback.from_user.id if callback.from_user else 0
@@ -291,7 +291,7 @@ async def cb_week_next(callback: CallbackQuery) -> None:
     await edit_or_answer(callback, text, week_offset=1)
 
 
-async def _refresh_and_format_schedule(now: date) -> Tuple[str, List[Lesson], int]:
+async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], int]:
     """Сбрасывает UI-кэш представлений и загружает свежее расписание из API."""
     await cache_flush("sched:day_pack*")
     await cache_flush("sched:week*")

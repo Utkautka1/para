@@ -5,7 +5,6 @@
 без импорта тяжёлых модулей парсинга (httpx, docx, etc).
 """
 
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -22,9 +21,9 @@ class Lesson(BaseModel):
     address: str
     subgroup: int = 0
     is_stream: bool = False
-    remote_link: Optional[str] = None
-    remote_passcode: Optional[str] = None
-    remote_meeting_id: Optional[str] = None
+    remote_link: str | None = None
+    remote_passcode: str | None = None
+    remote_meeting_id: str | None = None
 
     @property
     def number(self) -> int:
@@ -39,6 +38,6 @@ class ExamItem(BaseModel):
     teacher: str
     room: str
     address: str
-    weeks: List[int]
+    weeks: list[int]
     subgroup: int = 0
     format_str: str = "Очно"

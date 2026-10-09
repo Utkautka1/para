@@ -2,7 +2,6 @@
 Pydantic-схемы для роутера посещаемости студентов (статистика и сессии старосты).
 """
 
-from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -19,34 +18,34 @@ class AttendanceTotals(BaseModel):
 class StudentStatItem(BaseModel):
     """Статистика посещаемости одного студента."""
     fio: str = Field(..., description="ФИО студента", examples=["Иванов Иван"])
-    total: Dict[str, int] = Field(..., description="Итоги за все месяцы: П, О, У, Н")
-    months: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Разбивка по месяцам")
+    total: dict[str, int] = Field(..., description="Итоги за все месяцы: П, О, У, Н")
+    months: dict[str, dict[str, int]] = Field(default_factory=dict, description="Разбивка по месяцам")
 
 
 class AttendanceStatsResponse(BaseModel):
     """Агрегированная ведомость посещаемости всей группы."""
     count: int = Field(..., description="Количество студентов в ведомости")
-    students: List[StudentStatItem] = Field(default_factory=list, description="Список статистики по студентам")
+    students: list[StudentStatItem] = Field(default_factory=list, description="Список статистики по студентам")
 
 
 class StudentPersonalStatsResponse(BaseModel):
     """Персональная аналитика посещаемости конкретного студента."""
     fio: str = Field(..., description="ФИО студента")
-    total: Dict[str, int] = Field(..., description="Общие отметки: П, О, У, Н")
+    total: dict[str, int] = Field(..., description="Общие отметки: П, О, У, Н")
     attendance_rate_percent: float = Field(..., description="Процент посещаемости занятий")
-    months: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Отметки по месяцам")
+    months: dict[str, dict[str, int]] = Field(default_factory=dict, description="Отметки по месяцам")
 
 
 class ActiveSessionResponse(BaseModel):
     """Состояние активной сессии отметки пары старостой."""
     is_active: bool = Field(..., description="Существует ли активная сессия")
-    target_date: Optional[str] = Field(None, description="Дата пары (YYYY-MM-DD)")
-    lesson_num: Optional[int] = Field(None, description="Номер пары (1..6)")
-    lesson_title: Optional[str] = Field(None, description="Название предмета")
-    current_idx: Optional[int] = Field(None, description="Индекс текущего студента")
-    total_students: Optional[int] = Field(None, description="Всего студентов в списке")
-    current_student: Optional[str] = Field(None, description="ФИО текущего опрашиваемого студента")
-    marks: Optional[Dict[str, str]] = Field(None, description="Выставленные отметки")
+    target_date: str | None = Field(None, description="Дата пары (YYYY-MM-DD)")
+    lesson_num: int | None = Field(None, description="Номер пары (1..6)")
+    lesson_title: str | None = Field(None, description="Название предмета")
+    current_idx: int | None = Field(None, description="Индекс текущего студента")
+    total_students: int | None = Field(None, description="Всего студентов в списке")
+    current_student: str | None = Field(None, description="ФИО текущего опрашиваемого студента")
+    marks: dict[str, str] | None = Field(None, description="Выставленные отметки")
 
 
 class StartSessionRequest(BaseModel):

@@ -6,7 +6,6 @@
 """
 
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, Query
 
@@ -34,7 +33,7 @@ def _current_monday() -> date:
 
 @router.get("/day", response_model=DayScheduleResponse)
 async def schedule_day(
-    target_date: Optional[date] = Query(default=None, description="YYYY-MM-DD, по умолчанию сегодня"),
+    target_date: date | None = Query(default=None, description="YYYY-MM-DD, по умолчанию сегодня"),
     force_refresh: bool = Query(default=False),
 ) -> DayScheduleResponse:
     """Расписание на конкретный учебный день."""
@@ -61,7 +60,7 @@ async def schedule_tomorrow(force_refresh: bool = Query(default=False)) -> DaySc
 
 @router.get("/week", response_model=WeekScheduleResponse)
 async def schedule_week(
-    monday: Optional[date] = Query(default=None, description="Понедельник недели (YYYY-MM-DD)"),
+    monday: date | None = Query(default=None, description="Понедельник недели (YYYY-MM-DD)"),
     force_refresh: bool = Query(default=False),
 ) -> WeekScheduleResponse:
     """Расписание занятий на целую неделю (пн—сб)."""
@@ -71,7 +70,7 @@ async def schedule_week(
     return WeekScheduleResponse(monday=mon, days=days)
 
 
-def _find_current_and_next(lessons: List[Lesson], now_time: str) -> Tuple[Optional[Lesson], Optional[Lesson]]:
+def _find_current_and_next(lessons: list[Lesson], now_time: str) -> tuple[Lesson | None, Lesson | None]:
     """Находит текущую и ближайшую следующую пару по текущему времени."""
     curr, nxt = None, None
     for l in sorted(lessons, key=lambda x: x.period):

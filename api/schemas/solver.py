@@ -2,7 +2,7 @@
 Pydantic-схемы для роутера AI-решения домашних заданий (DeepSeek + очередь задач).
 """
 
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -17,8 +17,8 @@ class SolverQueueStatusResponse(BaseModel):
 class DirectSolveRequest(BaseModel):
     """Запрос на прямое решение учебной задачи через DeepSeek API."""
     prompt: str = Field(..., min_length=5, description="Текст условия задания или вопроса", examples=["Реши систему уравнений: 2x + 3y = 7, x - y = 1"])
-    image_base64: Optional[str] = Field(None, description="Опциональное изображение задачи в Base64")
-    model: Optional[str] = Field(None, description="Модель (по умолчанию deepseek-chat)")
+    image_base64: str | None = Field(None, description="Опциональное изображение задачи в Base64")
+    model: str | None = Field(None, description="Модель (по умолчанию deepseek-chat)")
 
 
 class DirectSolveResponse(BaseModel):

@@ -104,7 +104,7 @@ async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
             message_id=msg.message_id,
             reaction=[ReactionTypeEmoji(emoji="👀")]
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.debug(f"Не удалось поставить реакцию на msg_id={msg.message_id}: {e}")
 
 
@@ -142,7 +142,7 @@ async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str
                 message_id=msg.message_id,
                 reaction=[ReactionTypeEmoji(emoji="🤷‍♂️")]
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.debug(f"Не удалось выставить реакцию на тяжелый файл: {e}")
         return False
     return True

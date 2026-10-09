@@ -6,17 +6,18 @@ Pydantic-схемы стандартизированных ответов об �
 (4xx и 5xx) для OpenAPI/Swagger UI и централизованных exception handlers.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
 class ErrorDetail(BaseModel):
     """Стандартный ответ с ошибкой para-api."""
     detail: str = Field(..., description="Понятное человеку описание ошибки")
-    code: Optional[str] = Field(None, description="Специфический строковый код ошибки")
+    code: str | None = Field(None, description="Специфический строковый код ошибки")
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         description="Время возникновения ошибки в формате ISO 8601"
     )
 
@@ -24,19 +25,19 @@ class ErrorDetail(BaseModel):
 
 class ValidationErrorItem(BaseModel):
     """Детали одной ошибки валидации Pydantic."""
-    loc: List[str | int] = Field(..., description="Путь к невалидному полю")
+    loc: list[str | int] = Field(..., description="Путь к невалидному полю")
     msg: str = Field(..., description="Сообщение валидатора")
     type: str = Field(..., description="Тип нарушения валидации")
 
 
 class ValidationErrorResponse(BaseModel):
     """Стандартный ответ при ошибке 422 Unprocessable Entity."""
-    detail: List[ValidationErrorItem] = Field(..., description="Список полей с ошибками валидации")
+    detail: list[ValidationErrorItem] = Field(..., description="Список полей с ошибками валидации")
     code: str = Field(default="VALIDATION_ERROR", description="Код ошибки")
 
 
 # Полная карта всех кодов ошибок для нативной регистрации в FastAPI(responses=...)
-COMMON_API_RESPONSES: Dict[int | str, Dict[str, Any]] = {
+COMMON_API_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: {"model": ErrorDetail, "description": "Некорректный запрос (Bad Request)"},
     401: {"model": ErrorDetail, "description": "Неавторизован: отсутствует/неверен API-ключ или сессия"},
     403: {"model": ErrorDetail, "description": "Доступ запрещен: требуются права администратора или старосты"},

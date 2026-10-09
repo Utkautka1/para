@@ -2,12 +2,13 @@
 Хэндлеры команд модерации и ограничения отправки сообщений (Мут в топиках).
 """
 
-from datetime import datetime, timedelta
 import html
-from typing import Optional, Tuple
-from aiogram import Router, F
+from datetime import datetime, timedelta
+
+from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ChatPermissions, Message
+
 from config import ALLOWED_USER_ID, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
 from core.logger import get_logger
 from services.user_cache import add_user_to_cache, get_cached_user_id
@@ -31,7 +32,7 @@ def cache_user_from_message(message: Message) -> None:
                 add_user_to_cache(e.user.username, e.user.id)
 
 
-async def _find_in_admins(bot, chat_id: int, clean: str) -> Optional[Tuple[int, str]]:
+async def _find_in_admins(bot, chat_id: int, clean: str) -> tuple[int, str] | None:
     """Ищет пользователя среди администраторов чата."""
     try:
         admins = await bot.get_chat_administrators(chat_id)
@@ -46,7 +47,7 @@ async def _find_in_admins(bot, chat_id: int, clean: str) -> Optional[Tuple[int, 
     return None
 
 
-def _find_in_registry(clean: str) -> Optional[Tuple[int, str]]:
+def _find_in_registry(clean: str) -> tuple[int, str] | None:
     """Ищет пользователя в реестре студентов по username."""
     from services.classmates_auth import load_classmates_registry
     registry = load_classmates_registry()
@@ -59,7 +60,7 @@ def _find_in_registry(clean: str) -> Optional[Tuple[int, str]]:
     return None
 
 
-async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optional[Tuple[int, str]]:
+async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> tuple[int, str] | None:
     """Находит ID пользователя по юзернейму через кэш, реестр или админов."""
     clean = username.lstrip("@").lower()
     cached_id = get_cached_user_id(clean)
@@ -72,7 +73,7 @@ async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> Optio
 
 
 
-def _resolve_from_entities(message: Message) -> Optional[Tuple[int, str]]:
+def _resolve_from_entities(message: Message) -> tuple[int, str] | None:
     """Извлекает ID пользователя из сущностей упоминания (text_mention)."""
     if not message.entities:
         return None
@@ -82,7 +83,7 @@ def _resolve_from_entities(message: Message) -> Optional[Tuple[int, str]]:
     return None
 
 
-async def resolve_target_identity(message: Message, target_raw: str) -> Tuple[Optional[int], str]:
+async def resolve_target_identity(message: Message, target_raw: str) -> tuple[int | None, str]:
     """Определяет ID и отображаемое имя из аргументов или сущностей сообщения."""
     if target_raw.isdigit():
         return int(target_raw), f"<b>ID: {target_raw}</b>"
@@ -106,7 +107,7 @@ def _strip_mute_prefix(text: str) -> str:
     return clean_text
 
 
-def parse_reply_mute_args(text: str) -> Tuple[str, str]:
+def parse_reply_mute_args(text: str) -> tuple[str, str]:
     """Парсит длительность и причину при реплае."""
     parts = _strip_mute_prefix(text).split(maxsplit=1)
     if not parts or not parts[0]:
@@ -118,7 +119,7 @@ def parse_reply_mute_args(text: str) -> Tuple[str, str]:
     return "10м", reason
 
 
-async def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+async def parse_standalone_mute_args(message: Message) -> tuple[int | None, str, str, str]:
     """Парсит аргументы при прямом указании ID/@username без реплая."""
     parts = (message.text or "").strip().split(maxsplit=3)
     if len(parts) < 2:
@@ -135,7 +136,7 @@ async def parse_standalone_mute_args(message: Message) -> Tuple[Optional[int], s
     return target_id, target_name, time_raw, reason
 
 
-async def extract_target_id_and_args(message: Message) -> Tuple[Optional[int], str, str, str]:
+async def extract_target_id_and_args(message: Message) -> tuple[int | None, str, str, str]:
     """Извлекает target_id, имя, время и причину из реплая или текста."""
     if message.reply_to_message and message.reply_to_message.from_user:
         u = message.reply_to_message.from_user
@@ -198,20 +199,20 @@ def _build_mute_report(target_name: str, time_raw: str, reason: str) -> str:
     )
 
 
-def is_mute_command(text: Optional[str]) -> bool:
+def is_mute_command(text: str | None) -> bool:
     """Проверяет команду наложения мута."""
     if not text:
         return False
     t = text.lower().strip()
-    return t.startswith(".закрыть рот") or t.startswith(".закрой рот")
+    return t.startswith((".закрыть рот", ".закрой рот"))
 
 
-def is_unmute_command(text: Optional[str]) -> bool:
+def is_unmute_command(text: str | None) -> bool:
     """Проверяет команду снятия мута."""
     if not text:
         return False
     t = text.lower().strip()
-    return t.startswith(".открыть рот") or t.startswith(".открой рот")
+    return t.startswith((".открыть рот", ".открой рот"))
 
 
 @router.message(F.text & F.text.func(is_mute_command))
