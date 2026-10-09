@@ -16,7 +16,14 @@ from api.schemas.solver import (
     SolverQueueStatusResponse,
     TaskStatusResponse,
 )
-from config import DEEPSEEK_MODEL_NAME, HW_DLQ_KEY, HW_PROCESSING_KEY, HW_QUEUE_KEY
+from config import (
+    DEEPSEEK_MODEL_NAME,
+    HW_DLQ_KEY,
+    HW_PROCESSING_KEY,
+    HW_QUEUE_KEY,
+    SOLVER_RATE_LIMIT_PER_MINUTE,
+    SOLVER_RATE_LIMIT_WINDOW_SECONDS,
+)
 from core.redis import init_redis
 from core.redis_cache import clear_hw_queue, is_message_processed
 from integrations.deepseek import solve_homework
@@ -46,7 +53,7 @@ def _decode_image_payload(b64: str | None) -> bytes | None:
 
 
 async def _check_solver_rate_limit(identity: str) -> None:
-    """Ограничивает частоту вызовов DeepSeek API (макс. 5 запросов в минуту на пользователя)."""
+    """Ограничивает частоту вызовов DeepSeek API по лимитам из config."""
     if identity == "master_admin":
         return
     client = await init_redis()
@@ -54,9 +61,10 @@ async def _check_solver_rate_limit(identity: str) -> None:
         key = f"api_rate:solver:{identity}"
         count = await client.incr(key)
         if count == 1:
-            await client.expire(key, 60)
-        if count > 5:
-            raise HTTPException(status_code=429, detail="Too many solver requests (max 5 per minute)")
+            await client.expire(key, SOLVER_RATE_LIMIT_WINDOW_SECONDS)
+        if count > SOLVER_RATE_LIMIT_PER_MINUTE:
+            detail = f"Too many solver requests (max {SOLVER_RATE_LIMIT_PER_MINUTE} per {SOLVER_RATE_LIMIT_WINDOW_SECONDS}s)"
+            raise HTTPException(status_code=429, detail=detail)
 
 
 @router.post("/solve", response_model=DirectSolveResponse)

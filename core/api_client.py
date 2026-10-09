@@ -24,6 +24,10 @@ from api.proto import (
 from config import (
     API_BASE_URL,
     API_SECRET_KEY,
+    GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA,
+    GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS,
+    GRPC_KEEPALIVE_TIME_MS,
+    GRPC_KEEPALIVE_TIMEOUT_MS,
     GRPC_MAX_MESSAGE_LENGTH,
     GRPC_SERVER_ADDRESS,
 )
@@ -51,12 +55,16 @@ def _get_client() -> httpx.AsyncClient:
 
 
 def _get_grpc_channel() -> grpc.aio.Channel:
-    """Возвращает или создает персистентный асинхронный gRPC канал."""
+    """Возвращает или создает персистентный асинхронный gRPC канал с keepalive."""
     global _CHANNEL
     if _CHANNEL is None:
         options = [
             ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_LENGTH),
             ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_LENGTH),
+            ("grpc.keepalive_time_ms", GRPC_KEEPALIVE_TIME_MS),
+            ("grpc.keepalive_timeout_ms", GRPC_KEEPALIVE_TIMEOUT_MS),
+            ("grpc.keepalive_permit_without_calls", GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS),
+            ("grpc.http2.max_pings_without_data", GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA),
         ]
         _CHANNEL = grpc.aio.insecure_channel(GRPC_SERVER_ADDRESS, options=options)
     return _CHANNEL

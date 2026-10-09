@@ -141,3 +141,38 @@ ATTENDANCE_COMMIT_RETRY_DELAY_SECONDS: int = 5
 ATTENDANCE_STATS_CACHE_TTL_SECONDS: int = 300
 SCHEDULE_COOLDOWN_SECONDS: int = 300
 
+# Параметры параллелизма и Rate Limiting решателя ДЗ
+SOLVER_MAX_CONCURRENT_TASKS: int = int(os.getenv("SOLVER_MAX_CONCURRENT_TASKS", "3"))
+SOLVER_RATE_LIMIT_PER_MINUTE: int = int(os.getenv("SOLVER_RATE_LIMIT_PER_MINUTE", "5"))
+SOLVER_RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("SOLVER_RATE_LIMIT_WINDOW_SECONDS", "60"))
+
+# Кэширование посещаемости и срезов отметок
+REDIS_STUDENTS_CACHE_KEY: str = os.getenv("REDIS_STUDENTS_CACHE_KEY", "att:cached_students")
+STUDENTS_CACHE_TTL_SECONDS: int = int(os.getenv("STUDENTS_CACHE_TTL_SECONDS", "86400"))
+REDIS_MARKS_CACHE_PREFIX: str = os.getenv("REDIS_MARKS_CACHE_PREFIX", "att:marks")
+MARKS_CACHE_TTL_SECONDS: int = int(os.getenv("MARKS_CACHE_TTL_SECONDS", "2592000"))
+
+# Безопасные префиксы для очистки кэша
+SAFE_CACHE_FLUSH_PREFIXES: tuple[str, ...] = ("sched:", "att:", "teachers:", "exams:", "hw_hash:", "rem:")
+
+# Параметры gRPC Keepalive и HTTP/2 сокетов
+GRPC_KEEPALIVE_TIME_MS: int = int(os.getenv("GRPC_KEEPALIVE_TIME_MS", "10000"))
+GRPC_KEEPALIVE_TIMEOUT_MS: int = int(os.getenv("GRPC_KEEPALIVE_TIMEOUT_MS", "5000"))
+GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: int = int(os.getenv("GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS", "1"))
+GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA: int = int(os.getenv("GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA", "0"))
+GRPC_HTTP2_MIN_PING_INTERVAL_MS: int = int(os.getenv("GRPC_HTTP2_MIN_PING_INTERVAL_MS", "5000"))
+
+# Сжатие ответов API
+GZIP_MIN_SIZE_BYTES: int = int(os.getenv("GZIP_MIN_SIZE_BYTES", "1000"))
+
+# Физические адреса корпусов учебного заведения
+CAMPUS_ADDRESS_VOZNESENSKY: str = os.getenv("CAMPUS_ADDRESS_VOZNESENSKY", "Вознесенский пр., 44")
+CAMPUS_ADDRESS_TSVETOCHNAYA: str = os.getenv("CAMPUS_ADDRESS_TSVETOCHNAYA", "ул. Цветочная, д. 8")
+CAMPUS_ADDRESS_REMOTE: str = "Дистанционно"
+
+# Пулы соединений HTTP-клиента
+HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS: int = int(os.getenv("HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS", "5"))
+HTTP_POOL_MAX_CONNECTIONS: int = int(os.getenv("HTTP_POOL_MAX_CONNECTIONS", "10"))
+HTTP_CLIENT_TIMEOUT_SECONDS: float = float(os.getenv("HTTP_CLIENT_TIMEOUT_SECONDS", "60.0"))
+
+

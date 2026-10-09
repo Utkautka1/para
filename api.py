@@ -46,4 +46,11 @@ if __name__ == "__main__":
     log.info(f"ЗАПУСК Dual-Protocol API: HTTP :8000 | gRPC :{GRPC_PORT}")
     log.info("  Swagger UI: /docs | Telegram Mini App: /miniapp")
     log.info("=" * 60)
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")  # nosec B104
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        loop="uvloop",
+        http="httptools",
+        log_level="warning",
+    )  # nosec B104

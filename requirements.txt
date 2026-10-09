@@ -15,4 +15,7 @@ openpyxl>=3.1.2
 defusedxml>=0.7.1
 grpcio>=1.62.0
 grpcio-tools>=1.62.0
+orjson>=3.10.0
+uvloop>=0.20.0
+httptools>=0.6.1
 

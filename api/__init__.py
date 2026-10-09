@@ -8,6 +8,7 @@ FastAPI-приложение para-api — фабрика приложения с
 
 from typing import Any, Dict
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from api.handlers import register_exception_handlers
@@ -23,6 +24,7 @@ from api.router.subscribers import router as subscribers_router
 from api.router.system import router as system_router
 from api.router.teachers import router as teachers_router
 from api.schemas.errors import COMMON_API_RESPONSES
+from config import GZIP_MIN_SIZE_BYTES
 
 
 def _register_routers(app: FastAPI) -> None:
@@ -70,7 +72,7 @@ def _custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
 
 
 def create_app() -> FastAPI:
-    """Фабрика создания экземпляра приложения FastAPI со всеми кодами ошибок."""
+    """Фабрика создания высокоскоростного FastAPI приложения с ORJSON и GZip."""
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
@@ -81,6 +83,7 @@ def create_app() -> FastAPI:
         responses=COMMON_API_RESPONSES,
         swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
     )
+    app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
     _register_routers(app)
     register_exception_handlers(app)
     app.openapi = lambda: _custom_openapi_schema(app)

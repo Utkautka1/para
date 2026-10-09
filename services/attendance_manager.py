@@ -14,6 +14,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field
 
+from config import REDIS_STUDENTS_CACHE_KEY, STUDENTS_CACHE_TTL_SECONDS
 from core.logger import get_logger
 from core.redis import get_redis
 from integrations.yandex_docs import (
@@ -83,9 +84,6 @@ async def clear_session() -> None:
         log.info("Сессия посещаемости сброшена в Redis")
 
 
-STUDENTS_CACHE_KEY = "att:cached_students"
-
-
 async def _fetch_students_from_wopi(target_date: date) -> list[tuple[int, str]]:
     """Скачивает таблицу через WOPI и считывает список студентов."""
     wopi = await init_wopi_session()
@@ -101,7 +99,7 @@ async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
     """Возвращает список студентов с кэшированием в Redis для мгновенного отклика."""
     client = await get_redis()
     if client:
-        cached = await client.get(STUDENTS_CACHE_KEY)
+        cached = await client.get(REDIS_STUDENTS_CACHE_KEY)
         if cached:
             try:
                 return [tuple(x) for x in json.loads(cached)]
@@ -109,7 +107,7 @@ async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
                 log.debug(f"Сбой десериализации кэша студентов: {e}")
     students = await _fetch_students_from_wopi(target_date)
     if client and students:
-        await client.set(STUDENTS_CACHE_KEY, json.dumps(students, ensure_ascii=False), ex=86400)
+        await client.set(REDIS_STUDENTS_CACHE_KEY, json.dumps(students, ensure_ascii=False), ex=STUDENTS_CACHE_TTL_SECONDS)
     return students
 
 

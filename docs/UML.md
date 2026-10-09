@@ -33,6 +33,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 10.1. [API Security Boundary & Privilege Escalation Prevention](#101-api-security-boundary--privilege-escalation-prevention)
    - 10.2. [High-Performance Attendance Caching & Thread-Offloading Flow](#102-high-performance-attendance-caching--thread-offloading-flow)
    - 10.3. [Concurrent AI Solver Worker Pipeline with Semaphore Control](#103-concurrent-ai-solver-worker-pipeline-with-semaphore-control)
+   - 10.4. [Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive](#104-multi-tier-high-performance-architecture-l1-in-memory-uvloop--grpc-keepalive)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -1921,3 +1922,48 @@ sequenceDiagram
         AiTask->>Sem: release()
     end
 ```
+
+---
+
+### 10.4. Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive
+
+Architecture flow illustrating the multi-tier performance optimization:
+1. **L1 In-Memory Cache**: `_RESOLVED_DAY_CACHE` serves pre-constructed `Lesson` models in 10 microseconds without touching Redis or running regex parsers.
+2. **Network Acceleration**: Uvicorn runs with `uvloop` (libuv C-bindings) and `httptools` (Nginx C-parser) for high concurrency.
+3. **gRPC HTTP/2 Warm Keepalive**: Channels maintain active ping intervals (`GRPC_KEEPALIVE_TIME_MS`), eliminating cold socket renegotiations.
+4. **Bandwidth Optimization**: `GZipMiddleware` automatically compresses payloads >1 KB for mobile Mini App clients.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Ingress Client (Bot / Worker / Mini App)
+    participant Uvicorn as Uvicorn (uvloop + httptools)
+    participant Gzip as GZip Middleware (>1KB)
+    participant GrpcClient as gRPC Stub (Keepalive: 10s)
+    participant GrpcServer as grpc.aio.Server
+    participant L1Cache as L1 In-Memory Cache (_RESOLVED_DAY_CACHE)
+    participant L2Redis as L2 Redis Snapshot (schedule:snapshot)
+
+    alt gRPC High-Speed Path
+        Client->>GrpcClient: GetDaySchedule(date=2026-10-12)
+        Note over GrpcClient,GrpcServer: HTTP/2 Persistent TCP Stream (Pre-warmed Keepalive)
+        GrpcClient->>GrpcServer: Binary Protobuf Request (32 bytes)
+        GrpcServer->>L1Cache: Check _RESOLVED_DAY_CACHE[date]
+        alt L1 Cache Hit (Warm Memory)
+            L1Cache-->>GrpcServer: Ready list[Lesson] (10 microseconds)
+        else L1 Cache Miss
+            GrpcServer->>L2Redis: Load group snapshot
+            L2Redis-->>GrpcServer: JSON Snapshot
+            GrpcServer->>L1Cache: Save compiled models
+        end
+        GrpcServer-->>GrpcClient: Binary Protobuf Response (1.3 KB, ~0.3 ms)
+    else REST / Mini App HTTP/2 Path
+        Client->>Uvicorn: GET /schedule/day?target_date=2026-10-12
+        Note over Uvicorn: Handled by uvloop + httptools C-engine
+        Uvicorn->>L1Cache: Lookup resolved lessons
+        L1Cache-->>Uvicorn: list[Lesson]
+        Uvicorn->>Gzip: Serialize directly to JSON bytes
+        Gzip-->>Client: HTTP 200 OK (Gzip Compressed, <1 ms)
+    end
+```
+
