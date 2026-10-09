@@ -8,8 +8,10 @@
   4. Формирование персонализированной аналитики для команды /my_attendance
 """
 
+import asyncio
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -27,7 +29,7 @@ REDIS_STATS_KEY = "att:stats:all_time"
 CACHE_TTL_SECONDS = 3600
 
 
-def _init_student_stat(fio: str) -> Dict[str, Any]:
+def _init_student_stat(fio: str) -> dict[str, Any]:
     """Инициализирует структуру счетчиков посещаемости студента."""
     return {
         "fio": fio,
@@ -36,7 +38,7 @@ def _init_student_stat(fio: str) -> Dict[str, Any]:
     }
 
 
-def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> Dict[str, int]:
+def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]:
     """Подсчитывает отметки посещаемости студента в строке конкретного месяца."""
     row_counts = {"П": 0, "О": 0, "У": 0, "Н": 0}
     for col in range(3, mc + 1):
@@ -50,7 +52,7 @@ def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> Dict[str, int]:
 
 
 def _aggregate_sheet_stats(
-    sheet: Worksheet, s_name: str, stats: Dict[str, Dict[str, Any]]
+    sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]
 ) -> None:
     """Обрабатывает один лист месяца и накапливает отметки в общий реестр."""
     mc = sheet.max_column
@@ -69,9 +71,9 @@ def _aggregate_sheet_stats(
             stats[fio]["total"][mark] += cnt
 
 
-def parse_workbook_attendance(wb: openpyxl.Workbook) -> Dict[str, Dict[str, Any]]:
+def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]:
     """Извлекает отметки всех студентов по всем месяцам из книги openpyxl."""
-    stats: Dict[str, Dict[str, Any]] = {}
+    stats: dict[str, dict[str, Any]] = {}
     valid_months = set(MONTH_SHEET_MAP.values())
     for s_name in wb.sheetnames:
         if s_name in valid_months:
@@ -81,7 +83,7 @@ def parse_workbook_attendance(wb: openpyxl.Workbook) -> Dict[str, Dict[str, Any]
     return stats
 
 
-async def _load_from_redis_cache() -> Optional[Dict[str, Dict[str, Any]]]:
+async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None:
     """Считывает закэшированную статистику из Redis."""
     cached = await cache_get(REDIS_STATS_KEY)
     if not cached:
@@ -93,7 +95,7 @@ async def _load_from_redis_cache() -> Optional[Dict[str, Dict[str, Any]]]:
         return None
 
 
-async def _save_to_redis_cache(stats: Dict[str, Dict[str, Any]]) -> None:
+async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None:
     """Сохраняет структуру статистики в Redis с TTL 1 час."""
     try:
         payload = json.dumps(stats, ensure_ascii=False)
@@ -111,7 +113,7 @@ async def invalidate_attendance_stats_cache() -> None:
 
 async def fetch_all_time_attendance(
     force_refresh: bool = False
-) -> Dict[str, Dict[str, Any]]:
+) -> dict[str, dict[str, Any]]:
     """Возвращает сквозную статистику посещаемости с Redis-кэшированием."""
     if not force_refresh:
         cached = await _load_from_redis_cache()
@@ -120,14 +122,14 @@ async def fetch_all_time_attendance(
     log.info("Загрузка и пересчёт статистики посещаемости из Яндекс Документов...")
     wopi = await init_wopi_session()
     wb = await download_workbook(wopi)
-    stats = parse_workbook_attendance(wb)
+    stats = await asyncio.to_thread(parse_workbook_attendance, wb)
     await _save_to_redis_cache(stats)
     return stats
 
 
 def find_student_attendance(
-    stats: Dict[str, Dict[str, Any]], target_name: str
-) -> Optional[Dict[str, Any]]:
+    stats: dict[str, dict[str, Any]], target_name: str
+) -> dict[str, Any] | None:
     """Находит статистику студента по точному или частичному совпадению ФИО."""
     target_clean = normalize_fio(target_name).lower()
     for fio, data in stats.items():
@@ -143,7 +145,7 @@ def find_student_attendance(
     return None
 
 
-def _adjust_student_counts(stat: Dict[str, Any], old_mark: Optional[str], new_mark: str) -> None:
+def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None:
     """Корректирует счетчики студента с учетом замены старой отметки на новую."""
     tot = stat.setdefault("total", {"П": 0, "О": 0, "У": 0, "Н": 0})
     if old_mark and old_mark in tot and tot[old_mark] > 0:
@@ -152,7 +154,7 @@ def _adjust_student_counts(stat: Dict[str, Any], old_mark: Optional[str], new_ma
         tot[new_mark] += 1
 
 
-async def _get_saved_lesson_marks(t_date: str, l_num: int) -> Dict[str, str]:
+async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
     """Считывает ранее сохраненный срез отметок пары из Redis."""
     raw = await cache_get(f"att:marks:{t_date}:{l_num}")
     if not raw:
@@ -163,13 +165,13 @@ async def _get_saved_lesson_marks(t_date: str, l_num: int) -> Dict[str, str]:
         return {}
 
 
-async def _save_lesson_marks(t_date: str, l_num: int, marks: Dict[str, str]) -> None:
+async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None:
     """Сохраняет срез отметок пары в Redis на 30 дней для защиты от задвоений."""
     payload = json.dumps(marks, ensure_ascii=False)
     await cache_set(f"att:marks:{t_date}:{l_num}", payload, ttl=2592000)
 
 
-async def apply_session_optimistic_update(session: Any) -> Dict[str, Dict[str, Any]]:
+async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]:
     """Мгновенно обновляет кэш статистики в Redis на основе отметок сессии."""
     stats = await fetch_all_time_attendance(force_refresh=False)
     saved_marks = await _get_saved_lesson_marks(session.target_date, session.lesson_num)

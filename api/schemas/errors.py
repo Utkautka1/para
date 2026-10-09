@@ -6,7 +6,7 @@ Pydantic-схемы стандартизированных ответов об �
 (4xx и 5xx) для OpenAPI/Swagger UI и централизованных exception handlers.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -16,9 +16,10 @@ class ErrorDetail(BaseModel):
     detail: str = Field(..., description="Понятное человеку описание ошибки")
     code: Optional[str] = Field(None, description="Специфический строковый код ошибки")
     timestamp: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat() + "Z",
+        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         description="Время возникновения ошибки в формате ISO 8601"
     )
+
 
 
 class ValidationErrorItem(BaseModel):

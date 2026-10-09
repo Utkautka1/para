@@ -5,7 +5,6 @@
 """
 
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -47,7 +46,7 @@ async def get_attendance_stats(force_refresh: bool = Query(default=False)) -> At
 async def get_student_attendance(fio: str) -> StudentPersonalStatsResponse:
     """Персональная аналитика посещаемости по ФИО студента."""
     data = await fetch_all_time_attendance(force_refresh=False)
-    stat = find_student_attendance(fio, data)
+    stat = find_student_attendance(data, fio)
     if not stat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student attendance not found")
     tot = stat.get("total", {})

@@ -11,15 +11,20 @@
 import asyncio
 import json
 from datetime import date
-from typing import Dict, List, Optional, Tuple
+
 from pydantic import BaseModel, Field
 
 from core.logger import get_logger
 from core.redis import get_redis
 from integrations.yandex_docs import (
-    download_workbook, find_lesson_column, get_month_sheet,
-    get_students_list, init_wopi_session, upload_workbook,
-    verify_upload, write_student_mark
+    download_workbook,
+    find_lesson_column,
+    get_month_sheet,
+    get_students_list,
+    init_wopi_session,
+    upload_workbook,
+    verify_upload,
+    write_student_mark,
 )
 
 log = get_logger("attendance_manager")
@@ -35,11 +40,11 @@ class AttendanceSession(BaseModel):
     target_date: str
     lesson_num: int
     lesson_title: str
-    students: List[Tuple[int, str]]  # [(row_idx, fio)]
-    marks: Dict[str, str] = Field(default_factory=dict)  # {"row_idx": "П"}
+    students: list[tuple[int, str]]  # [(row_idx, fio)]
+    marks: dict[str, str] = Field(default_factory=dict)  # {"row_idx": "П"}
     current_idx: int = 0
     initiator_id: int
-    msg_id: Optional[int] = None
+    msg_id: int | None = None
 
 
 async def save_session_to_redis(session: AttendanceSession) -> None:
@@ -53,7 +58,7 @@ async def save_session_to_redis(session: AttendanceSession) -> None:
     log.info(f"Сессия посещаемости сохранена в Redis (пара {session.lesson_num}, студент {session.current_idx}/{len(session.students)})")
 
 
-async def get_active_session() -> Optional[AttendanceSession]:
+async def get_active_session() -> AttendanceSession | None:
     """Извлекает активную сессию посещаемости из Redis."""
     client = await get_redis()
     if not client:
@@ -78,8 +83,11 @@ async def clear_session() -> None:
         log.info("Сессия посещаемости сброшена в Redis")
 
 
-async def fetch_target_students(target_date: date) -> List[Tuple[int, str]]:
-    """Скачивает таблицу и извлекает список студентов на указанную дату."""
+STUDENTS_CACHE_KEY = "att:cached_students"
+
+
+async def _fetch_students_from_wopi(target_date: date) -> list[tuple[int, str]]:
+    """Скачивает таблицу через WOPI и считывает список студентов."""
     wopi = await init_wopi_session()
     wb = await download_workbook(wopi)
     sheet = get_month_sheet(wb, target_date)
@@ -87,6 +95,23 @@ async def fetch_target_students(target_date: date) -> List[Tuple[int, str]]:
     if not students:
         raise ValueError("В таблице не найдено ни одного студента")
     return students
+
+
+async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
+    """Возвращает список студентов с кэшированием в Redis для мгновенного отклика."""
+    client = await get_redis()
+    if client:
+        cached = await client.get(STUDENTS_CACHE_KEY)
+        if cached:
+            try:
+                return [tuple(x) for x in json.loads(cached)]
+            except Exception as e:
+                log.debug(f"Сбой десериализации кэша студентов: {e}")
+    students = await _fetch_students_from_wopi(target_date)
+    if client and students:
+        await client.set(STUDENTS_CACHE_KEY, json.dumps(students, ensure_ascii=False), ex=86400)
+    return students
+
 
 
 async def create_attendance_session(
@@ -112,7 +137,7 @@ async def create_attendance_session(
     return session
 
 
-async def record_student_mark(mark: str) -> Optional[AttendanceSession]:
+async def record_student_mark(mark: str) -> AttendanceSession | None:
     """
     Записывает отметку для текущего студента и сдвигает указатель на следующего.
 
@@ -128,7 +153,7 @@ async def record_student_mark(mark: str) -> Optional[AttendanceSession]:
     return session
 
 
-async def step_back() -> Optional[AttendanceSession]:
+async def step_back() -> AttendanceSession | None:
     """
     Возвращает сессию на шаг назад для исправления предыдущей отметки.
 
@@ -144,7 +169,7 @@ async def step_back() -> Optional[AttendanceSession]:
     return session
 
 
-async def mark_all_remaining_present() -> Optional[AttendanceSession]:
+async def mark_all_remaining_present() -> AttendanceSession | None:
     """
     Массово проставляет отметку 'П' всем оставшимся студентам.
 
@@ -254,7 +279,7 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
     return False
 
 
-def calculate_summary_stats(marks: Dict[str, str]) -> Dict[str, int]:
+def calculate_summary_stats(marks: dict[str, str]) -> dict[str, int]:
     """Подсчитывает итоговые количества отметок по категориям (П, О, У, Н)."""
     stats = {"П": 0, "О": 0, "У": 0, "Н": 0}
     for m in marks.values():

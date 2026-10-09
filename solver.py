@@ -14,16 +14,22 @@ import io
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Tuple
+
 from aiogram import Bot
 from aiogram.types import FSInputFile
+
 import config
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import init_redis, redis_client
+from core.redis_cache import (
+    ack_hw_task,
+    nack_hw_task,
+    pop_hw_task,
+    recover_stale_hw_tasks,
+)
 from integrations.deepseek import close_deepseek_client, solve_homework
 from utils.doc_generator import create_solution_docx
-from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task, recover_stale_hw_tasks
 
 log = get_logger("solver_worker")
 MAX_FILE_SIZE = config.HW_MAX_FILE_SIZE
@@ -35,7 +41,7 @@ def build_post_link(chat_id: int, message_id: int) -> str:
     return f"https://t.me/c/{clean_id}/{message_id}"
 
 
-async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> Optional[bytes]:
+async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> bytes | None:
     """Безопасно скачивает байты файла Telegram с лимитом размера 20 МБ."""
     if file_size > MAX_FILE_SIZE:
         log.warning(f"Файл {file_id} превышает лимит {MAX_FILE_SIZE} байт. Пропуск.")
@@ -51,7 +57,7 @@ async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> Opti
         return None
 
 
-def extract_docx_data(doc_bytes: bytes) -> Tuple[str, List[bytes]]:
+def extract_docx_data(doc_bytes: bytes) -> tuple[str, list[bytes]]:
     """Извлекает весь текст и встроенные картинки из .docx документа."""
     import docx
     doc = docx.Document(io.BytesIO(doc_bytes))
@@ -82,7 +88,7 @@ def extract_pdf_data(doc_bytes: bytes) -> str:
         return ""
 
 
-def parse_file_payload(doc_bytes: bytes, file_name: str, mime: Optional[str], prompt: str) -> Tuple[Optional[bytes], Optional[str]]:
+def parse_file_payload(doc_bytes: bytes, file_name: str, mime: str | None, prompt: str) -> tuple[bytes | None, str | None]:
     """Разбирает байты файла (изображение, docx, pdf, текст) в формат для DeepSeek."""
     fn = file_name.lower()
     if (mime and mime.startswith("image")) or fn.endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp")):
@@ -103,7 +109,7 @@ def parse_file_payload(doc_bytes: bytes, file_name: str, mime: Optional[str], pr
     return None, prompt or None
 
 
-async def resolve_task_payload(tg_bot: Bot, task: dict) -> Tuple[Optional[bytes], Optional[str]]:
+async def resolve_task_payload(tg_bot: Bot, task: dict) -> tuple[bytes | None, str | None]:
     """Скачивает и подготавливает медиа/текст задания для передачи в нейросеть."""
     file_id = task.get("file_id")
     prompt = task.get("prompt") or ""
@@ -173,23 +179,41 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
             os.remove(doc_path)
 
 
+MAX_CONCURRENT_TASKS = 3
+_SOLVER_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+
+
+async def _guarded_execute_task(tg_bot: Bot, task: dict) -> None:
+    """Исполняет задачу под семафором параллелизма для защиты от перегрузки."""
+    async with _SOLVER_SEMAPHORE:
+        await execute_single_task(tg_bot, task)
+
+
 async def run_solver_loop() -> None:
-    """Бесконечный цикл чтения очереди задач и запуска решений."""
+    """Бесконечный цикл чтения очереди задач и параллельного запуска решений."""
     log.info("Запущен рабочий цикл очереди решений para-solver...")
+    active_tasks: set[asyncio.Task] = set()
     while True:
         try:
+            active_tasks = {t for t in active_tasks if not t.done()}
+            if len(active_tasks) >= MAX_CONCURRENT_TASKS:
+                await asyncio.sleep(0.5)
+                continue
             task = await pop_hw_task(timeout=2)
             if task:
                 log.info(f"📥 Получена задача ДЗ из очереди: msg_id={task.get('message_id')}")
-                await execute_single_task(bot, task)
+                active_tasks.add(asyncio.create_task(_guarded_execute_task(bot, task)))
             else:
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             log.info("Остановка цикла solver_loop.")
+            if active_tasks:
+                await asyncio.gather(*active_tasks, return_exceptions=True)
             break
         except Exception as e:
             log.error(f"Ошибка в цикле solver_loop: {e}")
             await asyncio.sleep(2)
+
 
 
 async def main() -> None:
