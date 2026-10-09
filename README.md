@@ -1,10 +1,18 @@
 <div align="center">
 
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,16,28&height=110&section=header" width="100%"/>
+
 # 🎓 PARA
 
 ### Enterprise-Grade Academic Operations & Distributed Telegram Ecosystem
 
 *A resilient, dual-protocol distributed system orchestrating real-time schedule dispatching, WOPI collaborative attendance, AI-augmented academic workflow execution, and Telegram Supergroup telemetry.*
+
+<p align="center">
+  <a href="https://github.com/Utkautka1/para">
+    <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=20&duration=3000&pause=1000&color=00D2FF&center=true&vCenter=true&multiline=false&width=650&height=40&lines=Dual-Protocol+gRPC+%2B+REST+Microservices;Sub-Millisecond+L1%2FL2+Schedule+Ingress;WOPI+Collaborative+Spreadsheet+Sync;At-Least-Once+DeepSeek+AI+Solver;Peer+Admin+Real-Time+Telemetry+Alerts" alt="Typing Animation" />
+  </a>
+</p>
 
 <p align="center">
   <a href="https://github.com/Utkautka1/para/actions/workflows/ci.yml">
@@ -48,8 +56,7 @@
   <b><a href="#-core-subsystems--deep-dives">Deep-Dives</a></b> •
   <b><a href="#-benchmarks--telemetry">Benchmarks</a></b> •
   <b><a href="#-code-highlights">Code Highlights</a></b> •
-  <b><a href="#-deployment--quickstart">Quickstart</a></b> •
-  <b><a href="#-roadmap-2026">Roadmap</a></b>
+  <b><a href="#-deployment--quickstart">Quickstart</a></b>
 </p>
 
 ---
@@ -458,26 +465,12 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
 
 ---
 
-## 🗺️ Roadmap (2026)
-
-- [x] **Q1 2026: Dual-Protocol Mesh & Architecture Hardening**
-  - [x] Zero-overhead gRPC HTTP/2 server multiplexing with Protobuf contracts.
-  - [x] Telegram Mini App with HMAC-SHA256 signature verification and embedded Swagger UI.
-  - [x] Mutual Headman and Deputy peer attendance telemetry alerts.
-  - [x] Automated 3-stage GitHub Actions CI/CD pipeline.
-- [ ] **Q2 2026: Student Productivity & Mobile Ecosystem**
-  - [ ] **iCalendar (.ics) Export**: One-click timetable synchronization into Apple / Google / Yandex Calendar.
-  - [ ] **Schedule Diff Push Alerts**: Instant notification when college administrators swap classrooms or instructors.
-- [ ] **Q3 2026: Observability & Disaster Recovery**
-  - [ ] Native Prometheus `/metrics` endpoint with Grafana dashboard integration.
-  - [ ] Automated daily encrypted state snapshots offloaded to S3-compatible cloud storage.
-- [ ] **Q4 2026: Multi-Tenant Sharding**
-  - [ ] Dynamic multi-group schedule ingestion and horizontal Redis consumer sharding.
-
----
-
 ## 📜 License & Authorship
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for full details.
 
 Developed with architectural rigor by **Staff/Lead Engineering** standards. Built for speed, resilience, and student operational excellence.
+
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,16,28&height=90&section=footer" width="100%"/>
+</div>
