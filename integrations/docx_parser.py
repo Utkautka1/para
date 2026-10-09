@@ -74,12 +74,7 @@ def extract_row_texts(row_elem: Any) -> Tuple[str, str]:
 
 
 def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
-    """
-    Распаковывает docx и парсит таблицу контактов преподавателей.
-
-    :param content: Байты docx файла
-    :return: Словарь вида {фамилия: TeacherData}
-    """
+    """Распаковывает docx и парсит таблицу контактов преподавателей."""
     teachers_map: Dict[str, TeacherData] = {}
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as z:
@@ -88,12 +83,9 @@ def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
         for row in root.findall(".//w:tr", NS):
             name, link_info = extract_row_texts(row)
             if name:
-                last_name = name.split()[0].lower()
-                teachers_map[last_name] = {
-                    "full_name": name,
-                    "link_info": link_info
-                }
+                teachers_map[name.split()[0].lower()] = {"full_name": name, "link_info": link_info}
         log.info(f"Успешно распаршено {len(teachers_map)} преподавателей из docx")
+        del xml_data, root
     except Exception as e:
         log.error(f"Ошибка парсинга docx XML: {e}")
     return teachers_map
