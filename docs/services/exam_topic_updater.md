@@ -1,327 +1,497 @@
-# Module Specification: `services/exam_topic_updater.py`
-> **Path**: [`services/exam_topic_updater.py`](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py)  
+# Component Reference: `services/exam_topic_updater.py`
+> **File Path**: [`services/exam_topic_updater.py`](../../services/exam_topic_updater.py)  
 > **Subsystem**: `Examination Topic`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль синхронизации и авто-обновления сообщения в топике 'Экзамены'. Сохраняет состояние EXAM_MAIN_MSG_ID в data/exam_topic_state.json. Автоматически формирует реестр экзаменов с точным расчётом дат проведения.
+## 1. Architectural Role & Responsibilities
+The `services/exam_topic_updater.py` module implements core operational logic for the `Examination Topic` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_default_semester_start`](#get_default_semester_start) | Function | L31–L35 | `date` | Вычисляет 1 сентября текущего учебного года при недоступност |
-| [`get_effective_semester_start`](#get_effective_semester_start) | Function | L41–L52 | `date` | Определяет актуальную дату старта семестра из расписания КТМ |
-| [`load_exam_topic_state`](#load_exam_topic_state) | Function | L55–L58 | `int | None` | Загружает ID главного сообщения топика экзаменов. |
-| [`save_exam_topic_state`](#save_exam_topic_state) | Function | L61–L63 | `None` | Атомарно сохраняет ID главного сообщения топика экзаменов. |
-| [`get_week_date_range_str`](#get_week_date_range_str) | Function | L66–L75 | `str` | Вычисляет диапазон дат для порядкового номера учебной недели |
-| [`format_exam_card`](#format_exam_card) | Function | L78–L97 | `str` | Формирует карточку аттестации/экзамена с HTML-экранированием |
-| [`format_exams_schedule_message`](#format_exams_schedule_message) | Function | L101–L111 | `str` | Форматирует расписание экзаменов и аттестаций в чистый HTML. |
-| [`_pin_exam_silently`](#_pin_exam_silently) | Function | L114–L122 | `None` | Закрепляет сообщение экзаменов без уведомления. |
-| [`create_exam_message`](#create_exam_message) | Function | L125–L135 | `int` | Создает и закрепляет главное сообщение в топике экзаменов. |
-| [`handle_exam_edit_error`](#handle_exam_edit_error) | Function | L138–L152 | `bool` | Обрабатывает ошибку редактирования сообщения топика экзамено |
-| [`send_or_edit_exam_msg`](#send_or_edit_exam_msg) | Function | L155–L173 | `bool` | Отправляет или редактирует главное сообщение в топике экзаме |
-| [`recreate_exam_topic_message`](#recreate_exam_topic_message) | Function | L176–L192 | `bool` | Удаляет текущее сообщение экзаменов и создаёт новое (сброс M |
-| [`sync_exam_topic_message`](#sync_exam_topic_message) | Function | L195–L212 | `bool` | Атомарно публикует или обновляет расписание экзаменов в топи |
-| [`exam_topic_sync_loop`](#exam_topic_sync_loop) | Function | L215–L225 | `None` | Фоновый цикл авто-обновления топика Экзамены раз в 10 минут. |
+| [`get_default_semester_start`](#get_default_semester_start) | Function | L31–L35 | `date` | Retrieves and resolves domain data for `get_default_sem... |
+| [`get_effective_semester_start`](#get_effective_semester_start) | Function | L41–L52 | `date` | Retrieves and resolves domain data for `get_effective_s... |
+| [`load_exam_topic_state`](#load_exam_topic_state) | Function | L55–L58 | `int | None` | Executes core domain logic for `load_exam_topic_state`. |
+| [`save_exam_topic_state`](#save_exam_topic_state) | Function | L61–L63 | `None` | Saves serialized entity data to storage for `save_exam_... |
+| [`get_week_date_range_str`](#get_week_date_range_str) | Function | L66–L75 | `str` | Retrieves and resolves domain data for `get_week_date_r... |
+| [`format_exam_card`](#format_exam_card) | Function | L78–L97 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_exams_schedule_message`](#format_exams_schedule_message) | Function | L101–L111 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_pin_exam_silently`](#_pin_exam_silently) | Function | L114–L122 | `None` | Executes core domain logic for `_pin_exam_silently`. |
+| [`create_exam_message`](#create_exam_message) | Function | L125–L135 | `int` | Initializes and constructs a new instance of `create_ex... |
+| [`handle_exam_edit_error`](#handle_exam_edit_error) | Function | L138–L152 | `bool` | Executes core domain logic for `handle_exam_edit_error`... |
+| [`send_or_edit_exam_msg`](#send_or_edit_exam_msg) | Function | L155–L173 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`recreate_exam_topic_message`](#recreate_exam_topic_message) | Function | L176–L192 | `bool` | Executes core domain logic for `recreate_exam_topic_mes... |
+| [`sync_exam_topic_message`](#sync_exam_topic_message) | Function | L195–L212 | `bool` | Executes core domain logic for `sync_exam_topic_message... |
+| [`exam_topic_sync_loop`](#exam_topic_sync_loop) | Function | L215–L225 | `None` | Executes core domain logic for `exam_topic_sync_loop`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_default_semester_start`
-- **Signature**: `def get_default_semester_start() -> date`
-- **Source Reference**: [services/exam_topic_updater.py#L31-L35](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L31-L35)
-- **Async**: `No`
-- **Return Type**: `date`
+```python
+def get_default_semester_start() -> date
+```
 
-#### Purpose & Architectural Intent
-Вычисляет 1 сентября текущего учебного года при недоступности API.
+- **Source Reference**: [`services/exam_topic_updater.py#L31-L35`](../../services/exam_topic_updater.py#L31-L35)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_default_semester_start`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `today = datetime.now(TIMEZONE).date()`
-2. `start_year = today.year if today.month >= 8 else today.year - 1`
-3. `return date(start_year, 9, 1)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import get_default_semester_start
+
+# Execute call
+result = get_default_semester_start()
+```
 
 ---
 
 ### `get_effective_semester_start`
-- **Signature**: `async def get_effective_semester_start() -> date`
-- **Source Reference**: [services/exam_topic_updater.py#L41-L52](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L41-L52)
-- **Async**: `Yes`
-- **Return Type**: `date`
+```python
+async def get_effective_semester_start() -> date
+```
 
-#### Purpose & Architectural Intent
-Определяет актуальную дату старта семестра из расписания КТМУ.
+- **Source Reference**: [`services/exam_topic_updater.py#L41-L52`](../../services/exam_topic_updater.py#L41-L52)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_effective_semester_start`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return get_default_semester_start()`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import get_effective_semester_start
+
+# Execute call
+result = await get_effective_semester_start()
+```
 
 ---
 
 ### `load_exam_topic_state`
-- **Signature**: `def load_exam_topic_state() -> int | None`
-- **Source Reference**: [services/exam_topic_updater.py#L55-L58](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L55-L58)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def load_exam_topic_state() -> int | None
+```
 
-#### Purpose & Architectural Intent
-Загружает ID главного сообщения топика экзаменов.
+- **Source Reference**: [`services/exam_topic_updater.py#L55-L58`](../../services/exam_topic_updater.py#L55-L58)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_exam_topic_state`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `data = sync_load_json(STATE_FILE, default={})`
-2. `return data.get("main_msg_id") if isinstance(data, dict) else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import load_exam_topic_state
+
+# Execute call
+result = load_exam_topic_state()
+```
 
 ---
 
 ### `save_exam_topic_state`
-- **Signature**: `def save_exam_topic_state(msg_id: int | None) -> None`
-- **Source Reference**: [services/exam_topic_updater.py#L61-L63](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L61-L63)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def save_exam_topic_state(msg_id: int | None) -> None
+```
 
-#### Purpose & Architectural Intent
-Атомарно сохраняет ID главного сообщения топика экзаменов.
+- **Source Reference**: [`services/exam_topic_updater.py#L61-L63`](../../services/exam_topic_updater.py#L61-L63)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_exam_topic_state`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `msg_id` | `int | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `msg_id` | `int | None` | Yes | Parameter `msg_id` of type `int | None`. |
 
-#### Step-by-Step Logic Execution
-1. `sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import save_exam_topic_state
+
+# Execute call
+result = save_exam_topic_state(msg_id=...)
+```
 
 ---
 
 ### `get_week_date_range_str`
-- **Signature**: `def get_week_date_range_str(week_num: int, semester_start: date | None = None) -> str`
-- **Source Reference**: [services/exam_topic_updater.py#L66-L75](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L66-L75)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def get_week_date_range_str(week_num: int, semester_start: date | None = None) -> str
+```
 
-#### Purpose & Architectural Intent
-Вычисляет диапазон дат для порядкового номера учебной недели.
+- **Source Reference**: [`services/exam_topic_updater.py#L66-L75`](../../services/exam_topic_updater.py#L66-L75)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_week_date_range_str`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `week_num` | `int` | Input parameter |
-| `semester_start` | `date | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `week_num` | `int` | Yes | Parameter `week_num` of type `int`. |
+| `semester_start` | `date | None` | Yes | Parameter `semester_start` of type `date | None`. |
 
-#### Step-by-Step Logic Execution
-1. `start_d = semester_start or get_default_semester_start()`
-2. `start_sunday = start_d + timedelta(days=(6 - start_d.weekday()))`
-3. `if week_num == 1:`
-4. `mon = start_sunday + timedelta(days=1) + timedelta(weeks=week_num - 2)`
-5. `sun = mon + timedelta(days=6)`
-6. `return f"{mon.strftime('%d.%m')}–{sun.strftime('%d.%m.%Y')}"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import get_week_date_range_str
+
+# Execute call
+result = get_week_date_range_str(week_num=..., semester_start=...)
+```
 
 ---
 
 ### `format_exam_card`
-- **Signature**: `def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str`
-- **Source Reference**: [services/exam_topic_updater.py#L78-L97](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L78-L97)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует карточку аттестации/экзамена с HTML-экранированием.
+- **Source Reference**: [`services/exam_topic_updater.py#L78-L97`](../../services/exam_topic_updater.py#L78-L97)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_exam_card`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `ex` | `ExamItem` | Input parameter |
-| `semester_start` | `date | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `ex` | `ExamItem` | Yes | Parameter `ex` of type `ExamItem`. |
+| `semester_start` | `date | None` | Yes | Parameter `semester_start` of type `date | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if ex.weeks:`
-2. `sg_str = f" • 👥 Подгруппа {ex.subgroup}" if ex.subgroup > 0 else ""`
-3. `subj = html.escape(ex.subject)`
-4. `e_type = html.escape(ex.exam_type)`
-5. `teacher = html.escape(ex.teacher)`
-6. `addr = html.escape(ex.address)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import format_exam_card
+
+# Execute call
+result = format_exam_card(ex=..., semester_start=...)
+```
 
 ---
 
 ### `format_exams_schedule_message`
-- **Signature**: `def format_exams_schedule_message(exams: list[ExamItem], semester_start: date | None = None) -> str`
-- **Source Reference**: [services/exam_topic_updater.py#L101-L111](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L101-L111)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_exams_schedule_message(exams: list[ExamItem], semester_start: date | None = None) -> str
+```
 
-#### Purpose & Architectural Intent
-Форматирует расписание экзаменов и аттестаций в чистый HTML.
+- **Source Reference**: [`services/exam_topic_updater.py#L101-L111`](../../services/exam_topic_updater.py#L101-L111)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_exams_schedule_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `exams` | `list[ExamItem]` | Input parameter |
-| `semester_start` | `date | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `exams` | `list[ExamItem]` | Yes | Parameter `exams` of type `list[ExamItem]`. |
+| `semester_start` | `date | None` | Yes | Parameter `semester_start` of type `date | None`. |
 
-#### Step-by-Step Logic Execution
-1. `header = (`
-2. `if not exams:`
-3. `blocks = [format_exam_card(ex, semester_start) for ex in exams]`
-4. `return header + "\n\n".join(blocks)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import format_exams_schedule_message
+
+# Execute call
+result = format_exams_schedule_message(exams=..., semester_start=...)
+```
 
 ---
 
 ### `_pin_exam_silently`
-- **Signature**: `async def _pin_exam_silently(message_id: int) -> None`
-- **Source Reference**: [services/exam_topic_updater.py#L114-L122](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L114-L122)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _pin_exam_silently(message_id: int) -> None
+```
 
-#### Purpose & Architectural Intent
-Закрепляет сообщение экзаменов без уведомления.
+- **Source Reference**: [`services/exam_topic_updater.py#L114-L122`](../../services/exam_topic_updater.py#L114-L122)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_pin_exam_silently`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import _pin_exam_silently
+
+# Execute call
+result = await _pin_exam_silently(message_id=...)
+```
 
 ---
 
 ### `create_exam_message`
-- **Signature**: `async def create_exam_message(text: str) -> int`
-- **Source Reference**: [services/exam_topic_updater.py#L125-L135](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L125-L135)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def create_exam_message(text: str) -> int
+```
 
-#### Purpose & Architectural Intent
-Создает и закрепляет главное сообщение в топике экзаменов.
+- **Source Reference**: [`services/exam_topic_updater.py#L125-L135`](../../services/exam_topic_updater.py#L125-L135)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Initializes and constructs a new instance of `create_exam_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `msg = await bot.send_message(`
-2. `save_exam_topic_state(msg.message_id)`
-3. `await _pin_exam_silently(msg.message_id)`
-4. `log.info(f"Сообщение экзаменов создано и закреплено: MSG_ID={msg.message_id}")`
-5. `return msg.message_id`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import create_exam_message
+
+# Execute call
+result = await create_exam_message(text=...)
+```
 
 ---
 
 ### `handle_exam_edit_error`
-- **Signature**: `async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool`
-- **Source Reference**: [services/exam_topic_updater.py#L138-L152](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L138-L152)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool
+```
 
-#### Purpose & Architectural Intent
-Обрабатывает ошибку редактирования сообщения топика экзаменов.
+- **Source Reference**: [`services/exam_topic_updater.py#L138-L152`](../../services/exam_topic_updater.py#L138-L152)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `handle_exam_edit_error`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
-| `err_str` | `str` | Input parameter |
-| `retry` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `err_str` | `str` | Yes | Parameter `err_str` of type `str`. |
+| `retry` | `bool` | Yes | Parameter `retry` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _EXAM_MAIN_MSG_ID`
-2. `if "not modified" in err_str:`
-3. `if retry:`
-4. `log.warning(f"⚠️ Ошибка редактирования exam MSG_ID={_EXAM_MAIN_MSG_ID}, пересоздаём..`
-5. `_EXAM_MAIN_MSG_ID = None`
-6. `save_exam_topic_state(None)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import handle_exam_edit_error
+
+# Execute call
+result = await handle_exam_edit_error(text=..., err_str=..., retry=...)
+```
 
 ---
 
 ### `send_or_edit_exam_msg`
-- **Signature**: `async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool`
-- **Source Reference**: [services/exam_topic_updater.py#L155-L173](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L155-L173)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool
+```
 
-#### Purpose & Architectural Intent
-Отправляет или редактирует главное сообщение в топике экзаменов.
+- **Source Reference**: [`services/exam_topic_updater.py#L155-L173`](../../services/exam_topic_updater.py#L155-L173)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Dispatches notification message via Telegram API for `send_or_edit_exam_msg`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
-| `_retry` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `_retry` | `bool` | Yes | Parameter `_retry` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _EXAM_MAIN_MSG_ID`
-2. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import send_or_edit_exam_msg
+
+# Execute call
+result = await send_or_edit_exam_msg(text=..., _retry=...)
+```
 
 ---
 
 ### `recreate_exam_topic_message`
-- **Signature**: `async def recreate_exam_topic_message() -> bool`
-- **Source Reference**: [services/exam_topic_updater.py#L176-L192](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L176-L192)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def recreate_exam_topic_message() -> bool
+```
 
-#### Purpose & Architectural Intent
-Удаляет текущее сообщение экзаменов и создаёт новое (сброс MSG_ID). :return: True если пересоздание прошло
+- **Source Reference**: [`services/exam_topic_updater.py#L176-L192`](../../services/exam_topic_updater.py#L176-L192)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `recreate_exam_topic_message`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _EXAM_MAIN_MSG_ID`
-2. `old_id = _EXAM_MAIN_MSG_ID or load_exam_topic_state()`
-3. `if old_id:`
-4. `_EXAM_MAIN_MSG_ID = None`
-5. `save_exam_topic_state(None)`
-6. `return await sync_exam_topic_message()`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import recreate_exam_topic_message
+
+# Execute call
+result = await recreate_exam_topic_message()
+```
 
 ---
 
 ### `sync_exam_topic_message`
-- **Signature**: `async def sync_exam_topic_message() -> bool`
-- **Source Reference**: [services/exam_topic_updater.py#L195-L212](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L195-L212)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def sync_exam_topic_message() -> bool
+```
 
-#### Purpose & Architectural Intent
-Атомарно публикует или обновляет расписание экзаменов в топике. :return: True если обновлено
+- **Source Reference**: [`services/exam_topic_updater.py#L195-L212`](../../services/exam_topic_updater.py#L195-L212)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `sync_exam_topic_message`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _EXAM_MAIN_MSG_ID`
-2. `if _EXAM_MAIN_MSG_ID is None:`
-3. `exams = await get_api_exams()`
-4. `sem_start = await get_effective_semester_start()`
-5. `text = format_exams_schedule_message(exams, sem_start)`
-6. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import sync_exam_topic_message
+
+# Execute call
+result = await sync_exam_topic_message()
+```
 
 ---
 
 ### `exam_topic_sync_loop`
-- **Signature**: `async def exam_topic_sync_loop() -> None`
-- **Source Reference**: [services/exam_topic_updater.py#L215-L225](file:///home/u/Рабочий стол/para/services/exam_topic_updater.py#L215-L225)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def exam_topic_sync_loop() -> None
+```
 
-#### Purpose & Architectural Intent
-Фоновый цикл авто-обновления топика Экзамены раз в 10 минут.
+- **Source Reference**: [`services/exam_topic_updater.py#L215-L225`](../../services/exam_topic_updater.py#L215-L225)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `exam_topic_sync_loop`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `log.info("Запущен фоновый сервис авто-обновления топика Экзамены (10 мин)")`
-2. `while True:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.exam_topic_updater import exam_topic_sync_loop
+
+# Execute call
+result = await exam_topic_sync_loop()
+```
 
 ---

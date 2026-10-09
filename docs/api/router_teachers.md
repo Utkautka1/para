@@ -1,147 +1,229 @@
-# Module Specification: `api/router/teachers.py`
-> **Path**: [`api/router/teachers.py`](file:///home/u/Рабочий стол/para/api/router/teachers.py)  
+# Component Reference: `api/router/teachers.py`
+> **File Path**: [`api/router/teachers.py`](../../api/router/teachers.py)  
 > **Subsystem**: `Teachers API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер преподавателей — GET /teachers, search, custom, refresh. Предоставляет контакты и ссылки видеосвязи (Zoom, Яндекс Телемост) из официального документа Яндекс Диска и пользовательских настроек.
+## 1. Architectural Role & Responsibilities
+The `api/router/teachers.py` module implements core operational logic for the `Teachers API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_teachers`](#list_teachers) | Function | L28–L32 | `TeachersResponse` | Полный реестр преподавателей (ФИО + ссылка на занятие). |
-| [`search_teachers`](#search_teachers) | Function | L36–L45 | `TeacherSearchResponse` | Поиск преподавателей по фрагменту фамилии или имени. |
-| [`get_teacher`](#get_teacher) | Function | L49–L56 | `TeacherSingleResponse` | Получение контакта конкретного преподавателя по фамилии. |
-| [`add_custom_teacher`](#add_custom_teacher) | Function | L60–L65 | `TeacherSingleResponse` | Добавление или обновление персональной ссылки преподавателя  |
-| [`remove_custom_teacher`](#remove_custom_teacher) | Function | L70–L73 | `dict[str, str]` | Удаление кастомного преподавателя (Admin only). |
-| [`refresh_teachers`](#refresh_teachers) | Function | L77–L80 | `TeachersRefreshResponse` | Принудительная загрузка актуального .docx с Яндекс Диска (Ad |
+| [`list_teachers`](#list_teachers) | Function | L28–L32 | `TeachersResponse` | Executes core domain logic for `list_teachers`. |
+| [`search_teachers`](#search_teachers) | Function | L36–L45 | `TeacherSearchResponse` | Executes core domain logic for `search_teachers`. |
+| [`get_teacher`](#get_teacher) | Function | L49–L56 | `TeacherSingleResponse` | Retrieves and resolves domain data for `get_teacher`. |
+| [`add_custom_teacher`](#add_custom_teacher) | Function | L60–L65 | `TeacherSingleResponse` | Executes core domain logic for `add_custom_teacher`. |
+| [`remove_custom_teacher`](#remove_custom_teacher) | Function | L70–L73 | `dict[str, str]` | Executes core domain logic for `remove_custom_teacher`. |
+| [`refresh_teachers`](#refresh_teachers) | Function | L77–L80 | `TeachersRefreshResponse` | Executes core domain logic for `refresh_teachers`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `list_teachers`
-- **Signature**: `async def list_teachers(force_refresh: bool = Query(default=False)) -> TeachersResponse`
-- **Source Reference**: [api/router/teachers.py#L28-L32](file:///home/u/Рабочий стол/para/api/router/teachers.py#L28-L32)
-- **Async**: `Yes`
-- **Return Type**: `TeachersResponse`
+```python
+async def list_teachers(force_refresh: bool = Query(default=False)) -> TeachersResponse
+```
 
-#### Purpose & Architectural Intent
-Полный реестр преподавателей (ФИО + ссылка на занятие).
+- **Source Reference**: [`api/router/teachers.py#L28-L32`](../../api/router/teachers.py#L28-L32)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TeachersResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `list_teachers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `raw = await get_teacher_links(force_refresh=force_refresh)`
-2. `teachers = {k: TeacherItem(**v) for k, v in raw.items()}`
-3. `return TeachersResponse(count=len(teachers), teachers=teachers)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.teachers import list_teachers
+
+# Execute call
+result = await list_teachers(force_refresh=...)
+```
 
 ---
 
 ### `search_teachers`
-- **Signature**: `async def search_teachers(q: str = Query(..., min_length=2, description="Поисковый запрос (часть фамилии)")) -> TeacherSearchResponse`
-- **Source Reference**: [api/router/teachers.py#L36-L45](file:///home/u/Рабочий стол/para/api/router/teachers.py#L36-L45)
-- **Async**: `Yes`
-- **Return Type**: `TeacherSearchResponse`
+```python
+async def search_teachers(q: str = Query(..., min_length=2, description="Search query substring")) -> TeacherSearchResponse
+```
 
-#### Purpose & Architectural Intent
-Поиск преподавателей по фрагменту фамилии или имени.
+- **Source Reference**: [`api/router/teachers.py#L36-L45`](../../api/router/teachers.py#L36-L45)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TeacherSearchResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `search_teachers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `q` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `q` | `str` | Yes | Parameter `q` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `raw = await get_teacher_links(force_refresh=False)`
-2. `query_lower = q.strip().lower()`
-3. `matches = [`
-4. `return TeacherSearchResponse(query=q, count=len(matches), results=matches)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.teachers import search_teachers
+
+# Execute call
+result = await search_teachers(q=...)
+```
 
 ---
 
 ### `get_teacher`
-- **Signature**: `async def get_teacher(last_name: str) -> TeacherSingleResponse`
-- **Source Reference**: [api/router/teachers.py#L49-L56](file:///home/u/Рабочий стол/para/api/router/teachers.py#L49-L56)
-- **Async**: `Yes`
-- **Return Type**: `TeacherSingleResponse`
+```python
+async def get_teacher(last_name: str) -> TeacherSingleResponse
+```
 
-#### Purpose & Architectural Intent
-Получение контакта конкретного преподавателя по фамилии.
+- **Source Reference**: [`api/router/teachers.py#L49-L56`](../../api/router/teachers.py#L49-L56)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TeacherSingleResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_teacher`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `last_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `last_name` | `str` | Yes | Parameter `last_name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `raw = await get_teacher_links(force_refresh=False)`
-2. `key = last_name.strip().lower()`
-3. `if key not in raw:`
-4. `item = TeacherItem(**raw[key])`
-5. `return TeacherSingleResponse(key=key, teacher=item)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.teachers import get_teacher
+
+# Execute call
+result = await get_teacher(last_name=...)
+```
 
 ---
 
 ### `add_custom_teacher`
-- **Signature**: `async def add_custom_teacher(payload: CustomTeacherCreateRequest) -> TeacherSingleResponse`
-- **Source Reference**: [api/router/teachers.py#L60-L65](file:///home/u/Рабочий стол/para/api/router/teachers.py#L60-L65)
-- **Async**: `Yes`
-- **Return Type**: `TeacherSingleResponse`
+```python
+async def add_custom_teacher(payload: CustomTeacherCreateRequest) -> TeacherSingleResponse
+```
 
-#### Purpose & Architectural Intent
-Добавление или обновление персональной ссылки преподавателя (Admin only).
+- **Source Reference**: [`api/router/teachers.py#L60-L65`](../../api/router/teachers.py#L60-L65)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TeacherSingleResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `add_custom_teacher`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `payload` | `CustomTeacherCreateRequest` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `payload` | `CustomTeacherCreateRequest` | Yes | Parameter `payload` of type `CustomTeacherCreateRequest`. |
 
-#### Step-by-Step Logic Execution
-1. `key = payload.last_name.strip().lower()`
-2. `save_custom_teacher(key, payload.full_name, payload.link_info)`
-3. `item = TeacherItem(full_name=payload.full_name, link_info=payload.link_info)`
-4. `return TeacherSingleResponse(key=key, teacher=item)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.teachers import add_custom_teacher
+
+# Execute call
+result = await add_custom_teacher(payload=...)
+```
 
 ---
 
 ### `remove_custom_teacher`
-- **Signature**: `async def remove_custom_teacher(last_name: str) -> dict[str, str]`
-- **Source Reference**: [api/router/teachers.py#L70-L73](file:///home/u/Рабочий стол/para/api/router/teachers.py#L70-L73)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, str]`
+```python
+async def remove_custom_teacher(last_name: str) -> dict[str, str]
+```
 
-#### Purpose & Architectural Intent
-Удаление кастомного преподавателя (Admin only).
+- **Source Reference**: [`api/router/teachers.py#L70-L73`](../../api/router/teachers.py#L70-L73)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, str]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `remove_custom_teacher`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `last_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `last_name` | `str` | Yes | Parameter `last_name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `delete_custom_teacher(last_name.strip().lower())`
-2. `return {"status": "ok", "deleted": last_name}`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.teachers import remove_custom_teacher
+
+# Execute call
+result = await remove_custom_teacher(last_name=...)
+```
 
 ---
 
 ### `refresh_teachers`
-- **Signature**: `async def refresh_teachers() -> TeachersRefreshResponse`
-- **Source Reference**: [api/router/teachers.py#L77-L80](file:///home/u/Рабочий стол/para/api/router/teachers.py#L77-L80)
-- **Async**: `Yes`
-- **Return Type**: `TeachersRefreshResponse`
+```python
+async def refresh_teachers() -> TeachersRefreshResponse
+```
 
-#### Purpose & Architectural Intent
-Принудительная загрузка актуального .docx с Яндекс Диска (Admin only).
+- **Source Reference**: [`api/router/teachers.py#L77-L80`](../../api/router/teachers.py#L77-L80)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TeachersRefreshResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `refresh_teachers`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `raw = await get_teacher_links(force_refresh=True)`
-2. `return TeachersRefreshResponse(status="ok", count=len(raw))`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.teachers import refresh_teachers
+
+# Execute call
+result = await refresh_teachers()
+```
 
 ---

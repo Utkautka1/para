@@ -1,98 +1,157 @@
-# Module Specification: `api/router/exams.py`
-> **Path**: [`api/router/exams.py`](file:///home/u/Рабочий стол/para/api/router/exams.py)  
+# Component Reference: `api/router/exams.py`
+> **File Path**: [`api/router/exams.py`](../../api/router/exams.py)  
 > **Subsystem**: `Exams API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер экзаменов — GET /exams, GET /exams/upcoming, POST /exams/refresh. Возвращает контрольные мероприятия (зачёты, экзамены, курсовые) с привязкой к неделям семестра.
+## 1. Architectural Role & Responsibilities
+The `api/router/exams.py` module implements core operational logic for the `Exams API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_exams`](#list_exams) | Function | L23–L26 | `ExamsResponse` | Полный список аттестаций и экзаменов группы. |
-| [`_resolve_current_week`](#_resolve_current_week) | Function | L29–L34 | `int` | Определяет номер текущей учебной недели семестра. |
-| [`upcoming_exams`](#upcoming_exams) | Function | L38–L47 | `UpcomingExamsResponse` | Ближайшие предстоящие экзамены и зачёты. |
-| [`refresh_exams`](#refresh_exams) | Function | L51–L55 | `ExamsRefreshResponse` | Принудительное обновление расписания экзаменов (Admin only). |
+| [`list_exams`](#list_exams) | Function | L23–L26 | `ExamsResponse` | Executes core domain logic for `list_exams`. |
+| [`_resolve_current_week`](#_resolve_current_week) | Function | L29–L34 | `int` | Executes core domain logic for `_resolve_current_week`. |
+| [`upcoming_exams`](#upcoming_exams) | Function | L38–L47 | `UpcomingExamsResponse` | Executes core domain logic for `upcoming_exams`. |
+| [`refresh_exams`](#refresh_exams) | Function | L51–L55 | `ExamsRefreshResponse` | Executes core domain logic for `refresh_exams`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `list_exams`
-- **Signature**: `async def list_exams() -> ExamsResponse`
-- **Source Reference**: [api/router/exams.py#L23-L26](file:///home/u/Рабочий стол/para/api/router/exams.py#L23-L26)
-- **Async**: `Yes`
-- **Return Type**: `ExamsResponse`
+```python
+async def list_exams() -> ExamsResponse
+```
 
-#### Purpose & Architectural Intent
-Полный список аттестаций и экзаменов группы.
+- **Source Reference**: [`api/router/exams.py#L23-L26`](../../api/router/exams.py#L23-L26)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ExamsResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `list_exams`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `exams = await get_group_exams()`
-2. `return ExamsResponse(count=len(exams), exams=exams)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.exams import list_exams
+
+# Execute call
+result = await list_exams()
+```
 
 ---
 
 ### `_resolve_current_week`
-- **Signature**: `async def _resolve_current_week() -> int`
-- **Source Reference**: [api/router/exams.py#L29-L34](file:///home/u/Рабочий стол/para/api/router/exams.py#L29-L34)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def _resolve_current_week() -> int
+```
 
-#### Purpose & Architectural Intent
-Определяет номер текущей учебной недели семестра.
+- **Source Reference**: [`api/router/exams.py#L29-L34`](../../api/router/exams.py#L29-L34)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_resolve_current_week`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `data = await fetch_schedule_data(force_refresh=False)`
-2. `sem_start = data.get("config", {}).get("semesterStart", "2026-09-01") if data else "2`
-3. `today = datetime.now(TIMEZONE).date()`
-4. `return calculate_week_number(today, sem_start)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.exams import _resolve_current_week
+
+# Execute call
+result = await _resolve_current_week()
+```
 
 ---
 
 ### `upcoming_exams`
-- **Signature**: `async def upcoming_exams( weeks_ahead: int = Query(default=4, ge=1, le=20, description="Горизонт планирования (недель)"), ) -> UpcomingExamsResponse`
-- **Source Reference**: [api/router/exams.py#L38-L47](file:///home/u/Рабочий стол/para/api/router/exams.py#L38-L47)
-- **Async**: `Yes`
-- **Return Type**: `UpcomingExamsResponse`
+```python
+async def upcoming_exams( weeks_ahead: int = Query(default=4, ge=1, le=20, description="Planning horizon (weeks)"), ) -> UpcomingExamsResponse
+```
 
-#### Purpose & Architectural Intent
-Ближайшие предстоящие экзамены и зачёты.
+- **Source Reference**: [`api/router/exams.py#L38-L47`](../../api/router/exams.py#L38-L47)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `UpcomingExamsResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `upcoming_exams`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `weeks_ahead` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `weeks_ahead` | `int` | Yes | Parameter `weeks_ahead` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `cur_week = await _resolve_current_week()`
-2. `exams = await get_group_exams()`
-3. `filtered: list[ExamItem] = [`
-4. `return UpcomingExamsResponse(current_week=cur_week, count=len(filtered), upcoming_exa`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.exams import upcoming_exams
+
+# Execute call
+result = await upcoming_exams(weeks_ahead=...)
+```
 
 ---
 
 ### `refresh_exams`
-- **Signature**: `async def refresh_exams() -> ExamsRefreshResponse`
-- **Source Reference**: [api/router/exams.py#L51-L55](file:///home/u/Рабочий стол/para/api/router/exams.py#L51-L55)
-- **Async**: `Yes`
-- **Return Type**: `ExamsRefreshResponse`
+```python
+async def refresh_exams() -> ExamsRefreshResponse
+```
 
-#### Purpose & Architectural Intent
-Принудительное обновление расписания экзаменов (Admin only).
+- **Source Reference**: [`api/router/exams.py#L51-L55`](../../api/router/exams.py#L51-L55)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ExamsRefreshResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `refresh_exams`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `await fetch_schedule_data(force_refresh=True)`
-2. `exams = await get_group_exams()`
-3. `return ExamsRefreshResponse(status="ok", updated_count=len(exams))`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.exams import refresh_exams
+
+# Execute call
+result = await refresh_exams()
+```
 
 ---

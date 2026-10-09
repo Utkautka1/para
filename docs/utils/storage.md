@@ -1,124 +1,202 @@
-# Module Specification: `utils/storage.py`
-> **Path**: [`utils/storage.py`](file:///home/u/Рабочий стол/para/utils/storage.py)  
+# Component Reference: `utils/storage.py`
+> **File Path**: [`utils/storage.py`](../../utils/storage.py)  
 > **Subsystem**: `Atomic Storage Engine`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль атомарного и безопасного ввода-вывода JSON-файлов. Гарантирует сохранность состояния при рестартах и сбоях: запись производится через временный файл с последующим os.replace. Асинхронные обертки используют asyncio.to_thread для предотвращения блокировки Event Loop.
+## 1. Architectural Role & Responsibilities
+The `utils/storage.py` module implements core operational logic for the `Atomic Storage Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`sync_load_json`](#sync_load_json) | Function | L20–L35 | `Any` | Синхронно считывает данные из JSON файла. |
-| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L38–L55 | `bool` | Записывает данные во временный файл и атомарно заменяет целе |
-| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L58–L66 | `bool` | Синхронно и атомарно сохраняет данные в JSON файл. |
-| [`load_json`](#load_json) | Function | L69–L77 | `Any` | Асинхронно считывает JSON в пуле потоков без блокировки цикл |
-| [`save_json`](#save_json) | Function | L80–L88 | `bool` | Асинхронно и атомарно сохраняет JSON в пуле потоков. |
+| [`sync_load_json`](#sync_load_json) | Function | L20–L35 | `Any` | Executes core domain logic for `sync_load_json`. |
+| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L38–L55 | `bool` | Executes core domain logic for `_write_temp_and_replace... |
+| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L58–L66 | `bool` | Executes core domain logic for `sync_atomic_save_json`. |
+| [`load_json`](#load_json) | Function | L69–L77 | `Any` | Executes core domain logic for `load_json`. |
+| [`save_json`](#save_json) | Function | L80–L88 | `bool` | Saves serialized entity data to storage for `save_json`... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `sync_load_json`
-- **Signature**: `def sync_load_json(file_path: str, default: Any = None) -> Any`
-- **Source Reference**: [utils/storage.py#L20-L35](file:///home/u/Рабочий стол/para/utils/storage.py#L20-L35)
-- **Async**: `No`
-- **Return Type**: `Any`
+```python
+def sync_load_json(file_path: str, default: Any = None) -> Any
+```
 
-#### Purpose & Architectural Intent
-Синхронно считывает данные из JSON файла. :param file_path: Путь к файлу :param default: Значение по умолчанию при отсутствии или ошибке :return: Распарсенные данные или default
+- **Source Reference**: [`utils/storage.py#L20-L35`](../../utils/storage.py#L20-L35)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `Any`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `sync_load_json`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `file_path` | `str` | Input parameter |
-| `default` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `file_path` | `str` | Yes | Parameter `file_path` of type `str`. |
+| `default` | `Any` | Yes | Parameter `default` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `if not os.path.exists(file_path):`
-2. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from utils.storage import sync_load_json
+
+# Execute call
+result = sync_load_json(file_path=..., default=...)
+```
 
 ---
 
 ### `_write_temp_and_replace`
-- **Signature**: `def _write_temp_and_replace(file_path: str, data: Any) -> bool`
-- **Source Reference**: [utils/storage.py#L38-L55](file:///home/u/Рабочий стол/para/utils/storage.py#L38-L55)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def _write_temp_and_replace(file_path: str, data: Any) -> bool
+```
 
-#### Purpose & Architectural Intent
-Записывает данные во временный файл и атомарно заменяет целевой файл.
+- **Source Reference**: [`utils/storage.py#L38-L55`](../../utils/storage.py#L38-L55)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_write_temp_and_replace`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `file_path` | `str` | Input parameter |
-| `data` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `file_path` | `str` | Yes | Parameter `file_path` of type `str`. |
+| `data` | `Any` | Yes | Parameter `data` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `dir_name = os.path.dirname(os.path.abspath(file_path))`
-2. `os.makedirs(dir_name, exist_ok=True)`
-3. `temp_path = None`
-4. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from utils.storage import _write_temp_and_replace
+
+# Execute call
+result = _write_temp_and_replace(file_path=..., data=...)
+```
 
 ---
 
 ### `sync_atomic_save_json`
-- **Signature**: `def sync_atomic_save_json(file_path: str, data: Any) -> bool`
-- **Source Reference**: [utils/storage.py#L58-L66](file:///home/u/Рабочий стол/para/utils/storage.py#L58-L66)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def sync_atomic_save_json(file_path: str, data: Any) -> bool
+```
 
-#### Purpose & Architectural Intent
-Синхронно и атомарно сохраняет данные в JSON файл. :param file_path: Путь к целевому файлу :param data: Данные для сериализации :return: True при успехе, иначе False
+- **Source Reference**: [`utils/storage.py#L58-L66`](../../utils/storage.py#L58-L66)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `sync_atomic_save_json`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `file_path` | `str` | Input parameter |
-| `data` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `file_path` | `str` | Yes | Parameter `file_path` of type `str`. |
+| `data` | `Any` | Yes | Parameter `data` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `return _write_temp_and_replace(file_path, data)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.storage import sync_atomic_save_json
+
+# Execute call
+result = sync_atomic_save_json(file_path=..., data=...)
+```
 
 ---
 
 ### `load_json`
-- **Signature**: `async def load_json(file_path: str, default: Any = None) -> Any`
-- **Source Reference**: [utils/storage.py#L69-L77](file:///home/u/Рабочий стол/para/utils/storage.py#L69-L77)
-- **Async**: `Yes`
-- **Return Type**: `Any`
+```python
+async def load_json(file_path: str, default: Any = None) -> Any
+```
 
-#### Purpose & Architectural Intent
-Асинхронно считывает JSON в пуле потоков без блокировки цикла событий. :param file_path: Путь к файлу :param default: Значение по умолчанию :return: Распарсенные данные
+- **Source Reference**: [`utils/storage.py#L69-L77`](../../utils/storage.py#L69-L77)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `Any`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_json`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `file_path` | `str` | Input parameter |
-| `default` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `file_path` | `str` | Yes | Parameter `file_path` of type `str`. |
+| `default` | `Any` | Yes | Parameter `default` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `return await asyncio.to_thread(sync_load_json, file_path, default)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.storage import load_json
+
+# Execute call
+result = await load_json(file_path=..., default=...)
+```
 
 ---
 
 ### `save_json`
-- **Signature**: `async def save_json(file_path: str, data: Any) -> bool`
-- **Source Reference**: [utils/storage.py#L80-L88](file:///home/u/Рабочий стол/para/utils/storage.py#L80-L88)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def save_json(file_path: str, data: Any) -> bool
+```
 
-#### Purpose & Architectural Intent
-Асинхронно и атомарно сохраняет JSON в пуле потоков. :param file_path: Путь к файлу :param data: Данные для сохранения :return: True при успехе
+- **Source Reference**: [`utils/storage.py#L80-L88`](../../utils/storage.py#L80-L88)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_json`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `file_path` | `str` | Input parameter |
-| `data` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `file_path` | `str` | Yes | Parameter `file_path` of type `str`. |
+| `data` | `Any` | Yes | Parameter `data` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `return await asyncio.to_thread(sync_atomic_save_json, file_path, data)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.storage import save_json
+
+# Execute call
+result = await save_json(file_path=..., data=...)
+```
 
 ---

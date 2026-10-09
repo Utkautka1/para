@@ -1,223 +1,338 @@
-# Module Specification: `bot/templates/admin/attendance.py`
-> **Path**: [`bot/templates/admin/attendance.py`](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py)  
+# Component Reference: `bot/templates/admin/attendance.py`
+> **File Path**: [`bot/templates/admin/attendance.py`](../../bot/templates/admin/attendance.py)  
 > **Subsystem**: `Attendance Keyboards`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Шаблоны сообщений и клавиатур для модуля отметки посещаемости. Содержит: - Инлайн-клавиатуры для подтверждения пары, выбора статуса (П, О, У, Н) - Кнопки быстрого завершения ('Все остальные П') и шага назад - Форматирование карточек студентов и итоговой сводки
+## 1. Architectural Role & Responsibilities
+The `bot/templates/admin/attendance.py` module implements core operational logic for the `Attendance Keyboards` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_lesson_confirm_kb`](#get_lesson_confirm_kb) | Function | L16–L24 | `InlineKeyboardMarkup` | Клавиатура подтверждения факта проведения пары. |
-| [`get_student_poll_kb`](#get_student_poll_kb) | Function | L27–L47 | `InlineKeyboardMarkup` | Генерирует 4 инлайн-кнопки статусов и кнопки навигации. |
-| [`format_confirm_text`](#format_confirm_text) | Function | L50–L56 | `str` | Формирует текст запроса подтверждения проведения пары. |
-| [`format_student_card`](#format_student_card) | Function | L59–L69 | `str` | Формирует текст карточки текущего студента с прогресс-баром. |
-| [`format_summary_text`](#format_summary_text) | Function | L72–L88 | `str` | Формирует финальный отчёт после сохранения посещаемости. |
-| [`format_partner_attendance_report`](#format_partner_attendance_report) | Function | L91–L105 | `str` | Формирует полный отчёт посещаемости для второго администрато |
-| [`format_partner_cancel_report`](#format_partner_cancel_report) | Function | L108–L116 | `str` | Формирует уведомление об отмене пары для второго администрат |
-| [`get_days_select_kb`](#get_days_select_kb) | Function | L119–L135 | `InlineKeyboardMarkup` | Генерирует инлайн-кнопки выбора учебных дней для отметки пос |
-| [`get_lesson_select_kb`](#get_lesson_select_kb) | Function | L138–L159 | `InlineKeyboardMarkup` | Формирует список пар на выбор для указанной даты. |
+| [`get_lesson_confirm_kb`](#get_lesson_confirm_kb) | Function | L16–L24 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_conf... |
+| [`get_student_poll_kb`](#get_student_poll_kb) | Function | L27–L47 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_student_pol... |
+| [`format_confirm_text`](#format_confirm_text) | Function | L50–L56 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_student_card`](#format_student_card) | Function | L59–L69 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_summary_text`](#format_summary_text) | Function | L72–L88 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_partner_attendance_report`](#format_partner_attendance_report) | Function | L91–L105 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_partner_cancel_report`](#format_partner_cancel_report) | Function | L108–L116 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_days_select_kb`](#get_days_select_kb) | Function | L119–L135 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_days_select... |
+| [`get_lesson_select_kb`](#get_lesson_select_kb) | Function | L138–L159 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_sele... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_lesson_confirm_kb`
-- **Signature**: `def get_lesson_confirm_kb(lesson_num: int) -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/admin/attendance.py#L16-L24](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L16-L24)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_lesson_confirm_kb(lesson_num: int) -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Клавиатура подтверждения факта проведения пары.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L16-L24`](../../bot/templates/admin/attendance.py#L16-L24)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_lesson_confirm_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lesson_num` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson_num` | `int` | Yes | Academic class sequence index (1-based, 1 to 6). |
 
-#### Step-by-Step Logic Execution
-1. `kb = [`
-2. `return InlineKeyboardMarkup(inline_keyboard=kb)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import get_lesson_confirm_kb
+
+# Execute call
+result = get_lesson_confirm_kb(lesson_num=...)
+```
 
 ---
 
 ### `get_student_poll_kb`
-- **Signature**: `def get_student_poll_kb(can_back: bool) -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/admin/attendance.py#L27-L47](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L27-L47)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_student_poll_kb(can_back: bool) -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Генерирует 4 инлайн-кнопки статусов и кнопки навигации.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L27-L47`](../../bot/templates/admin/attendance.py#L27-L47)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_student_poll_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `can_back` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `can_back` | `bool` | Yes | Parameter `can_back` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `kb = [`
-2. `nav_row = []`
-3. `if can_back:`
-4. `nav_row.append(InlineKeyboardButton(text="❌ Отменить", callback_data="att:abort"))`
-5. `kb.append(nav_row)`
-6. `return InlineKeyboardMarkup(inline_keyboard=kb)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import get_student_poll_kb
+
+# Execute call
+result = get_student_poll_kb(can_back=...)
+```
 
 ---
 
 ### `format_confirm_text`
-- **Signature**: `def format_confirm_text(lesson_num: int, title: str, teacher: str) -> str`
-- **Source Reference**: [bot/templates/admin/attendance.py#L50-L56](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L50-L56)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_confirm_text(lesson_num: int, title: str, teacher: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует текст запроса подтверждения проведения пары.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L50-L56`](../../bot/templates/admin/attendance.py#L50-L56)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_confirm_text`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lesson_num` | `int` | Input parameter |
-| `title` | `str` | Input parameter |
-| `teacher` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson_num` | `int` | Yes | Academic class sequence index (1-based, 1 to 6). |
+| `title` | `str` | Yes | Parameter `title` of type `str`. |
+| `teacher` | `str` | Yes | Parameter `teacher` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import format_confirm_text
+
+# Execute call
+result = format_confirm_text(lesson_num=..., title=..., teacher=...)
+```
 
 ---
 
 ### `format_student_card`
-- **Signature**: `def format_student_card(session: AttendanceSession) -> str`
-- **Source Reference**: [bot/templates/admin/attendance.py#L59-L69](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L59-L69)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_student_card(session: AttendanceSession) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует текст карточки текущего студента с прогресс-баром.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L59-L69`](../../bot/templates/admin/attendance.py#L59-L69)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_student_card`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `AttendanceSession` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `AttendanceSession` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `total = len(session.students)`
-2. `idx = session.current_idx + 1`
-3. `_, fio = session.students[session.current_idx]`
-4. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import format_student_card
+
+# Execute call
+result = format_student_card(session=...)
+```
 
 ---
 
 ### `format_summary_text`
-- **Signature**: `def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> str`
-- **Source Reference**: [bot/templates/admin/attendance.py#L72-L88](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L72-L88)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует финальный отчёт после сохранения посещаемости.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L72-L88`](../../bot/templates/admin/attendance.py#L72-L88)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_summary_text`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `AttendanceSession` | Input parameter |
-| `stats` | `dict[str, int]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `AttendanceSession` | Yes | Active domain session instance containing current student index and marks. |
+| `stats` | `dict[str, int]` | Yes | Parameter `stats` of type `dict[str, int]`. |
 
-#### Step-by-Step Logic Execution
-1. `absent_names: list[str] = []`
-2. `for row_idx, fio in session.students:`
-3. `absent_str = "\n\nОтсутствующие / Опоздавшие:\n• " + "\n• ".join(absent_names) if abs`
-4. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import format_summary_text
+
+# Execute call
+result = format_summary_text(session=..., stats=...)
+```
 
 ---
 
 ### `format_partner_attendance_report`
-- **Signature**: `def format_partner_attendance_report( session: AttendanceSession, stats: dict[str, int], initiator_title: str ) -> str`
-- **Source Reference**: [bot/templates/admin/attendance.py#L91-L105](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L91-L105)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_partner_attendance_report( session: AttendanceSession, stats: dict[str, int], initiator_title: str ) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует полный отчёт посещаемости для второго администратора. Показывает, кто провел отметку, предмет, баланс присутствующих и список отсутствующих.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L91-L105`](../../bot/templates/admin/attendance.py#L91-L105)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_partner_attendance_report`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `AttendanceSession` | Input parameter |
-| `stats` | `dict[str, int]` | Input parameter |
-| `initiator_title` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `AttendanceSession` | Yes | Active domain session instance containing current student index and marks. |
+| `stats` | `dict[str, int]` | Yes | Parameter `stats` of type `dict[str, int]`. |
+| `initiator_title` | `str` | Yes | Parameter `initiator_title` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `base_summary = format_summary_text(session, stats)`
-2. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import format_partner_attendance_report
+
+# Execute call
+result = format_partner_attendance_report(session=..., stats=..., initiator_title=...)
+```
 
 ---
 
 ### `format_partner_cancel_report`
-- **Signature**: `def format_partner_cancel_report(lesson_num: int | str, initiator_title: str) -> str`
-- **Source Reference**: [bot/templates/admin/attendance.py#L108-L116](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L108-L116)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_partner_cancel_report(lesson_num: int | str, initiator_title: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует уведомление об отмене пары для второго администратора.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L108-L116`](../../bot/templates/admin/attendance.py#L108-L116)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_partner_cancel_report`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lesson_num` | `int | str` | Input parameter |
-| `initiator_title` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson_num` | `int | str` | Yes | Academic class sequence index (1-based, 1 to 6). |
+| `initiator_title` | `str` | Yes | Parameter `initiator_title` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import format_partner_cancel_report
+
+# Execute call
+result = format_partner_cancel_report(lesson_num=..., initiator_title=...)
+```
 
 ---
 
 ### `get_days_select_kb`
-- **Signature**: `def get_days_select_kb() -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/admin/attendance.py#L119-L135](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L119-L135)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_days_select_kb() -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Генерирует инлайн-кнопки выбора учебных дней для отметки посещаемости.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L119-L135`](../../bot/templates/admin/attendance.py#L119-L135)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_days_select_kb`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `from datetime import datetime, timedelta`
-2. `from config import TIMEZONE`
-3. `today = datetime.now(TIMEZONE).date()`
-4. `weekdays_ru = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]`
-5. `kb = []`
-6. `for offset in range(7):`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import get_days_select_kb
+
+# Execute call
+result = get_days_select_kb()
+```
 
 ---
 
 ### `get_lesson_select_kb`
-- **Signature**: `def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/admin/attendance.py#L138-L159](file:///home/u/Рабочий стол/para/bot/templates/admin/attendance.py#L138-L159)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Формирует список пар на выбор для указанной даты.
+- **Source Reference**: [`bot/templates/admin/attendance.py#L138-L159`](../../bot/templates/admin/attendance.py#L138-L159)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_lesson_select_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lessons` | `list` | Input parameter |
-| `chosen_date` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lessons` | `list` | Yes | Parameter `lessons` of type `list`. |
+| `chosen_date` | `Any` | Yes | Parameter `chosen_date` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `from datetime import datetime`
-2. `from config import TIMEZONE`
-3. `d_obj = chosen_date or datetime.now(TIMEZONE).date()`
-4. `d_str = d_obj.isoformat()`
-5. `kb, seen = [], set()`
-6. `for les in lessons:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.attendance import get_lesson_select_kb
+
+# Execute call
+result = get_lesson_select_kb(lessons=..., chosen_date=...)
+```
 
 ---

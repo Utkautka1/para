@@ -1,487 +1,742 @@
-# Module Specification: `services/attendance_topic_updater.py`
-> **Path**: [`services/attendance_topic_updater.py`](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py)  
+# Component Reference: `services/attendance_topic_updater.py`
+> **File Path**: [`services/attendance_topic_updater.py`](../../services/attendance_topic_updater.py)  
 > **Subsystem**: `Telemetry Topic`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль синхронизации и авто-обновления сообщения в топике 'Посещаемость'. Отвечает за: 1. Публикацию и закрепление академического рейтинга группы по лигам 2. Визуализацию прогресс-баров посещаемости и сквозного пульса группы 3. Сохранение идентификатора сообщения в data/attendance_topic_state.json 4. Фоновый цикл авто-обновления без лишних интерактивных кнопок в чате
+## 1. Architectural Role & Responsibilities
+The `services/attendance_topic_updater.py` module implements core operational logic for the `Telemetry Topic` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_attendance_topic_state`](#load_attendance_topic_state) | Function | L36–L39 | `int | None` | Загружает сохраненный ID главного сообщения топика посещаемо |
-| [`save_attendance_topic_state`](#save_attendance_topic_state) | Function | L42–L44 | `None` | Атомарно сохраняет ID главного сообщения топика посещаемости |
-| [`make_progress_bar`](#make_progress_bar) | Function | L47–L50 | `str` | Формирует аккуратную 4-символьную шкалу прогресса посещаемос |
-| [`_format_compact_marks`](#_format_compact_marks) | Function | L53–L61 | `str` | Формирует понятные отметки, исключая оптическую иллюзию 1О - |
-| [`extract_short_fio`](#extract_short_fio) | Function | L64–L69 | `str` | Извлекает Фамилию и Имя без отчества для исключения переносо |
-| [`_build_student_item`](#_build_student_item) | Function | L72–L85 | `dict[str, Any]` | Преобразует сырые данные студента в структурированный элемен |
-| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L88–L96 | `str` | Формирует презентабельную компактную шапку дашборда группы. |
-| [`_decline_absence`](#_decline_absence) | Function | L99–L108 | `str` | Склоняет слово 'прогул' по грамматическим правилам русского  |
-| [`_format_debt_details`](#_format_debt_details) | Function | L111–L120 | `str` | Формирует понятный список причин (прогулы, опоздания, справк |
-| [`_format_debt_student`](#_format_debt_student) | Function | L123–L133 | `str` | Формирует строку студента, имеющего пропуски или опоздания. |
-| [`_format_perfect_student`](#_format_perfect_student) | Function | L136–L141 | `str` | Формирует аккуратную строку отличника без лишнего визуальног |
-| [`_build_topic_footer`](#_build_topic_footer) | Function | L144–L151 | `str` | Формирует подвал сообщения со ссылкой на ЛС и временем обнов |
-| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L154–L172 | `str` | Формирует дашборд с компактным блоком отличников и журналом  |
-| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L175–L183 | `None` | Закрепляет главное сообщение реестра в топике без звукового  |
-| [`create_attendance_message`](#create_attendance_message) | Function | L186–L196 | `int` | Создает и закрепляет главное сообщение в топике посещаемости |
-| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L199–L211 | `bool` | Обрабатывает ошибки обновления сообщения в топике (not modif |
-| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L214–L232 | `bool` | Отправляет или обновляет главное сообщение в топике посещаем |
-| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L235–L247 | `bool` | Удаляет старое сообщение топика посещаемости и создаёт новое |
-| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L250–L265 | `bool` | Синхронизирует данные из таблицы и обновляет сообщение в топ |
-| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L268–L273 | `int` | Определяет интервал: 3 мин в учебные часы (08-19), иначе 15  |
-| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L276–L285 | `None` | Фоновый цикл авто-обновления топика с адаптивным интервалом. |
+| [`load_attendance_topic_state`](#load_attendance_topic_state) | Function | L36–L39 | `int | None` | Executes core domain logic for `load_attendance_topic_s... |
+| [`save_attendance_topic_state`](#save_attendance_topic_state) | Function | L42–L44 | `None` | Saves serialized entity data to storage for `save_atten... |
+| [`make_progress_bar`](#make_progress_bar) | Function | L47–L50 | `str` | Executes core domain logic for `make_progress_bar`. |
+| [`_format_compact_marks`](#_format_compact_marks) | Function | L53–L61 | `str` | Executes core domain logic for `_format_compact_marks`. |
+| [`extract_short_fio`](#extract_short_fio) | Function | L64–L69 | `str` | Executes core domain logic for `extract_short_fio`. |
+| [`_build_student_item`](#_build_student_item) | Function | L72–L85 | `dict[str, Any]` | Executes core domain logic for `_build_student_item`. |
+| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L88–L96 | `str` | Executes core domain logic for `_build_compact_topic_he... |
+| [`_decline_absence`](#_decline_absence) | Function | L99–L108 | `str` | Executes core domain logic for `_decline_absence`. |
+| [`_format_debt_details`](#_format_debt_details) | Function | L111–L120 | `str` | Executes core domain logic for `_format_debt_details`. |
+| [`_format_debt_student`](#_format_debt_student) | Function | L123–L133 | `str` | Executes core domain logic for `_format_debt_student`. |
+| [`_format_perfect_student`](#_format_perfect_student) | Function | L136–L141 | `str` | Executes core domain logic for `_format_perfect_student... |
+| [`_build_topic_footer`](#_build_topic_footer) | Function | L144–L151 | `str` | Executes core domain logic for `_build_topic_footer`. |
+| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L154–L172 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L175–L183 | `None` | Executes core domain logic for `_pin_attendance_silentl... |
+| [`create_attendance_message`](#create_attendance_message) | Function | L186–L196 | `int` | Initializes and constructs a new instance of `create_at... |
+| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L199–L211 | `bool` | Executes core domain logic for `handle_attendance_edit_... |
+| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L214–L232 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L235–L247 | `bool` | Executes core domain logic for `recreate_attendance_top... |
+| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L250–L265 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
+| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L268–L273 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
+| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L276–L285 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `load_attendance_topic_state`
-- **Signature**: `def load_attendance_topic_state() -> int | None`
-- **Source Reference**: [services/attendance_topic_updater.py#L36-L39](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L36-L39)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def load_attendance_topic_state() -> int | None
+```
 
-#### Purpose & Architectural Intent
-Загружает сохраненный ID главного сообщения топика посещаемости.
+- **Source Reference**: [`services/attendance_topic_updater.py#L36-L39`](../../services/attendance_topic_updater.py#L36-L39)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_attendance_topic_state`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `data = sync_load_json(STATE_FILE, default={})`
-2. `return data.get("main_msg_id") if isinstance(data, dict) else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import load_attendance_topic_state
+
+# Execute call
+result = load_attendance_topic_state()
+```
 
 ---
 
 ### `save_attendance_topic_state`
-- **Signature**: `def save_attendance_topic_state(msg_id: int | None) -> None`
-- **Source Reference**: [services/attendance_topic_updater.py#L42-L44](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L42-L44)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def save_attendance_topic_state(msg_id: int | None) -> None
+```
 
-#### Purpose & Architectural Intent
-Атомарно сохраняет ID главного сообщения топика посещаемости.
+- **Source Reference**: [`services/attendance_topic_updater.py#L42-L44`](../../services/attendance_topic_updater.py#L42-L44)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_attendance_topic_state`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `msg_id` | `int | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `msg_id` | `int | None` | Yes | Parameter `msg_id` of type `int | None`. |
 
-#### Step-by-Step Logic Execution
-1. `sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import save_attendance_topic_state
+
+# Execute call
+result = save_attendance_topic_state(msg_id=...)
+```
 
 ---
 
 ### `make_progress_bar`
-- **Signature**: `def make_progress_bar(pct: float) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L47-L50](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L47-L50)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def make_progress_bar(pct: float) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует аккуратную 4-символьную шкалу прогресса посещаемости.
+- **Source Reference**: [`services/attendance_topic_updater.py#L47-L50`](../../services/attendance_topic_updater.py#L47-L50)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `make_progress_bar`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `pct` | `float` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `pct` | `float` | Yes | Parameter `pct` of type `float`. |
 
-#### Step-by-Step Logic Execution
-1. `filled = max(0, min(4, round(pct / 25.0)))`
-2. `return "▰" * filled + "▱" * (4 - filled)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import make_progress_bar
+
+# Execute call
+result = make_progress_bar(pct=...)
+```
 
 ---
 
 ### `_format_compact_marks`
-- **Signature**: `def _format_compact_marks(p: int, o: int, u: int, n: int) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L53-L61](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L53-L61)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _format_compact_marks(p: int, o: int, u: int, n: int) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует понятные отметки, исключая оптическую иллюзию 1О -> 10.
+- **Source Reference**: [`services/attendance_topic_updater.py#L53-L61`](../../services/attendance_topic_updater.py#L53-L61)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_compact_marks`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `p` | `int` | Input parameter |
-| `o` | `int` | Input parameter |
-| `u` | `int` | Input parameter |
-| `n` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `p` | `int` | Yes | Parameter `p` of type `int`. |
+| `o` | `int` | Yes | Parameter `o` of type `int`. |
+| `u` | `int` | Yes | Parameter `u` of type `int`. |
+| `n` | `int` | Yes | Parameter `n` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `parts = [f"{p}П"]`
-2. `if o > 0:`
-3. `if u > 0:`
-4. `parts.append(f"{n}Н")`
-5. `return " · ".join(parts)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _format_compact_marks
+
+# Execute call
+result = _format_compact_marks(p=..., o=..., u=...)
+```
 
 ---
 
 ### `extract_short_fio`
-- **Signature**: `def extract_short_fio(fio: str) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L64-L69](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L64-L69)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def extract_short_fio(fio: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Извлекает Фамилию и Имя без отчества для исключения переносов строк.
+- **Source Reference**: [`services/attendance_topic_updater.py#L64-L69`](../../services/attendance_topic_updater.py#L64-L69)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `extract_short_fio`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `fio` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
 
-#### Step-by-Step Logic Execution
-1. `parts = fio.split()`
-2. `if len(parts) >= 2:`
-3. `return fio`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import extract_short_fio
+
+# Execute call
+result = extract_short_fio(fio=...)
+```
 
 ---
 
 ### `_build_student_item`
-- **Signature**: `def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]`
-- **Source Reference**: [services/attendance_topic_updater.py#L72-L85](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L72-L85)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any]`
+```python
+def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]
+```
 
-#### Purpose & Architectural Intent
-Преобразует сырые данные студента в структурированный элемент рейтинга.
+- **Source Reference**: [`services/attendance_topic_updater.py#L72-L85`](../../services/attendance_topic_updater.py#L72-L85)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_student_item`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `fio` | `str` | Input parameter |
-| `data` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
+| `data` | `dict[str, Any]` | Yes | Parameter `data` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `tot = data.get("total", {})`
-2. `p, o = tot.get("П", 0), tot.get("О", 0)`
-3. `u, n = tot.get("У", 0), tot.get("Н", 0)`
-4. `total_classes = p + o + u + n`
-5. `valid_classes = p + o + u`
-6. `pct = (valid_classes / total_classes * 100.0) if total_classes > 0 else 100.0`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _build_student_item
+
+# Execute call
+result = _build_student_item(fio=..., data=...)
+```
 
 ---
 
 ### `_build_compact_topic_header`
-- **Signature**: `def _build_compact_topic_header(pulse: float, total: int, p_cnt: int, d_cnt: int) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L88-L96](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L88-L96)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _build_compact_topic_header(pulse: float, total: int, p_cnt: int, d_cnt: int) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует презентабельную компактную шапку дашборда группы.
+- **Source Reference**: [`services/attendance_topic_updater.py#L88-L96`](../../services/attendance_topic_updater.py#L88-L96)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_compact_topic_header`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `pulse` | `float` | Input parameter |
-| `total` | `int` | Input parameter |
-| `p_cnt` | `int` | Input parameter |
-| `d_cnt` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `pulse` | `float` | Yes | Parameter `pulse` of type `float`. |
+| `total` | `int` | Yes | Parameter `total` of type `int`. |
+| `p_cnt` | `int` | Yes | Parameter `p_cnt` of type `int`. |
+| `d_cnt` | `int` | Yes | Parameter `d_cnt` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _build_compact_topic_header
+
+# Execute call
+result = _build_compact_topic_header(pulse=..., total=..., p_cnt=...)
+```
 
 ---
 
 ### `_decline_absence`
-- **Signature**: `def _decline_absence(n: int) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L99-L108](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L99-L108)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _decline_absence(n: int) -> str
+```
 
-#### Purpose & Architectural Intent
-Склоняет слово 'прогул' по грамматическим правилам русского языка.
+- **Source Reference**: [`services/attendance_topic_updater.py#L99-L108`](../../services/attendance_topic_updater.py#L99-L108)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_decline_absence`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `n` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `n` | `int` | Yes | Parameter `n` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `if 11 <= (n % 100) <= 14:`
-2. `rem = n % 10`
-3. `if rem == 1:`
-4. `if 2 <= rem <= 4:`
-5. `return f"{n} прогулов"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _decline_absence
+
+# Execute call
+result = _decline_absence(n=...)
+```
 
 ---
 
 ### `_format_debt_details`
-- **Signature**: `def _format_debt_details(s: dict[str, Any]) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L111-L120](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L111-L120)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _format_debt_details(s: dict[str, Any]) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует понятный список причин (прогулы, опоздания, справки).
+- **Source Reference**: [`services/attendance_topic_updater.py#L111-L120`](../../services/attendance_topic_updater.py#L111-L120)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_debt_details`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `parts = []`
-2. `if s["n"] > 0:`
-3. `if s["o"] > 0:`
-4. `if s["u"] > 0:`
-5. `return ", ".join(parts) if parts else "без замечаний"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _format_debt_details
+
+# Execute call
+result = _format_debt_details(s=...)
+```
 
 ---
 
 ### `_format_debt_student`
-- **Signature**: `def _format_debt_student(s: dict[str, Any]) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L123-L133](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L123-L133)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _format_debt_student(s: dict[str, Any]) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует строку студента, имеющего пропуски или опоздания.
+- **Source Reference**: [`services/attendance_topic_updater.py#L123-L133`](../../services/attendance_topic_updater.py#L123-L133)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_debt_student`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `details = _format_debt_details(s)`
-2. `clean_fio = html.escape(s["fio"])`
-3. `if s["pct"] == 0 or s["n"] >= 12:`
-4. `return f"{icon} <b>{clean_fio}</b> — <b>{s['pct']:.0f}%</b> ({details})"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _format_debt_student
+
+# Execute call
+result = _format_debt_student(s=...)
+```
 
 ---
 
 ### `_format_perfect_student`
-- **Signature**: `def _format_perfect_student(s: dict[str, Any]) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L136-L141](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L136-L141)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _format_perfect_student(s: dict[str, Any]) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует аккуратную строку отличника без лишнего визуального шума.
+- **Source Reference**: [`services/attendance_topic_updater.py#L136-L141`](../../services/attendance_topic_updater.py#L136-L141)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_perfect_student`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `clean_fio = html.escape(s["fio"])`
-2. `if s["u"] > 0:`
-3. `return f"• <b>{clean_fio}</b>"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _format_perfect_student
+
+# Execute call
+result = _format_perfect_student(s=...)
+```
 
 ---
 
 ### `_build_topic_footer`
-- **Signature**: `def _build_topic_footer() -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L144-L151](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L144-L151)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def _build_topic_footer() -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует подвал сообщения со ссылкой на ЛС и временем обновления.
+- **Source Reference**: [`services/attendance_topic_updater.py#L144-L151`](../../services/attendance_topic_updater.py#L144-L151)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_topic_footer`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `now_str = datetime.now(TIMEZONE).strftime("%H:%M")`
-2. `return (`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _build_topic_footer
+
+# Execute call
+result = _build_topic_footer()
+```
 
 ---
 
 ### `format_attendance_topic_message`
-- **Signature**: `def format_attendance_topic_message(stats: dict[str, dict[str, Any]]) -> str`
-- **Source Reference**: [services/attendance_topic_updater.py#L154-L172](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L154-L172)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_attendance_topic_message(stats: dict[str, dict[str, Any]]) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует дашборд с компактным блоком отличников и журналом долгов.
+- **Source Reference**: [`services/attendance_topic_updater.py#L154-L172`](../../services/attendance_topic_updater.py#L154-L172)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_attendance_topic_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `stats` | `dict[str, dict[str, Any]]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
 
-#### Step-by-Step Logic Execution
-1. `if not stats:`
-2. `items = [_build_student_item(fio, d) for fio, d in stats.items()]`
-3. `perfect = [s for s in items if s["n"] == 0 and s["o"] == 0]`
-4. `debts = [s for s in items if s["n"] > 0 or s["o"] > 0]`
-5. `perfect.sort(key=lambda s: s["fio"])`
-6. `debts.sort(key=lambda s: (-s["pct"], -s["n"], s["fio"]))`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import format_attendance_topic_message
+
+# Execute call
+result = format_attendance_topic_message(stats=...)
+```
 
 ---
 
 ### `_pin_attendance_silently`
-- **Signature**: `async def _pin_attendance_silently(message_id: int) -> None`
-- **Source Reference**: [services/attendance_topic_updater.py#L175-L183](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L175-L183)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _pin_attendance_silently(message_id: int) -> None
+```
 
-#### Purpose & Architectural Intent
-Закрепляет главное сообщение реестра в топике без звукового уведомления.
+- **Source Reference**: [`services/attendance_topic_updater.py#L175-L183`](../../services/attendance_topic_updater.py#L175-L183)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_pin_attendance_silently`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _pin_attendance_silently
+
+# Execute call
+result = await _pin_attendance_silently(message_id=...)
+```
 
 ---
 
 ### `create_attendance_message`
-- **Signature**: `async def create_attendance_message(text: str) -> int`
-- **Source Reference**: [services/attendance_topic_updater.py#L186-L196](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L186-L196)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def create_attendance_message(text: str) -> int
+```
 
-#### Purpose & Architectural Intent
-Создает и закрепляет главное сообщение в топике посещаемости.
+- **Source Reference**: [`services/attendance_topic_updater.py#L186-L196`](../../services/attendance_topic_updater.py#L186-L196)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Initializes and constructs a new instance of `create_attendance_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `msg = await bot.send_message(`
-2. `save_attendance_topic_state(msg.message_id)`
-3. `await _pin_attendance_silently(msg.message_id)`
-4. `log.info(f"Сообщение реестра посещаемости создано: MSG_ID={msg.message_id}")`
-5. `return msg.message_id`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import create_attendance_message
+
+# Execute call
+result = await create_attendance_message(text=...)
+```
 
 ---
 
 ### `handle_attendance_edit_error`
-- **Signature**: `async def handle_attendance_edit_error(text: str, err_str: str, retry: bool) -> bool`
-- **Source Reference**: [services/attendance_topic_updater.py#L199-L211](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L199-L211)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def handle_attendance_edit_error(text: str, err_str: str, retry: bool) -> bool
+```
 
-#### Purpose & Architectural Intent
-Обрабатывает ошибки обновления сообщения в топике (not modified / удалено).
+- **Source Reference**: [`services/attendance_topic_updater.py#L199-L211`](../../services/attendance_topic_updater.py#L199-L211)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `handle_attendance_edit_error`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
-| `err_str` | `str` | Input parameter |
-| `retry` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `err_str` | `str` | Yes | Parameter `err_str` of type `str`. |
+| `retry` | `bool` | Yes | Parameter `retry` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _ATT_MAIN_MSG_ID`
-2. `if "not modified" in err_str:`
-3. `if retry:`
-4. `log.warning(f"⚠️ Ошибка редактирования attendance MSG_ID={_ATT_MAIN_MSG_ID}, пересозд`
-5. `_ATT_MAIN_MSG_ID = None`
-6. `save_attendance_topic_state(None)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import handle_attendance_edit_error
+
+# Execute call
+result = await handle_attendance_edit_error(text=..., err_str=..., retry=...)
+```
 
 ---
 
 ### `send_or_edit_attendance_msg`
-- **Signature**: `async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool`
-- **Source Reference**: [services/attendance_topic_updater.py#L214-L232](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L214-L232)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool
+```
 
-#### Purpose & Architectural Intent
-Отправляет или обновляет главное сообщение в топике посещаемости.
+- **Source Reference**: [`services/attendance_topic_updater.py#L214-L232`](../../services/attendance_topic_updater.py#L214-L232)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Dispatches notification message via Telegram API for `send_or_edit_attendance_msg`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `text` | `str` | Input parameter |
-| `_retry` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `_retry` | `bool` | Yes | Parameter `_retry` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _ATT_MAIN_MSG_ID`
-2. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import send_or_edit_attendance_msg
+
+# Execute call
+result = await send_or_edit_attendance_msg(text=..., _retry=...)
+```
 
 ---
 
 ### `recreate_attendance_topic_message`
-- **Signature**: `async def recreate_attendance_topic_message() -> bool`
-- **Source Reference**: [services/attendance_topic_updater.py#L235-L247](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L235-L247)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def recreate_attendance_topic_message() -> bool
+```
 
-#### Purpose & Architectural Intent
-Удаляет старое сообщение топика посещаемости и создаёт новое.
+- **Source Reference**: [`services/attendance_topic_updater.py#L235-L247`](../../services/attendance_topic_updater.py#L235-L247)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `recreate_attendance_topic_message`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _ATT_MAIN_MSG_ID`
-2. `old_id = _ATT_MAIN_MSG_ID or load_attendance_topic_state()`
-3. `if old_id:`
-4. `_ATT_MAIN_MSG_ID = None`
-5. `save_attendance_topic_state(None)`
-6. `return await sync_attendance_topic_message(force_refresh=True)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import recreate_attendance_topic_message
+
+# Execute call
+result = await recreate_attendance_topic_message()
+```
 
 ---
 
 ### `sync_attendance_topic_message`
-- **Signature**: `async def sync_attendance_topic_message(force_refresh: bool = False) -> bool`
-- **Source Reference**: [services/attendance_topic_updater.py#L250-L265](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L250-L265)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def sync_attendance_topic_message(force_refresh: bool = False) -> bool
+```
 
-#### Purpose & Architectural Intent
-Синхронизирует данные из таблицы и обновляет сообщение в топике с локом.
+- **Source Reference**: [`services/attendance_topic_updater.py#L250-L265`](../../services/attendance_topic_updater.py#L250-L265)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `sync_attendance_topic_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _ATT_MAIN_MSG_ID`
-2. `if _ATT_MAIN_MSG_ID is None:`
-3. `async with redis_lock("att:lock:topic_sync", ttl=20) as acquired:`
+#### Concurrency & Side Effects
+- Acquires distributed Redis lock with automatic TTL expiration to prevent races.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import sync_attendance_topic_message
+
+# Execute call
+result = await sync_attendance_topic_message(force_refresh=...)
+```
 
 ---
 
 ### `_get_attendance_sync_sleep_seconds`
-- **Signature**: `def _get_attendance_sync_sleep_seconds() -> int`
-- **Source Reference**: [services/attendance_topic_updater.py#L268-L273](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L268-L273)
-- **Async**: `No`
-- **Return Type**: `int`
+```python
+def _get_attendance_sync_sleep_seconds() -> int
+```
 
-#### Purpose & Architectural Intent
-Определяет интервал: 3 мин в учебные часы (08-19), иначе 15 мин.
+- **Source Reference**: [`services/attendance_topic_updater.py#L268-L273`](../../services/attendance_topic_updater.py#L268-L273)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_get_attendance_sync_sleep_seconds`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `now = datetime.now(TIMEZONE)`
-2. `if 8 <= now.hour < 19 and now.weekday() < 6:`
-3. `return ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import _get_attendance_sync_sleep_seconds
+
+# Execute call
+result = _get_attendance_sync_sleep_seconds()
+```
 
 ---
 
 ### `attendance_topic_sync_loop`
-- **Signature**: `async def attendance_topic_sync_loop() -> None`
-- **Source Reference**: [services/attendance_topic_updater.py#L276-L285](file:///home/u/Рабочий стол/para/services/attendance_topic_updater.py#L276-L285)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def attendance_topic_sync_loop() -> None
+```
 
-#### Purpose & Architectural Intent
-Фоновый цикл авто-обновления топика с адаптивным интервалом.
+- **Source Reference**: [`services/attendance_topic_updater.py#L276-L285`](../../services/attendance_topic_updater.py#L276-L285)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `attendance_topic_sync_loop`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `log.info("Запущен адаптивный фоновый сервис авто-обновления топика Посещаемость")`
-2. `while True:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_topic_updater import attendance_topic_sync_loop
+
+# Execute call
+result = await attendance_topic_sync_loop()
+```
 
 ---

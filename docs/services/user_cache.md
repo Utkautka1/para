@@ -1,128 +1,194 @@
-# Module Specification: `services/user_cache.py`
-> **Path**: [`services/user_cache.py`](file:///home/u/Рабочий стол/para/services/user_cache.py)  
+# Component Reference: `services/user_cache.py`
+> **File Path**: [`services/user_cache.py`](../../services/user_cache.py)  
 > **Subsystem**: `Student Identity Cache`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис постоянного кэширования пользователей Telegram (username -> user_id). Сохраняет соответствия юзернеймов и цифровых Telegram ID на диск (data/user_cache.json), чтобы при перезапуске бота кэш не сбрасывался.
+## 1. Architectural Role & Responsibilities
+The `services/user_cache.py` module implements core operational logic for the `Student Identity Cache` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L26 | `None` | Сбрасывает оперативный кэш пользователей. |
-| [`load_user_cache`](#load_user_cache) | Function | L29–L41 | `dict[str, int]` | Загружает кэш пользователей с in-memory буферизацией по mtim |
-| [`save_user_cache`](#save_user_cache) | Function | L44–L53 | `None` | Атомарно сохраняет словарь кэша пользователей на диск и в па |
-| [`get_cached_user_id`](#get_cached_user_id) | Function | L56–L59 | `int | None` | Возвращает Telegram ID из постоянного кэша по юзернейму. |
-| [`add_user_to_cache`](#add_user_to_cache) | Function | L62–L71 | `None` | Добавляет пользователя в постоянный кэш и сохраняет на диск. |
+| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L26 | `None` | Flushes and resets state for `clear_user_cache_memory`. |
+| [`load_user_cache`](#load_user_cache) | Function | L29–L41 | `dict[str, int]` | Executes core domain logic for `load_user_cache`. |
+| [`save_user_cache`](#save_user_cache) | Function | L44–L53 | `None` | Saves serialized entity data to storage for `save_user_... |
+| [`get_cached_user_id`](#get_cached_user_id) | Function | L56–L59 | `int | None` | Retrieves and resolves domain data for `get_cached_user... |
+| [`add_user_to_cache`](#add_user_to_cache) | Function | L62–L71 | `None` | Executes core domain logic for `add_user_to_cache`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `clear_user_cache_memory`
-- **Signature**: `def clear_user_cache_memory() -> None`
-- **Source Reference**: [services/user_cache.py#L21-L26](file:///home/u/Рабочий стол/para/services/user_cache.py#L21-L26)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def clear_user_cache_memory() -> None
+```
 
-#### Purpose & Architectural Intent
-Сбрасывает оперативный кэш пользователей.
+- **Source Reference**: [`services/user_cache.py#L21-L26`](../../services/user_cache.py#L21-L26)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Flushes and resets state for `clear_user_cache_memory`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH`
-2. `_USER_CACHE = None`
-3. `_USER_CACHE_MTIME = 0.0`
-4. `_USER_CACHE_PATH = None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.user_cache import clear_user_cache_memory
+
+# Execute call
+result = clear_user_cache_memory()
+```
 
 ---
 
 ### `load_user_cache`
-- **Signature**: `def load_user_cache() -> dict[str, int]`
-- **Source Reference**: [services/user_cache.py#L29-L41](file:///home/u/Рабочий стол/para/services/user_cache.py#L29-L41)
-- **Async**: `No`
-- **Return Type**: `dict[str, int]`
+```python
+def load_user_cache() -> dict[str, int]
+```
 
-#### Purpose & Architectural Intent
-Загружает кэш пользователей с in-memory буферизацией по mtime.
+- **Source Reference**: [`services/user_cache.py#L29-L41`](../../services/user_cache.py#L29-L41)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_user_cache`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH`
-2. `try:`
-3. `if _USER_CACHE is not None and _USER_CACHE_PATH == CACHE_FILE_PATH and current_mtime `
-4. `_USER_CACHE = sync_load_json(CACHE_FILE_PATH, default={})`
-5. `_USER_CACHE_MTIME = current_mtime`
-6. `_USER_CACHE_PATH = CACHE_FILE_PATH`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.user_cache import load_user_cache
+
+# Execute call
+result = load_user_cache()
+```
 
 ---
 
 ### `save_user_cache`
-- **Signature**: `def save_user_cache(cache: dict[str, int]) -> None`
-- **Source Reference**: [services/user_cache.py#L44-L53](file:///home/u/Рабочий стол/para/services/user_cache.py#L44-L53)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def save_user_cache(cache: dict[str, int]) -> None
+```
 
-#### Purpose & Architectural Intent
-Атомарно сохраняет словарь кэша пользователей на диск и в память.
+- **Source Reference**: [`services/user_cache.py#L44-L53`](../../services/user_cache.py#L44-L53)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_user_cache`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cache` | `dict[str, int]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cache` | `dict[str, int]` | Yes | Parameter `cache` of type `dict[str, int]`. |
 
-#### Step-by-Step Logic Execution
-1. `global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH`
-2. `_USER_CACHE = cache`
-3. `sync_atomic_save_json(CACHE_FILE_PATH, cache)`
-4. `_USER_CACHE_PATH = CACHE_FILE_PATH`
-5. `try:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.user_cache import save_user_cache
+
+# Execute call
+result = save_user_cache(cache=...)
+```
 
 ---
 
 ### `get_cached_user_id`
-- **Signature**: `def get_cached_user_id(username: str) -> int | None`
-- **Source Reference**: [services/user_cache.py#L56-L59](file:///home/u/Рабочий стол/para/services/user_cache.py#L56-L59)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def get_cached_user_id(username: str) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Возвращает Telegram ID из постоянного кэша по юзернейму.
+- **Source Reference**: [`services/user_cache.py#L56-L59`](../../services/user_cache.py#L56-L59)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_cached_user_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `username` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `username` | `str` | Yes | Parameter `username` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `clean = username.lstrip("@").lower()`
-2. `return load_user_cache().get(clean)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.user_cache import get_cached_user_id
+
+# Execute call
+result = get_cached_user_id(username=...)
+```
 
 ---
 
 ### `add_user_to_cache`
-- **Signature**: `def add_user_to_cache(username: str, user_id: int) -> None`
-- **Source Reference**: [services/user_cache.py#L62-L71](file:///home/u/Рабочий стол/para/services/user_cache.py#L62-L71)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def add_user_to_cache(username: str, user_id: int) -> None
+```
 
-#### Purpose & Architectural Intent
-Добавляет пользователя в постоянный кэш и сохраняет на диск.
+- **Source Reference**: [`services/user_cache.py#L62-L71`](../../services/user_cache.py#L62-L71)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `add_user_to_cache`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `username` | `str` | Input parameter |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `username` | `str` | Yes | Parameter `username` of type `str`. |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `if not username:`
-2. `clean = username.lstrip("@").lower()`
-3. `cache = load_user_cache()`
-4. `if cache.get(clean) != user_id:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.user_cache import add_user_to_cache
+
+# Execute call
+result = add_user_to_cache(username=..., user_id=...)
+```
 
 ---

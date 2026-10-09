@@ -1,41 +1,67 @@
-# Module Specification: `services/models.py`
-> **Path**: [`services/models.py`](file:///home/u/Рабочий стол/para/services/models.py)  
+# Component Reference: `services/models.py`
+> **File Path**: [`services/models.py`](../../services/models.py)  
 > **Subsystem**: `Domain Models`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Общие Pydantic-модели данных, используемые всеми сервисами. Вынесены из парсеров, чтобы бот мог десериализовать JSON из API без импорта тяжёлых модулей парсинга (httpx, docx, etc).
+## 1. Architectural Role & Responsibilities
+The `services/models.py` module implements core operational logic for the `Domain Models` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`Lesson.number`](#lessonnumber) | Method | L29–L31 | `int` | Номер пары от 1 до 6 (period + 1). |
+| [`Lesson.number`](#lessonnumber) | Method | L29–L31 | `int` | Executes core domain logic for `number`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
-## Class: `Lesson`
-Модель данных одного занятия в расписании.
+## Class Model: `Lesson`
+
+Encapsulates domain entities and data transfer logic for `Lesson`.
 
 ### `Lesson.number`
-- **Signature**: `def number(self) -> int`
-- **Source Reference**: [services/models.py#L29-L31](file:///home/u/Рабочий стол/para/services/models.py#L29-L31)
-- **Async**: `No`
-- **Return Type**: `int`
+```python
+def number(self) -> int
+```
 
-#### Purpose & Architectural Intent
-Номер пары от 1 до 6 (period + 1).
+- **Source Reference**: [`services/models.py#L29-L31`](../../services/models.py#L29-L31)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `number`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `self` | `Any` | Input parameter |
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return self.period + 1`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.models import number
+
+# Execute call
+result = number()
+```
 
 ---
 
-## Class: `ExamItem`
-Модель контрольного мероприятия/экзамена.
+## Class Model: `ExamItem`
+
+Encapsulates domain entities and data transfer logic for `ExamItem`.

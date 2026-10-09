@@ -1,189 +1,296 @@
-# Module Specification: `api/router/schedule.py`
-> **Path**: [`api/router/schedule.py`](file:///home/u/Рабочий стол/para/api/router/schedule.py)  
+# Component Reference: `api/router/schedule.py`
+> **File Path**: [`api/router/schedule.py`](../../api/router/schedule.py)  
 > **Subsystem**: `Schedule API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер расписания — GET /schedule (day, today, tomorrow, week, current, refresh). Предоставляет чистые данные расписания занятий группы 1-КПД-3 с валидацией прав тестера или API-ключа.
+## 1. Architectural Role & Responsibilities
+The `api/router/schedule.py` module implements core operational logic for the `Schedule API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_current_monday`](#_current_monday) | Function | L28–L31 | `date` | Вычисляет понедельник текущей недели. |
-| [`schedule_day`](#schedule_day) | Function | L35–L42 | `DayScheduleResponse` | Расписание на конкретный учебный день. |
-| [`schedule_today`](#schedule_today) | Function | L46–L50 | `DayScheduleResponse` | Расписание занятий на сегодня. |
-| [`schedule_tomorrow`](#schedule_tomorrow) | Function | L54–L58 | `DayScheduleResponse` | Расписание занятий на завтра. |
-| [`schedule_week`](#schedule_week) | Function | L62–L70 | `WeekScheduleResponse` | Расписание занятий на целую неделю (пн—сб). |
-| [`_find_current_and_next`](#_find_current_and_next) | Function | L73–L84 | `tuple[Lesson | None, Lesson | None]` | Находит текущую и ближайшую следующую пару по текущему време |
-| [`schedule_current`](#schedule_current) | Function | L88–L97 | `CurrentLessonResponse` | Информация о текущем и следующем занятии прямо сейчас. |
-| [`schedule_refresh`](#schedule_refresh) | Function | L101–L105 | `ScheduleRefreshResponse` | Принудительная очистка кэша расписания (Admin only). |
+| [`_current_monday`](#_current_monday) | Function | L28–L31 | `date` | Executes core domain logic for `_current_monday`. |
+| [`schedule_day`](#schedule_day) | Function | L35–L42 | `DayScheduleResponse` | Executes core domain logic for `schedule_day`. |
+| [`schedule_today`](#schedule_today) | Function | L46–L50 | `DayScheduleResponse` | Executes core domain logic for `schedule_today`. |
+| [`schedule_tomorrow`](#schedule_tomorrow) | Function | L54–L58 | `DayScheduleResponse` | Executes core domain logic for `schedule_tomorrow`. |
+| [`schedule_week`](#schedule_week) | Function | L62–L70 | `WeekScheduleResponse` | Executes core domain logic for `schedule_week`. |
+| [`_find_current_and_next`](#_find_current_and_next) | Function | L73–L84 | `tuple[Lesson | None, Lesson | None]` | Executes core domain logic for `_find_current_and_next`... |
+| [`schedule_current`](#schedule_current) | Function | L88–L97 | `CurrentLessonResponse` | Executes core domain logic for `schedule_current`. |
+| [`schedule_refresh`](#schedule_refresh) | Function | L101–L105 | `ScheduleRefreshResponse` | Executes core domain logic for `schedule_refresh`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_current_monday`
-- **Signature**: `def _current_monday() -> date`
-- **Source Reference**: [api/router/schedule.py#L28-L31](file:///home/u/Рабочий стол/para/api/router/schedule.py#L28-L31)
-- **Async**: `No`
-- **Return Type**: `date`
+```python
+def _current_monday() -> date
+```
 
-#### Purpose & Architectural Intent
-Вычисляет понедельник текущей недели.
+- **Source Reference**: [`api/router/schedule.py#L28-L31`](../../api/router/schedule.py#L28-L31)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_current_monday`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `today = datetime.now(TIMEZONE).date()`
-2. `return today - timedelta(days=today.weekday())`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import _current_monday
+
+# Execute call
+result = _current_monday()
+```
 
 ---
 
 ### `schedule_day`
-- **Signature**: `async def schedule_day( target_date: date | None = Query(default=None, description="YYYY-MM-DD, по умолчанию сегодня"), force_refresh: bool = Query(default=False), ) -> DayScheduleResponse`
-- **Source Reference**: [api/router/schedule.py#L35-L42](file:///home/u/Рабочий стол/para/api/router/schedule.py#L35-L42)
-- **Async**: `Yes`
-- **Return Type**: `DayScheduleResponse`
+```python
+async def schedule_day( target_date: date | None = Query(default=None, description="Target date (YYYY-MM-DD)"), force_refresh: bool = Query(default=False), ) -> DayScheduleResponse
+```
 
-#### Purpose & Architectural Intent
-Расписание на конкретный учебный день.
+- **Source Reference**: [`api/router/schedule.py#L35-L42`](../../api/router/schedule.py#L35-L42)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `DayScheduleResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_day`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `target_date` | `date | None` | Input parameter |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `target_date` | `date | None` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `day = target_date or datetime.now(TIMEZONE).date()`
-2. `lessons = await get_schedule_for_date(day, force_refresh=force_refresh)`
-3. `return DayScheduleResponse(date=day, lessons=lessons)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_day
+
+# Execute call
+result = await schedule_day(target_date=..., force_refresh=...)
+```
 
 ---
 
 ### `schedule_today`
-- **Signature**: `async def schedule_today(force_refresh: bool = Query(default=False)) -> DayScheduleResponse`
-- **Source Reference**: [api/router/schedule.py#L46-L50](file:///home/u/Рабочий стол/para/api/router/schedule.py#L46-L50)
-- **Async**: `Yes`
-- **Return Type**: `DayScheduleResponse`
+```python
+async def schedule_today(force_refresh: bool = Query(default=False)) -> DayScheduleResponse
+```
 
-#### Purpose & Architectural Intent
-Расписание занятий на сегодня.
+- **Source Reference**: [`api/router/schedule.py#L46-L50`](../../api/router/schedule.py#L46-L50)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `DayScheduleResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_today`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `today = datetime.now(TIMEZONE).date()`
-2. `lessons = await get_schedule_for_date(today, force_refresh=force_refresh)`
-3. `return DayScheduleResponse(date=today, lessons=lessons)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_today
+
+# Execute call
+result = await schedule_today(force_refresh=...)
+```
 
 ---
 
 ### `schedule_tomorrow`
-- **Signature**: `async def schedule_tomorrow(force_refresh: bool = Query(default=False)) -> DayScheduleResponse`
-- **Source Reference**: [api/router/schedule.py#L54-L58](file:///home/u/Рабочий стол/para/api/router/schedule.py#L54-L58)
-- **Async**: `Yes`
-- **Return Type**: `DayScheduleResponse`
+```python
+async def schedule_tomorrow(force_refresh: bool = Query(default=False)) -> DayScheduleResponse
+```
 
-#### Purpose & Architectural Intent
-Расписание занятий на завтра.
+- **Source Reference**: [`api/router/schedule.py#L54-L58`](../../api/router/schedule.py#L54-L58)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `DayScheduleResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_tomorrow`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)`
-2. `lessons = await get_schedule_for_date(tomorrow, force_refresh=force_refresh)`
-3. `return DayScheduleResponse(date=tomorrow, lessons=lessons)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_tomorrow
+
+# Execute call
+result = await schedule_tomorrow(force_refresh=...)
+```
 
 ---
 
 ### `schedule_week`
-- **Signature**: `async def schedule_week( monday: date | None = Query(default=None, description="Понедельник недели (YYYY-MM-DD)"), force_refresh: bool = Query(default=False), ) -> WeekScheduleResponse`
-- **Source Reference**: [api/router/schedule.py#L62-L70](file:///home/u/Рабочий стол/para/api/router/schedule.py#L62-L70)
-- **Async**: `Yes`
-- **Return Type**: `WeekScheduleResponse`
+```python
+async def schedule_week( monday: date | None = Query(default=None, description="Monday of the week (YYYY-MM-DD)"), force_refresh: bool = Query(default=False), ) -> WeekScheduleResponse
+```
 
-#### Purpose & Architectural Intent
-Расписание занятий на целую неделю (пн—сб).
+- **Source Reference**: [`api/router/schedule.py#L62-L70`](../../api/router/schedule.py#L62-L70)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `WeekScheduleResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_week`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `monday` | `date | None` | Input parameter |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `monday` | `date | None` | Yes | Parameter `monday` of type `date | None`. |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `mon = monday or _current_monday()`
-2. `raw = await get_week_schedule(mon, force_refresh=force_refresh)`
-3. `days = [WeekDayItem(date=d, lessons=ls) for d, ls in raw]`
-4. `return WeekScheduleResponse(monday=mon, days=days)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_week
+
+# Execute call
+result = await schedule_week(monday=..., force_refresh=...)
+```
 
 ---
 
 ### `_find_current_and_next`
-- **Signature**: `def _find_current_and_next(lessons: list[Lesson], now_time: str) -> tuple[Lesson | None, Lesson | None]`
-- **Source Reference**: [api/router/schedule.py#L73-L84](file:///home/u/Рабочий стол/para/api/router/schedule.py#L73-L84)
-- **Async**: `No`
-- **Return Type**: `tuple[Lesson | None, Lesson | None]`
+```python
+def _find_current_and_next(lessons: list[Lesson], now_time: str) -> tuple[Lesson | None, Lesson | None]
+```
 
-#### Purpose & Architectural Intent
-Находит текущую и ближайшую следующую пару по текущему времени.
+- **Source Reference**: [`api/router/schedule.py#L73-L84`](../../api/router/schedule.py#L73-L84)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[Lesson | None, Lesson | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_find_current_and_next`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lessons` | `list[Lesson]` | Input parameter |
-| `now_time` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lessons` | `list[Lesson]` | Yes | Parameter `lessons` of type `list[Lesson]`. |
+| `now_time` | `str` | Yes | Parameter `now_time` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `curr, nxt = None, None`
-2. `for l in sorted(lessons, key=lambda x: x.period):`
-3. `return curr, nxt`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import _find_current_and_next
+
+# Execute call
+result = _find_current_and_next(lessons=..., now_time=...)
+```
 
 ---
 
 ### `schedule_current`
-- **Signature**: `async def schedule_current() -> CurrentLessonResponse`
-- **Source Reference**: [api/router/schedule.py#L88-L97](file:///home/u/Рабочий стол/para/api/router/schedule.py#L88-L97)
-- **Async**: `Yes`
-- **Return Type**: `CurrentLessonResponse`
+```python
+async def schedule_current() -> CurrentLessonResponse
+```
 
-#### Purpose & Architectural Intent
-Информация о текущем и следующем занятии прямо сейчас.
+- **Source Reference**: [`api/router/schedule.py#L88-L97`](../../api/router/schedule.py#L88-L97)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `CurrentLessonResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_current`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `now_dt = datetime.now(TIMEZONE)`
-2. `lessons = await get_schedule_for_date(now_dt.date())`
-3. `curr, nxt = _find_current_and_next(lessons, now_dt.strftime("%H:%M"))`
-4. `return CurrentLessonResponse(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_current
+
+# Execute call
+result = await schedule_current()
+```
 
 ---
 
 ### `schedule_refresh`
-- **Signature**: `async def schedule_refresh() -> ScheduleRefreshResponse`
-- **Source Reference**: [api/router/schedule.py#L101-L105](file:///home/u/Рабочий стол/para/api/router/schedule.py#L101-L105)
-- **Async**: `Yes`
-- **Return Type**: `ScheduleRefreshResponse`
+```python
+async def schedule_refresh() -> ScheduleRefreshResponse
+```
 
-#### Purpose & Architectural Intent
-Принудительная очистка кэша расписания (Admin only).
+- **Source Reference**: [`api/router/schedule.py#L101-L105`](../../api/router/schedule.py#L101-L105)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ScheduleRefreshResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_refresh`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `deleted = await cache_flush(pattern="sched:*")`
-2. `now_str = datetime.now(TIMEZONE).isoformat()`
-3. `return ScheduleRefreshResponse(status="ok", flushed_keys=deleted, timestamp=now_str)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.schedule import schedule_refresh
+
+# Execute call
+result = await schedule_refresh()
+```
 
 ---

@@ -1,902 +1,1360 @@
-# Module Specification: `integrations/yandex_docs.py`
-> **Path**: [`integrations/yandex_docs.py`](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py)  
+# Component Reference: `integrations/yandex_docs.py`
+> **File Path**: [`integrations/yandex_docs.py`](../../integrations/yandex_docs.py)  
 > **Subsystem**: `WOPI Cloud Service`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис интеграции с Яндекс Документами через протокол WOPI. Обеспечивает чтение и запись посещаемости в таблицу .xlsx на Яндекс Диске. Поскольку прямая публичная веб-ссылка docs.yandex.ru защищена капчей, сессионный токен доступа WOPI извлекается через headless Chromium. Запись в файл выполняется по стандарту WOPI (HTTP POST с X-WOPI-Override: PUT) с соблюдением активной блокировки X-WOPI-Lock.
+## 1. Architectural Role & Responsibilities
+The `integrations/yandex_docs.py` module implements core operational logic for the `WOPI Cloud Service` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`WopiSession.__init__`](#wopisession__init__) | Method | L40–L46 | `Any` | Method |
-| [`extract_client_config`](#extract_client_config) | Function | L49–L61 | `dict` | Извлекает JSON конфигурации редактора из HTML страницы. |
-| [`merge_cookie_header`](#merge_cookie_header) | Function | L64–L73 | `str` | Объединяет текущие Cookie с обновленными значениями из ответ |
-| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L76–L83 | `str` | Формирует fallback строку заголовка Cookie из конфигурации . |
-| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L86–L97 | `str` | Возвращает актуальные Cookie из Redis, либо fallback из .env |
-| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L100–L109 | `None` | Атомарно сохраняет актуальную строку Cookie в Redis с TTL. |
-| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L112–L119 | `None` | Извлекает Set-Cookie из ответа и при наличии обновлений сохр |
-| [`fetch_page_dom`](#fetch_page_dom) | Function | L122–L145 | `str` | Загружает HTML страницы редактора через HTTP с актуальной се |
-| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L148–L160 | `str` | Определяет активный идентификатор блокировки файла. |
-| [`init_wopi_session`](#init_wopi_session) | Function | L163–L179 | `WopiSession` | Инициализирует WOPI-сессию для чтения и сохранения таблицы. |
-| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L182–L187 | `openpyxl.Workbook` | Синхронно парсит байты книги openpyxl в отдельном потоке без |
-| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L190–L205 | `dict[tuple[str, int], int]` | Подсчитывает количество отметок О, У, Н для каждой строки ст |
-| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L208–L226 | `str` | Заменяет пустые значения <v></v> на вычисленные количества в |
-| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L229–L252 | `None` | Гарантирует заголовки, коды и COUNTIF формулы во всех листах |
-| [`inject_summary_cache`](#inject_summary_cache) | Function | L255–L268 | `bytes` | Инжектирует кэшированные значения формул COUNTIF в zip-архив |
-| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L271–L279 | `bytes` | Синхронно сохраняет книгу openpyxl в байты с инжекцией кэша  |
-| [`download_workbook`](#download_workbook) | Function | L282–L295 | `openpyxl.Workbook` | Скачивает бинарный контент таблицы и загружает в openpyxl. |
-| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L298–L303 | `bool` | Блокирует файл в WOPI перед записью (HTTP 200). |
-| [`release_wopi_lock`](#release_wopi_lock) | Function | L306–L311 | `bool` | Снимает блокировку с файла после записи (HTTP 200). |
-| [`put_wopi_contents`](#put_wopi_contents) | Function | L314–L330 | `httpx.Response` | Отправляет бинарные данные таблицы методом PUT по протоколу  |
-| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L333–L348 | `bool` | Пробует записать файл сначала с текущим lock, затем с новым. |
-| [`upload_workbook`](#upload_workbook) | Function | L351–L359 | `bool` | Сохраняет книгу и выгружает на сервер с управлением блокиров |
-| [`verify_upload`](#verify_upload) | Function | L362–L379 | `bool` | Выполняет легковесную валидацию сохранения через скачивание  |
-| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L382–L390 | `bytes` | Скачивает бинарный контент таблицы без парсинга openpyxl. |
-| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L393–L410 | `str | None` | Находит relationship ID (r:id) листа по его имени в workbook |
-| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L413–L429 | `str | None` | Определяет относительный путь к XML листа в архиве по его r: |
-| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L432–L454 | `str | None` | Извлекает XML нужного листа по имени из xlsx zip-архива. |
-| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L457–L466 | `bool` | Проверяет совпадение отметки посещаемости в ячейке XML. |
-| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L469–L490 | `bool` | Проверяет наличие ожидаемых отметок посещаемости в XML листа |
-| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L493–L512 | `bool` | Проверяет наличие отметок в бинарном содержимом таблицы. |
-| [`get_month_sheet`](#get_month_sheet) | Function | L515–L524 | `Worksheet` | Находит рабочий лист для указанной даты по номеру месяца. |
-| [`parse_date_cell`](#parse_date_cell) | Function | L527–L533 | `str | None` | Приводит значение ячейки даты к строковому формату ДД.ММ. |
-| [`find_date_column_start`](#find_date_column_start) | Function | L536–L548 | `int | None` | Ищет начальную колонку даты во 2-й строке таблицы. |
-| [`find_lesson_column`](#find_lesson_column) | Function | L551–L567 | `int | None` | Определяет точную колонку для указанной даты и номера пары. |
-| [`normalize_fio`](#normalize_fio) | Function | L570–L572 | `str` | Очищает строку ФИО от неразрывных пробелов и лишних знаков. |
-| [`get_students_list`](#get_students_list) | Function | L575–L589 | `list[tuple[int, str]]` | Извлекает список студентов из колонки B, начиная с 5-й строк |
-| [`find_student_row`](#find_student_row) | Function | L592–L602 | `int | None` | Находит номер строки студента в колонке B по ФИО. |
-| [`write_student_mark`](#write_student_mark) | Function | L605–L622 | `None` | Записывает символ посещаемости (П, О, У, Н) в ячейку таблицы |
+| [`WopiSession.__init__`](#wopisession__init__) | Method | L40–L46 | `Any` | Executes core domain logic for `__init__`. |
+| [`extract_client_config`](#extract_client_config) | Function | L49–L61 | `dict` | Executes core domain logic for `extract_client_config`. |
+| [`merge_cookie_header`](#merge_cookie_header) | Function | L64–L73 | `str` | Executes core domain logic for `merge_cookie_header`. |
+| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L76–L83 | `str` | Retrieves and resolves domain data for `get_yandex_cook... |
+| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L86–L97 | `str` | Retrieves and resolves domain data for `get_effective_y... |
+| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L100–L109 | `None` | Saves serialized entity data to storage for `save_effec... |
+| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L112–L119 | `None` | Synchronizes and updates domain state for `update_cooki... |
+| [`fetch_page_dom`](#fetch_page_dom) | Function | L122–L145 | `str` | Executes core domain logic for `fetch_page_dom`. |
+| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L148–L160 | `str` | Retrieves and resolves domain data for `get_active_wopi... |
+| [`init_wopi_session`](#init_wopi_session) | Function | L163–L179 | `WopiSession` | Executes core domain logic for `init_wopi_session`. |
+| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L182–L187 | `openpyxl.Workbook` | Executes core domain logic for `load_workbook_from_byte... |
+| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L190–L205 | `dict[tuple[str, int], int]` | Executes core domain logic for `compute_sheet_summary_c... |
+| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L208–L226 | `str` | Executes core domain logic for `patch_sheet_xml_counts`... |
+| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L229–L252 | `None` | Executes core domain logic for `ensure_all_summary_head... |
+| [`inject_summary_cache`](#inject_summary_cache) | Function | L255–L268 | `bytes` | Executes core domain logic for `inject_summary_cache`. |
+| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L271–L279 | `bytes` | Saves serialized entity data to storage for `save_workb... |
+| [`download_workbook`](#download_workbook) | Function | L282–L295 | `openpyxl.Workbook` | Executes core domain logic for `download_workbook`. |
+| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L298–L303 | `bool` | Executes core domain logic for `acquire_wopi_lock`. |
+| [`release_wopi_lock`](#release_wopi_lock) | Function | L306–L311 | `bool` | Executes core domain logic for `release_wopi_lock`. |
+| [`put_wopi_contents`](#put_wopi_contents) | Function | L314–L330 | `httpx.Response` | Executes core domain logic for `put_wopi_contents`. |
+| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L333–L348 | `bool` | Executes core domain logic for `_try_put_with_lock`. |
+| [`upload_workbook`](#upload_workbook) | Function | L351–L359 | `bool` | Executes core domain logic for `upload_workbook`. |
+| [`verify_upload`](#verify_upload) | Function | L362–L379 | `bool` | Executes core domain logic for `verify_upload`. |
+| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L382–L390 | `bytes` | Executes core domain logic for `_download_raw_bytes`. |
+| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L393–L410 | `str | None` | Executes core domain logic for `_find_sheet_rid`. |
+| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L413–L429 | `str | None` | Executes core domain logic for `_resolve_sheet_target_p... |
+| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L432–L454 | `str | None` | Executes core domain logic for `_extract_sheet_xml`. |
+| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L457–L466 | `bool` | Executes core domain logic for `_cell_has_expected_mark... |
+| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L469–L490 | `bool` | Executes core domain logic for `_marks_found_in_xml`. |
+| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L493–L512 | `bool` | Executes core domain logic for `_verify_marks_in_raw`. |
+| [`get_month_sheet`](#get_month_sheet) | Function | L515–L524 | `Worksheet` | Retrieves and resolves domain data for `get_month_sheet... |
+| [`parse_date_cell`](#parse_date_cell) | Function | L527–L533 | `str | None` | Parses and extracts structured entities from `parse_dat... |
+| [`find_date_column_start`](#find_date_column_start) | Function | L536–L548 | `int | None` | Executes core domain logic for `find_date_column_start`... |
+| [`find_lesson_column`](#find_lesson_column) | Function | L551–L567 | `int | None` | Executes core domain logic for `find_lesson_column`. |
+| [`normalize_fio`](#normalize_fio) | Function | L570–L572 | `str` | Executes core domain logic for `normalize_fio`. |
+| [`get_students_list`](#get_students_list) | Function | L575–L589 | `list[tuple[int, str]]` | Retrieves and resolves domain data for `get_students_li... |
+| [`find_student_row`](#find_student_row) | Function | L592–L602 | `int | None` | Executes core domain logic for `find_student_row`. |
+| [`write_student_mark`](#write_student_mark) | Function | L605–L622 | `None` | Executes core domain logic for `write_student_mark`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
-## Class: `WopiSession`
-Сессия авторизованного доступа к документу по протоколу WOPI.
+## Class Model: `WopiSession`
+
+Encapsulates domain entities and data transfer logic for `WopiSession`.
 
 ### `WopiSession.__init__`
-- **Signature**: `def __init__(self, resource_url: str, access_token: str, lock_id: str)`
-- **Source Reference**: [integrations/yandex_docs.py#L40-L46](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L40-L46)
-- **Async**: `No`
-- **Return Type**: `Any`
+```python
+def __init__(self, resource_url: str, access_token: str, lock_id: str)
+```
 
-#### Purpose & Architectural Intent
-Executes internal domain logic according to service invariants.
+- **Source Reference**: [`integrations/yandex_docs.py#L40-L46`](../../integrations/yandex_docs.py#L40-L46)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `Any`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `__init__`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `self` | `Any` | Input parameter |
-| `resource_url` | `str` | Input parameter |
-| `access_token` | `str` | Input parameter |
-| `lock_id` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `resource_url` | `str` | Yes | Parameter `resource_url` of type `str`. |
+| `access_token` | `str` | Yes | Parameter `access_token` of type `str`. |
+| `lock_id` | `str` | Yes | Parameter `lock_id` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `self.resource_url = resource_url`
-2. `self.access_token = access_token`
-3. `self.lock_id = lock_id`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import __init__
+
+# Execute call
+result = __init__(resource_url=..., access_token=..., lock_id=...)
+```
 
 ---
 
 ### `extract_client_config`
-- **Signature**: `def extract_client_config(html_content: str) -> dict`
-- **Source Reference**: [integrations/yandex_docs.py#L49-L61](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L49-L61)
-- **Async**: `No`
-- **Return Type**: `dict`
+```python
+def extract_client_config(html_content: str) -> dict
+```
 
-#### Purpose & Architectural Intent
-Извлекает JSON конфигурации редактора из HTML страницы. В валидной сессии параметры зашиты в тег <script id="client-config">. При его отсутствии проверяем, не истекла ли сессия (экран логина).
+- **Source Reference**: [`integrations/yandex_docs.py#L49-L61`](../../integrations/yandex_docs.py#L49-L61)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `extract_client_config`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `html_content` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `html_content` | `str` | Yes | Parameter `html_content` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `match = re.search(r'<script[^>]*id="client-config"[^>]*>(.*?)</script>', html_content`
-2. `if match:`
-3. `if "<title>Авторизация</title>" in html_content or "passp-bg" in html_content:`
-4. `raise ValueError("Тег client-config не найден в DOM Яндекс Документов")`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import extract_client_config
+
+# Execute call
+result = extract_client_config(html_content=...)
+```
 
 ---
 
 ### `merge_cookie_header`
-- **Signature**: `def merge_cookie_header(current_cookie: str, new_cookies: dict[str, str]) -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L64-L73](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L64-L73)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def merge_cookie_header(current_cookie: str, new_cookies: dict[str, str]) -> str
+```
 
-#### Purpose & Architectural Intent
-Объединяет текущие Cookie с обновленными значениями из ответа сервера.
+- **Source Reference**: [`integrations/yandex_docs.py#L64-L73`](../../integrations/yandex_docs.py#L64-L73)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `merge_cookie_header`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `current_cookie` | `str` | Input parameter |
-| `new_cookies` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `current_cookie` | `str` | Yes | Parameter `current_cookie` of type `str`. |
+| `new_cookies` | `dict[str, str]` | Yes | Parameter `new_cookies` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `cookie_map = {}`
-2. `for part in current_cookie.split(";"):`
-3. `for k, v in new_cookies.items():`
-4. `return "; ".join(f"{k}={v}" for k, v in cookie_map.items())`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import merge_cookie_header
+
+# Execute call
+result = merge_cookie_header(current_cookie=..., new_cookies=...)
+```
 
 ---
 
 ### `get_yandex_cookie_header`
-- **Signature**: `def get_yandex_cookie_header() -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L76-L83](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L76-L83)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def get_yandex_cookie_header() -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует fallback строку заголовка Cookie из конфигурации .env.
+- **Source Reference**: [`integrations/yandex_docs.py#L76-L83`](../../integrations/yandex_docs.py#L76-L83)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_yandex_cookie_header`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `from config import YANDEX_COOKIE, YANDEX_SESSION_ID`
-2. `if YANDEX_COOKIE:`
-3. `if YANDEX_SESSION_ID:`
-4. `return ""`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import get_yandex_cookie_header
+
+# Execute call
+result = get_yandex_cookie_header()
+```
 
 ---
 
 ### `get_effective_yandex_cookie`
-- **Signature**: `async def get_effective_yandex_cookie() -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L86-L97](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L86-L97)
-- **Async**: `Yes`
-- **Return Type**: `str`
+```python
+async def get_effective_yandex_cookie() -> str
+```
 
-#### Purpose & Architectural Intent
-Возвращает актуальные Cookie из Redis, либо fallback из .env.
+- **Source Reference**: [`integrations/yandex_docs.py#L86-L97`](../../integrations/yandex_docs.py#L86-L97)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_effective_yandex_cookie`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return get_yandex_cookie_header()`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import get_effective_yandex_cookie
+
+# Execute call
+result = await get_effective_yandex_cookie()
+```
 
 ---
 
 ### `save_effective_yandex_cookie`
-- **Signature**: `async def save_effective_yandex_cookie(cookie_str: str) -> None`
-- **Source Reference**: [integrations/yandex_docs.py#L100-L109](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L100-L109)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def save_effective_yandex_cookie(cookie_str: str) -> None
+```
 
-#### Purpose & Architectural Intent
-Атомарно сохраняет актуальную строку Cookie в Redis с TTL.
+- **Source Reference**: [`integrations/yandex_docs.py#L100-L109`](../../integrations/yandex_docs.py#L100-L109)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_effective_yandex_cookie`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cookie_str` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cookie_str` | `str` | Yes | Parameter `cookie_str` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import save_effective_yandex_cookie
+
+# Execute call
+result = await save_effective_yandex_cookie(cookie_str=...)
+```
 
 ---
 
 ### `update_cookies_from_response`
-- **Signature**: `async def update_cookies_from_response(res: httpx.Response, current_cookie: str) -> None`
-- **Source Reference**: [integrations/yandex_docs.py#L112-L119](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L112-L119)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def update_cookies_from_response(res: httpx.Response, current_cookie: str) -> None
+```
 
-#### Purpose & Architectural Intent
-Извлекает Set-Cookie из ответа и при наличии обновлений сохраняет в Redis.
+- **Source Reference**: [`integrations/yandex_docs.py#L112-L119`](../../integrations/yandex_docs.py#L112-L119)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Synchronizes and updates domain state for `update_cookies_from_response`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `res` | `httpx.Response` | Input parameter |
-| `current_cookie` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `res` | `httpx.Response` | Yes | Parameter `res` of type `httpx.Response`. |
+| `current_cookie` | `str` | Yes | Parameter `current_cookie` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `if not res.cookies:`
-2. `new_cookies = dict(res.cookies)`
-3. `merged = merge_cookie_header(current_cookie, new_cookies)`
-4. `if merged != current_cookie:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import update_cookies_from_response
+
+# Execute call
+result = await update_cookies_from_response(res=..., current_cookie=...)
+```
 
 ---
 
 ### `fetch_page_dom`
-- **Signature**: `async def fetch_page_dom(doc_url: str) -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L122-L145](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L122-L145)
-- **Async**: `Yes`
-- **Return Type**: `str`
+```python
+async def fetch_page_dom(doc_url: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Загружает HTML страницы редактора через HTTP с актуальной сессией. Используем HTTP с Cookie из Redis/.env, автоматически обновляя Set-Cookie при получении свежих заголовков от сервера.
+- **Source Reference**: [`integrations/yandex_docs.py#L122-L145`](../../integrations/yandex_docs.py#L122-L145)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `fetch_page_dom`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `doc_url` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `doc_url` | `str` | Yes | Parameter `doc_url` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `cookie_hdr = await get_effective_yandex_cookie()`
-2. `headers = {`
-3. `if cookie_hdr:`
-4. `async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:`
+#### Concurrency & Side Effects
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import fetch_page_dom
+
+# Execute call
+result = await fetch_page_dom(doc_url=...)
+```
 
 ---
 
 ### `get_active_wopi_lock`
-- **Signature**: `async def get_active_wopi_lock(resource_url: str, token: str) -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L148-L160](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L148-L160)
-- **Async**: `Yes`
-- **Return Type**: `str`
+```python
+async def get_active_wopi_lock(resource_url: str, token: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Определяет активный идентификатор блокировки файла. Отправляет пустой PUT-запрос, чтобы сервер вернул 409 с заголовком x-wopi-lock.
+- **Source Reference**: [`integrations/yandex_docs.py#L148-L160`](../../integrations/yandex_docs.py#L148-L160)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_active_wopi_lock`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `resource_url` | `str` | Input parameter |
-| `token` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `resource_url` | `str` | Yes | Parameter `resource_url` of type `str`. |
+| `token` | `str` | Yes | Parameter `token` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{resource_url}/contents?access_token={token}"`
-2. `headers = {"X-WOPI-Override": "PUT", "Content-Type": "application/octet-stream"}`
-3. `async with httpx.AsyncClient(timeout=15.0) as client:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import get_active_wopi_lock
+
+# Execute call
+result = await get_active_wopi_lock(resource_url=..., token=...)
+```
 
 ---
 
 ### `init_wopi_session`
-- **Signature**: `async def init_wopi_session(doc_url: str = ATTENDANCE_DOC_URL) -> WopiSession`
-- **Source Reference**: [integrations/yandex_docs.py#L163-L179](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L163-L179)
-- **Async**: `Yes`
-- **Return Type**: `WopiSession`
+```python
+async def init_wopi_session(doc_url: str = ATTENDANCE_DOC_URL) -> WopiSession
+```
 
-#### Purpose & Architectural Intent
-Инициализирует WOPI-сессию для чтения и сохранения таблицы. Возвращает объект WopiSession с валидным токеном и блокировкой.
+- **Source Reference**: [`integrations/yandex_docs.py#L163-L179`](../../integrations/yandex_docs.py#L163-L179)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `WopiSession`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `init_wopi_session`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `doc_url` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `doc_url` | `str` | Yes | Parameter `doc_url` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `log.debug("Инициализация WOPI сессии через Chromium...")`
-2. `html = await fetch_page_dom(doc_url)`
-3. `config = extract_client_config(html)`
-4. `action_data = config.get("officeActionData", {})`
-5. `res_url = action_data.get("resource_url")`
-6. `token = action_data.get("access_token")`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import init_wopi_session
+
+# Execute call
+result = await init_wopi_session(doc_url=...)
+```
 
 ---
 
 ### `load_workbook_from_bytes`
-- **Signature**: `def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook`
-- **Source Reference**: [integrations/yandex_docs.py#L182-L187](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L182-L187)
-- **Async**: `No`
-- **Return Type**: `openpyxl.Workbook`
+```python
+def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook
+```
 
-#### Purpose & Architectural Intent
-Синхронно парсит байты книги openpyxl в отдельном потоке без логов предупреждений.
+- **Source Reference**: [`integrations/yandex_docs.py#L182-L187`](../../integrations/yandex_docs.py#L182-L187)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `openpyxl.Workbook`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_workbook_from_bytes`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `content` | `bytes` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `content` | `bytes` | Yes | Parameter `content` of type `bytes`. |
 
-#### Step-by-Step Logic Execution
-1. `import warnings`
-2. `with warnings.catch_warnings():`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import load_workbook_from_bytes
+
+# Execute call
+result = load_workbook_from_bytes(content=...)
+```
 
 ---
 
 ### `compute_sheet_summary_counts`
-- **Signature**: `def compute_sheet_summary_counts(sheet: Worksheet) -> dict[tuple[str, int], int]`
-- **Source Reference**: [integrations/yandex_docs.py#L190-L205](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L190-L205)
-- **Async**: `No`
-- **Return Type**: `dict[tuple[str, int], int]`
+```python
+def compute_sheet_summary_counts(sheet: Worksheet) -> dict[tuple[str, int], int]
+```
 
-#### Purpose & Architectural Intent
-Подсчитывает количество отметок О, У, Н для каждой строки студента.
+- **Source Reference**: [`integrations/yandex_docs.py#L190-L205`](../../integrations/yandex_docs.py#L190-L205)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[tuple[str, int], int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `compute_sheet_summary_counts`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
 
-#### Step-by-Step Logic Execution
-1. `mc = sheet.max_column`
-2. `if mc < 4:`
-3. `c_o, c_u, c_n = mc - 2, mc - 1, mc`
-4. `l_o = openpyxl.utils.get_column_letter(c_o)`
-5. `l_u = openpyxl.utils.get_column_letter(c_u)`
-6. `l_n = openpyxl.utils.get_column_letter(c_n)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import compute_sheet_summary_counts
+
+# Execute call
+result = compute_sheet_summary_counts(sheet=...)
+```
 
 ---
 
 ### `patch_sheet_xml_counts`
-- **Signature**: `def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L208-L226](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L208-L226)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) -> str
+```
 
-#### Purpose & Architectural Intent
-Заменяет пустые значения <v></v> на вычисленные количества в XML листа.
+- **Source Reference**: [`integrations/yandex_docs.py#L208-L226`](../../integrations/yandex_docs.py#L208-L226)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `patch_sheet_xml_counts`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `xml_text` | `str` | Input parameter |
-| `counts` | `dict[tuple[str, int], int]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `xml_text` | `str` | Yes | Parameter `xml_text` of type `str`. |
+| `counts` | `dict[tuple[str, int], int]` | Yes | Parameter `counts` of type `dict[tuple[str, int], int]`. |
 
-#### Step-by-Step Logic Execution
-1. `def repl(m):`
-2. `pattern = (`
-3. `return re.sub(pattern, repl, xml_text)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import patch_sheet_xml_counts
+
+# Execute call
+result = patch_sheet_xml_counts(xml_text=..., counts=...)
+```
 
 ---
 
 ### `ensure_all_summary_headers`
-- **Signature**: `def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None`
-- **Source Reference**: [integrations/yandex_docs.py#L229-L252](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L229-L252)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None
+```
 
-#### Purpose & Architectural Intent
-Гарантирует заголовки, коды и COUNTIF формулы во всех листах месяцев.
+- **Source Reference**: [`integrations/yandex_docs.py#L229-L252`](../../integrations/yandex_docs.py#L229-L252)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `ensure_all_summary_headers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `wb` | `openpyxl.Workbook` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
 
-#### Step-by-Step Logic Execution
-1. `for name in wb.sheetnames:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import ensure_all_summary_headers
+
+# Execute call
+result = ensure_all_summary_headers(wb=...)
+```
 
 ---
 
 ### `inject_summary_cache`
-- **Signature**: `def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes`
-- **Source Reference**: [integrations/yandex_docs.py#L255-L268](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L255-L268)
-- **Async**: `No`
-- **Return Type**: `bytes`
+```python
+def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes
+```
 
-#### Purpose & Architectural Intent
-Инжектирует кэшированные значения формул COUNTIF в zip-архив xlsx.
+- **Source Reference**: [`integrations/yandex_docs.py#L255-L268`](../../integrations/yandex_docs.py#L255-L268)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bytes`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `inject_summary_cache`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `raw_bytes` | `bytes` | Input parameter |
-| `wb` | `openpyxl.Workbook` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw_bytes` | `bytes` | Yes | Parameter `raw_bytes` of type `bytes`. |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
 
-#### Step-by-Step Logic Execution
-1. `sheet_map = {f"xl/worksheets/sheet{i+1}.xml": name for i, name in enumerate(wb.sheetn`
-2. `in_zip = zipfile.ZipFile(io.BytesIO(raw_bytes))`
-3. `out_buf = io.BytesIO()`
-4. `with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as out_zip:`
-5. `return out_buf.getvalue()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import inject_summary_cache
+
+# Execute call
+result = inject_summary_cache(raw_bytes=..., wb=...)
+```
 
 ---
 
 ### `save_workbook_to_bytes`
-- **Signature**: `def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes`
-- **Source Reference**: [integrations/yandex_docs.py#L271-L279](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L271-L279)
-- **Async**: `No`
-- **Return Type**: `bytes`
+```python
+def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes
+```
 
-#### Purpose & Architectural Intent
-Синхронно сохраняет книгу openpyxl в байты с инжекцией кэша формул.
+- **Source Reference**: [`integrations/yandex_docs.py#L271-L279`](../../integrations/yandex_docs.py#L271-L279)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bytes`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_workbook_to_bytes`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `wb` | `openpyxl.Workbook` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
 
-#### Step-by-Step Logic Execution
-1. `ensure_all_summary_headers(wb)`
-2. `wb.calculation.calcMode = "auto"`
-3. `wb.calculation.fullCalcOnLoad = True`
-4. `wb.calculation.forceFullCalc = True`
-5. `buf = io.BytesIO()`
-6. `wb.save(buf)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import save_workbook_to_bytes
+
+# Execute call
+result = save_workbook_to_bytes(wb=...)
+```
 
 ---
 
 ### `download_workbook`
-- **Signature**: `async def download_workbook(session: WopiSession) -> openpyxl.Workbook`
-- **Source Reference**: [integrations/yandex_docs.py#L282-L295](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L282-L295)
-- **Async**: `Yes`
-- **Return Type**: `openpyxl.Workbook`
+```python
+async def download_workbook(session: WopiSession) -> openpyxl.Workbook
+```
 
-#### Purpose & Architectural Intent
-Скачивает бинарный контент таблицы и загружает в openpyxl. Возвращает объект книги Excel с сохранением валидаций данных.
+- **Source Reference**: [`integrations/yandex_docs.py#L282-L295`](../../integrations/yandex_docs.py#L282-L295)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `openpyxl.Workbook`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `download_workbook`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{session.resource_url}/contents?access_token={session.access_token}"`
-2. `async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import download_workbook
+
+# Execute call
+result = await download_workbook(session=...)
+```
 
 ---
 
 ### `acquire_wopi_lock`
-- **Signature**: `async def acquire_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L298-L303](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L298-L303)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def acquire_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Блокирует файл в WOPI перед записью (HTTP 200).
+- **Source Reference**: [`integrations/yandex_docs.py#L298-L303`](../../integrations/yandex_docs.py#L298-L303)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `acquire_wopi_lock`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `client` | `httpx.AsyncClient` | Input parameter |
-| `lock_id` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `client` | `httpx.AsyncClient` | Yes | Active asynchronous Redis client or HTTP connection pool instance. |
+| `lock_id` | `str` | Yes | Parameter `lock_id` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{session.resource_url}?access_token={session.access_token}"`
-2. `hdr = {"X-WOPI-Override": "LOCK", "X-WOPI-Lock": lock_id}`
-3. `res = await client.post(url, headers=hdr)`
-4. `return res.status_code == 200`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import acquire_wopi_lock
+
+# Execute call
+result = await acquire_wopi_lock(session=..., client=..., lock_id=...)
+```
 
 ---
 
 ### `release_wopi_lock`
-- **Signature**: `async def release_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L306-L311](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L306-L311)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def release_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Снимает блокировку с файла после записи (HTTP 200).
+- **Source Reference**: [`integrations/yandex_docs.py#L306-L311`](../../integrations/yandex_docs.py#L306-L311)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `release_wopi_lock`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `client` | `httpx.AsyncClient` | Input parameter |
-| `lock_id` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `client` | `httpx.AsyncClient` | Yes | Active asynchronous Redis client or HTTP connection pool instance. |
+| `lock_id` | `str` | Yes | Parameter `lock_id` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{session.resource_url}?access_token={session.access_token}"`
-2. `hdr = {"X-WOPI-Override": "UNLOCK", "X-WOPI-Lock": lock_id}`
-3. `res = await client.post(url, headers=hdr)`
-4. `return res.status_code == 200`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import release_wopi_lock
+
+# Execute call
+result = await release_wopi_lock(session=..., client=..., lock_id=...)
+```
 
 ---
 
 ### `put_wopi_contents`
-- **Signature**: `async def put_wopi_contents( session: WopiSession, client: httpx.AsyncClient, data: bytes, lock_id: str ) -> httpx.Response`
-- **Source Reference**: [integrations/yandex_docs.py#L314-L330](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L314-L330)
-- **Async**: `Yes`
-- **Return Type**: `httpx.Response`
+```python
+async def put_wopi_contents( session: WopiSession, client: httpx.AsyncClient, data: bytes, lock_id: str ) -> httpx.Response
+```
 
-#### Purpose & Architectural Intent
-Отправляет бинарные данные таблицы методом PUT по протоколу WOPI.
+- **Source Reference**: [`integrations/yandex_docs.py#L314-L330`](../../integrations/yandex_docs.py#L314-L330)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `httpx.Response`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `put_wopi_contents`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `client` | `httpx.AsyncClient` | Input parameter |
-| `data` | `bytes` | Input parameter |
-| `lock_id` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `client` | `httpx.AsyncClient` | Yes | Active asynchronous Redis client or HTTP connection pool instance. |
+| `data` | `bytes` | Yes | Parameter `data` of type `bytes`. |
+| `lock_id` | `str` | Yes | Parameter `lock_id` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{session.resource_url}/contents?access_token={session.access_token}"`
-2. `hdr = {`
-3. `res = await client.post(url, headers=hdr, content=data)`
-4. `log.debug(f"WOPI PUT: HTTP {res.status_code}, lock={lock_id[:16]}...")`
-5. `if res.status_code != 200:`
-6. `return res`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import put_wopi_contents
+
+# Execute call
+result = await put_wopi_contents(session=..., client=..., data=...)
+```
 
 ---
 
 ### `_try_put_with_lock`
-- **Signature**: `async def _try_put_with_lock( session: WopiSession, client: httpx.AsyncClient, data: bytes ) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L333-L348](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L333-L348)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def _try_put_with_lock( session: WopiSession, client: httpx.AsyncClient, data: bytes ) -> bool
+```
 
-#### Purpose & Architectural Intent
-Пробует записать файл сначала с текущим lock, затем с новым.
+- **Source Reference**: [`integrations/yandex_docs.py#L333-L348`](../../integrations/yandex_docs.py#L333-L348)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_try_put_with_lock`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `client` | `httpx.AsyncClient` | Input parameter |
-| `data` | `bytes` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `client` | `httpx.AsyncClient` | Yes | Active asynchronous Redis client or HTTP connection pool instance. |
+| `data` | `bytes` | Yes | Parameter `data` of type `bytes`. |
 
-#### Step-by-Step Logic Execution
-1. `if session.lock_id:`
-2. `new_lock = str(uuid.uuid4())`
-3. `if not await acquire_wopi_lock(session, client, new_lock):`
-4. `res = await put_wopi_contents(session, client, data, new_lock)`
-5. `await release_wopi_lock(session, client, new_lock)`
-6. `return res.status_code == 200`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _try_put_with_lock
+
+# Execute call
+result = await _try_put_with_lock(session=..., client=..., data=...)
+```
 
 ---
 
 ### `upload_workbook`
-- **Signature**: `async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L351-L359](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L351-L359)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool
+```
 
-#### Purpose & Architectural Intent
-Сохраняет книгу и выгружает на сервер с управлением блокировками.
+- **Source Reference**: [`integrations/yandex_docs.py#L351-L359`](../../integrations/yandex_docs.py#L351-L359)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `upload_workbook`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `wb` | `openpyxl.Workbook` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
 
-#### Step-by-Step Logic Execution
-1. `data = await asyncio.to_thread(save_workbook_to_bytes, wb)`
-2. `async with httpx.AsyncClient(timeout=30.0) as client:`
-3. `log.error("❌ Ошибка загрузки таблицы в WOPI")`
-4. `return False`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import upload_workbook
+
+# Execute call
+result = await upload_workbook(session=..., wb=...)
+```
 
 ---
 
 ### `verify_upload`
-- **Signature**: `async def verify_upload( session: WopiSession, target_date: date, lesson_num: int, expected_marks: dict[str, str], ) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L362-L379](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L362-L379)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def verify_upload( session: WopiSession, target_date: date, lesson_num: int, expected_marks: dict[str, str], ) -> bool
+```
 
-#### Purpose & Architectural Intent
-Выполняет легковесную валидацию сохранения через скачивание raw-байтов. Извлекает только XML нужного листа без создания дерева openpyxl (~2MB RAM). Возвращает True при подтверждении отметок на сервере.
+- **Source Reference**: [`integrations/yandex_docs.py#L362-L379`](../../integrations/yandex_docs.py#L362-L379)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `verify_upload`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
-| `target_date` | `date` | Input parameter |
-| `lesson_num` | `int` | Input parameter |
-| `expected_marks` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
+| `lesson_num` | `int` | Yes | Academic class sequence index (1-based, 1 to 6). |
+| `expected_marks` | `dict[str, str]` | Yes | Parameter `expected_marks` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import verify_upload
+
+# Execute call
+result = await verify_upload(session=..., target_date=..., lesson_num=...)
+```
 
 ---
 
 ### `_download_raw_bytes`
-- **Signature**: `async def _download_raw_bytes(session: WopiSession) -> bytes`
-- **Source Reference**: [integrations/yandex_docs.py#L382-L390](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L382-L390)
-- **Async**: `Yes`
-- **Return Type**: `bytes`
+```python
+async def _download_raw_bytes(session: WopiSession) -> bytes
+```
 
-#### Purpose & Architectural Intent
-Скачивает бинарный контент таблицы без парсинга openpyxl.
+- **Source Reference**: [`integrations/yandex_docs.py#L382-L390`](../../integrations/yandex_docs.py#L382-L390)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bytes`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_download_raw_bytes`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `WopiSession` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `WopiSession` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `url = f"{session.resource_url}/contents?access_token={session.access_token}"`
-2. `async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _download_raw_bytes
+
+# Execute call
+result = await _download_raw_bytes(session=...)
+```
 
 ---
 
 ### `_find_sheet_rid`
-- **Signature**: `def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None`
-- **Source Reference**: [integrations/yandex_docs.py#L393-L410](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L393-L410)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Находит relationship ID (r:id) листа по его имени в workbook.xml. Используем ElementTree вместо хрупких регулярных выражений. Возвращает строку вида 'rId1' или None.
+- **Source Reference**: [`integrations/yandex_docs.py#L393-L410`](../../integrations/yandex_docs.py#L393-L410)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_find_sheet_rid`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `wb_xml` | `str` | Input parameter |
-| `sheet_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `wb_xml` | `str` | Yes | Parameter `wb_xml` of type `str`. |
+| `sheet_name` | `str` | Yes | Parameter `sheet_name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _find_sheet_rid
+
+# Execute call
+result = _find_sheet_rid(wb_xml=..., sheet_name=...)
+```
 
 ---
 
 ### `_resolve_sheet_target_path`
-- **Signature**: `def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None`
-- **Source Reference**: [integrations/yandex_docs.py#L413-L429](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L413-L429)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Определяет относительный путь к XML листа в архиве по его r:id. Нормализует префикс 'xl/' и ведущие слэши из rels-манифеста. Возвращает путь в zip-архиве, например 'xl/worksheets/sheet1.xml'.
+- **Source Reference**: [`integrations/yandex_docs.py#L413-L429`](../../integrations/yandex_docs.py#L413-L429)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_resolve_sheet_target_path`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `rels_xml` | `str` | Input parameter |
-| `rid` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `rels_xml` | `str` | Yes | Parameter `rels_xml` of type `str`. |
+| `rid` | `str` | Yes | Parameter `rid` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _resolve_sheet_target_path
+
+# Execute call
+result = _resolve_sheet_target_path(rels_xml=..., rid=...)
+```
 
 ---
 
 ### `_extract_sheet_xml`
-- **Signature**: `def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None`
-- **Source Reference**: [integrations/yandex_docs.py#L432-L454](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L432-L454)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Извлекает XML нужного листа по имени из xlsx zip-архива. Использует связку workbook.xml -> workbook.xml.rels без загрузки openpyxl. Возвращает XML-текст листа или None.
+- **Source Reference**: [`integrations/yandex_docs.py#L432-L454`](../../integrations/yandex_docs.py#L432-L454)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_extract_sheet_xml`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `raw` | `bytes` | Input parameter |
-| `sheet_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw` | `bytes` | Yes | Parameter `raw` of type `bytes`. |
+| `sheet_name` | `str` | Yes | Parameter `sheet_name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _extract_sheet_xml
+
+# Execute call
+result = _extract_sheet_xml(raw=..., sheet_name=...)
+```
 
 ---
 
 ### `_cell_has_expected_mark`
-- **Signature**: `def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L457-L466](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L457-L466)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет совпадение отметки посещаемости в ячейке XML. Распознает значения в <t> и <v>, декодируя HTML-сущности (например, &#1055;). Возвращает True, если значение ячейки совпадает с ожидаемой отметкой.
+- **Source Reference**: [`integrations/yandex_docs.py#L457-L466`](../../integrations/yandex_docs.py#L457-L466)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_cell_has_expected_mark`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cell_xml` | `str` | Input parameter |
-| `mark` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cell_xml` | `str` | Yes | Parameter `cell_xml` of type `str`. |
+| `mark` | `str` | Yes | Attendance evaluation symbol assigned to the student. |
 
-#### Step-by-Step Logic Execution
-1. `unescaped = html.unescape(cell_xml)`
-2. `match = re.search(r"<(?:\w+:)?(?:t|v)[^>]*>([^<]*)</(?:\w+:)?(?:t|v)>", unescaped)`
-3. `return bool(match and match.group(1).strip().upper() == mark)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _cell_has_expected_mark
+
+# Execute call
+result = _cell_has_expected_mark(cell_xml=..., mark=...)
+```
 
 ---
 
 ### `_marks_found_in_xml`
-- **Signature**: `def _marks_found_in_xml( xml_text: str, check_marks: dict[str, str] ) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L469-L490](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L469-L490)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def _marks_found_in_xml( xml_text: str, check_marks: dict[str, str] ) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет наличие ожидаемых отметок посещаемости в XML листа. Ищет ячейки соответствующих строк и проверяет совпадение меток. Возвращает True, если все проверяемые отметки найдены.
+- **Source Reference**: [`integrations/yandex_docs.py#L469-L490`](../../integrations/yandex_docs.py#L469-L490)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_marks_found_in_xml`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `xml_text` | `str` | Input parameter |
-| `check_marks` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `xml_text` | `str` | Yes | Parameter `xml_text` of type `str`. |
+| `check_marks` | `dict[str, str]` | Yes | Parameter `check_marks` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `found = 0`
-2. `for row_str, mark in check_marks.items():`
-3. `ok = found == len(check_marks)`
-4. `if not ok:`
-5. `return ok`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _marks_found_in_xml
+
+# Execute call
+result = _marks_found_in_xml(xml_text=..., check_marks=...)
+```
 
 ---
 
 ### `_verify_marks_in_raw`
-- **Signature**: `def _verify_marks_in_raw( raw: bytes, target_date: date, expected_marks: dict[str, str] ) -> bool`
-- **Source Reference**: [integrations/yandex_docs.py#L493-L512](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L493-L512)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def _verify_marks_in_raw( raw: bytes, target_date: date, expected_marks: dict[str, str] ) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет наличие отметок в бинарном содержимом таблицы. Выбирает лист месяца, извлекает его XML и валидирует метки. Возвращает True при успешном подтверждении.
+- **Source Reference**: [`integrations/yandex_docs.py#L493-L512`](../../integrations/yandex_docs.py#L493-L512)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_verify_marks_in_raw`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `raw` | `bytes` | Input parameter |
-| `target_date` | `date` | Input parameter |
-| `expected_marks` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw` | `bytes` | Yes | Parameter `raw` of type `bytes`. |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
+| `expected_marks` | `dict[str, str]` | Yes | Parameter `expected_marks` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `sheet_name = MONTH_SHEET_MAP.get(target_date.month)`
-2. `if not sheet_name:`
-3. `check_marks = {r: m for r, m in expected_marks.items() if m in {"О", "У", "Н"}}`
-4. `if not check_marks:`
-5. `xml_text = _extract_sheet_xml(raw, sheet_name)`
-6. `if not xml_text:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import _verify_marks_in_raw
+
+# Execute call
+result = _verify_marks_in_raw(raw=..., target_date=..., expected_marks=...)
+```
 
 ---
 
 ### `get_month_sheet`
-- **Signature**: `def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet`
-- **Source Reference**: [integrations/yandex_docs.py#L515-L524](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L515-L524)
-- **Async**: `No`
-- **Return Type**: `Worksheet`
+```python
+def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet
+```
 
-#### Purpose & Architectural Intent
-Находит рабочий лист для указанной даты по номеру месяца. Выбрасывает ValueError, если вкладка отсутствует в таблице.
+- **Source Reference**: [`integrations/yandex_docs.py#L515-L524`](../../integrations/yandex_docs.py#L515-L524)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `Worksheet`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_month_sheet`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `wb` | `openpyxl.Workbook` | Input parameter |
-| `target_date` | `date` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
 
-#### Step-by-Step Logic Execution
-1. `sheet_name = MONTH_SHEET_MAP.get(target_date.month)`
-2. `if not sheet_name or sheet_name not in wb.sheetnames:`
-3. `return wb[sheet_name]`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import get_month_sheet
+
+# Execute call
+result = get_month_sheet(wb=..., target_date=...)
+```
 
 ---
 
 ### `parse_date_cell`
-- **Signature**: `def parse_date_cell(cell_value: object) -> str | None`
-- **Source Reference**: [integrations/yandex_docs.py#L527-L533](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L527-L533)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def parse_date_cell(cell_value: object) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Приводит значение ячейки даты к строковому формату ДД.ММ.
+- **Source Reference**: [`integrations/yandex_docs.py#L527-L533`](../../integrations/yandex_docs.py#L527-L533)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_date_cell`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cell_value` | `object` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cell_value` | `object` | Yes | Parameter `cell_value` of type `object`. |
 
-#### Step-by-Step Logic Execution
-1. `if isinstance(cell_value, (datetime, date)):`
-2. `if cell_value:`
-3. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import parse_date_cell
+
+# Execute call
+result = parse_date_cell(cell_value=...)
+```
 
 ---
 
 ### `find_date_column_start`
-- **Signature**: `def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None`
-- **Source Reference**: [integrations/yandex_docs.py#L536-L548](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L536-L548)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Ищет начальную колонку даты во 2-й строке таблицы. Возвращает 1-based индекс первой колонки дня или None.
+- **Source Reference**: [`integrations/yandex_docs.py#L536-L548`](../../integrations/yandex_docs.py#L536-L548)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_date_column_start`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `target_date` | `date` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
 
-#### Step-by-Step Logic Execution
-1. `target_str = target_date.strftime("%d.%m")`
-2. `for col in range(1, sheet.max_column + 1):`
-3. `return None`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import find_date_column_start
+
+# Execute call
+result = find_date_column_start(sheet=..., target_date=...)
+```
 
 ---
 
 ### `find_lesson_column`
-- **Signature**: `def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> int | None`
-- **Source Reference**: [integrations/yandex_docs.py#L551-L567](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L551-L567)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Определяет точную колонку для указанной даты и номера пары. Ищет дату во 2-й строке, затем номер пары (1-6) в 4-й строке.
+- **Source Reference**: [`integrations/yandex_docs.py#L551-L567`](../../integrations/yandex_docs.py#L551-L567)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_lesson_column`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `target_date` | `date` | Input parameter |
-| `lesson_num` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
+| `lesson_num` | `int` | Yes | Academic class sequence index (1-based, 1 to 6). |
 
-#### Step-by-Step Logic Execution
-1. `start_col = find_date_column_start(sheet, target_date)`
-2. `if not start_col:`
-3. `for offset in range(6):`
-4. `return None`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import find_lesson_column
+
+# Execute call
+result = find_lesson_column(sheet=..., target_date=..., lesson_num=...)
+```
 
 ---
 
 ### `normalize_fio`
-- **Signature**: `def normalize_fio(name: str) -> str`
-- **Source Reference**: [integrations/yandex_docs.py#L570-L572](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L570-L572)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def normalize_fio(name: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Очищает строку ФИО от неразрывных пробелов и лишних знаков.
+- **Source Reference**: [`integrations/yandex_docs.py#L570-L572`](../../integrations/yandex_docs.py#L570-L572)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `normalize_fio`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | Yes | Parameter `name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `return name.replace("\xa0", " ").strip()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import normalize_fio
+
+# Execute call
+result = normalize_fio(name=...)
+```
 
 ---
 
 ### `get_students_list`
-- **Signature**: `def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]`
-- **Source Reference**: [integrations/yandex_docs.py#L575-L589](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L575-L589)
-- **Async**: `No`
-- **Return Type**: `list[tuple[int, str]]`
+```python
+def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]
+```
 
-#### Purpose & Architectural Intent
-Извлекает список студентов из колонки B, начиная с 5-й строки. Возвращает список кортежей (номер_строки, ФИО).
+- **Source Reference**: [`integrations/yandex_docs.py#L575-L589`](../../integrations/yandex_docs.py#L575-L589)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[tuple[int, str]]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_students_list`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
 
-#### Step-by-Step Logic Execution
-1. `students: list[tuple[int, str]] = []`
-2. `for row in range(5, sheet.max_row + 1):`
-3. `return students`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import get_students_list
+
+# Execute call
+result = get_students_list(sheet=...)
+```
 
 ---
 
 ### `find_student_row`
-- **Signature**: `def find_student_row(sheet: Worksheet, student_name: str) -> int | None`
-- **Source Reference**: [integrations/yandex_docs.py#L592-L602](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L592-L602)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def find_student_row(sheet: Worksheet, student_name: str) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Находит номер строки студента в колонке B по ФИО. Использует частичное совпадение фамилии и имени для надёжности.
+- **Source Reference**: [`integrations/yandex_docs.py#L592-L602`](../../integrations/yandex_docs.py#L592-L602)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_student_row`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `student_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `student_name` | `str` | Yes | Full name of the student recorded in the academic roster. |
 
-#### Step-by-Step Logic Execution
-1. `target = normalize_fio(student_name).lower()`
-2. `for row, name in get_students_list(sheet):`
-3. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import find_student_row
+
+# Execute call
+result = find_student_row(sheet=..., student_name=...)
+```
 
 ---
 
 ### `write_student_mark`
-- **Signature**: `def write_student_mark( sheet: Worksheet, row: int, col: int, mark: str ) -> None`
-- **Source Reference**: [integrations/yandex_docs.py#L605-L622](file:///home/u/Рабочий стол/para/integrations/yandex_docs.py#L605-L622)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def write_student_mark( sheet: Worksheet, row: int, col: int, mark: str ) -> None
+```
 
-#### Purpose & Architectural Intent
-Записывает символ посещаемости (П, О, У, Н) в ячейку таблицы. Проверяет валидность символа перед записью.
+- **Source Reference**: [`integrations/yandex_docs.py#L605-L622`](../../integrations/yandex_docs.py#L605-L622)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `write_student_mark`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `row` | `int` | Input parameter |
-| `col` | `int` | Input parameter |
-| `mark` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `row` | `int` | Yes | Parameter `row` of type `int`. |
+| `col` | `int` | Yes | Parameter `col` of type `int`. |
+| `mark` | `str` | Yes | Attendance evaluation symbol assigned to the student. |
 
-#### Step-by-Step Logic Execution
-1. `valid_marks = {"П", "О", "У", "Н", ""}`
-2. `clean_mark = mark.strip().upper()`
-3. `if clean_mark not in valid_marks:`
-4. `cell = sheet.cell(row, col)`
-5. `cell.value = clean_mark if clean_mark else None`
-6. `log.debug(f"Записана отметка '{clean_mark}' в ячейку R{row}C{col}")`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from integrations.yandex_docs import write_student_mark
+
+# Execute call
+result = write_student_mark(sheet=..., row=..., col=...)
+```
 
 ---

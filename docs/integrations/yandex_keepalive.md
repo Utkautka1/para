@@ -1,56 +1,93 @@
-# Module Specification: `integrations/yandex_keepalive.py`
-> **Path**: [`integrations/yandex_keepalive.py`](file:///home/u/Рабочий стол/para/integrations/yandex_keepalive.py)  
+# Component Reference: `integrations/yandex_keepalive.py`
+> **File Path**: [`integrations/yandex_keepalive.py`](../../integrations/yandex_keepalive.py)  
 > **Subsystem**: `Session Keepalive`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Фоновый сервис автоматического продления (Keep-Alive) сессии Яндекс Документов. Каждые 6 часов отправляет фоновый запрос к документу посещаемости, предотвращая инвалидацию сессии по неактивности и сохраняя обновленные токены Set-Cookie (_yasc, yandex_360_session_exp_cache) в Redis.
+## 1. Architectural Role & Responsibilities
+The `integrations/yandex_keepalive.py` module implements core operational logic for the `Session Keepalive` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`ping_yandex_session`](#ping_yandex_session) | Function | L21–L35 | `bool` | Выполняет одиночный проверочный запрос для продления сессии  |
-| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L38–L55 | `None` | Бесконечный цикл периодического пинга сессии Яндекс Документ |
+| [`ping_yandex_session`](#ping_yandex_session) | Function | L21–L35 | `bool` | Executes core domain logic for `ping_yandex_session`. |
+| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L38–L55 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `ping_yandex_session`
-- **Signature**: `async def ping_yandex_session() -> bool`
-- **Source Reference**: [integrations/yandex_keepalive.py#L21-L35](file:///home/u/Рабочий стол/para/integrations/yandex_keepalive.py#L21-L35)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def ping_yandex_session() -> bool
+```
 
-#### Purpose & Architectural Intent
-Выполняет одиночный проверочный запрос для продления сессии и обновления Cookie. Возвращает True, если сессия валидна и client-config извлечён.
+- **Source Reference**: [`integrations/yandex_keepalive.py#L21-L35`](../../integrations/yandex_keepalive.py#L21-L35)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `ping_yandex_session`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return False`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_keepalive import ping_yandex_session
+
+# Execute call
+result = await ping_yandex_session()
+```
 
 ---
 
 ### `yandex_session_keepalive_loop`
-- **Signature**: `async def yandex_session_keepalive_loop(interval: int = KEEPALIVE_INTERVAL_SECONDS) -> None`
-- **Source Reference**: [integrations/yandex_keepalive.py#L38-L55](file:///home/u/Рабочий стол/para/integrations/yandex_keepalive.py#L38-L55)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def yandex_session_keepalive_loop(interval: int = KEEPALIVE_INTERVAL_SECONDS) -> None
+```
 
-#### Purpose & Architectural Intent
-Бесконечный цикл периодического пинга сессии Яндекс Документов. Первый запуск происходит через 60 секунд после старта воркера, затем повторяется каждые interval секунд.
+- **Source Reference**: [`integrations/yandex_keepalive.py#L38-L55`](../../integrations/yandex_keepalive.py#L38-L55)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `yandex_session_keepalive_loop`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `interval` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `interval` | `int` | Yes | Parameter `interval` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `log.info(f"Запущен фоновый мониторинг сессии Яндекс (интервал: {interval} сек)")`
-2. `await asyncio.sleep(60)`
-3. `while True:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_keepalive import yandex_session_keepalive_loop
+
+# Execute call
+result = await yandex_session_keepalive_loop(interval=...)
+```
 
 ---

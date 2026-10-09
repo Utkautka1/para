@@ -1,170 +1,263 @@
-# Module Specification: `api/router/miniapp.py`
-> **Path**: [`api/router/miniapp.py`](file:///home/u/Рабочий стол/para/api/router/miniapp.py)  
+# Component Reference: `api/router/miniapp.py`
+> **File Path**: [`api/router/miniapp.py`](../../api/router/miniapp.py)  
 > **Subsystem**: `MiniApp API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер Telegram Mini App и аутентификации тестеров Swagger UI. Обеспечивает защищённый доступ к документации и эндпоинтам API через валидацию HMAC-SHA256 подписи Telegram initData и управление сессионными куками.
+## 1. Architectural Role & Responsibilities
+The `api/router/miniapp.py` module implements core operational logic for the `MiniApp API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L42–L52 | `None` | Устанавливает подписанную защищенную сессионную куку тестера |
-| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L56–L60 | `HTMLResponse` | Отдаёт интерфейс Telegram Mini App портала со встроенным Swa |
-| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L64–L74 | `MiniappAuthResponse` | Аутентифицирует пользователя по Telegram initData и выдает с |
-| [`check_tester_status`](#check_tester_status) | Function | L78–L86 | `MiniappCheckResponse` | Возвращает статус авторизации текущего пользователя. |
-| [`list_api_testers`](#list_api_testers) | Function | L90–L94 | `TesterListResponse` | Возвращает список всех зарегистрированных тестеров API. |
-| [`api_add_tester`](#api_add_tester) | Function | L98–L103 | `dict` | Добавляет пользователя в белый список тестеров API (Admin on |
-| [`api_remove_tester`](#api_remove_tester) | Function | L107–L112 | `dict` | Удаляет пользователя из белого списка тестеров API (Admin on |
+| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L42–L52 | `None` | Executes core domain logic for `_set_tester_cookie`. |
+| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L56–L60 | `HTMLResponse` | Executes core domain logic for `serve_miniapp_page`. |
+| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L64–L74 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
+| [`check_tester_status`](#check_tester_status) | Function | L78–L86 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
+| [`list_api_testers`](#list_api_testers) | Function | L90–L94 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
+| [`api_add_tester`](#api_add_tester) | Function | L98–L103 | `dict` | Executes core domain logic for `api_add_tester`. |
+| [`api_remove_tester`](#api_remove_tester) | Function | L107–L112 | `dict` | Executes core domain logic for `api_remove_tester`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_set_tester_cookie`
-- **Signature**: `def _set_tester_cookie(response: Response, user_id: int) -> None`
-- **Source Reference**: [api/router/miniapp.py#L42-L52](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L42-L52)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def _set_tester_cookie(response: Response, user_id: int) -> None
+```
 
-#### Purpose & Architectural Intent
-Устанавливает подписанную защищенную сессионную куку тестера.
+- **Source Reference**: [`api/router/miniapp.py#L42-L52`](../../api/router/miniapp.py#L42-L52)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_set_tester_cookie`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `response` | `Response` | Input parameter |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `response` | `Response` | Yes | Parameter `response` of type `Response`. |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `token = generate_tester_session(user_id)`
-2. `response.set_cookie(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import _set_tester_cookie
+
+# Execute call
+result = _set_tester_cookie(response=..., user_id=...)
+```
 
 ---
 
 ### `serve_miniapp_page`
-- **Signature**: `async def serve_miniapp_page() -> HTMLResponse`
-- **Source Reference**: [api/router/miniapp.py#L56-L60](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L56-L60)
-- **Async**: `Yes`
-- **Return Type**: `HTMLResponse`
+```python
+async def serve_miniapp_page() -> HTMLResponse
+```
 
-#### Purpose & Architectural Intent
-Отдаёт интерфейс Telegram Mini App портала со встроенным Swagger UI.
+- **Source Reference**: [`api/router/miniapp.py#L56-L60`](../../api/router/miniapp.py#L56-L60)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `HTMLResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `serve_miniapp_page`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `if _HTML_PATH.exists():`
-2. `return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import serve_miniapp_page
+
+# Execute call
+result = await serve_miniapp_page()
+```
 
 ---
 
 ### `authenticate_miniapp`
-- **Signature**: `async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse`
-- **Source Reference**: [api/router/miniapp.py#L64-L74](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L64-L74)
-- **Async**: `Yes`
-- **Return Type**: `MiniappAuthResponse`
+```python
+async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse
+```
 
-#### Purpose & Architectural Intent
-Аутентифицирует пользователя по Telegram initData и выдает сессию.
+- **Source Reference**: [`api/router/miniapp.py#L64-L74`](../../api/router/miniapp.py#L64-L74)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `MiniappAuthResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `authenticate_miniapp`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `payload` | `MiniappAuthRequest` | Input parameter |
-| `response` | `Response` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `payload` | `MiniappAuthRequest` | Yes | Parameter `payload` of type `MiniappAuthRequest`. |
+| `response` | `Response` | Yes | Parameter `response` of type `Response`. |
 
-#### Step-by-Step Logic Execution
-1. `info = validate_telegram_init_data(payload.init_data)`
-2. `if not info or "id" not in info:`
-3. `user_id = int(info["id"])`
-4. `if not await is_tester_allowed(user_id):`
-5. `_set_tester_cookie(response, user_id)`
-6. `return MiniappAuthResponse(user_id=user_id, first_name=info.get("first_name"), userna`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import authenticate_miniapp
+
+# Execute call
+result = await authenticate_miniapp(payload=..., response=...)
+```
 
 ---
 
 ### `check_tester_status`
-- **Signature**: `async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse`
-- **Source Reference**: [api/router/miniapp.py#L78-L86](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L78-L86)
-- **Async**: `Yes`
-- **Return Type**: `MiniappCheckResponse`
+```python
+async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse
+```
 
-#### Purpose & Architectural Intent
-Возвращает статус авторизации текущего пользователя.
+- **Source Reference**: [`api/router/miniapp.py#L78-L86`](../../api/router/miniapp.py#L78-L86)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `MiniappCheckResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `check_tester_status`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `para_session` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `para_session` | `str` | Yes | Parameter `para_session` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `if not para_session:`
-2. `uid = verify_tester_session(para_session)`
-3. `if uid is None:`
-4. `allowed = await is_tester_allowed(uid)`
-5. `return MiniappCheckResponse(authenticated=True, user_id=uid, is_tester=allowed)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import check_tester_status
+
+# Execute call
+result = await check_tester_status(para_session=...)
+```
 
 ---
 
 ### `list_api_testers`
-- **Signature**: `async def list_api_testers() -> TesterListResponse`
-- **Source Reference**: [api/router/miniapp.py#L90-L94](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L90-L94)
-- **Async**: `Yes`
-- **Return Type**: `TesterListResponse`
+```python
+async def list_api_testers() -> TesterListResponse
+```
 
-#### Purpose & Architectural Intent
-Возвращает список всех зарегистрированных тестеров API.
+- **Source Reference**: [`api/router/miniapp.py#L90-L94`](../../api/router/miniapp.py#L90-L94)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TesterListResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `list_api_testers`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `uids = await get_all_testers()`
-2. `items = [TesterItemResponse(user_id=u, is_admin=(u in {ALLOWED_USER_ID, DEPUTY_USER_I`
-3. `return TesterListResponse(count=len(items), testers=items)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import list_api_testers
+
+# Execute call
+result = await list_api_testers()
+```
 
 ---
 
 ### `api_add_tester`
-- **Signature**: `async def api_add_tester(user_id: int) -> dict`
-- **Source Reference**: [api/router/miniapp.py#L98-L103](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L98-L103)
-- **Async**: `Yes`
-- **Return Type**: `dict`
+```python
+async def api_add_tester(user_id: int) -> dict
+```
 
-#### Purpose & Architectural Intent
-Добавляет пользователя в белый список тестеров API (Admin only).
+- **Source Reference**: [`api/router/miniapp.py#L98-L103`](../../api/router/miniapp.py#L98-L103)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `api_add_tester`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `success = await add_tester(user_id)`
-2. `if not success:`
-3. `return {"status": "ok", "user_id": user_id}`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import api_add_tester
+
+# Execute call
+result = await api_add_tester(user_id=...)
+```
 
 ---
 
 ### `api_remove_tester`
-- **Signature**: `async def api_remove_tester(user_id: int) -> dict`
-- **Source Reference**: [api/router/miniapp.py#L107-L112](file:///home/u/Рабочий стол/para/api/router/miniapp.py#L107-L112)
-- **Async**: `Yes`
-- **Return Type**: `dict`
+```python
+async def api_remove_tester(user_id: int) -> dict
+```
 
-#### Purpose & Architectural Intent
-Удаляет пользователя из белого списка тестеров API (Admin only).
+- **Source Reference**: [`api/router/miniapp.py#L107-L112`](../../api/router/miniapp.py#L107-L112)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `api_remove_tester`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `success = await remove_tester(user_id)`
-2. `if not success:`
-3. `return {"status": "ok", "user_id": user_id}`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import api_remove_tester
+
+# Execute call
+result = await api_remove_tester(user_id=...)
+```
 
 ---

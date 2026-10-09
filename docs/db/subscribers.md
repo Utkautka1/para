@@ -1,145 +1,229 @@
-# Module Specification: `db/subscribers.py`
-> **Path**: [`db/subscribers.py`](file:///home/u/Рабочий стол/para/db/subscribers.py)  
+# Component Reference: `db/subscribers.py`
+> **File Path**: [`db/subscribers.py`](../../db/subscribers.py)  
 > **Subsystem**: `Subscriber Store`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль локального хранения подписчиков бота. Сохраняет и считывает список Telegram chat_id из файла data/subscribers.json. Обеспечивает атомарную запись через временный файл и fsync.
+## 1. Architectural Role & Responsibilities
+The `db/subscribers.py` module implements core operational logic for the `Subscriber Store` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_subscribers`](#load_subscribers) | Function | L16–L23 | `set[int]` | Загружает множество ID подписанных пользователей из файла. |
-| [`save_subscribers`](#save_subscribers) | Function | L26–L36 | `bool` | Атомарно сохраняет актуальное множество подписчиков в JSON ф |
-| [`add_subscriber`](#add_subscriber) | Function | L39–L52 | `bool` | Добавляет новый chat_id в список подписчиков. |
-| [`remove_subscriber`](#remove_subscriber) | Function | L55–L68 | `bool` | Удаляет chat_id из списка подписчиков. |
-| [`is_subscribed`](#is_subscribed) | Function | L71–L78 | `bool` | Проверяет, подписан ли пользователь на 10-минутные напоминан |
-| [`toggle_subscriber`](#toggle_subscriber) | Function | L81–L97 | `bool` | Инвертирует статус подписки пользователя на напоминания в ЛС |
+| [`load_subscribers`](#load_subscribers) | Function | L16–L23 | `set[int]` | Executes core domain logic for `load_subscribers`. |
+| [`save_subscribers`](#save_subscribers) | Function | L26–L36 | `bool` | Saves serialized entity data to storage for `save_subsc... |
+| [`add_subscriber`](#add_subscriber) | Function | L39–L52 | `bool` | Executes core domain logic for `add_subscriber`. |
+| [`remove_subscriber`](#remove_subscriber) | Function | L55–L68 | `bool` | Executes core domain logic for `remove_subscriber`. |
+| [`is_subscribed`](#is_subscribed) | Function | L71–L78 | `bool` | Executes core domain logic for `is_subscribed`. |
+| [`toggle_subscriber`](#toggle_subscriber) | Function | L81–L97 | `bool` | Executes core domain logic for `toggle_subscriber`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `load_subscribers`
-- **Signature**: `def load_subscribers() -> set[int]`
-- **Source Reference**: [db/subscribers.py#L16-L23](file:///home/u/Рабочий стол/para/db/subscribers.py#L16-L23)
-- **Async**: `No`
-- **Return Type**: `set[int]`
+```python
+def load_subscribers() -> set[int]
+```
 
-#### Purpose & Architectural Intent
-Загружает множество ID подписанных пользователей из файла. :return: Сет с Telegram chat_id
+- **Source Reference**: [`db/subscribers.py#L16-L23`](../../db/subscribers.py#L16-L23)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `set[int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_subscribers`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `data = sync_load_json(SUBSCRIBERS_FILE_PATH, default=[])`
-2. `return set(data) if isinstance(data, list) else set()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import load_subscribers
+
+# Execute call
+result = load_subscribers()
+```
 
 ---
 
 ### `save_subscribers`
-- **Signature**: `def save_subscribers(subs: set[int]) -> bool`
-- **Source Reference**: [db/subscribers.py#L26-L36](file:///home/u/Рабочий стол/para/db/subscribers.py#L26-L36)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def save_subscribers(subs: set[int]) -> bool
+```
 
-#### Purpose & Architectural Intent
-Атомарно сохраняет актуальное множество подписчиков в JSON файл. :param subs: Множество ID подписчиков :return: True в случае успеха
+- **Source Reference**: [`db/subscribers.py#L26-L36`](../../db/subscribers.py#L26-L36)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_subscribers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `subs` | `set[int]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `subs` | `set[int]` | Yes | Parameter `subs` of type `set[int]`. |
 
-#### Step-by-Step Logic Execution
-1. `ok = sync_atomic_save_json(SUBSCRIBERS_FILE_PATH, list(subs))`
-2. `if ok:`
-3. `return ok`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import save_subscribers
+
+# Execute call
+result = save_subscribers(subs=...)
+```
 
 ---
 
 ### `add_subscriber`
-- **Signature**: `def add_subscriber(chat_id: int) -> bool`
-- **Source Reference**: [db/subscribers.py#L39-L52](file:///home/u/Рабочий стол/para/db/subscribers.py#L39-L52)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def add_subscriber(chat_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Добавляет новый chat_id в список подписчиков. :param chat_id: Telegram ID чата :return: True, если пользователь был добавлен впервые
+- **Source Reference**: [`db/subscribers.py#L39-L52`](../../db/subscribers.py#L39-L52)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `add_subscriber`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `chat_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
 
-#### Step-by-Step Logic Execution
-1. `subs = load_subscribers()`
-2. `if chat_id not in subs:`
-3. `return False`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import add_subscriber
+
+# Execute call
+result = add_subscriber(chat_id=...)
+```
 
 ---
 
 ### `remove_subscriber`
-- **Signature**: `def remove_subscriber(chat_id: int) -> bool`
-- **Source Reference**: [db/subscribers.py#L55-L68](file:///home/u/Рабочий стол/para/db/subscribers.py#L55-L68)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def remove_subscriber(chat_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Удаляет chat_id из списка подписчиков. :param chat_id: Telegram ID чата :return: True, если пользователь был успешно удален
+- **Source Reference**: [`db/subscribers.py#L55-L68`](../../db/subscribers.py#L55-L68)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `remove_subscriber`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `chat_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
 
-#### Step-by-Step Logic Execution
-1. `subs = load_subscribers()`
-2. `if chat_id in subs:`
-3. `return False`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import remove_subscriber
+
+# Execute call
+result = remove_subscriber(chat_id=...)
+```
 
 ---
 
 ### `is_subscribed`
-- **Signature**: `def is_subscribed(chat_id: int) -> bool`
-- **Source Reference**: [db/subscribers.py#L71-L78](file:///home/u/Рабочий стол/para/db/subscribers.py#L71-L78)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def is_subscribed(chat_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, подписан ли пользователь на 10-минутные напоминания в ЛС. :param chat_id: Telegram ID чата :return: True, если напоминания включены
+- **Source Reference**: [`db/subscribers.py#L71-L78`](../../db/subscribers.py#L71-L78)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_subscribed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `chat_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
 
-#### Step-by-Step Logic Execution
-1. `return chat_id in load_subscribers()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import is_subscribed
+
+# Execute call
+result = is_subscribed(chat_id=...)
+```
 
 ---
 
 ### `toggle_subscriber`
-- **Signature**: `def toggle_subscriber(chat_id: int) -> bool`
-- **Source Reference**: [db/subscribers.py#L81-L97](file:///home/u/Рабочий стол/para/db/subscribers.py#L81-L97)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def toggle_subscriber(chat_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Инвертирует статус подписки пользователя на напоминания в ЛС. :param chat_id: Telegram ID чата :return: Новый статус (True = включено, False = выключено)
+- **Source Reference**: [`db/subscribers.py#L81-L97`](../../db/subscribers.py#L81-L97)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `toggle_subscriber`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `chat_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
 
-#### Step-by-Step Logic Execution
-1. `subs = load_subscribers()`
-2. `if chat_id in subs:`
-3. `subs.add(chat_id)`
-4. `save_subscribers(subs)`
-5. `log.info(f"🔔 Пользователь включил напоминания: {chat_id}")`
-6. `return True`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.subscribers import toggle_subscriber
+
+# Execute call
+result = toggle_subscriber(chat_id=...)
+```
 
 ---

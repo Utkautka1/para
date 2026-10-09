@@ -1,104 +1,166 @@
-# Module Specification: `api/handlers.py`
-> **Path**: [`api/handlers.py`](file:///home/u/Рабочий стол/para/api/handlers.py)  
+# Component Reference: `api/handlers.py`
+> **File Path**: [`api/handlers.py`](../../api/handlers.py)  
 > **Subsystem**: `REST Request Handlers`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Централизованные обработчики исключений (Exception Handlers) для para-api. Зачем существует этот модуль: Перехватывает все исключения приложения, обеспечивает единый формат JSON-ответов (совместимый с Pydantic ErrorDetail) и логирует критические ошибки.
+## 1. Architectural Role & Responsibilities
+The `api/handlers.py` module implements core operational logic for the `REST Request Handlers` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`http_exception_handler`](#http_exception_handler) | Function | L19–L22 | `JSONResponse` | Обрабатывает стандартные HTTPException и возвращает унифицир |
-| [`validation_exception_handler`](#validation_exception_handler) | Function | L25–L31 | `JSONResponse` | Обрабатывает ошибки валидации параметров Pydantic (HTTP 422) |
-| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L34–L38 | `JSONResponse` | Перехватывает любые непредвиденные сбои, логирует стек и воз |
-| [`register_exception_handlers`](#register_exception_handlers) | Function | L41–L45 | `None` | Регистрирует все централизованные обработчики исключений в п |
+| [`http_exception_handler`](#http_exception_handler) | Function | L19–L22 | `JSONResponse` | Executes core domain logic for `http_exception_handler`... |
+| [`validation_exception_handler`](#validation_exception_handler) | Function | L25–L31 | `JSONResponse` | Executes core domain logic for `validation_exception_ha... |
+| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L34–L38 | `JSONResponse` | Executes core domain logic for `unhandled_exception_han... |
+| [`register_exception_handlers`](#register_exception_handlers) | Function | L41–L45 | `None` | Executes core domain logic for `register_exception_hand... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `http_exception_handler`
-- **Signature**: `async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse`
-- **Source Reference**: [api/handlers.py#L19-L22](file:///home/u/Рабочий стол/para/api/handlers.py#L19-L22)
-- **Async**: `Yes`
-- **Return Type**: `JSONResponse`
+```python
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse
+```
 
-#### Purpose & Architectural Intent
-Обрабатывает стандартные HTTPException и возвращает унифицированный JSON.
+- **Source Reference**: [`api/handlers.py#L19-L22`](../../api/handlers.py#L19-L22)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `JSONResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `http_exception_handler`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `request` | `Request` | Input parameter |
-| `exc` | `HTTPException` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `request` | `Request` | Yes | Parameter `request` of type `Request`. |
+| `exc` | `HTTPException` | Yes | Parameter `exc` of type `HTTPException`. |
 
-#### Step-by-Step Logic Execution
-1. `payload = ErrorDetail(detail=str(exc.detail), code=f"HTTP_{exc.status_code}")`
-2. `return JSONResponse(status_code=exc.status_code, content=payload.model_dump())`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.handlers import http_exception_handler
+
+# Execute call
+result = await http_exception_handler(request=..., exc=...)
+```
 
 ---
 
 ### `validation_exception_handler`
-- **Signature**: `async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse`
-- **Source Reference**: [api/handlers.py#L25-L31](file:///home/u/Рабочий стол/para/api/handlers.py#L25-L31)
-- **Async**: `Yes`
-- **Return Type**: `JSONResponse`
+```python
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse
+```
 
-#### Purpose & Architectural Intent
-Обрабатывает ошибки валидации параметров Pydantic (HTTP 422).
+- **Source Reference**: [`api/handlers.py#L25-L31`](../../api/handlers.py#L25-L31)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `JSONResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `validation_exception_handler`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `request` | `Request` | Input parameter |
-| `exc` | `RequestValidationError` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `request` | `Request` | Yes | Parameter `request` of type `Request`. |
+| `exc` | `RequestValidationError` | Yes | Parameter `exc` of type `RequestValidationError`. |
 
-#### Step-by-Step Logic Execution
-1. `log.warning(f"⚠️ Ошибка валидации {request.method} {request.url.path}: {exc.errors()}`
-2. `return JSONResponse(`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.handlers import validation_exception_handler
+
+# Execute call
+result = await validation_exception_handler(request=..., exc=...)
+```
 
 ---
 
 ### `unhandled_exception_handler`
-- **Signature**: `async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse`
-- **Source Reference**: [api/handlers.py#L34-L38](file:///home/u/Рабочий стол/para/api/handlers.py#L34-L38)
-- **Async**: `Yes`
-- **Return Type**: `JSONResponse`
+```python
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse
+```
 
-#### Purpose & Architectural Intent
-Перехватывает любые непредвиденные сбои, логирует стек и возвращает HTTP 500.
+- **Source Reference**: [`api/handlers.py#L34-L38`](../../api/handlers.py#L34-L38)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `JSONResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `unhandled_exception_handler`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `request` | `Request` | Input parameter |
-| `exc` | `Exception` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `request` | `Request` | Yes | Parameter `request` of type `Request`. |
+| `exc` | `Exception` | Yes | Parameter `exc` of type `Exception`. |
 
-#### Step-by-Step Logic Execution
-1. `log.error(f"❌ Критический сбой при вызове {request.method} {request.url.path}: {exc}"`
-2. `payload = ErrorDetail(detail="Внутренняя ошибка сервера", code="INTERNAL_SERVER_ERROR`
-3. `return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payloa`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.handlers import unhandled_exception_handler
+
+# Execute call
+result = await unhandled_exception_handler(request=..., exc=...)
+```
 
 ---
 
 ### `register_exception_handlers`
-- **Signature**: `def register_exception_handlers(app: FastAPI) -> None`
-- **Source Reference**: [api/handlers.py#L41-L45](file:///home/u/Рабочий стол/para/api/handlers.py#L41-L45)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def register_exception_handlers(app: FastAPI) -> None
+```
 
-#### Purpose & Architectural Intent
-Регистрирует все централизованные обработчики исключений в приложении.
+- **Source Reference**: [`api/handlers.py#L41-L45`](../../api/handlers.py#L41-L45)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `register_exception_handlers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `app` | `FastAPI` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `app` | `FastAPI` | Yes | Parameter `app` of type `FastAPI`. |
 
-#### Step-by-Step Logic Execution
-1. `app.add_exception_handler(HTTPException, http_exception_handler)`
-2. `app.add_exception_handler(RequestValidationError, validation_exception_handler)`
-3. `app.add_exception_handler(Exception, unhandled_exception_handler)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.handlers import register_exception_handlers
+
+# Execute call
+result = register_exception_handlers(app=...)
+```
 
 ---

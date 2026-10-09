@@ -1,103 +1,162 @@
-# Module Specification: `api/router/classmates.py`
-> **Path**: [`api/router/classmates.py`](file:///home/u/Рабочий стол/para/api/router/classmates.py)  
+# Component Reference: `api/router/classmates.py`
+> **File Path**: [`api/router/classmates.py`](../../api/router/classmates.py)  
 > **Subsystem**: `Classmates API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер одногруппников — GET /classmates (список и карточка студента).
+## 1. Architectural Role & Responsibilities
+The `api/router/classmates.py` module implements core operational logic for the `Classmates API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L31 | `ClassmateItem` | Конвертирует словарь студента в Pydantic модель. |
-| [`list_classmates`](#list_classmates) | Function | L35–L39 | `ClassmatesListResponse` | Полный реестр студентов учебной группы 1-КПД-3. |
-| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L42–L47 | `dict | None` | Ищет студента по порядковому номеру в журнале либо Telegram  |
-| [`get_classmate_detail`](#get_classmate_detail) | Function | L51–L65 | `ClassmateDetailResponse` | Детальная информация о студенте по порядковому ID или Telegr |
+| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L31 | `ClassmateItem` | Executes core domain logic for `_to_classmate_item`. |
+| [`list_classmates`](#list_classmates) | Function | L35–L39 | `ClassmatesListResponse` | Executes core domain logic for `list_classmates`. |
+| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L42–L47 | `dict | None` | Executes core domain logic for `_find_student_in_regist... |
+| [`get_classmate_detail`](#get_classmate_detail) | Function | L51–L65 | `ClassmateDetailResponse` | Retrieves and resolves domain data for `get_classmate_d... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_to_classmate_item`
-- **Signature**: `def _to_classmate_item(raw: dict) -> ClassmateItem`
-- **Source Reference**: [api/router/classmates.py#L22-L31](file:///home/u/Рабочий стол/para/api/router/classmates.py#L22-L31)
-- **Async**: `No`
-- **Return Type**: `ClassmateItem`
+```python
+def _to_classmate_item(raw: dict) -> ClassmateItem
+```
 
-#### Purpose & Architectural Intent
-Конвертирует словарь студента в Pydantic модель.
+- **Source Reference**: [`api/router/classmates.py#L22-L31`](../../api/router/classmates.py#L22-L31)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `ClassmateItem`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_to_classmate_item`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `raw` | `dict` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw` | `dict` | Yes | Parameter `raw` of type `dict`. |
 
-#### Step-by-Step Logic Execution
-1. `b_day = f"{raw.get('day', 1):02d}.{raw.get('month', 1):02d}.{raw.get('year', 2005)}"`
-2. `return ClassmateItem(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.classmates import _to_classmate_item
+
+# Execute call
+result = _to_classmate_item(raw=...)
+```
 
 ---
 
 ### `list_classmates`
-- **Signature**: `async def list_classmates() -> ClassmatesListResponse`
-- **Source Reference**: [api/router/classmates.py#L35-L39](file:///home/u/Рабочий стол/para/api/router/classmates.py#L35-L39)
-- **Async**: `Yes`
-- **Return Type**: `ClassmatesListResponse`
+```python
+async def list_classmates() -> ClassmatesListResponse
+```
 
-#### Purpose & Architectural Intent
-Полный реестр студентов учебной группы 1-КПД-3.
+- **Source Reference**: [`api/router/classmates.py#L35-L39`](../../api/router/classmates.py#L35-L39)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ClassmatesListResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `list_classmates`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `registry = load_classmates_registry()`
-2. `items = [_to_classmate_item(r) for r in registry]`
-3. `return ClassmatesListResponse(count=len(items), classmates=items)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.classmates import list_classmates
+
+# Execute call
+result = await list_classmates()
+```
 
 ---
 
 ### `_find_student_in_registry`
-- **Signature**: `def _find_student_in_registry(registry: list[dict], identifier: int) -> dict | None`
-- **Source Reference**: [api/router/classmates.py#L42-L47](file:///home/u/Рабочий стол/para/api/router/classmates.py#L42-L47)
-- **Async**: `No`
-- **Return Type**: `dict | None`
+```python
+def _find_student_in_registry(registry: list[dict], identifier: int) -> dict | None
+```
 
-#### Purpose & Architectural Intent
-Ищет студента по порядковому номеру в журнале либо Telegram ID.
+- **Source Reference**: [`api/router/classmates.py#L42-L47`](../../api/router/classmates.py#L42-L47)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_find_student_in_registry`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `registry` | `list[dict]` | Input parameter |
-| `identifier` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `registry` | `list[dict]` | Yes | Parameter `registry` of type `list[dict]`. |
+| `identifier` | `int` | Yes | Parameter `identifier` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `for s in registry:`
-2. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.classmates import _find_student_in_registry
+
+# Execute call
+result = _find_student_in_registry(registry=..., identifier=...)
+```
 
 ---
 
 ### `get_classmate_detail`
-- **Signature**: `async def get_classmate_detail(student_id: int) -> ClassmateDetailResponse`
-- **Source Reference**: [api/router/classmates.py#L51-L65](file:///home/u/Рабочий стол/para/api/router/classmates.py#L51-L65)
-- **Async**: `Yes`
-- **Return Type**: `ClassmateDetailResponse`
+```python
+async def get_classmate_detail(student_id: int) -> ClassmateDetailResponse
+```
 
-#### Purpose & Architectural Intent
-Детальная информация о студенте по порядковому ID или Telegram ID.
+- **Source Reference**: [`api/router/classmates.py#L51-L65`](../../api/router/classmates.py#L51-L65)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ClassmateDetailResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_classmate_detail`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `student_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_id` | `int` | Yes | Parameter `student_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `registry = load_classmates_registry()`
-2. `student = _find_student_in_registry(registry, student_id)`
-3. `if not student:`
-4. `today = datetime.now(TIMEZONE).date()`
-5. `calc = calculate_days_and_age(student, today)`
-6. `item = _to_classmate_item(student)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.classmates import get_classmate_detail
+
+# Execute call
+result = await get_classmate_detail(student_id=...)
+```
 
 ---

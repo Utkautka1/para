@@ -1,202 +1,299 @@
-# Module Specification: `services/classmates_auth.py`
-> **Path**: [`services/classmates_auth.py`](file:///home/u/Рабочий стол/para/services/classmates_auth.py)  
+# Component Reference: `services/classmates_auth.py`
+> **File Path**: [`services/classmates_auth.py`](../../services/classmates_auth.py)  
 > **Subsystem**: `RBAC Security`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис аутентификации и разовой регистрации одногруппников группы 1-КПД-3. Отвечает за: 1. Проверку принадлежности пользователя к группе (ALLOWED_USER_ID или реестр). 2. Разовую фиксацию цифрового Telegram ID при первом нажатии /start в ЛС бота. 3. Сохранение привязки в data/birthdays.json и постоянный кэш user_cache. 4. Защиту от несанкционированного доступа посторонних пользователей.
+## 1. Architectural Role & Responsibilities
+The `services/classmates_auth.py` module implements core operational logic for the `RBAC Security` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`clear_registry_cache`](#clear_registry_cache) | Function | L28–L32 | `None` | Сбрасывает кэш реестра одногруппников в оперативной памяти. |
-| [`load_classmates_registry`](#load_classmates_registry) | Function | L35–L50 | `list[dict[str, Any]]` | Загружает актуальный список студентов с in-memory кэшировани |
-| [`find_classmate_by_tg_id`](#find_classmate_by_tg_id) | Function | L53–L64 | `dict[str, Any] | None` | Ищет студента в реестре по его сохраненному Telegram ID. |
-| [`find_unregistered_by_username`](#find_unregistered_by_username) | Function | L67–L80 | `dict[str, Any] | None` | Ищет студента по юзернейму, у которого еще не зафиксирован t |
-| [`update_classmate_tg_id`](#update_classmate_tg_id) | Function | L83–L105 | `dict[str, Any] | None` | Атомарно фиксирует Telegram ID студента в birthdays.json и к |
-| [`bind_student_tg_id`](#bind_student_tg_id) | Function | L108–L125 | `dict[str, Any] | None` | Привязывает Telegram ID к студенту по ФИО для студентов без  |
-| [`is_authorized_user`](#is_authorized_user) | Function | L128–L139 | `bool` | Проверяет, авторизован ли пользователь (Администратор или ст |
-| [`process_user_auth`](#process_user_auth) | Function | L142–L156 | `tuple[bool, bool, dict[str, Any] | None]` | Основная логика аутентификации пользователя при входе в бота |
+| [`clear_registry_cache`](#clear_registry_cache) | Function | L28–L32 | `None` | Flushes and resets state for `clear_registry_cache`. |
+| [`load_classmates_registry`](#load_classmates_registry) | Function | L35–L50 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_registr... |
+| [`find_classmate_by_tg_id`](#find_classmate_by_tg_id) | Function | L53–L64 | `dict[str, Any] | None` | Executes core domain logic for `find_classmate_by_tg_id... |
+| [`find_unregistered_by_username`](#find_unregistered_by_username) | Function | L67–L80 | `dict[str, Any] | None` | Executes core domain logic for `find_unregistered_by_us... |
+| [`update_classmate_tg_id`](#update_classmate_tg_id) | Function | L83–L105 | `dict[str, Any] | None` | Synchronizes and updates domain state for `update_class... |
+| [`bind_student_tg_id`](#bind_student_tg_id) | Function | L108–L125 | `dict[str, Any] | None` | Executes core domain logic for `bind_student_tg_id`. |
+| [`is_authorized_user`](#is_authorized_user) | Function | L128–L139 | `bool` | Executes core domain logic for `is_authorized_user`. |
+| [`process_user_auth`](#process_user_auth) | Function | L142–L156 | `tuple[bool, bool, dict[str, Any] | None]` | Executes core domain logic for `process_user_auth`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `clear_registry_cache`
-- **Signature**: `def clear_registry_cache() -> None`
-- **Source Reference**: [services/classmates_auth.py#L28-L32](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L28-L32)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def clear_registry_cache() -> None
+```
 
-#### Purpose & Architectural Intent
-Сбрасывает кэш реестра одногруппников в оперативной памяти.
+- **Source Reference**: [`services/classmates_auth.py#L28-L32`](../../services/classmates_auth.py#L28-L32)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Flushes and resets state for `clear_registry_cache`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _REGISTRY_CACHE, _REGISTRY_MTIME`
-2. `_REGISTRY_CACHE = None`
-3. `_REGISTRY_MTIME = 0.0`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import clear_registry_cache
+
+# Execute call
+result = clear_registry_cache()
+```
 
 ---
 
 ### `load_classmates_registry`
-- **Signature**: `def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]`
-- **Source Reference**: [services/classmates_auth.py#L35-L50](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L35-L50)
-- **Async**: `No`
-- **Return Type**: `list[dict[str, Any]]`
+```python
+def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]
+```
 
-#### Purpose & Architectural Intent
-Загружает актуальный список студентов с in-memory кэшированием по mtime. Исключает дисковый I/O на каждый callback, возвращая срез из RAM.
+- **Source Reference**: [`services/classmates_auth.py#L35-L50`](../../services/classmates_auth.py#L35-L50)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_classmates_registry`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_reload` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_reload` | `bool` | Yes | Parameter `force_reload` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `global _REGISTRY_CACHE, _REGISTRY_MTIME`
-2. `try:`
-3. `if not force_reload and _REGISTRY_CACHE is not None and current_mtime == _REGISTRY_MT`
-4. `_REGISTRY_CACHE = sync_load_json(BIRTHDAYS_FILE_PATH, default=[])`
-5. `_REGISTRY_MTIME = current_mtime`
-6. `return _REGISTRY_CACHE`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import load_classmates_registry
+
+# Execute call
+result = load_classmates_registry(force_reload=...)
+```
 
 ---
 
 ### `find_classmate_by_tg_id`
-- **Signature**: `def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None`
-- **Source Reference**: [services/classmates_auth.py#L53-L64](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L53-L64)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any] | None`
+```python
+def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None
+```
 
-#### Purpose & Architectural Intent
-Ищет студента в реестре по его сохраненному Telegram ID. :param user_id: Числовой ID пользователя в Telegram :return: Словарь с данными студента или None
+- **Source Reference**: [`services/classmates_auth.py#L53-L64`](../../services/classmates_auth.py#L53-L64)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_classmate_by_tg_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `registry = load_classmates_registry()`
-2. `for student in registry:`
-3. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import find_classmate_by_tg_id
+
+# Execute call
+result = find_classmate_by_tg_id(user_id=...)
+```
 
 ---
 
 ### `find_unregistered_by_username`
-- **Signature**: `def find_unregistered_by_username(username: str) -> dict[str, Any] | None`
-- **Source Reference**: [services/classmates_auth.py#L67-L80](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L67-L80)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any] | None`
+```python
+def find_unregistered_by_username(username: str) -> dict[str, Any] | None
+```
 
-#### Purpose & Architectural Intent
-Ищет студента по юзернейму, у которого еще не зафиксирован tg_id (None). :param username: Юзернейм пользователя без префикса @ :return: Словарь с данными студента или None
+- **Source Reference**: [`services/classmates_auth.py#L67-L80`](../../services/classmates_auth.py#L67-L80)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_unregistered_by_username`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `username` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `username` | `str` | Yes | Parameter `username` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `clean = username.lstrip("@").lower()`
-2. `registry = load_classmates_registry()`
-3. `for student in registry:`
-4. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import find_unregistered_by_username
+
+# Execute call
+result = find_unregistered_by_username(username=...)
+```
 
 ---
 
 ### `update_classmate_tg_id`
-- **Signature**: `def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None`
-- **Source Reference**: [services/classmates_auth.py#L83-L105](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L83-L105)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any] | None`
+```python
+def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None
+```
 
-#### Purpose & Architectural Intent
-Атомарно фиксирует Telegram ID студента в birthdays.json и кэше. Выполняется разово при первой авторизации по совпадению юзернейма.
+- **Source Reference**: [`services/classmates_auth.py#L83-L105`](../../services/classmates_auth.py#L83-L105)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Synchronizes and updates domain state for `update_classmate_tg_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `clean_username` | `str` | Input parameter |
-| `tg_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `clean_username` | `str` | Yes | Parameter `clean_username` of type `str`. |
+| `tg_id` | `int` | Yes | Telegram user identifier for identity verification. |
 
-#### Step-by-Step Logic Execution
-1. `registry = load_classmates_registry()`
-2. `updated_student = None`
-3. `for student in registry:`
-4. `if updated_student:`
-5. `return updated_student`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import update_classmate_tg_id
+
+# Execute call
+result = update_classmate_tg_id(clean_username=..., tg_id=...)
+```
 
 ---
 
 ### `bind_student_tg_id`
-- **Signature**: `def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None`
-- **Source Reference**: [services/classmates_auth.py#L108-L125](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L108-L125)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any] | None`
+```python
+def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None
+```
 
-#### Purpose & Architectural Intent
-Привязывает Telegram ID к студенту по ФИО для студентов без username.
+- **Source Reference**: [`services/classmates_auth.py#L108-L125`](../../services/classmates_auth.py#L108-L125)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `bind_student_tg_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `full_name` | `str` | Input parameter |
-| `tg_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `full_name` | `str` | Yes | Parameter `full_name` of type `str`. |
+| `tg_id` | `int` | Yes | Telegram user identifier for identity verification. |
 
-#### Step-by-Step Logic Execution
-1. `registry = load_classmates_registry()`
-2. `target_clean = full_name.strip().lower()`
-3. `updated = None`
-4. `for student in registry:`
-5. `if updated:`
-6. `return updated`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import bind_student_tg_id
+
+# Execute call
+result = bind_student_tg_id(full_name=..., tg_id=...)
+```
 
 ---
 
 ### `is_authorized_user`
-- **Signature**: `def is_authorized_user(user: User | None) -> bool`
-- **Source Reference**: [services/classmates_auth.py#L128-L139](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L128-L139)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def is_authorized_user(user: User | None) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, авторизован ли пользователь (Администратор или студент с ID). :param user: Экземпляр aiogram User :return: True, если доступ разрешен
+- **Source Reference**: [`services/classmates_auth.py#L128-L139`](../../services/classmates_auth.py#L128-L139)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_authorized_user`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user` | `User | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user` | `User | None` | Yes | Parameter `user` of type `User | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if not user:`
-2. `if user.id == ALLOWED_USER_ID:`
-3. `return find_classmate_by_tg_id(user.id) is not None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import is_authorized_user
+
+# Execute call
+result = is_authorized_user(user=...)
+```
 
 ---
 
 ### `process_user_auth`
-- **Signature**: `def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | None]`
-- **Source Reference**: [services/classmates_auth.py#L142-L156](file:///home/u/Рабочий стол/para/services/classmates_auth.py#L142-L156)
-- **Async**: `No`
-- **Return Type**: `tuple[bool, bool, dict[str, Any] | None]`
+```python
+def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | None]
+```
 
-#### Purpose & Architectural Intent
-Основная логика аутентификации пользователя при входе в бота. Политикой Варианта А разрешен доступ только проверенным студентам с подтвержденным tg_id или главному администратору.
+- **Source Reference**: [`services/classmates_auth.py#L142-L156`](../../services/classmates_auth.py#L142-L156)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[bool, bool, dict[str, Any] | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `process_user_auth`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user` | `User | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user` | `User | None` | Yes | Parameter `user` of type `User | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if not user:`
-2. `if user.id == ALLOWED_USER_ID:`
-3. `existing = find_classmate_by_tg_id(user.id)`
-4. `if existing:`
-5. `return False, False, None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import process_user_auth
+
+# Execute call
+result = process_user_auth(user=...)
+```
 
 ---

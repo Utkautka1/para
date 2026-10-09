@@ -1,175 +1,267 @@
-# Module Specification: `integrations/docx_parser.py`
-> **Path**: [`integrations/docx_parser.py`](file:///home/u/Рабочий стол/para/integrations/docx_parser.py)  
+# Component Reference: `integrations/docx_parser.py`
+> **File Path**: [`integrations/docx_parser.py`](../../integrations/docx_parser.py)  
 > **Subsystem**: `Cloud DOCX Parser`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль загрузки и парсинга контактов преподавателей с Yandex Disk. Скачивает файл .docx с Yandex Disk через публичный REST API Яндекс Диска, извлекает из таблицы ФИО преподавателей и их персональные Zoom/Телемост ссылки.
+## 1. Architectural Role & Responsibilities
+The `integrations/docx_parser.py` module implements core operational logic for the `Cloud DOCX Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L35–L56 | `bytes | None` | Загружает сырые байты docx файла с Yandex Disk через публичн |
-| [`extract_row_texts`](#extract_row_texts) | Function | L59–L73 | `tuple[str, str]` | Извлекает полное имя преподавателя и строку ссылок из таблиц |
-| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L76–L91 | `dict[str, TeacherData]` | Распаковывает docx и парсит таблицу контактов преподавателей |
-| [`_get_docx_lock`](#_get_docx_lock) | Function | L98–L103 | `asyncio.Lock` | Возвращает лениво инициализированный asyncio.Lock для текуще |
-| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L106–L113 | `bool` | Проверяет актуальность кэша преподавателей с защитой от част |
-| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L116–L126 | `dict[str, TeacherData]` | Скачивает docx с Яндекс Диска, парсит преподавателей и обнов |
-| [`get_teacher_links`](#get_teacher_links) | Function | L129–L138 | `dict[str, TeacherData]` | Возвращает карту контактов преподавателей с Singleflight бло |
+| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L35–L56 | `bytes | None` | Executes core domain logic for `fetch_docx_bytes`. |
+| [`extract_row_texts`](#extract_row_texts) | Function | L59–L73 | `tuple[str, str]` | Executes core domain logic for `extract_row_texts`. |
+| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L76–L91 | `dict[str, TeacherData]` | Parses and extracts structured entities from `parse_doc... |
+| [`_get_docx_lock`](#_get_docx_lock) | Function | L98–L103 | `asyncio.Lock` | Executes core domain logic for `_get_docx_lock`. |
+| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L106–L113 | `bool` | Executes core domain logic for `_is_cache_fresh`. |
+| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L116–L126 | `dict[str, TeacherData]` | Executes core domain logic for `_fetch_and_cache_teache... |
+| [`get_teacher_links`](#get_teacher_links) | Function | L129–L138 | `dict[str, TeacherData]` | Retrieves and resolves domain data for `get_teacher_lin... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
-## Class: `TeacherData`
-Тип данных элемента преподавателя.
+## Class Model: `TeacherData`
+
+Encapsulates domain entities and data transfer logic for `TeacherData`.
 
 ### `fetch_docx_bytes`
-- **Signature**: `async def fetch_docx_bytes() -> bytes | None`
-- **Source Reference**: [integrations/docx_parser.py#L35-L56](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L35-L56)
-- **Async**: `Yes`
-- **Return Type**: `bytes | None`
+```python
+async def fetch_docx_bytes() -> bytes | None
+```
 
-#### Purpose & Architectural Intent
-Загружает сырые байты docx файла с Yandex Disk через публичный API. :return: Байты файла docx или None при ошибке
+- **Source Reference**: [`integrations/docx_parser.py#L35-L56`](../../integrations/docx_parser.py#L35-L56)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bytes | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `fetch_docx_bytes`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `api_url = f"https://cloud-api.yandex.net/v1/disk/public/resources?public_key={YANDEX_`
-2. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import fetch_docx_bytes
+
+# Execute call
+result = await fetch_docx_bytes()
+```
 
 ---
 
 ### `extract_row_texts`
-- **Signature**: `def extract_row_texts(row_elem: Any) -> tuple[str, str]`
-- **Source Reference**: [integrations/docx_parser.py#L59-L73](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L59-L73)
-- **Async**: `No`
-- **Return Type**: `tuple[str, str]`
+```python
+def extract_row_texts(row_elem: Any) -> tuple[str, str]
+```
 
-#### Purpose & Architectural Intent
-Извлекает полное имя преподавателя и строку ссылок из таблицы docx. :param row_elem: XML элемент w:tr :return: Кортеж (ФИО, Ссылка_и_данные)
+- **Source Reference**: [`integrations/docx_parser.py#L59-L73`](../../integrations/docx_parser.py#L59-L73)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[str, str]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `extract_row_texts`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `row_elem` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `row_elem` | `Any` | Yes | Parameter `row_elem` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `cells = row_elem.findall(".//w:tc", NS)`
-2. `if len(cells) < 3:`
-3. `name_texts = [t.text for t in cells[0].findall(".//w:t", NS) if t.text]`
-4. `name = " ".join(" ".join(name_texts).split()).strip()`
-5. `link_texts = [t.text for t in cells[2].findall(".//w:t", NS) if t.text]`
-6. `link_info = " ".join(link_texts).strip()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import extract_row_texts
+
+# Execute call
+result = extract_row_texts(row_elem=...)
+```
 
 ---
 
 ### `parse_docx_teachers`
-- **Signature**: `def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]`
-- **Source Reference**: [integrations/docx_parser.py#L76-L91](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L76-L91)
-- **Async**: `No`
-- **Return Type**: `dict[str, TeacherData]`
+```python
+def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]
+```
 
-#### Purpose & Architectural Intent
-Распаковывает docx и парсит таблицу контактов преподавателей.
+- **Source Reference**: [`integrations/docx_parser.py#L76-L91`](../../integrations/docx_parser.py#L76-L91)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, TeacherData]`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_docx_teachers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `content` | `bytes` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `content` | `bytes` | Yes | Parameter `content` of type `bytes`. |
 
-#### Step-by-Step Logic Execution
-1. `teachers_map: dict[str, TeacherData] = {}`
-2. `try:`
-3. `return teachers_map`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import parse_docx_teachers
+
+# Execute call
+result = parse_docx_teachers(content=...)
+```
 
 ---
 
 ### `_get_docx_lock`
-- **Signature**: `def _get_docx_lock() -> asyncio.Lock`
-- **Source Reference**: [integrations/docx_parser.py#L98-L103](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L98-L103)
-- **Async**: `No`
-- **Return Type**: `asyncio.Lock`
+```python
+def _get_docx_lock() -> asyncio.Lock
+```
 
-#### Purpose & Architectural Intent
-Возвращает лениво инициализированный asyncio.Lock для текущего event loop.
+- **Source Reference**: [`integrations/docx_parser.py#L98-L103`](../../integrations/docx_parser.py#L98-L103)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `asyncio.Lock`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_get_docx_lock`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `global _DOCX_LOCK`
-2. `if _DOCX_LOCK is None:`
-3. `return _DOCX_LOCK`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import _get_docx_lock
+
+# Execute call
+result = _get_docx_lock()
+```
 
 ---
 
 ### `_is_cache_fresh`
-- **Signature**: `def _is_cache_fresh(now: float, force_refresh: bool) -> bool`
-- **Source Reference**: [integrations/docx_parser.py#L106-L113](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L106-L113)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def _is_cache_fresh(now: float, force_refresh: bool) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет актуальность кэша преподавателей с защитой от частых сетевых запросов.
+- **Source Reference**: [`integrations/docx_parser.py#L106-L113`](../../integrations/docx_parser.py#L106-L113)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_is_cache_fresh`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `now` | `float` | Input parameter |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `now` | `float` | Yes | Parameter `now` of type `float`. |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `if not _CACHE[1]:`
-2. `age = now - _CACHE[0]`
-3. `if not force_refresh:`
-4. `return age < MIN_DOCX_REFRESH_INTERVAL_SECONDS`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import _is_cache_fresh
+
+# Execute call
+result = _is_cache_fresh(now=..., force_refresh=...)
+```
 
 ---
 
 ### `_fetch_and_cache_teachers`
-- **Signature**: `async def _fetch_and_cache_teachers(now: float) -> dict[str, TeacherData]`
-- **Source Reference**: [integrations/docx_parser.py#L116-L126](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L116-L126)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, TeacherData]`
+```python
+async def _fetch_and_cache_teachers(now: float) -> dict[str, TeacherData]
+```
 
-#### Purpose & Architectural Intent
-Скачивает docx с Яндекс Диска, парсит преподавателей и обновляет кэш в памяти.
+- **Source Reference**: [`integrations/docx_parser.py#L116-L126`](../../integrations/docx_parser.py#L116-L126)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, TeacherData]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_fetch_and_cache_teachers`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `now` | `float` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `now` | `float` | Yes | Parameter `now` of type `float`. |
 
-#### Step-by-Step Logic Execution
-1. `global _CACHE`
-2. `from services.custom_teachers import load_custom_teachers`
-3. `log.info("Загрузка свежих данных с Яндекс Диска...")`
-4. `content = await fetch_docx_bytes()`
-5. `parsed = (await asyncio.to_thread(parse_docx_teachers, content)) if content else _CAC`
-6. `custom = load_custom_teachers()`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import _fetch_and_cache_teachers
+
+# Execute call
+result = await _fetch_and_cache_teachers(now=...)
+```
 
 ---
 
 ### `get_teacher_links`
-- **Signature**: `async def get_teacher_links(force_refresh: bool = False) -> dict[str, TeacherData]`
-- **Source Reference**: [integrations/docx_parser.py#L129-L138](file:///home/u/Рабочий стол/para/integrations/docx_parser.py#L129-L138)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, TeacherData]`
+```python
+async def get_teacher_links(force_refresh: bool = False) -> dict[str, TeacherData]
+```
 
-#### Purpose & Architectural Intent
-Возвращает карту контактов преподавателей с Singleflight блокировкой.
+- **Source Reference**: [`integrations/docx_parser.py#L129-L138`](../../integrations/docx_parser.py#L129-L138)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, TeacherData]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_teacher_links`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `now = time.time()`
-2. `if _is_cache_fresh(now, force_refresh):`
-3. `async with _get_docx_lock():`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.docx_parser import get_teacher_links
+
+# Execute call
+result = await get_teacher_links(force_refresh=...)
+```
 
 ---

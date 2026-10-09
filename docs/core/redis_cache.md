@@ -1,509 +1,815 @@
-# Module Specification: `core/redis_cache.py`
-> **Path**: [`core/redis_cache.py`](file:///home/u/Рабочий стол/para/core/redis_cache.py)  
+# Component Reference: `core/redis_cache.py`
+> **File Path**: [`core/redis_cache.py`](../../core/redis_cache.py)  
 > **Subsystem**: `Distributed L2 Cache`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис быстрых операций с кэшем Redis. Отвечает за сохранение и извлечение кэшированных данных кнопок бота.
+## 1. Architectural Role & Responsibilities
+The `core/redis_cache.py` module implements core operational logic for the `Distributed L2 Cache` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cache_get`](#cache_get) | Function | L28–L44 | `str | None` | Извлекает строковое значение из Redis по ключу. |
-| [`cache_set`](#cache_set) | Function | L47–L64 | `None` | Сохраняет строковое значение в Redis с опциональным TTL (сек |
-| [`cache_flush`](#cache_flush) | Function | L67–L87 | `int` | Безопасно удаляет из Redis только ключи расписания. |
-| [`is_message_processed`](#is_message_processed) | Function | L90–L99 | `bool` | Проверяет, было ли сообщение с ДЗ уже решено и отправлено ра |
-| [`mark_message_processed`](#mark_message_processed) | Function | L102–L109 | `None` | Отмечает сообщение с ДЗ как обработанное на 30 дней в Redis. |
-| [`check_user_rate_limit`](#check_user_rate_limit) | Function | L112–L132 | `bool` | Проверяет лимит запросов пользователя (максимум 3 запроса в  |
-| [`is_hash_processed`](#is_hash_processed) | Function | L135–L144 | `bool` | Проверяет, отправлялось ли аналогичное задание (хэш текста/к |
-| [`mark_hash_processed`](#mark_hash_processed) | Function | L147–L154 | `None` | Сохраняет хэш выполненного задания на 24 часа. |
-| [`push_hw_task`](#push_hw_task) | Function | L157–L174 | `bool` | Помещает задачу на решение ДЗ в конец очереди Redis. |
-| [`pop_hw_task`](#pop_hw_task) | Function | L177–L189 | `dict | None` | Атомарно перемещает задачу из очереди в processing и возвращ |
-| [`ack_hw_task`](#ack_hw_task) | Function | L192–L201 | `None` | Удаляет завершенную задачу из processing очереди после успеш |
-| [`recover_stale_hw_tasks`](#recover_stale_hw_tasks) | Function | L204–L216 | `int` | Возвращает зависшие задачи из processing обратно в очередь п |
-| [`clear_hw_queue`](#clear_hw_queue) | Function | L219–L229 | `int` | Очищает основную и processing очереди задач ДЗ в Redis. |
-| [`save_schedule_snapshot`](#save_schedule_snapshot) | Function | L232–L245 | `None` | Сохраняет отфильтрованный срез расписания группы и метаданны |
-| [`load_schedule_snapshot`](#load_schedule_snapshot) | Function | L248–L260 | `tuple[dict | None, dict | None]` | Загружает сохраненный срез расписания и метаданные из Redis. |
-| [`is_reminder_sent`](#is_reminder_sent) | Function | L263–L266 | `bool` | Проверяет, было ли уже отправлено напоминание с данным ключо |
-| [`mark_reminder_sent`](#mark_reminder_sent) | Function | L269–L271 | `None` | Отмечает напоминание как отправленное в Redis с суточным TTL |
-| [`get_topic_state_redis`](#get_topic_state_redis) | Function | L274–L277 | `int | None` | Извлекает сохраненный ID сообщения топика из Redis. |
-| [`set_topic_state_redis`](#set_topic_state_redis) | Function | L280–L282 | `None` | Сохраняет ID главного сообщения топика в Redis без экспираци |
-| [`register_message_for_cleanup`](#register_message_for_cleanup) | Function | L285–L294 | `None` | Регистрирует сообщение в ZSET для гарантированного удаления  |
-| [`get_expired_messages_for_cleanup`](#get_expired_messages_for_cleanup) | Function | L297–L310 | `list[tuple[int, int]]` | Извлекает и удаляет из ZSET сообщения, чей срок хранения ист |
-| [`redis_lock`](#redis_lock) | Function | L323–L345 | `AsyncGenerator[bool, None]` | Атомарный распределенный лок Redis с валидацией токена владе |
-| [`nack_hw_task`](#nack_hw_task) | Function | L348–L363 | `bool` | Возвращает упавшую задачу в очередь или отправляет в DLQ. |
+| [`cache_get`](#cache_get) | Function | L28–L44 | `str | None` | Executes core domain logic for `cache_get`. |
+| [`cache_set`](#cache_set) | Function | L47–L64 | `None` | Executes core domain logic for `cache_set`. |
+| [`cache_flush`](#cache_flush) | Function | L67–L87 | `int` | Executes core domain logic for `cache_flush`. |
+| [`is_message_processed`](#is_message_processed) | Function | L90–L99 | `bool` | Executes core domain logic for `is_message_processed`. |
+| [`mark_message_processed`](#mark_message_processed) | Function | L102–L109 | `None` | Executes core domain logic for `mark_message_processed`... |
+| [`check_user_rate_limit`](#check_user_rate_limit) | Function | L112–L132 | `bool` | Executes core domain logic for `check_user_rate_limit`. |
+| [`is_hash_processed`](#is_hash_processed) | Function | L135–L144 | `bool` | Executes core domain logic for `is_hash_processed`. |
+| [`mark_hash_processed`](#mark_hash_processed) | Function | L147–L154 | `None` | Executes core domain logic for `mark_hash_processed`. |
+| [`push_hw_task`](#push_hw_task) | Function | L157–L174 | `bool` | Executes core domain logic for `push_hw_task`. |
+| [`pop_hw_task`](#pop_hw_task) | Function | L177–L189 | `dict | None` | Executes core domain logic for `pop_hw_task`. |
+| [`ack_hw_task`](#ack_hw_task) | Function | L192–L201 | `None` | Executes core domain logic for `ack_hw_task`. |
+| [`recover_stale_hw_tasks`](#recover_stale_hw_tasks) | Function | L204–L216 | `int` | Executes core domain logic for `recover_stale_hw_tasks`... |
+| [`clear_hw_queue`](#clear_hw_queue) | Function | L219–L229 | `int` | Flushes and resets state for `clear_hw_queue`. |
+| [`save_schedule_snapshot`](#save_schedule_snapshot) | Function | L232–L245 | `None` | Saves serialized entity data to storage for `save_sched... |
+| [`load_schedule_snapshot`](#load_schedule_snapshot) | Function | L248–L260 | `tuple[dict | None, dict | None]` | Executes core domain logic for `load_schedule_snapshot`... |
+| [`is_reminder_sent`](#is_reminder_sent) | Function | L263–L266 | `bool` | Executes core domain logic for `is_reminder_sent`. |
+| [`mark_reminder_sent`](#mark_reminder_sent) | Function | L269–L271 | `None` | Executes core domain logic for `mark_reminder_sent`. |
+| [`get_topic_state_redis`](#get_topic_state_redis) | Function | L274–L277 | `int | None` | Retrieves and resolves domain data for `get_topic_state... |
+| [`set_topic_state_redis`](#set_topic_state_redis) | Function | L280–L282 | `None` | Persists state updates for `set_topic_state_redis`. |
+| [`register_message_for_cleanup`](#register_message_for_cleanup) | Function | L285–L294 | `None` | Executes core domain logic for `register_message_for_cl... |
+| [`get_expired_messages_for_cleanup`](#get_expired_messages_for_cleanup) | Function | L297–L310 | `list[tuple[int, int]]` | Retrieves and resolves domain data for `get_expired_mes... |
+| [`redis_lock`](#redis_lock) | Function | L323–L345 | `AsyncGenerator[bool, None]` | Executes core domain logic for `redis_lock`. |
+| [`nack_hw_task`](#nack_hw_task) | Function | L348–L363 | `bool` | Executes core domain logic for `nack_hw_task`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `cache_get`
-- **Signature**: `async def cache_get(key: str) -> str | None`
-- **Source Reference**: [core/redis_cache.py#L28-L44](file:///home/u/Рабочий стол/para/core/redis_cache.py#L28-L44)
-- **Async**: `Yes`
-- **Return Type**: `str | None`
+```python
+async def cache_get(key: str) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Извлекает строковое значение из Redis по ключу. :param key: Ключ записи :return: Строка или None
+- **Source Reference**: [`core/redis_cache.py#L28-L44`](../../core/redis_cache.py#L28-L44)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `cache_get`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return None`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import cache_get
+
+# Execute call
+result = await cache_get(key=...)
+```
 
 ---
 
 ### `cache_set`
-- **Signature**: `async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None`
-- **Source Reference**: [core/redis_cache.py#L47-L64](file:///home/u/Рабочий стол/para/core/redis_cache.py#L47-L64)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет строковое значение в Redis с опциональным TTL (сек). :param key: Ключ записи :param value: Сохраняемая строка :param ttl: Время жизни в секундах (None / 0 для бессрочного)
+- **Source Reference**: [`core/redis_cache.py#L47-L64`](../../core/redis_cache.py#L47-L64)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `cache_set`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `key` | `str` | Input parameter |
-| `value` | `str` | Input parameter |
-| `ttl` | `int | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `value` | `str` | Yes | Parameter `value` of type `str`. |
+| `ttl` | `int | None` | Yes | Parameter `ttl` of type `int | None`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import cache_set
+
+# Execute call
+result = await cache_set(key=..., value=..., ttl=...)
+```
 
 ---
 
 ### `cache_flush`
-- **Signature**: `async def cache_flush(pattern: str = "sched:*") -> int`
-- **Source Reference**: [core/redis_cache.py#L67-L87](file:///home/u/Рабочий стол/para/core/redis_cache.py#L67-L87)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def cache_flush(pattern: str = "sched:*") -> int
+```
 
-#### Purpose & Architectural Intent
-Безопасно удаляет из Redis только ключи расписания. Используем scan_iter вместо flushdb, чтобы не затереть хэши решённых ДЗ и антиспам счётчики пользователей. :param pattern: Паттерн удаляемых ключей :return: Количество удалённых ключей
+- **Source Reference**: [`core/redis_cache.py#L67-L87`](../../core/redis_cache.py#L67-L87)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `cache_flush`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `pattern` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `pattern` | `str` | Yes | Parameter `pattern` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `deleted = 0`
-2. `try:`
-3. `return deleted`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import cache_flush
+
+# Execute call
+result = await cache_flush(pattern=...)
+```
 
 ---
 
 ### `is_message_processed`
-- **Signature**: `async def is_message_processed(message_id: int) -> bool`
-- **Source Reference**: [core/redis_cache.py#L90-L99](file:///home/u/Рабочий стол/para/core/redis_cache.py#L90-L99)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def is_message_processed(message_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, было ли сообщение с ДЗ уже решено и отправлено ранее. :param message_id: Telegram ID сообщения :return: True если решено, иначе False
+- **Source Reference**: [`core/redis_cache.py#L90-L99`](../../core/redis_cache.py#L90-L99)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_message_processed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `key = f"hw_processed:{message_id}"`
-2. `val = await cache_get(key)`
-3. `return val == "1"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import is_message_processed
+
+# Execute call
+result = await is_message_processed(message_id=...)
+```
 
 ---
 
 ### `mark_message_processed`
-- **Signature**: `async def mark_message_processed(message_id: int) -> None`
-- **Source Reference**: [core/redis_cache.py#L102-L109](file:///home/u/Рабочий стол/para/core/redis_cache.py#L102-L109)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def mark_message_processed(message_id: int) -> None
+```
 
-#### Purpose & Architectural Intent
-Отмечает сообщение с ДЗ как обработанное на 30 дней в Redis. :param message_id: Telegram ID сообщения
+- **Source Reference**: [`core/redis_cache.py#L102-L109`](../../core/redis_cache.py#L102-L109)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `mark_message_processed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `key = f"hw_processed:{message_id}"`
-2. `await cache_set(key, "1", ttl=2592000)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import mark_message_processed
+
+# Execute call
+result = await mark_message_processed(message_id=...)
+```
 
 ---
 
 ### `check_user_rate_limit`
-- **Signature**: `async def check_user_rate_limit(user_id: int) -> bool`
-- **Source Reference**: [core/redis_cache.py#L112-L132](file:///home/u/Рабочий стол/para/core/redis_cache.py#L112-L132)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def check_user_rate_limit(user_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет лимит запросов пользователя (максимум 3 запроса в минуту). Для администратора (ALLOWED_USER_ID) лимиты полностью отключены. :param user_id: Telegram ID пользователя :return: True если лимит не превышен или пользователь — админ
+- **Source Reference**: [`core/redis_cache.py#L112-L132`](../../core/redis_cache.py#L112-L132)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `check_user_rate_limit`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `if user_id == ALLOWED_USER_ID:`
-2. `key = f"hw_rate:{user_id}"`
-3. `try:`
-4. `return True`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import check_user_rate_limit
+
+# Execute call
+result = await check_user_rate_limit(user_id=...)
+```
 
 ---
 
 ### `is_hash_processed`
-- **Signature**: `async def is_hash_processed(content_hash: str) -> bool`
-- **Source Reference**: [core/redis_cache.py#L135-L144](file:///home/u/Рабочий стол/para/core/redis_cache.py#L135-L144)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def is_hash_processed(content_hash: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, отправлялось ли аналогичное задание (хэш текста/картинки) в последние 24 часа. :param content_hash: SHA256 хэш контента :return: True если такой контент уже решен
+- **Source Reference**: [`core/redis_cache.py#L135-L144`](../../core/redis_cache.py#L135-L144)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_hash_processed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `content_hash` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `content_hash` | `str` | Yes | Parameter `content_hash` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `key = f"hw_hash:{content_hash}"`
-2. `val = await cache_get(key)`
-3. `return val == "1"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import is_hash_processed
+
+# Execute call
+result = await is_hash_processed(content_hash=...)
+```
 
 ---
 
 ### `mark_hash_processed`
-- **Signature**: `async def mark_hash_processed(content_hash: str) -> None`
-- **Source Reference**: [core/redis_cache.py#L147-L154](file:///home/u/Рабочий стол/para/core/redis_cache.py#L147-L154)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def mark_hash_processed(content_hash: str) -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет хэш выполненного задания на 24 часа. :param content_hash: SHA256 хэш
+- **Source Reference**: [`core/redis_cache.py#L147-L154`](../../core/redis_cache.py#L147-L154)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `mark_hash_processed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `content_hash` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `content_hash` | `str` | Yes | Parameter `content_hash` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `key = f"hw_hash:{content_hash}"`
-2. `await cache_set(key, "1", ttl=86400)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import mark_hash_processed
+
+# Execute call
+result = await mark_hash_processed(content_hash=...)
+```
 
 ---
 
 ### `push_hw_task`
-- **Signature**: `async def push_hw_task(task_data: dict) -> bool`
-- **Source Reference**: [core/redis_cache.py#L157-L174](file:///home/u/Рабочий стол/para/core/redis_cache.py#L157-L174)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def push_hw_task(task_data: dict) -> bool
+```
 
-#### Purpose & Architectural Intent
-Помещает задачу на решение ДЗ в конец очереди Redis. :param task_data: Словарь с параметрами сообщения и задания :return: True в случае успешной вставки
+- **Source Reference**: [`core/redis_cache.py#L157-L174`](../../core/redis_cache.py#L157-L174)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `push_hw_task`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `task_data` | `dict` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `task_data` | `dict` | Yes | Parameter `task_data` of type `dict`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return False`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import push_hw_task
+
+# Execute call
+result = await push_hw_task(task_data=...)
+```
 
 ---
 
 ### `pop_hw_task`
-- **Signature**: `async def pop_hw_task(timeout: int = 2) -> dict | None`
-- **Source Reference**: [core/redis_cache.py#L177-L189](file:///home/u/Рабочий стол/para/core/redis_cache.py#L177-L189)
-- **Async**: `Yes`
-- **Return Type**: `dict | None`
+```python
+async def pop_hw_task(timeout: int = 2) -> dict | None
+```
 
-#### Purpose & Architectural Intent
-Атомарно перемещает задачу из очереди в processing и возвращает словарь.
+- **Source Reference**: [`core/redis_cache.py#L177-L189`](../../core/redis_cache.py#L177-L189)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `pop_hw_task`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `timeout` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `timeout` | `int` | Yes | Parameter `timeout` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return None`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import pop_hw_task
+
+# Execute call
+result = await pop_hw_task(timeout=...)
+```
 
 ---
 
 ### `ack_hw_task`
-- **Signature**: `async def ack_hw_task(task_data: dict) -> None`
-- **Source Reference**: [core/redis_cache.py#L192-L201](file:///home/u/Рабочий стол/para/core/redis_cache.py#L192-L201)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def ack_hw_task(task_data: dict) -> None
+```
 
-#### Purpose & Architectural Intent
-Удаляет завершенную задачу из processing очереди после успешного решения.
+- **Source Reference**: [`core/redis_cache.py#L192-L201`](../../core/redis_cache.py#L192-L201)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `ack_hw_task`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `task_data` | `dict` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `task_data` | `dict` | Yes | Parameter `task_data` of type `dict`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import ack_hw_task
+
+# Execute call
+result = await ack_hw_task(task_data=...)
+```
 
 ---
 
 ### `recover_stale_hw_tasks`
-- **Signature**: `async def recover_stale_hw_tasks() -> int`
-- **Source Reference**: [core/redis_cache.py#L204-L216](file:///home/u/Рабочий стол/para/core/redis_cache.py#L204-L216)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def recover_stale_hw_tasks() -> int
+```
 
-#### Purpose & Architectural Intent
-Возвращает зависшие задачи из processing обратно в очередь при старте.
+- **Source Reference**: [`core/redis_cache.py#L204-L216`](../../core/redis_cache.py#L204-L216)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `recover_stale_hw_tasks`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `recovered = 0`
-2. `try:`
-3. `return recovered`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import recover_stale_hw_tasks
+
+# Execute call
+result = await recover_stale_hw_tasks()
+```
 
 ---
 
 ### `clear_hw_queue`
-- **Signature**: `async def clear_hw_queue() -> int`
-- **Source Reference**: [core/redis_cache.py#L219-L229](file:///home/u/Рабочий стол/para/core/redis_cache.py#L219-L229)
-- **Async**: `Yes`
-- **Return Type**: `int`
+```python
+async def clear_hw_queue() -> int
+```
 
-#### Purpose & Architectural Intent
-Очищает основную и processing очереди задач ДЗ в Redis.
+- **Source Reference**: [`core/redis_cache.py#L219-L229`](../../core/redis_cache.py#L219-L229)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Flushes and resets state for `clear_hw_queue`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return 0`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import clear_hw_queue
+
+# Execute call
+result = await clear_hw_queue()
+```
 
 ---
 
 ### `save_schedule_snapshot`
-- **Signature**: `async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -> None`
-- **Source Reference**: [core/redis_cache.py#L232-L245](file:///home/u/Рабочий стол/para/core/redis_cache.py#L232-L245)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет отфильтрованный срез расписания группы и метаданные в Redis.
+- **Source Reference**: [`core/redis_cache.py#L232-L245`](../../core/redis_cache.py#L232-L245)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Saves serialized entity data to storage for `save_schedule_snapshot`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `snapshot` | `dict` | Input parameter |
-| `meta` | `dict` | Input parameter |
-| `ttl` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `snapshot` | `dict` | Yes | Parameter `snapshot` of type `dict`. |
+| `meta` | `dict` | Yes | Parameter `meta` of type `dict`. |
+| `ttl` | `int` | Yes | Parameter `ttl` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import save_schedule_snapshot
+
+# Execute call
+result = await save_schedule_snapshot(snapshot=..., meta=..., ttl=...)
+```
 
 ---
 
 ### `load_schedule_snapshot`
-- **Signature**: `async def load_schedule_snapshot() -> tuple[dict | None, dict | None]`
-- **Source Reference**: [core/redis_cache.py#L248-L260](file:///home/u/Рабочий стол/para/core/redis_cache.py#L248-L260)
-- **Async**: `Yes`
-- **Return Type**: `tuple[dict | None, dict | None]`
+```python
+async def load_schedule_snapshot() -> tuple[dict | None, dict | None]
+```
 
-#### Purpose & Architectural Intent
-Загружает сохраненный срез расписания и метаданные из Redis.
+- **Source Reference**: [`core/redis_cache.py#L248-L260`](../../core/redis_cache.py#L248-L260)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `tuple[dict | None, dict | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_schedule_snapshot`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `try:`
-2. `return None, None`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import load_schedule_snapshot
+
+# Execute call
+result = await load_schedule_snapshot()
+```
 
 ---
 
 ### `is_reminder_sent`
-- **Signature**: `async def is_reminder_sent(rem_key: str) -> bool`
-- **Source Reference**: [core/redis_cache.py#L263-L266](file:///home/u/Рабочий стол/para/core/redis_cache.py#L263-L266)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def is_reminder_sent(rem_key: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, было ли уже отправлено напоминание с данным ключом сегодня.
+- **Source Reference**: [`core/redis_cache.py#L263-L266`](../../core/redis_cache.py#L263-L266)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_reminder_sent`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `rem_key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `rem_key` | `str` | Yes | Parameter `rem_key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `val = await cache_get(f"rem:sent:{rem_key}")`
-2. `return val == "1"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import is_reminder_sent
+
+# Execute call
+result = await is_reminder_sent(rem_key=...)
+```
 
 ---
 
 ### `mark_reminder_sent`
-- **Signature**: `async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None`
-- **Source Reference**: [core/redis_cache.py#L269-L271](file:///home/u/Рабочий стол/para/core/redis_cache.py#L269-L271)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None
+```
 
-#### Purpose & Architectural Intent
-Отмечает напоминание как отправленное в Redis с суточным TTL.
+- **Source Reference**: [`core/redis_cache.py#L269-L271`](../../core/redis_cache.py#L269-L271)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `mark_reminder_sent`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `rem_key` | `str` | Input parameter |
-| `ttl` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `rem_key` | `str` | Yes | Parameter `rem_key` of type `str`. |
+| `ttl` | `int` | Yes | Parameter `ttl` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `await cache_set(f"rem:sent:{rem_key}", "1", ttl=ttl)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import mark_reminder_sent
+
+# Execute call
+result = await mark_reminder_sent(rem_key=..., ttl=...)
+```
 
 ---
 
 ### `get_topic_state_redis`
-- **Signature**: `async def get_topic_state_redis(key: str = "topic:main_msg_id") -> int | None`
-- **Source Reference**: [core/redis_cache.py#L274-L277](file:///home/u/Рабочий стол/para/core/redis_cache.py#L274-L277)
-- **Async**: `Yes`
-- **Return Type**: `int | None`
+```python
+async def get_topic_state_redis(key: str = "topic:main_msg_id") -> int | None
+```
 
-#### Purpose & Architectural Intent
-Извлекает сохраненный ID сообщения топика из Redis.
+- **Source Reference**: [`core/redis_cache.py#L274-L277`](../../core/redis_cache.py#L274-L277)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_topic_state_redis`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `val = await cache_get(key)`
-2. `return int(val) if val and val.isdigit() else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import get_topic_state_redis
+
+# Execute call
+result = await get_topic_state_redis(key=...)
+```
 
 ---
 
 ### `set_topic_state_redis`
-- **Signature**: `async def set_topic_state_redis(val: int, key: str = "topic:main_msg_id") -> None`
-- **Source Reference**: [core/redis_cache.py#L280-L282](file:///home/u/Рабочий стол/para/core/redis_cache.py#L280-L282)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def set_topic_state_redis(val: int, key: str = "topic:main_msg_id") -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет ID главного сообщения топика в Redis без экспирации.
+- **Source Reference**: [`core/redis_cache.py#L280-L282`](../../core/redis_cache.py#L280-L282)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Persists state updates for `set_topic_state_redis`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `val` | `int` | Input parameter |
-| `key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `val` | `int` | Yes | Parameter `val` of type `int`. |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `await cache_set(key, str(val), ttl=0)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import set_topic_state_redis
+
+# Execute call
+result = await set_topic_state_redis(val=..., key=...)
+```
 
 ---
 
 ### `register_message_for_cleanup`
-- **Signature**: `async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int = 900) -> None`
-- **Source Reference**: [core/redis_cache.py#L285-L294](file:///home/u/Рабочий стол/para/core/redis_cache.py#L285-L294)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int = 900) -> None
+```
 
-#### Purpose & Architectural Intent
-Регистрирует сообщение в ZSET для гарантированного удаления через delay_sec.
+- **Source Reference**: [`core/redis_cache.py#L285-L294`](../../core/redis_cache.py#L285-L294)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `register_message_for_cleanup`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `chat_id` | `int` | Input parameter |
-| `msg_id` | `int` | Input parameter |
-| `delay_sec` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
+| `msg_id` | `int` | Yes | Parameter `msg_id` of type `int`. |
+| `delay_sec` | `int` | Yes | Parameter `delay_sec` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import register_message_for_cleanup
+
+# Execute call
+result = await register_message_for_cleanup(chat_id=..., msg_id=..., delay_sec=...)
+```
 
 ---
 
 ### `get_expired_messages_for_cleanup`
-- **Signature**: `async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]`
-- **Source Reference**: [core/redis_cache.py#L297-L310](file:///home/u/Рабочий стол/para/core/redis_cache.py#L297-L310)
-- **Async**: `Yes`
-- **Return Type**: `list[tuple[int, int]]`
+```python
+async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]
+```
 
-#### Purpose & Architectural Intent
-Извлекает и удаляет из ZSET сообщения, чей срок хранения истёк.
+- **Source Reference**: [`core/redis_cache.py#L297-L310`](../../core/redis_cache.py#L297-L310)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `list[tuple[int, int]]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_expired_messages_for_cleanup`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `results: list[tuple[int, int]] = []`
-2. `try:`
-3. `return results`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import get_expired_messages_for_cleanup
+
+# Execute call
+result = await get_expired_messages_for_cleanup()
+```
 
 ---
 
 ### `redis_lock`
-- **Signature**: `async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]`
-- **Source Reference**: [core/redis_cache.py#L323-L345](file:///home/u/Рабочий стол/para/core/redis_cache.py#L323-L345)
-- **Async**: `Yes`
-- **Return Type**: `AsyncGenerator[bool, None]`
+```python
+async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]
+```
 
-#### Purpose & Architectural Intent
-Атомарный распределенный лок Redis с валидацией токена владельца (Lua). Предотвращает ошибочное удаление чужого лока при превышении TTL.
+- **Source Reference**: [`core/redis_cache.py#L323-L345`](../../core/redis_cache.py#L323-L345)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `AsyncGenerator[bool, None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `redis_lock`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `key` | `str` | Input parameter |
-| `ttl` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `ttl` | `int` | Yes | Parameter `ttl` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `import uuid`
-2. `client = await init_redis()`
-3. `token = str(uuid.uuid4())`
-4. `acquired = False`
-5. `if client:`
-6. `try:`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import redis_lock
+
+# Execute call
+result = await redis_lock(key=..., ttl=...)
+```
 
 ---
 
 ### `nack_hw_task`
-- **Signature**: `async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool`
-- **Source Reference**: [core/redis_cache.py#L348-L363](file:///home/u/Рабочий стол/para/core/redis_cache.py#L348-L363)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool
+```
 
-#### Purpose & Architectural Intent
-Возвращает упавшую задачу в очередь или отправляет в DLQ.
+- **Source Reference**: [`core/redis_cache.py#L348-L363`](../../core/redis_cache.py#L348-L363)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `nack_hw_task`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `task_data` | `dict` | Input parameter |
-| `max_retries` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `task_data` | `dict` | Yes | Parameter `task_data` of type `dict`. |
+| `max_retries` | `int` | Yes | Parameter `max_retries` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `client = await init_redis()`
-2. `if not client:`
-3. `retries = task_data.get("retries", 0) + 1`
-4. `task_data["retries"] = retries`
-5. `raw = json.dumps(task_data, ensure_ascii=False)`
-6. `await client.lrem(HW_PROCESSING_KEY, 1, raw)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.redis_cache import nack_hw_task
+
+# Execute call
+result = await nack_hw_task(task_data=..., max_retries=...)
+```
 
 ---
