@@ -1739,5 +1739,35 @@ classDiagram
     MiniappRouter ..> SecurityDependencies : verify_api_or_tester
 ```
 
+---
+
+### 9.5. Public HTTPS Edge Gateway & Reverse SSH Tunnel Architecture
+
+Architecture diagram detailing the edge ingress topology: public mobile clients connect via standard HTTPS (port 443) to the European Edge VPS gateway (`45-81-154-175.sslip.io`), where Caddy terminates TLS via Let's Encrypt and forwards traffic over an encrypted reverse SSH tunnel directly into the local `para-api` backend container on `home`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Mobile Client (Telegram / Browser)
+    participant Caddy as Caddy TLS Gateway (45.81.154.175:443)
+    participant VpsLocal as VPS Loopback (127.0.0.1:8080)
+    participant SshTunnel as SSH Reverse Tunnel (para-vps-tunnel)
+    participant HomeApi as para-api (home:8080)
+    participant Redis as para-redis (home:6379)
+
+    Client->>Caddy: HTTPS GET https://45-81-154-175.sslip.io/miniapp
+    Note over Caddy: TLS Termination (Let's Encrypt DV Cert)<br/>Standard Port 443 (HTTP/2, HTTP/3)
+    Caddy->>VpsLocal: Proxy HTTP to 127.0.0.1:8080
+    VpsLocal->>SshTunnel: Encrypted TCP channel
+    SshTunnel->>HomeApi: Forward to 127.0.0.1:8080 (Docker bridge)
+    HomeApi->>Redis: Session & Whitelist lookup
+    Redis-->>HomeApi: Cache / State response
+    HomeApi-->>SshTunnel: HTTP 200 OK
+    SshTunnel-->>VpsLocal: Forward response
+    VpsLocal-->>Caddy: Upstream response
+    Caddy-->>Client: HTTPS 200 OK (Clean WebView render)
+```
+
+
 
 
