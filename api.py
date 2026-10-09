@@ -1,11 +1,12 @@
 """
 Точка входа сервиса para-api (FastAPI + gRPC Server + Swagger UI).
 
-Единая точка доступа к данным расписания, экзаменов и преподавателей.
+Единая точка доступа к данным расписания, экзаменов, преподавателей и посещаемости.
 Поддерживает gRPC (порт GRPC_PORT) и HTTP REST со Swagger UI (порт 8000).
 """
 
 from contextlib import asynccontextmanager
+import logging
 from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
@@ -16,6 +17,12 @@ from config import GRPC_HOST, GRPC_PORT
 from core.logger import get_logger
 
 log = get_logger("api_main")
+
+
+class _InvalidHttpFilter(logging.Filter):
+    """Подавляет спам от сетевых сканеров и SSL-хэндшейков на чистом HTTP-порту."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "Invalid HTTP request received" not in record.getMessage()
 
 
 @asynccontextmanager
@@ -34,6 +41,7 @@ app = create_app()
 app.router.lifespan_context = lifespan
 
 if __name__ == "__main__":
+    logging.getLogger("uvicorn.error").addFilter(_InvalidHttpFilter())
     log.info("=" * 60)
     log.info(f"ЗАПУСК Dual-Protocol API: HTTP :8000 | gRPC :{GRPC_PORT}")
     log.info("  Swagger UI: /docs | Telegram Mini App: /miniapp")
