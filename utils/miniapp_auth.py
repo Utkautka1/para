@@ -9,7 +9,7 @@
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qsl
 
@@ -38,7 +38,7 @@ def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECON
     """Проверяет актуальность auth_date для защиты от replay-атак."""
     try:
         auth_ts = int(auth_date_str)
-        now_ts = int(datetime.now(timezone.utc).timestamp())
+        now_ts = int(datetime.now(UTC).timestamp())
         return 0 <= (now_ts - auth_ts) <= max_age
     except (ValueError, TypeError):
         return False
@@ -71,7 +71,7 @@ def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None:
 
 def generate_tester_session(user_id: int) -> str:
     """Генерирует криптографически подписанный сессионный токен для тестера."""
-    ts = int(datetime.now(timezone.utc).timestamp())
+    ts = int(datetime.now(UTC).timestamp())
     payload = f"{user_id}:{ts}"
     signature = hmac.new(API_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{signature}"

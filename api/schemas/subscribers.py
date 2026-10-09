@@ -2,14 +2,14 @@
 Pydantic-схемы для управления подписчиками уведомлений о парах.
 """
 
-from typing import List
+
 from pydantic import BaseModel, Field
 
 
 class SubscribersListResponse(BaseModel):
     """Список всех подписчиков на утренние и 10-минутные уведомления."""
     count: int = Field(..., description="Общее число подписчиков")
-    subscribers: List[int] = Field(default_factory=list, description="Список Telegram Chat ID")
+    subscribers: list[int] = Field(default_factory=list, description="Список Telegram Chat ID")
 
 
 class SubscriberCountResponse(BaseModel):

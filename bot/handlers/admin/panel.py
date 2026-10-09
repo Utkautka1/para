@@ -2,8 +2,8 @@
 Хэндлеры управления панелью администратора (только для ALLOWED_USER_ID).
 """
 
-from typing import Optional
-from aiogram import Router, F
+
+from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
@@ -11,9 +11,8 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from bot.filters.auth import AuthFilter
 from bot.templates.admin.keyboards import get_admin_main_kb
 from core.api_client import fetch_day_schedule, fetch_teachers
-from services.topic_updater import sync_topic_main_message
-
 from core.logger import get_logger
+from services.topic_updater import sync_topic_main_message
 
 log = get_logger("admin_panel")
 
@@ -22,7 +21,7 @@ router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
 
 
-async def _ack_admin_callback(callback: CallbackQuery, text: Optional[str] = None) -> None:
+async def _ack_admin_callback(callback: CallbackQuery, text: str | None = None) -> None:
     """Мгновенно подтверждает callback в админ-панели с обработкой устаревания."""
     try:
         await callback.answer(text, show_alert=False)
@@ -34,7 +33,7 @@ async def _ack_admin_callback(callback: CallbackQuery, text: Optional[str] = Non
 
 
 async def _safe_edit_admin_message(
-    message: Optional[Message], text: str, reply_markup: Optional[InlineKeyboardMarkup] = None
+    message: Message | None, text: str, reply_markup: InlineKeyboardMarkup | None = None
 ) -> None:
     """Безопасно обновляет сообщение админки, перехватывая 'not modified'."""
     if not message:
@@ -115,9 +114,9 @@ async def _get_redis_memory_stat() -> str:
 async def _collect_health_summary() -> str:
     """Собирает диагностические метрики всех компонентов системы."""
     from db.subscribers import load_subscribers
+    from integrations.yandex_docs import get_effective_yandex_cookie
     from services.attendance_topic_updater import load_attendance_topic_state
     from services.classmates_auth import load_classmates_registry
-    from integrations.yandex_docs import get_effective_yandex_cookie
     subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
     res_t = await fetch_teachers(force_refresh=False)
     teach_cnt = res_t.get("count", 0)
@@ -214,6 +213,7 @@ async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None:
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 from services.custom_teachers import load_custom_teachers, save_custom_teacher
 
 

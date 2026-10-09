@@ -5,16 +5,17 @@
 разрешенному пользователю из конфигурации (ALLOWED_USER_ID).
 """
 
-from typing import Union
+
 from aiogram.filters import Filter
 from aiogram.types import CallbackQuery, Message
+
 from config import ALLOWED_USER_ID
 
 
 class AuthFilter(Filter):
     """Фильтр доступа по Telegram ID исключительно для Главного Администратора."""
 
-    async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
+    async def __call__(self, event: Message | CallbackQuery) -> bool:
         """
         Проверяет ID пользователя на соответствие ALLOWED_USER_ID.
 
@@ -30,7 +31,7 @@ class AuthFilter(Filter):
 class ClassmateAuthFilter(Filter):
     """Фильтр доступа для администратора и авторизованных студентов группы."""
 
-    async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
+    async def __call__(self, event: Message | CallbackQuery) -> bool:
         """
         Проверяет, авторизован ли пользователь для доступа к расписанию.
 
@@ -45,7 +46,7 @@ class ClassmateAuthFilter(Filter):
 class AttendanceAuthFilter(Filter):
     """Фильтр доступа для старосты и замстаросты к отметке посещаемости."""
 
-    async def __call__(self, event: Union[Message, CallbackQuery]) -> bool:
+    async def __call__(self, event: Message | CallbackQuery) -> bool:
         """Проверяет принадлежность ID пользователя к списку старост."""
         from config import ALLOWED_ATTENDANCE_USER_IDS
         user = getattr(event, "from_user", None)

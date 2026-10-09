@@ -6,7 +6,8 @@ FastAPI-приложение para-api — фабрика приложения с
 всех кодов ошибок и схемы аутентификации ApiKeyAuth / BearerAuth.
 """
 
-from typing import Any, Dict
+from typing import Any
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -48,12 +49,12 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(miniapp_router)
 
 
-def _configure_openapi_servers(schema: Dict[str, Any]) -> None:
+def _configure_openapi_servers(schema: dict[str, Any]) -> None:
     """Устанавливает относительный URL сервера без публичных IP и абсолютных хостов."""
     schema["servers"] = [{"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}]
 
 
-def _configure_openapi_security(schema: Dict[str, Any]) -> None:
+def _configure_openapi_security(schema: dict[str, Any]) -> None:
     """Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме."""
     schema.setdefault("components", {})["securitySchemes"] = {
         "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
@@ -67,7 +68,7 @@ def _configure_openapi_security(schema: Dict[str, Any]) -> None:
     schema.pop("security", None)
 
 
-def _custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
+def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
     """Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием."""
     if app.openapi_schema:
         return app.openapi_schema

@@ -1,5 +1,4 @@
 import base64
-from typing import List, Optional
 
 from openai import AsyncOpenAI
 
@@ -7,7 +6,7 @@ import config
 from core.logger import get_logger
 
 log = get_logger("deepseek")
-_deepseek_client: Optional[AsyncOpenAI] = None
+_deepseek_client: AsyncOpenAI | None = None
 
 SYSTEM_PROMPT = (
     "Ты — преподаватель высшей математики и точных наук. "
@@ -47,12 +46,12 @@ def encode_image_bytes(image_bytes: bytes) -> str:
 
 
 def build_deepseek_messages(
-    image_bytes: Optional[bytes],
-    text_prompt: Optional[str]
-) -> List[dict]:
+    image_bytes: bytes | None,
+    text_prompt: str | None
+) -> list[dict]:
     """Формирует изолированный список сообщений для отправки в DeepSeek API."""
     prompt_val = text_prompt or "Реши все задания с листа."
-    content: List[dict] = [{
+    content: list[dict] = [{
         "type": "text",
         "text": f"<учебное_задание>\n{prompt_val}\n</учебное_задание>"
     }]
@@ -69,8 +68,8 @@ def build_deepseek_messages(
 
 
 async def solve_homework(
-    image_bytes: Optional[bytes] = None,
-    text_prompt: Optional[str] = None
+    image_bytes: bytes | None = None,
+    text_prompt: str | None = None
 ) -> str:
     """Отправляет запрос в DeepSeek API и возвращает текст решения."""
     messages = build_deepseek_messages(image_bytes, text_prompt)

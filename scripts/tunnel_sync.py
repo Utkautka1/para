@@ -60,7 +60,7 @@ async def monitor_tunnel_stream(proc: asyncio.subprocess.Process) -> None:
             last_url = found_url
             print(f"[CLOUDFLARE] Активен HTTPS туннель: {found_url}", flush=True)
             if update_env_urls(found_url):
-                print(f"[CLOUDFLARE] Обновлены MINIAPP_URL и SWAGGER_URL в .env", flush=True)
+                print("[CLOUDFLARE] Обновлены MINIAPP_URL и SWAGGER_URL в .env", flush=True)
                 restart_bot_service()
                 print("[CLOUDFLARE] para-bot успешно перезапущен!", flush=True)
 

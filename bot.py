@@ -76,7 +76,7 @@ async def main() -> None:
     await register_bot_commands(bot)
     try:
         await dp.start_polling(bot, drop_pending_updates=True)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.error(f"❌ Критическая ошибка при работе бота: {e}")
     finally:
         await shutdown_bot()

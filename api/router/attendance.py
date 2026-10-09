@@ -4,7 +4,7 @@
 Предоставляет аналитику пропусков и управление сессией отметки старосты.
 """
 
-from datetime import datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -83,7 +83,7 @@ async def get_current_session() -> ActiveSessionResponse:
 @router.post("/session/start", response_model=ActiveSessionResponse, dependencies=[Depends(verify_admin_access)])
 async def start_session(payload: StartSessionRequest) -> ActiveSessionResponse:
     """Инициализация новой сессии опроса посещаемости (Admin only)."""
-    t_date = datetime.strptime(payload.target_date, "%Y-%m-%d").date()
+    t_date = date.fromisoformat(payload.target_date)
     session = await create_attendance_session(t_date, payload.lesson_num, payload.lesson_title, initiator_id=0)
     if not session:
         raise HTTPException(status_code=400, detail="Failed to create session (empty students or error)")

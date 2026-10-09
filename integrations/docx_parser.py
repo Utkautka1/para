@@ -9,10 +9,10 @@ import asyncio
 import io
 import time
 import zipfile
-from typing import Any, Dict, Optional, Tuple, TypedDict
-import httpx
+from typing import Any, TypedDict
 
 import defusedxml.ElementTree as ET
+import httpx
 
 from config import DOCX_CACHE_TTL_SECONDS, YANDEX_DOC_PUBLIC_URL
 from core.logger import get_logger
@@ -29,10 +29,10 @@ class TeacherData(TypedDict):
 
 
 # Кэш данных: (timestamp, dict_teachers)
-_CACHE: Tuple[float, Dict[str, TeacherData]] = (0.0, {})
+_CACHE: tuple[float, dict[str, TeacherData]] = (0.0, {})
 
 
-async def fetch_docx_bytes() -> Optional[bytes]:
+async def fetch_docx_bytes() -> bytes | None:
     """
     Загружает сырые байты docx файла с Yandex Disk через публичный API.
 
@@ -56,7 +56,7 @@ async def fetch_docx_bytes() -> Optional[bytes]:
         return None
 
 
-def extract_row_texts(row_elem: Any) -> Tuple[str, str]:
+def extract_row_texts(row_elem: Any) -> tuple[str, str]:
     """
     Извлекает полное имя преподавателя и строку ссылок из таблицы docx.
 
@@ -73,9 +73,9 @@ def extract_row_texts(row_elem: Any) -> Tuple[str, str]:
     return (name, link_info)
 
 
-def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
+def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]:
     """Распаковывает docx и парсит таблицу контактов преподавателей."""
-    teachers_map: Dict[str, TeacherData] = {}
+    teachers_map: dict[str, TeacherData] = {}
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as z:
             xml_data = z.read("word/document.xml")
@@ -92,7 +92,7 @@ def parse_docx_teachers(content: bytes) -> Dict[str, TeacherData]:
 
 
 MIN_DOCX_REFRESH_INTERVAL_SECONDS = 30.0
-_DOCX_LOCK: Optional[asyncio.Lock] = None
+_DOCX_LOCK: asyncio.Lock | None = None
 
 
 def _get_docx_lock() -> asyncio.Lock:
@@ -113,7 +113,7 @@ def _is_cache_fresh(now: float, force_refresh: bool) -> bool:
     return age < MIN_DOCX_REFRESH_INTERVAL_SECONDS
 
 
-async def _fetch_and_cache_teachers(now: float) -> Dict[str, TeacherData]:
+async def _fetch_and_cache_teachers(now: float) -> dict[str, TeacherData]:
     """Скачивает docx с Яндекс Диска, парсит преподавателей и обновляет кэш в памяти."""
     global _CACHE
     from services.custom_teachers import load_custom_teachers
@@ -126,7 +126,7 @@ async def _fetch_and_cache_teachers(now: float) -> Dict[str, TeacherData]:
     return parsed
 
 
-async def get_teacher_links(force_refresh: bool = False) -> Dict[str, TeacherData]:
+async def get_teacher_links(force_refresh: bool = False) -> dict[str, TeacherData]:
     """Возвращает карту контактов преподавателей с Singleflight блокировкой."""
     now = time.time()
     if _is_cache_fresh(now, force_refresh):

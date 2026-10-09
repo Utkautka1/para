@@ -26,7 +26,7 @@ router = APIRouter(tags=["Subscribers"], prefix="/subscribers", dependencies=[De
 @router.get("", response_model=SubscribersListResponse)
 async def list_subscribers() -> SubscribersListResponse:
     """Список всех активных подписчиков персональных напоминаний."""
-    subs = sorted(list(load_subscribers()))
+    subs = sorted(load_subscribers())
     return SubscribersListResponse(count=len(subs), subscribers=subs)
 
 

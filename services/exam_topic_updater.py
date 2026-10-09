@@ -7,13 +7,16 @@
 
 import asyncio
 import html
-import json
-import os
 from datetime import date, datetime, timedelta
-from typing import List, Optional
+
 from aiogram.exceptions import TelegramBadRequest
 
-from config import EXAM_TOPIC_STATE_FILE, EXAM_TOPIC_THREAD_ID, TOPIC_CHAT_ID
+from config import (
+    EXAM_TOPIC_STATE_FILE,
+    EXAM_TOPIC_THREAD_ID,
+    TIMEZONE,
+    TOPIC_CHAT_ID,
+)
 from core.api_client import get_api_exams
 from core.bot import bot
 from core.logger import get_logger
@@ -22,12 +25,12 @@ from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("exam_topic_updater")
 STATE_FILE = EXAM_TOPIC_STATE_FILE
-_EXAM_MAIN_MSG_ID: Optional[int] = None
+_EXAM_MAIN_MSG_ID: int | None = None
 
 
 def get_default_semester_start() -> date:
     """Вычисляет 1 сентября текущего учебного года при недоступности API."""
-    today = date.today()
+    today = datetime.now(TIMEZONE).date()
     start_year = today.year if today.month >= 8 else today.year - 1
     return date(start_year, 9, 1)
 
@@ -43,24 +46,24 @@ async def get_effective_semester_start() -> date:
         if data:
             s_str = data.get("config", {}).get("semesterStart")
             if s_str:
-                return datetime.strptime(s_str, "%Y-%m-%d").date()
+                return date.fromisoformat(s_str)
     except Exception as e:
         log.warning(f"Не удалось получить semesterStart для экзаменов: {e}")
     return get_default_semester_start()
 
 
-def load_exam_topic_state() -> Optional[int]:
+def load_exam_topic_state() -> int | None:
     """Загружает ID главного сообщения топика экзаменов."""
     data = sync_load_json(STATE_FILE, default={})
     return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
-def save_exam_topic_state(msg_id: Optional[int]) -> None:
+def save_exam_topic_state(msg_id: int | None) -> None:
     """Атомарно сохраняет ID главного сообщения топика экзаменов."""
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
 
-def get_week_date_range_str(week_num: int, semester_start: Optional[date] = None) -> str:
+def get_week_date_range_str(week_num: int, semester_start: date | None = None) -> str:
     """Вычисляет диапазон дат для порядкового номера учебной недели."""
     start_d = semester_start or get_default_semester_start()
     start_sunday = start_d + timedelta(days=(6 - start_d.weekday()))
@@ -72,7 +75,7 @@ def get_week_date_range_str(week_num: int, semester_start: Optional[date] = None
     return f"{mon.strftime('%d.%m')}–{sun.strftime('%d.%m.%Y')}"
 
 
-def format_exam_card(ex: ExamItem, semester_start: Optional[date] = None) -> str:
+def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str:
     """Формирует карточку аттестации/экзамена с HTML-экранированием."""
     if ex.weeks:
         date_ranges = [get_week_date_range_str(w, semester_start) for w in ex.weeks]
@@ -95,7 +98,7 @@ def format_exam_card(ex: ExamItem, semester_start: Optional[date] = None) -> str
 
 
 
-def format_exams_schedule_message(exams: List[ExamItem], semester_start: Optional[date] = None) -> str:
+def format_exams_schedule_message(exams: list[ExamItem], semester_start: date | None = None) -> str:
     """Форматирует расписание экзаменов и аттестаций в чистый HTML."""
     header = (
         "📑 <b>АТТЕСТАЦИИ И ЭКЗАМЕНЫ ГРУППЫ 1-КПД-3</b>\n"

@@ -22,11 +22,11 @@ async def global_error_handler(event: ErrorEvent) -> bool:
     if update.callback_query:
         try:
             await update.callback_query.answer("⚠️ Временный сбой сервиса. Попробуйте снова.", show_alert=True)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.debug(f"Не удалось ответить на сбойный callback: {e}")
     elif update.message:
         try:
             await update.message.answer("⚠️ Произошла ошибка. Пожалуйста, повторите попытку через пару секунд.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.debug(f"Не удалось отправить уведомление об ошибке: {e}")
     return True

@@ -12,7 +12,7 @@ import hashlib
 import hmac
 import json
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -48,7 +48,7 @@ def _build_test_init_data(user_dict: dict, auth_ts: int, tamper_hash: bool = Fal
 
 def test_init_data_validation_success() -> None:
     """Проверяет успешную валидацию корректной строки initData."""
-    now_ts = int(datetime.now(timezone.utc).timestamp())
+    now_ts = int(datetime.now(UTC).timestamp())
     raw = _build_test_init_data({"id": 12345, "first_name": "Test"}, now_ts)
     user_data = validate_telegram_init_data(raw)
     assert user_data is not None
@@ -58,14 +58,14 @@ def test_init_data_validation_success() -> None:
 
 def test_init_data_tampered_hash_rejected() -> None:
     """Проверяет отклонение initData с поддельным хешем подписи."""
-    now_ts = int(datetime.now(timezone.utc).timestamp())
+    now_ts = int(datetime.now(UTC).timestamp())
     raw = _build_test_init_data({"id": 12345}, now_ts, tamper_hash=True)
     assert validate_telegram_init_data(raw) is None
 
 
 def test_init_data_expired_replay_rejected() -> None:
     """Проверяет защиту от replay-атак при устаревшем auth_date (> 86400s)."""
-    old_ts = int(datetime.now(timezone.utc).timestamp()) - 100000
+    old_ts = int(datetime.now(UTC).timestamp()) - 100000
     raw = _build_test_init_data({"id": 12345}, old_ts)
     assert validate_telegram_init_data(raw) is None
 
@@ -117,7 +117,7 @@ async def test_testers_manager_logic() -> None:
 async def test_miniapp_auth_endpoint() -> None:
     """Проверяет HTTP-эндпоинт /miniapp/auth с выдачей сессионной куки."""
     app = create_app()
-    now_ts = int(datetime.now(timezone.utc).timestamp())
+    now_ts = int(datetime.now(UTC).timestamp())
     valid_raw = _build_test_init_data({"id": ALLOWED_USER_ID, "first_name": "Admin"}, now_ts)
 
     transport = ASGITransport(app=app)

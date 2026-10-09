@@ -1,15 +1,15 @@
 """
 Сервис парсинга и взаимодействия с экзаменами и аттестациями КТМУ.
 
-Извлекает полную нагрузку (loads), аттестации (Зачёты, Зачёты с оценкой, 
+Извлекает полную нагрузку (loads), аттестации (Зачёты, Зачёты с оценкой,
 Контрольные работы) с точной привязкой к неделям семестра.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
-from pydantic import BaseModel
+from typing import Any
 
 from config import GROUP_ID
 from core.logger import get_logger
+from integrations.docx_parser import get_teacher_links
 from services.models import ExamItem
 from services.schedule_parser import (
     clean_subject_title,
@@ -18,7 +18,6 @@ from services.schedule_parser import (
     is_item_for_group,
     resolve_room_address,
 )
-from integrations.docx_parser import get_teacher_links
 
 log = get_logger("exam_parser")
 
@@ -34,7 +33,7 @@ EXAM_TYPE_MAPPING = {
 
 
 
-def is_assessment_type(type_id: str, l_types: Dict[str, str]) -> Tuple[bool, str]:
+def is_assessment_type(type_id: str, l_types: dict[str, str]) -> tuple[bool, str]:
     """
     Проверяет, относится ли пара к видам аттестаций/экзаменов.
 
@@ -45,7 +44,7 @@ def is_assessment_type(type_id: str, l_types: Dict[str, str]) -> Tuple[bool, str
     return is_valid, t_name
 
 
-def resolve_teacher_name(raw_teacher: str, teacher_links: Dict[str, Any]) -> str:
+def resolve_teacher_name(raw_teacher: str, teacher_links: dict[str, Any]) -> str:
     """
     Определяет полное имя преподавателя с учетом ссылок.
     """
@@ -54,7 +53,7 @@ def resolve_teacher_name(raw_teacher: str, teacher_links: Dict[str, Any]) -> str
     return t_info.get("full_name") if t_info else raw_teacher
 
 
-def extract_load_weeks(load: Dict[str, Any]) -> List[int]:
+def extract_load_weeks(load: dict[str, Any]) -> list[int]:
     """
     Извлекает и сортирует номера учебных недель из нагрузки.
     """
@@ -64,8 +63,8 @@ def extract_load_weeks(load: Dict[str, Any]) -> List[int]:
 
 
 def parse_exam_from_load(
-    load: Dict[str, Any], entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict], teacher_links: Dict[str, Any]
-) -> Optional[Tuple[str, ExamItem]]:
+    load: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], teacher_links: dict[str, Any]
+) -> tuple[str, ExamItem] | None:
     """
     Создает элемент ExamItem из нагрузки (loads) учебного плана.
     """
@@ -90,7 +89,7 @@ def parse_exam_from_load(
 
 
 def enrich_exam_from_instance(
-    inst: Dict[str, Any], entity_maps: Tuple[Dict, Dict, Dict, Dict, Dict], exams_dict: Dict[str, ExamItem]
+    inst: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], exams_dict: dict[str, ExamItem]
 ) -> None:
     """
     Уточняет аудиторию и недели из запланированного экземпляра в сетке.
@@ -113,7 +112,7 @@ def enrich_exam_from_instance(
             exams_dict[key].weeks = sorted(inst.get("customWeeks", []))
 
 
-async def get_group_exams() -> List[ExamItem]:
+async def get_group_exams() -> list[ExamItem]:
     """
     Извлекает аттестации как из расписания (instances), так и из нагрузки (loads).
 
@@ -125,7 +124,7 @@ async def get_group_exams() -> List[ExamItem]:
 
     entity_maps = extract_entity_maps(data)
     teacher_links = await get_teacher_links(force_refresh=False)
-    exams_dict: Dict[str, ExamItem] = {}
+    exams_dict: dict[str, ExamItem] = {}
 
     for load in data.get("loads", []):
         parsed = parse_exam_from_load(load, entity_maps, teacher_links)

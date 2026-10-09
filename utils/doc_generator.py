@@ -9,12 +9,10 @@
 5. Преобразование таблиц Markdown в таблицы Word ('Table Grid') с оформлением ячеек.
 6. Выравнивание основного текста по ширине (Justified), Times New Roman 14 pt, 1.5 интервал.
 """
-import io
 import os
 import re
 import tempfile
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -22,7 +20,7 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 from docx.shared import Cm, Pt, RGBColor
 
-from config import GROUP_NAME
+from config import GROUP_NAME, TIMEZONE
 from core.logger import get_logger
 
 log = get_logger("doc_generator")
@@ -72,11 +70,11 @@ def add_title_signature_table(
     doc: Document,
     student_name: str = "Студент",
     teacher_name: str = "Преподаватель",
-    year: Optional[int] = None,
-    group_name: Optional[str] = None,
+    year: int | None = None,
+    group_name: str | None = None,
 ) -> None:
     """Добавляет аккуратную таблицу подписей Выполнил/Проверил по образцу ГОСТ."""
-    target_year = year or datetime.now().year
+    target_year = year or datetime.now(TIMEZONE).year
     target_group = group_name or GROUP_NAME
     tbl = doc.add_table(rows=2, cols=2)
     tbl.style = "Normal Table"
@@ -103,11 +101,11 @@ def create_title_page(
     doc: Document,
     student_name: str = "Студент",
     teacher_name: str = "Преподаватель",
-    year: Optional[int] = None,
-    group_name: Optional[str] = None,
+    year: int | None = None,
+    group_name: str | None = None,
 ) -> None:
     """Создает официальный титульный лист по образцу ГОСТ (Страница 1)."""
-    target_year = year or datetime.now().year
+    target_year = year or datetime.now(TIMEZONE).year
     add_title_header(doc)
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -163,7 +161,7 @@ def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None:
     p._p.append(h_xml)
 
 
-def extract_headings_from_text(solution_text: str) -> List[Tuple[str, str, int, int]]:
+def extract_headings_from_text(solution_text: str) -> list[tuple[str, str, int, int]]:
     """Извлекает все заголовки из текста решения для построения Содержания."""
     headings = []
     idx = 1
@@ -179,7 +177,7 @@ def extract_headings_from_text(solution_text: str) -> List[Tuple[str, str, int, 
     return headings
 
 
-def build_table_of_contents(doc: Document, headings: List[Tuple[str, str, int, int]]) -> None:
+def build_table_of_contents(doc: Document, headings: list[tuple[str, str, int, int]]) -> None:
     """Создает отдельную страницу СОДЕРЖАНИЕ с гиперссылками по ГОСТ (Страница 2)."""
     if not headings:
         return
@@ -226,7 +224,7 @@ def add_gost_heading_with_bookmark(doc: Document, title: str, level: int, bm_id:
     add_bookmark_to_paragraph(p, f"sec_bm_{bm_id}", bm_id)
 
 
-def parse_markdown_table_rows(table_lines: List[str]) -> List[List[str]]:
+def parse_markdown_table_rows(table_lines: list[str]) -> list[list[str]]:
     """Парсит строки маркдаун таблицы в двумерный массив ячеек."""
     rows = []
     for line in table_lines:
@@ -258,7 +256,7 @@ def fill_table_cell(cell, cell_text: str, is_header: bool) -> None:
         run.font.size = Pt(12)
 
 
-def add_docx_table_from_markdown(doc: Document, table_lines: List[str]) -> None:
+def add_docx_table_from_markdown(doc: Document, table_lines: list[str]) -> None:
     """Создает настоящую аккуратную таблицу Word по ГОСТ из Markdown строк."""
     rows_data = parse_markdown_table_rows(table_lines)
     if not rows_data:
@@ -272,7 +270,7 @@ def add_docx_table_from_markdown(doc: Document, table_lines: List[str]) -> None:
                 fill_table_cell(cell, cell_text, r_idx == 0)
 
 
-def process_document_content_lines(doc: Document, lines: List[str], heading_map: Dict) -> None:
+def process_document_content_lines(doc: Document, lines: list[str], heading_map: dict) -> None:
     """Обрабатывает строки документа, распознавая таблицы, заголовки и параграфы."""
     i = 0
     while i < len(lines):
@@ -318,11 +316,11 @@ def init_gost_document() -> Document:
 
 def create_solution_docx(
     solution_text: str,
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     student_name: str = "Студент",
     teacher_name: str = "Преподаватель",
-    year: Optional[int] = None,
-    group_name: Optional[str] = None,
+    year: int | None = None,
+    group_name: str | None = None,
 ) -> str:
     """Генерирует 100% соответствующий ГОСТ 7.32-2017 Word DOCX документ по образцу."""
     target_path = output_path or os.path.join(tempfile.gettempdir(), "solution.docx")

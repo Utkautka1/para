@@ -8,19 +8,20 @@
   4. Защиту от несанкционированного доступа посторонних пользователей.
 """
 
-from typing import Any, Dict, List, Optional
+import os
+from typing import Any
+
 from aiogram.types import User
+
 from config import ALLOWED_USER_ID, BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
 from services.user_cache import add_user_to_cache
 from utils.storage import sync_atomic_save_json, sync_load_json
 
-import os
-
 log = get_logger("classmates_auth")
 
 
-_REGISTRY_CACHE: Optional[List[Dict[str, Any]]] = None
+_REGISTRY_CACHE: list[dict[str, Any]] | None = None
 _REGISTRY_MTIME: float = 0.0
 
 
@@ -31,7 +32,7 @@ def clear_registry_cache() -> None:
     _REGISTRY_MTIME = 0.0
 
 
-def load_classmates_registry(force_reload: bool = False) -> List[Dict[str, Any]]:
+def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]:
     """
     Загружает актуальный список студентов с in-memory кэшированием по mtime.
 
@@ -49,7 +50,7 @@ def load_classmates_registry(force_reload: bool = False) -> List[Dict[str, Any]]
     return _REGISTRY_CACHE
 
 
-def find_classmate_by_tg_id(user_id: int) -> Optional[Dict[str, Any]]:
+def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None:
     """
     Ищет студента в реестре по его сохраненному Telegram ID.
 
@@ -63,7 +64,7 @@ def find_classmate_by_tg_id(user_id: int) -> Optional[Dict[str, Any]]:
     return None
 
 
-def find_unregistered_by_username(username: str) -> Optional[Dict[str, Any]]:
+def find_unregistered_by_username(username: str) -> dict[str, Any] | None:
     """
     Ищет студента по юзернейму, у которого еще не зафиксирован tg_id (None).
 
@@ -79,7 +80,7 @@ def find_unregistered_by_username(username: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def update_classmate_tg_id(clean_username: str, tg_id: int) -> Optional[Dict[str, Any]]:
+def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None:
     """
     Атомарно фиксирует Telegram ID студента в birthdays.json и кэше.
 
@@ -104,7 +105,7 @@ def update_classmate_tg_id(clean_username: str, tg_id: int) -> Optional[Dict[str
     return updated_student
 
 
-def bind_student_tg_id(full_name: str, tg_id: int) -> Optional[Dict[str, Any]]:
+def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
     """Привязывает Telegram ID к студенту по ФИО для студентов без username."""
     registry = load_classmates_registry()
     target_clean = full_name.strip().lower()
@@ -124,7 +125,7 @@ def bind_student_tg_id(full_name: str, tg_id: int) -> Optional[Dict[str, Any]]:
     return updated
 
 
-def is_authorized_user(user: Optional[User]) -> bool:
+def is_authorized_user(user: User | None) -> bool:
     """
     Проверяет, авторизован ли пользователь (Администратор или студент с ID).
 
@@ -138,7 +139,7 @@ def is_authorized_user(user: Optional[User]) -> bool:
     return find_classmate_by_tg_id(user.id) is not None
 
 
-def process_user_auth(user: Optional[User]) -> tuple[bool, bool, Optional[Dict[str, Any]]]:
+def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | None]:
     """
     Основная логика аутентификации пользователя при входе в бота.
 

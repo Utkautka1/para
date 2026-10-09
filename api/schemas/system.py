@@ -2,7 +2,7 @@
 Pydantic-схемы для системной диагностики и управления кэшем.
 """
 
-from typing import Dict
+
 from pydantic import BaseModel, Field
 
 
@@ -13,7 +13,7 @@ class SystemInfoResponse(BaseModel):
     timezone: str = Field(..., description="Текущий часовой пояс")
     server_time: str = Field(..., description="Текущее время сервера (ISO 8601)")
     redis_alive: bool = Field(..., description="Статус подключения к Redis")
-    features: Dict[str, bool] = Field(default_factory=dict, description="Активные модули и протоколы")
+    features: dict[str, bool] = Field(default_factory=dict, description="Активные модули и протоколы")
 
 
 class CacheFlushRequest(BaseModel):

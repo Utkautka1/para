@@ -9,9 +9,10 @@
 """
 
 import asyncio
-from datetime import datetime
 import html
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
+
 from aiogram.exceptions import TelegramBadRequest
 
 from config import (
@@ -23,22 +24,22 @@ from config import (
 )
 from core.bot import bot
 from core.logger import get_logger
-from services.attendance_stats import fetch_all_time_attendance
 from core.redis_cache import redis_lock
+from services.attendance_stats import fetch_all_time_attendance
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("att_topic_updater")
 STATE_FILE = "data/attendance_topic_state.json"
-_ATT_MAIN_MSG_ID: Optional[int] = None
+_ATT_MAIN_MSG_ID: int | None = None
 
 
-def load_attendance_topic_state() -> Optional[int]:
+def load_attendance_topic_state() -> int | None:
     """Загружает сохраненный ID главного сообщения топика посещаемости."""
     data = sync_load_json(STATE_FILE, default={})
     return data.get("main_msg_id") if isinstance(data, dict) else None
 
 
-def save_attendance_topic_state(msg_id: Optional[int]) -> None:
+def save_attendance_topic_state(msg_id: int | None) -> None:
     """Атомарно сохраняет ID главного сообщения топика посещаемости."""
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
 
@@ -68,7 +69,7 @@ def extract_short_fio(fio: str) -> str:
     return fio
 
 
-def _build_student_item(fio: str, data: Dict[str, Any]) -> Dict[str, Any]:
+def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]:
     """Преобразует сырые данные студента в структурированный элемент рейтинга."""
     tot = data.get("total", {})
     p, o = tot.get("П", 0), tot.get("О", 0)
@@ -107,7 +108,7 @@ def _decline_absence(n: int) -> str:
     return f"{n} прогулов"
 
 
-def _format_debt_details(s: Dict[str, Any]) -> str:
+def _format_debt_details(s: dict[str, Any]) -> str:
     """Формирует понятный список причин (прогулы, опоздания, справки)."""
     parts = []
     if s["n"] > 0:
@@ -119,7 +120,7 @@ def _format_debt_details(s: Dict[str, Any]) -> str:
     return ", ".join(parts) if parts else "без замечаний"
 
 
-def _format_debt_student(s: Dict[str, Any]) -> str:
+def _format_debt_student(s: dict[str, Any]) -> str:
     """Формирует строку студента, имеющего пропуски или опоздания."""
     details = _format_debt_details(s)
     clean_fio = html.escape(s["fio"])
@@ -132,7 +133,7 @@ def _format_debt_student(s: Dict[str, Any]) -> str:
     return f"{icon} <b>{clean_fio}</b> — <b>{s['pct']:.0f}%</b> ({details})"
 
 
-def _format_perfect_student(s: Dict[str, Any]) -> str:
+def _format_perfect_student(s: dict[str, Any]) -> str:
     """Формирует аккуратную строку отличника без лишнего визуального шума."""
     clean_fio = html.escape(s["fio"])
     if s["u"] > 0:
@@ -150,7 +151,7 @@ def _build_topic_footer() -> str:
     )
 
 
-def format_attendance_topic_message(stats: Dict[str, Dict[str, Any]]) -> str:
+def format_attendance_topic_message(stats: dict[str, dict[str, Any]]) -> str:
     """Формирует дашборд с компактным блоком отличников и журналом долгов."""
     if not stats:
         header = _build_compact_topic_header(0.0, 0, 0, 0)

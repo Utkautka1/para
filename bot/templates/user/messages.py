@@ -7,7 +7,7 @@
 
 import html
 from datetime import date
-from typing import List, Optional, Tuple
+
 from config import GROUP_NAME
 from services.models import Lesson
 
@@ -60,7 +60,7 @@ def format_minutes(total_minutes: int) -> str:
     return f"{mins} мин"
 
 
-def _parse_time_interval_minutes(time_str: str) -> Optional[Tuple[int, int]]:
+def _parse_time_interval_minutes(time_str: str) -> tuple[int, int] | None:
     """Извлекает время начала и конца пары в минутах от начала суток."""
     import re
     matches = re.findall(r"(\d{1,2})[:\.](\d{2})", time_str)
@@ -71,7 +71,7 @@ def _parse_time_interval_minutes(time_str: str) -> Optional[Tuple[int, int]]:
     return None
 
 
-def _check_single_lesson_status(lesson: Lesson, n_min: int) -> Tuple[bool, str]:
+def _check_single_lesson_status(lesson: Lesson, n_min: int) -> tuple[bool, str]:
     """
     Проверяет статус одной пары относительно текущего времени в минутах.
 
@@ -92,7 +92,7 @@ def _check_single_lesson_status(lesson: Lesson, n_min: int) -> Tuple[bool, str]:
     return False, ""
 
 
-def get_lesson_status_banner(lessons: List[Lesson], target_date: date) -> str:
+def get_lesson_status_banner(lessons: list[Lesson], target_date: date) -> str:
     """
     Рассчитывает и формирует статусный баннер пары для текущего дня.
 
@@ -101,6 +101,7 @@ def get_lesson_status_banner(lessons: List[Lesson], target_date: date) -> str:
     :return: HTML фрагмент со статусом пары или пустая строка
     """
     from datetime import datetime
+
     from config import TIMEZONE
     now_dt = datetime.now(TIMEZONE)
     if target_date != now_dt.date() or not lessons:
@@ -114,7 +115,7 @@ def get_lesson_status_banner(lessons: List[Lesson], target_date: date) -> str:
     return "✅ <b>Все пары на сегодня завершены!</b>\n\n"
 
 
-def format_day_schedule(target_date: date, lessons: List[Lesson]) -> str:
+def format_day_schedule(target_date: date, lessons: list[Lesson]) -> str:
     """
     Собирает расписание на день в чистый HTML-блок.
 
@@ -139,10 +140,7 @@ def format_week_lesson_loc(lesson: Lesson) -> str:
     """Формирует компактную строку локации для недельного обзора."""
     if lesson.is_remote:
         return "🌐 Дистанционно"
-    if "вознесен" in lesson.address.lower():
-        campus = "Вознесенский"
-    else:
-        campus = "Цветочная"
+    campus = "Вознесенский" if "вознесен" in lesson.address.lower() else "Цветочная"
     return f"📍 Каб. {html.escape(lesson.room)} ({campus})"
 
 
@@ -162,7 +160,7 @@ def format_week_lesson_card(lesson: Lesson) -> str:
 
 
 
-def format_week_day_block(day_date: date, lessons: List[Lesson]) -> str:
+def format_week_day_block(day_date: date, lessons: list[Lesson]) -> str:
     """Формирует блок одного учебного дня для недельного расписания."""
     w_str = WEEKDAYS_RU[day_date.weekday()]
     d_str = day_date.strftime("%d.%m")
@@ -173,7 +171,7 @@ def format_week_day_block(day_date: date, lessons: List[Lesson]) -> str:
     return f"{header}" + "\n".join(cards)
 
 
-def format_week_schedule(days_data: List[Tuple[date, List[Lesson]]]) -> str:
+def format_week_schedule(days_data: list[tuple[date, list[Lesson]]]) -> str:
     """Формирует аккуратное, структурированное расписание на неделю."""
     header = f"🎓 <b>РАСПИСАНИЕ НА НЕДЕЛЮ ({GROUP_NAME})</b>\n────────────────────────────\n\n"
     day_blocks = [format_week_day_block(d, l) for d, l in days_data]

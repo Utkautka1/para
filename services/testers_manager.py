@@ -6,15 +6,14 @@
 """
 
 import secrets
-from typing import Optional
 
 from config import (
     ALLOWED_USER_ID,
     API_TESTER_KEY_PREFIX,
     DEPUTY_USER_ID,
-    REDIS_TESTERS_KEY,
     REDIS_TESTER_KEY_TO_UID_PREFIX,
     REDIS_TESTER_UID_TO_KEY_PREFIX,
+    REDIS_TESTERS_KEY,
 )
 from core.logger import get_logger
 from core.redis import get_redis
@@ -24,7 +23,7 @@ log = get_logger("testers_manager")
 ADMIN_TESTERS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
 
 
-async def generate_or_get_tester_key(user_id: int) -> Optional[str]:
+async def generate_or_get_tester_key(user_id: int) -> str | None:
     """Генерирует или возвращает существующий персональный API-ключ тестера."""
     r = await get_redis()
     if not r:
@@ -41,7 +40,7 @@ async def generate_or_get_tester_key(user_id: int) -> Optional[str]:
     return new_key
 
 
-async def get_tester_by_key(api_key: str) -> Optional[int]:
+async def get_tester_by_key(api_key: str) -> int | None:
     """Возвращает Telegram ID тестера по переданному персональному API-ключу."""
     if not api_key or not api_key.startswith(API_TESTER_KEY_PREFIX):
         return None

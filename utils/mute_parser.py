@@ -6,10 +6,9 @@
 """
 
 import re
-from typing import Optional
 
 
-def parse_duration_to_seconds(time_str: str) -> Optional[int]:
+def parse_duration_to_seconds(time_str: str) -> int | None:
     """
     Парсит строку формата '5с', '10м', '2ч', '1д' в интервал в секундах.
 

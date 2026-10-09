@@ -18,11 +18,13 @@
 
 import html
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import Message, User
+
 from bot.filters.auth import AuthFilter
 from config import BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
@@ -34,7 +36,7 @@ router = Router()
 router.message.filter(AuthFilter())
 
 
-async def load_classmates_list() -> List[Dict[str, Any]]:
+async def load_classmates_list() -> list[dict[str, Any]]:
     """
     Загружает актуальный список одногруппников из JSON-файла.
 
@@ -44,7 +46,7 @@ async def load_classmates_list() -> List[Dict[str, Any]]:
     return await load_json(BIRTHDAYS_FILE_PATH, default=[])
 
 
-def resolve_person_tg_id(person: Dict[str, Any]) -> Optional[int]:
+def resolve_person_tg_id(person: dict[str, Any]) -> int | None:
     """
     Извлекает tg_id из записи или постоянного кэша пользователей.
     """
@@ -54,7 +56,7 @@ def resolve_person_tg_id(person: Dict[str, Any]) -> Optional[int]:
     return get_cached_user_id(username) if username else None
 
 
-def format_mention_tag(person: Dict[str, Any]) -> Optional[str]:
+def format_mention_tag(person: dict[str, Any]) -> str | None:
     """
     Формирует кликабельный тег упоминания.
 
@@ -72,7 +74,7 @@ def format_mention_tag(person: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def is_sender(person: Dict[str, Any], sender_id: Optional[int], sender_username: Optional[str]) -> bool:
+def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool:
     """
     Проверяет, является ли запись в реестре отправителем команды.
 
@@ -80,13 +82,10 @@ def is_sender(person: Dict[str, Any], sender_id: Optional[int], sender_username:
     """
     if sender_id and person.get("tg_id") == sender_id:
         return True
-    if sender_username and person.get("username"):
-        if person["username"].lower() == sender_username.lower():
-            return True
-    return False
+    return bool(sender_username and person.get("username") and person["username"].lower() == sender_username.lower())
 
 
-def build_mentions_block(classmates: List[Dict[str, Any]], sender: Optional[User]) -> str:
+def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str:
     """
     Формирует список тегов упоминаний участников чата без автора команды.
     """
@@ -145,7 +144,7 @@ async def safe_delete_command_message(message: Message) -> None:
         log.warning(f"Не удалось удалить команду /all: {e}")
 
 
-async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: Optional[int]) -> Message:
+async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message:
     """
     Отправляет пост от лица бота в целевой чат и топик (текст или медиа).
 
@@ -182,8 +181,8 @@ async def validate_group_chat(message: Message) -> bool:
 
 
 def compose_broadcast_content(
-    classmates: List[Dict[str, Any]], message: Message
-) -> tuple[str, Optional[int]]:
+    classmates: list[dict[str, Any]], message: Message
+) -> tuple[str, int | None]:
     """
     Формирует итоговый HTML рассылки и определяет ID реплая.
 
@@ -196,7 +195,7 @@ def compose_broadcast_content(
     return final_text, reply_id
 
 
-async def dispatch_broadcast(message: Message, final_text: str, reply_id: Optional[int]) -> None:
+async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None:
     """
     Выполняет отправку поста и удаление исходной команды с логированием.
 
