@@ -10,28 +10,46 @@
 """
 
 from datetime import date, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import openpyxl
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from bot.filters.auth import AttendanceAuthFilter
 from bot.templates.admin.attendance import (
-    format_confirm_text, format_student_card, format_summary_text,
-    get_lesson_confirm_kb, get_lesson_select_kb, get_student_poll_kb
+    format_confirm_text,
+    format_student_card,
+    format_summary_text,
+    get_lesson_confirm_kb,
+    get_lesson_select_kb,
+    get_student_poll_kb,
 )
 from config import ALLOWED_USER_ID, DEPUTY_USER_ID
+from integrations.yandex_docs import (
+    extract_client_config,
+    find_date_column_start,
+    find_lesson_column,
+    find_student_row,
+    get_month_sheet,
+    get_students_list,
+    get_yandex_cookie_header,
+    normalize_fio,
+    parse_date_cell,
+    write_student_mark,
+)
 from services.attendance_manager import (
-    AttendanceSession, apply_marks_to_sheet, calculate_summary_stats,
-    clear_session, ensure_summary_headers, get_active_session,
-    mark_all_remaining_present, record_student_mark, save_session_to_redis,
-    step_back
+    AttendanceSession,
+    apply_marks_to_sheet,
+    calculate_summary_stats,
+    clear_session,
+    ensure_summary_headers,
+    get_active_session,
+    mark_all_remaining_present,
+    record_student_mark,
+    save_session_to_redis,
+    step_back,
 )
 from services.models import Lesson
-from integrations.yandex_docs import (
-    extract_client_config, find_date_column_start, find_lesson_column,
-    find_student_row, get_month_sheet, get_students_list, get_yandex_cookie_header,
-    normalize_fio, parse_date_cell, write_student_mark
-)
 
 
 def create_mock_workbook() -> openpyxl.Workbook:
@@ -39,7 +57,7 @@ def create_mock_workbook() -> openpyxl.Workbook:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "СЕНТ"
-    ws.cell(2, 3, datetime(2026, 9, 29, 0, 0))
+    ws.cell(2, 3, datetime(2026, 9, 29, 0, 0))  # noqa: DTZ001
     for p in range(1, 7):
         ws.cell(4, 2 + p, p)
     ws.cell(5, 2, "\xa0Иванов Иван Иванович")
@@ -93,7 +111,7 @@ def test_get_month_sheet_not_found():
 
 def test_parse_date_cell_variants():
     """Проверяет парсинг даты из различных типов значений ячейки."""
-    assert parse_date_cell(datetime(2026, 9, 29)) == "29.09"
+    assert parse_date_cell(datetime(2026, 9, 29)) == "29.09"  # noqa: DTZ001
     assert parse_date_cell(date(2026, 9, 29)) == "29.09"
     assert parse_date_cell(" 29.09 ") == "29.09"
     assert parse_date_cell(None) is None
@@ -416,7 +434,11 @@ def test_cell_has_expected_mark_entities():
 
 def test_extract_and_verify_marks_in_raw():
     """Проверяет извлечение листа и проверку отметок из реального xlsx-архива."""
-    from integrations.yandex_docs import _extract_sheet_xml, _verify_marks_in_raw, save_workbook_to_bytes
+    from integrations.yandex_docs import (
+        _extract_sheet_xml,
+        _verify_marks_in_raw,
+        save_workbook_to_bytes,
+    )
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")
@@ -432,7 +454,11 @@ def test_extract_and_verify_marks_in_raw():
 @pytest.mark.asyncio
 async def test_verify_upload_with_mock_bytes():
     """Проверяет асинхронный вызов verify_upload при успешном скачивании байтов."""
-    from integrations.yandex_docs import verify_upload, WopiSession, save_workbook_to_bytes
+    from integrations.yandex_docs import (
+        WopiSession,
+        save_workbook_to_bytes,
+        verify_upload,
+    )
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")

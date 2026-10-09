@@ -9,6 +9,7 @@ Unit-тесты для клиента para-api (core/api_client.py).
 
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
 import pytest
 
@@ -16,7 +17,6 @@ from core.api_client import (
     _api_get,
     get_api_exams,
     get_api_schedule_for_date,
-    get_api_week_schedule,
 )
 from services.models import ExamItem, Lesson
 

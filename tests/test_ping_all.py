@@ -10,6 +10,7 @@ Unit-тесты для модуля общего пинга /all (bot/handlers/a
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from aiogram.types import Chat, Message, PhotoSize, User
 

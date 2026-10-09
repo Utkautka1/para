@@ -8,11 +8,11 @@ Unit-тесты для AuthFilter (фильтра авторизации по Te
 """
 
 from unittest.mock import MagicMock
+
 import pytest
 from aiogram.types import CallbackQuery, Message, User
 
 from bot.filters.auth import AuthFilter
-from config import ALLOWED_USER_ID
 
 
 @pytest.mark.asyncio

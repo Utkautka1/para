@@ -11,6 +11,7 @@ Unit-тесты для подсистем оптимизации произво�
 
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from core.api_client import _get_client
@@ -143,6 +144,7 @@ async def test_schedule_parser_cold_start_from_redis() -> None:
 async def test_get_day_schedule_cached_hit_and_miss() -> None:
     """Проверяет работу L1 Redis-кэша для расписания дня (hit и miss)."""
     from datetime import date
+
     from bot.handlers.user.schedule import get_day_schedule_cached
     from services.models import Lesson
     test_d = date(2026, 10, 5)
@@ -206,6 +208,7 @@ async def test_concurrent_send_reminders() -> None:
 async def test_retry_after_middleware_success() -> None:
     """Проверяет прозрачный retry при получении TelegramRetryAfter."""
     from aiogram.exceptions import TelegramRetryAfter
+
     from bot.middlewares.retry import RetryAfterMiddleware
     mw = RetryAfterMiddleware()
     handler = AsyncMock(side_effect=[TelegramRetryAfter(method=MagicMock(), message="Too Fast", retry_after=0.01), "success"])
@@ -237,6 +240,7 @@ async def test_collect_health_summary() -> None:
 async def test_callback_throttle_middleware() -> None:
     """Проверяет подавление повторных кликов через CallbackThrottleMiddleware."""
     from aiogram.types import CallbackQuery
+
     from bot.middlewares.throttling import CallbackThrottleMiddleware
     mw = CallbackThrottleMiddleware()
     event = MagicMock(spec=CallbackQuery)
@@ -259,19 +263,23 @@ async def test_callback_throttle_middleware() -> None:
 async def test_docx_singleflight_cache_freshness() -> None:
     """Проверяет защиту от повторного скачивания docx при кулдауне."""
     import time
+
     import integrations.docx_parser as dp_mod
     cached = {"teacher": {"full_name": "T", "link_info": "L"}}
-    with patch.object(dp_mod, "_CACHE", (time.time(), cached)):
-        with patch.object(dp_mod, "fetch_docx_bytes", AsyncMock()) as mock_fetch:
-            res = await dp_mod.get_teacher_links(force_refresh=True)
-            assert "teacher" in res
-            mock_fetch.assert_not_called()
+    with (
+        patch.object(dp_mod, "_CACHE", (time.time(), cached)),
+        patch.object(dp_mod, "fetch_docx_bytes", AsyncMock()) as mock_fetch,
+    ):
+        res = await dp_mod.get_teacher_links(force_refresh=True)
+        assert "teacher" in res
+        mock_fetch.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_week_schedule_single_fetch() -> None:
     """Проверяет однократный fetch_schedule_data при get_week_schedule с force."""
     from datetime import date
+
     from services.schedule_parser import get_week_schedule
     with patch("services.schedule_parser.fetch_schedule_data", AsyncMock()) as mock_fetch, \
          patch("services.schedule_parser.get_schedule_for_date", AsyncMock(return_value=[])) as mock_day:

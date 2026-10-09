@@ -9,11 +9,12 @@
 """
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 from aiogram.types import CallbackQuery, Message, User
 
-from config import ALLOWED_USER_ID
 from bot.filters.auth import ClassmateAuthFilter
+from config import ALLOWED_USER_ID
 from services.classmates_auth import (
     find_classmate_by_tg_id,
     find_unregistered_by_username,
@@ -156,6 +157,7 @@ async def test_classmate_auth_filter_blocks_stranger() -> None:
 async def test_send_single_reminder_subscribers_only() -> None:
     """Проверяет, что напоминание отправляется исключительно активным подписчикам."""
     from unittest.mock import AsyncMock
+
     from services.models import Lesson
     from services.notifier import send_single_reminder
     lesson = Lesson(
@@ -174,6 +176,7 @@ async def test_send_single_reminder_subscribers_only() -> None:
 async def test_cb_toggle_notify() -> None:
     """Проверяет реакцию хэндлера cb_toggle_notify на переключение подписки."""
     from unittest.mock import AsyncMock
+
     from bot.handlers.user.schedule import cb_toggle_notify
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=12345, is_bot=False, first_name="User")
@@ -191,6 +194,7 @@ async def test_cb_toggle_notify() -> None:
 async def test_cmd_notice_authorized() -> None:
     """Проверяет команду /notice для авторизованного пользователя."""
     from unittest.mock import AsyncMock
+
     from bot.handlers.user.schedule import cmd_notice
     msg = MagicMock(spec=Message)
     msg.from_user = User(id=12345, is_bot=False, first_name="User")
@@ -206,6 +210,7 @@ async def test_cmd_notice_authorized() -> None:
 async def test_cmd_notice_stranger_rejected() -> None:
     """Проверяет отказ на команду /notice для постороннего пользователя."""
     from unittest.mock import AsyncMock
+
     from bot.handlers.user.schedule import cmd_notice
     msg = MagicMock(spec=Message)
     msg.from_user = User(id=99999, is_bot=False, first_name="Stranger")
@@ -220,6 +225,7 @@ async def test_cmd_notice_stranger_rejected() -> None:
 async def test_cb_notice_toggle() -> None:
     """Проверяет callback notice:toggle переключения подписки."""
     from unittest.mock import AsyncMock
+
     from bot.handlers.user.schedule import cb_notice_toggle
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=12345, is_bot=False, first_name="User")

@@ -10,6 +10,7 @@ Unit-тесты для модуля атомарного хранилища JSON
 
 import os
 from typing import Any
+
 import pytest
 
 from utils.storage import load_json, save_json, sync_atomic_save_json, sync_load_json

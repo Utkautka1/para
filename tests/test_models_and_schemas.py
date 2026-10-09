@@ -9,6 +9,7 @@ Unit-тесты для Pydantic-моделей сервисов и схем Fast
 """
 
 from datetime import date
+
 import pytest
 from pydantic import ValidationError
 

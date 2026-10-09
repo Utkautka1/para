@@ -5,10 +5,11 @@
 для изолированного unit-тестирования без обращения к Telegram API.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
+
 import pytest
 from aiogram import Bot
-from aiogram.types import CallbackQuery, Chat, Message, User
+from aiogram.types import Chat, Message, User
 
 from config import ALLOWED_USER_ID, TOPIC_CHAT_ID
 

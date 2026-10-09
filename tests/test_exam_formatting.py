@@ -8,8 +8,8 @@ Unit-тесты для форматирования топика экзамен�
   4. Сохранение и загрузку состояния главного сообщения (load_exam_topic_state / save_exam_topic_state)
 """
 
-from typing import List, Optional
 from unittest.mock import patch
+
 import pytest
 
 from services.exam_topic_updater import (

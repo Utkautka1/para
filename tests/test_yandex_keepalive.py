@@ -10,6 +10,7 @@ Unit-тесты для модуля поддержания сессии и уп�
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from config import REDIS_COOKIE_TTL_SECONDS, REDIS_YANDEX_COOKIE_KEY
@@ -58,10 +59,12 @@ async def test_get_effective_cookie_fallback() -> None:
     mock_redis = AsyncMock()
     mock_redis.get.return_value = None
 
-    with patch("core.redis.get_redis", return_value=mock_redis):
-        with patch("integrations.yandex_docs.get_yandex_cookie_header", return_value="Session_id=env_val"):
-            cookie = await get_effective_yandex_cookie()
-            assert cookie == "Session_id=env_val"
+    with (
+        patch("core.redis.get_redis", return_value=mock_redis),
+        patch("integrations.yandex_docs.get_yandex_cookie_header", return_value="Session_id=env_val"),
+    ):
+        cookie = await get_effective_yandex_cookie()
+        assert cookie == "Session_id=env_val"
 
 
 @pytest.mark.asyncio
@@ -90,13 +93,15 @@ async def test_update_cookies_from_response() -> None:
 @pytest.mark.asyncio
 async def test_ping_yandex_session_success() -> None:
     """Проверяет успешный пинг сессии при валидном client-config."""
-    with patch("integrations.yandex_keepalive.fetch_page_dom", return_value="<html>ok</html>"):
-        with patch(
+    with (
+        patch("integrations.yandex_keepalive.fetch_page_dom", return_value="<html>ok</html>"),
+        patch(
             "integrations.yandex_keepalive.extract_client_config",
             return_value={"officeActionData": {"resource_url": "https://test"}},
-        ):
-            ok = await ping_yandex_session()
-            assert ok is True
+        ),
+    ):
+        ok = await ping_yandex_session()
+        assert ok is True
 
 
 @pytest.mark.asyncio
