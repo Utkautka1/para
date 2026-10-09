@@ -26,6 +26,9 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.10. [AI Homework Solver Workflow in Topic 405 (DeepSeek & GOST .docx)](#810-ai-homework-solver-workflow-in-topic-405-deepseek--gost-docx)
    - 8.11. [Headman & Admin Control Panel /admin Flow](#811-headman--admin-control-panel-admin-flow)
    - 8.12. [Unauthenticated Ingress & Fallback Flow (auth_fallback.py)](#812-unauthenticated-ingress--fallback-flow-auth_fallbackpy)
+   - 8.13. [Global Exception Trapping & User-Facing Error Fallback (errors.py)](#813-global-exception-trapping--user-facing-error-fallback-errorspy)
+   - 8.14. [Scoped Interactive Telegram Command Menus (commands.py)](#814-scoped-interactive-telegram-command-menus-commandspy)
+   - 8.15. [Distributed Redis FSM Storage & Resilient Fallback (core/bot.py)](#815-distributed-redis-fsm-storage--resilient-fallback-corebotpy)
 9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
@@ -1404,6 +1407,149 @@ classDiagram
 1. **Identity Extraction & Safe Guard**: The handler extracts `uid = user.id` before executing authorization filters and logging, preventing variable binding errors (`NameError`).
 2. **Authorized User & Tester Bypass**: If the sender is an authorized classmate or an active API tester (`is_tester_allowed`), the handler silently passes without interruption.
 3. **Diagnostic Access Denied Rendering**: For unauthorized strangers, the handler sends a structured HTML card containing the user's numeric `Telegram ID` (`<code>{uid}</code>`), instructing them to forward the ID to the headman for registry binding.
+
+---
+
+### 8.13 Global Exception Trapping & User-Facing Error Fallback (errors.py)
+
+Architecture capturing unexpected exceptions across all router handlers, extinguishing perpetual spinner state on inline buttons, and delivering friendly diagnostics without revealing internal tracebacks.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class TelegramDispatcher {
+        +feed_update(update) void
+        +handle_error(event) void
+    }
+
+    class GlobalErrorHandlerRouter {
+        +global_error_handler(event) bool
+        -_log_exception(error) void
+        -_answer_stuck_callback(cb) void
+        -_notify_user_message(msg) void
+    }
+
+    class ErrorEvent {
+        +Update update
+        +Exception exception
+    }
+
+    class TelegramCallbackQuery {
+        +answer(text, show_alert) bool
+    }
+
+    class TelegramMessage {
+        +answer(text) Message
+    }
+
+    TelegramDispatcher --> GlobalErrorHandlerRouter : captures unhandled exception
+    GlobalErrorHandlerRouter ..> ErrorEvent : unwraps event and exception
+    GlobalErrorHandlerRouter --> TelegramCallbackQuery : clears button spinner with show_alert modal
+    GlobalErrorHandlerRouter --> TelegramMessage : replies with user-friendly transient error text
+```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Dispatcher Interception**: Whenever an unhandled exception bubbles up during handler execution, aiogram routes the context to `@router.error()`.
+2. **Deterministic Logging**: The error is logged via `core.logger` (`error_handler`) with full diagnostic context without relying on blind traceback printing.
+3. **Spinner Relief via Modal Alert**: If the failing update originated from an inline callback button, `cb.answer("⚠️ Временный сбой сервиса. Попробуйте снова.", show_alert=True)` is dispatched, immediately ending the UI loading freeze.
+4. **Resilient Network Protection**: Fallback answers are wrapped in protected try/except blocks to guarantee zero unhandled cascade crashes even if Telegram API connection drops.
+
+---
+
+### 8.14 Scoped Interactive Telegram Command Menus (commands.py)
+
+Architecture dynamically registering contextual command suggestions in Telegram client UI via `BotCommandScope`, distinguishing general student commands from privileged administrative operations.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class BotCommandsRegistry {
+        +get_default_user_commands() List~BotCommand~
+        +get_admin_commands() List~BotCommand~
+        +register_bot_commands(bot) void
+    }
+
+    class TelegramBotAPI {
+        +set_my_commands(commands, scope) bool
+    }
+
+    class BotCommandScopeDefault {
+        +String type = "default"
+    }
+
+    class BotCommandScopeChat {
+        +String type = "chat"
+        +int chat_id
+    }
+
+    class BotCommand {
+        +String command
+        +String description
+    }
+
+    BotCommandsRegistry --> TelegramBotAPI : registers scoped menu commands
+    BotCommandsRegistry ..> BotCommandScopeDefault : applies today, notice, my_attendance, help
+    BotCommandsRegistry ..> BotCommandScopeChat : applies admin, attendance, all, testers, swagger to headman
+    BotCommandsRegistry ..> BotCommand : creates typed commands
+```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **User Scope Segregation**: Standard students receive a minimalist, uncluttered menu (`/today`, `/notice`, `/my_attendance`, `/help`) via `BotCommandScopeDefault`.
+2. **Privileged Headman Scope**: Chat-scoped commands (`BotCommandScopeChat(chat_id=ALLOWED_USER_ID)`) expose admin workflows (`/admin`, `/attendance`, `/all`, `/testers`, `/swagger`).
+3. **Graceful Startup Registration**: Invoked during `main()` bootstrap, non-blocking with error capture to prevent bot launch failure on Telegram rate-limits.
+
+---
+
+### 8.15 Distributed Redis FSM Storage & Resilient Fallback (core/bot.py)
+
+Architecture replacing volatile memory storage with distributed Redis-backed Finite State Machine storage, enabling state preservation across process restarts, deployments, and multi-worker clusters.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class CoreBotFactory {
+        +create_bot_session() AiohttpSession
+        +create_fsm_storage() BaseStorage
+    }
+
+    class RedisPoolManager {
+        +get_redis_pool() ConnectionPool
+    }
+
+    class RedisStorage {
+        +Redis redis
+        +KeyBuilder key_builder
+        +set_state(key, state) void
+        +get_state(key) State
+        +set_data(key, data) void
+    }
+
+    class MemoryStorage {
+        +dict storage
+    }
+
+    class AiogramDispatcher {
+        +BaseStorage storage
+        +start_polling(bot) void
+    }
+
+    CoreBotFactory --> RedisPoolManager : acquires async redis connection pool
+    CoreBotFactory --> RedisStorage : instantiates prefix='fsm' distributed storage
+    CoreBotFactory ..> MemoryStorage : fallbacks on connection/import fault
+    CoreBotFactory --> AiogramDispatcher : initializes dispatcher with resilient storage
+```
+
+#### Execution Flow & Under-the-Hood Lifecycle
+
+1. **Connection Pooling**: Utilizes shared asynchronous connection pool `get_redis_pool()` to avoid connection exhaustion under high concurrency.
+2. **Namespaced Keys**: FSM keys are organized under prefix `fsm:` (`fsm:{chat_id}:{user_id}:state` / `data`), preventing key collision with timetable cache or attendance records.
+3. **High-Availability Fallback**: If Redis service is unreachable or uninstalled during standalone test runs, `create_fsm_storage()` seamlessly falls back to `MemoryStorage`.
+4. **Graceful Shutdown**: On process exit (`shutdown_bot`), `dp.storage.close()` is awaited to cleanly release active network descriptors and pool slots.
 
 ---
 

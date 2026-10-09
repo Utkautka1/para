@@ -9,6 +9,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+
 from config import BOT_TOKEN, PROXY_URL
 from core.logger import get_logger
 
@@ -22,6 +23,24 @@ def create_bot_session() -> AiohttpSession:
     return AiohttpSession(limit=50, timeout=15.0)
 
 
+def create_fsm_storage():
+    """Создает персистентное Redis-хранилище FSM с fallback на MemoryStorage."""
+    try:
+        from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
+        from redis.asyncio import Redis
+
+        from core.redis import get_redis_pool
+        pool = get_redis_pool()
+        r = Redis(connection_pool=pool)
+        key_builder = DefaultKeyBuilder(prefix="fsm")
+        log.info("FSM Storage: подключено персистентное хранилище RedisStorage")
+        return RedisStorage(redis=r, key_builder=key_builder)
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"⚠️ Не удалось подключить RedisStorage ({e}), используется MemoryStorage")
+        from aiogram.fsm.storage.memory import MemoryStorage
+        return MemoryStorage()
+
+
 session = create_bot_session()
 
 bot = Bot(
@@ -33,4 +52,4 @@ bot = Bot(
     )
 )
 
-dp = Dispatcher()
+dp = Dispatcher(storage=create_fsm_storage())

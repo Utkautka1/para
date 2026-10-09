@@ -7,9 +7,10 @@
 """
 
 import hashlib
-from typing import Optional, Tuple
-from aiogram import Router, F, Bot
+
+from aiogram import Bot, F, Router
 from aiogram.types import Message, ReactionTypeEmoji
+
 import config
 from core.logger import get_logger
 from core.redis_cache import (
@@ -18,11 +19,14 @@ from core.redis_cache import (
     is_message_processed,
     mark_hash_processed,
     mark_message_processed,
-    push_hw_task
+    push_hw_task,
 )
 
 log = get_logger("hw_handler")
 router = Router()
+
+# Максимальный размер файла (20 МБ) — ограничение Telegram Bot API
+MAX_HW_FILE_SIZE = 20 * 1024 * 1024
 
 
 def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
@@ -34,7 +38,7 @@ def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
     return u_text or t_text or ""
 
 
-def is_valid_homework_prompt(text: Optional[str], has_media: bool) -> bool:
+def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool:
     """
     Проверяет, содержит ли сообщение запрос на решение учебной задачи.
 
@@ -54,7 +58,7 @@ def is_valid_homework_prompt(text: Optional[str], has_media: bool) -> bool:
     return any(kw in t for kw in kw_list) or len(t) >= 25
 
 
-def extract_media_meta(msg: Message, target: Message) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], int]:
+def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str | None, str | None, str | None, int]:
     """Извлекает идентификаторы и метаданные медиафайла (фото или документа)."""
     m = msg if (msg.photo or msg.document) else target
     if m.photo:
@@ -66,7 +70,7 @@ def extract_media_meta(msg: Message, target: Message) -> Tuple[Optional[str], Op
     return None, None, None, None, 0
 
 
-def compute_content_hash(text: Optional[str], unique_id: Optional[str]) -> str:
+def compute_content_hash(text: str | None, unique_id: str | None) -> str:
     """Вычисляет SHA256 хэш промпта и уникального ID файла для защиты от дубликатов."""
     hasher = hashlib.sha256()
     if text:
@@ -100,7 +104,7 @@ async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
             message_id=msg.message_id,
             reaction=[ReactionTypeEmoji(emoji="👀")]
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         log.debug(f"Не удалось поставить реакцию на msg_id={msg.message_id}: {e}")
 
 
@@ -109,7 +113,7 @@ async def dispatch_hw_task(
     msg: Message,
     user_id: int,
     prompt: str,
-    meta: Tuple[Optional[str], Optional[str], Optional[str], int]
+    meta: tuple[str | None, str | None, str | None, int]
 ) -> None:
     """Формирует payload и отправляет задачу в очередь воркера para-solver."""
     f_id, f_name, mime, f_size = meta
@@ -128,12 +132,27 @@ async def dispatch_hw_task(
     await acknowledge_hw_task(bot, msg)
 
 
+async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str | None) -> bool:
+    """Проверяет размер медиафайла (не более 20 МБ) для предотвращения OOM."""
+    if f_size > MAX_HW_FILE_SIZE:
+        log.warning(f"⚠️ Файл '{f_name}' превышает лимит 20 МБ ({f_size} байт). Отклонено.")
+        try:
+            await bot.set_message_reaction(
+                chat_id=msg.chat.id,
+                message_id=msg.message_id,
+                reaction=[ReactionTypeEmoji(emoji="🤷‍♂️")]
+            )
+        except Exception as e:  # noqa: BLE001
+            log.debug(f"Не удалось выставить реакцию на тяжелый файл: {e}")
+        return False
+    return True
+
+
 @router.message(
     (F.chat.id == config.TOPIC_CHAT_ID) &
     (F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
 )
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
-
     """Перехватывает сообщение с ДЗ и отправляет в очередь воркера solver."""
     user_id = msg.from_user.id if msg.from_user else 0
     target = msg.reply_to_message if msg.reply_to_message else msg
@@ -142,6 +161,9 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
 
     prompt = combine_prompt_and_instructions(msg, target)
     f_id, u_id, f_name, mime, f_size = extract_media_meta(msg, target)
+    if not await validate_hw_file_size(bot, msg, f_size, f_name):
+        return
+
     c_hash = compute_content_hash(prompt, u_id)
     if await is_hash_processed(c_hash):
         log.warning(f"⚠️ Повтор ДЗ по SHA256 (msg_id={msg.message_id}). Пропуск.")

@@ -6,10 +6,13 @@ Middleware для прозрачной обработки Telegram flood control
 """
 
 import asyncio
-from typing import Any, Awaitable, Callable, Dict
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from aiogram import BaseMiddleware
 from aiogram.exceptions import TelegramRetryAfter
 from aiogram.types import TelegramObject
+
 from core.logger import get_logger
 
 log = get_logger("retry_middleware")
@@ -20,9 +23,9 @@ class RetryAfterMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> Any:
         """Исполняет хэндлер с retry при временном flood control."""
         for attempt in range(2):

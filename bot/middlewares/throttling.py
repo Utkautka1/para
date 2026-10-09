@@ -6,9 +6,12 @@ Middleware для защиты от частого нажатия инлайн-�
 """
 
 import time
-from typing import Any, Awaitable, Callable, Dict
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, TelegramObject
+
 from core.logger import get_logger
 
 log = get_logger("throttle_middleware")
@@ -33,7 +36,7 @@ class CallbackThrottleMiddleware(BaseMiddleware):
 
     def __init__(self) -> None:
         # _last_clicks: ключ "uid:callback_data" -> timestamp последнего клика
-        self._last_clicks: Dict[str, float] = {}
+        self._last_clicks: dict[str, float] = {}
 
     def _cleanup_old_entries(self, now: float) -> None:
         """Очищает устаревшие записи, предотвращая утечку памяти."""
@@ -64,12 +67,11 @@ class CallbackThrottleMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> Any:
         """Перехватывает CallbackQuery и отсекает спам-клики."""
-        if isinstance(event, CallbackQuery):
-            if not await self._handle_callback_throttle(event, time.time()):
-                return None
+        if isinstance(event, CallbackQuery) and not await self._handle_callback_throttle(event, time.time()):
+            return None
         return await handler(event, data)
