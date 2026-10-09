@@ -38,6 +38,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 10.2. [High-Performance Attendance Caching & Thread-Offloading Flow](#102-high-performance-attendance-caching--thread-offloading-flow)
    - 10.3. [Concurrent AI Solver Worker Pipeline with Semaphore Control](#103-concurrent-ai-solver-worker-pipeline-with-semaphore-control)
    - 10.4. [Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive](#104-multi-tier-high-performance-architecture-l1-in-memory-uvloop--grpc-keepalive)
+11. [Automated CI/CD Pipeline & Delivery Verification](#11-automated-cicd-pipeline--delivery-verification)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -2171,5 +2172,50 @@ sequenceDiagram
         Uvicorn->>Gzip: Serialize directly to JSON bytes
         Gzip-->>Client: HTTP 200 OK (Gzip Compressed, <1 ms)
     end
+```
+
+---
+
+## 11. Automated CI/CD Pipeline & Delivery Verification
+
+The automated GitHub Actions workflow (`.github/workflows/ci.yml`) enforces multi-tier quality gates on every push and pull request before code reaches the production server.
+
+```mermaid
+flowchart TD
+    GitPush(["Git Push / PR (main)"]) --> Trigger["GitHub Actions Runner (ubuntu-latest)"]
+    
+    subgraph Stage1["1. Static Analysis & Security (Python 3.12)"]
+        Ruff["Ruff Linter\n(UP, B, SIM, E, F, I)"]
+        Bandit["Bandit AST Scanner\n(pyproject.toml config)"]
+    end
+    
+    subgraph Stage2["2. Isolated Test Matrix (Strict AsyncIO)"]
+        Py311["Pytest Suite\n(Python 3.11 Runtime)"]
+        Py312["Pytest Suite\n(Python 3.12 Runtime)"]
+        EnvCI["Mock Env Loader\n(.env.ci -> .env)"]
+    end
+    
+    subgraph Stage3["3. Container Delivery Gate"]
+        DockerBuild["Docker Compose Build Matrix\n(--parallel)"]
+        SrvApi["para-api (FastAPI + gRPC)"]
+        SrvBot["para-bot (Aiogram 3.4)"]
+        SrvWorker["para-worker (Topic & Notifier)"]
+        SrvSolver["para-solver (DeepSeek Worker)"]
+    end
+    
+    Trigger --> Stage1
+    Trigger --> Stage2
+    Stage1 --> Stage3
+    Stage2 --> Stage3
+    
+    EnvCI --> Py311
+    EnvCI --> Py312
+    
+    DockerBuild --> SrvApi
+    DockerBuild --> SrvBot
+    DockerBuild --> SrvWorker
+    DockerBuild --> SrvSolver
+    
+    Stage3 --> Success(["✅ Deployment Verified (Production Ready)"])
 ```
 
