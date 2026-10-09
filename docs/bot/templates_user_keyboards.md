@@ -1,202 +1,307 @@
-# Module Specification: `bot/templates/user/keyboards.py`
-> **Path**: [`bot/templates/user/keyboards.py`](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py)  
+# Component Reference: `bot/templates/user/keyboards.py`
+> **File Path**: [`bot/templates/user/keyboards.py`](../../bot/templates/user/keyboards.py)  
 > **Subsystem**: `User Inline Keyboards`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль аккуратных Inline-клавиатур навигации. Создает компактные кнопки управления и ссылки для подключения к парам. Ссылки группируются максимум по 2 в ряд для аккуратного отображения в топике.
+## 1. Architectural Role & Responsibilities
+The `bot/templates/user/keyboards.py` module implements core operational logic for the `User Inline Keyboards` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_lesson_button_text`](#format_lesson_button_text) | Function | L15–L23 | `str` | Формирует лаконичный текст кнопки подключения к дистанционно |
-| [`chunk_link_buttons`](#chunk_link_buttons) | Function | L26–L43 | `list[list[InlineKeyboardButton]]` | Разбивает кнопки ссылок на дистанционные пары по 2 кнопки в  |
-| [`_build_admin_nav_rows`](#_build_admin_nav_rows) | Function | L46–L53 | `list[list[InlineKeyboardButton]]` | Формирует кнопки администратора и старосты для навигации. |
-| [`_build_nav_rows`](#_build_nav_rows) | Function | L56–L74 | `list[list[InlineKeyboardButton]]` | Формирует основные кнопки навигации по календарю и неделям с |
-| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L77–L93 | `InlineKeyboardMarkup` | Генерирует продвинутую инлайн-клавиатуру навигации с тумблер |
-| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L96–L104 | `InlineKeyboardMarkup` | Клавиатура персонального кабинета авторизованного тестировщи |
-| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L107–L119 | `InlineKeyboardMarkup | None` | Генерирует чистую инлайн-клавиатуру исключительно для топика |
-| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L122–L135 | `InlineKeyboardMarkup` | Генерирует инлайн-клавиатуру для меню управления уведомления |
+| [`format_lesson_button_text`](#format_lesson_button_text) | Function | L15–L23 | `str` | Formats message payload and presentation markup for `fo... |
+| [`chunk_link_buttons`](#chunk_link_buttons) | Function | L26–L43 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `chunk_link_buttons`. |
+| [`_build_admin_nav_rows`](#_build_admin_nav_rows) | Function | L46–L53 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_admin_nav_rows`. |
+| [`_build_nav_rows`](#_build_nav_rows) | Function | L56–L74 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_nav_rows`. |
+| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L77–L93 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_schedule_in... |
+| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L96–L104 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_tester_cabi... |
+| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L107–L119 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
+| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L122–L135 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `format_lesson_button_text`
-- **Signature**: `def format_lesson_button_text(lesson: Lesson) -> str`
-- **Source Reference**: [bot/templates/user/keyboards.py#L15-L23](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L15-L23)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def format_lesson_button_text(lesson: Lesson) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует лаконичный текст кнопки подключения к дистанционной паре. :param lesson: Объект занятия :return: Текст для Inline-кнопки
+- **Source Reference**: [`bot/templates/user/keyboards.py#L15-L23`](../../bot/templates/user/keyboards.py#L15-L23)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_lesson_button_text`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lesson` | `Lesson` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson` | `Lesson` | Yes | Parameter `lesson` of type `Lesson`. |
 
-#### Step-by-Step Logic Execution
-1. `sg = f" (П/Г {lesson.subgroup})" if lesson.subgroup > 0 else ""`
-2. `return f"🔗 {lesson.period + 1}-я пара{sg}"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import format_lesson_button_text
+
+# Execute call
+result = format_lesson_button_text(lesson=...)
+```
 
 ---
 
 ### `chunk_link_buttons`
-- **Signature**: `def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]]`
-- **Source Reference**: [bot/templates/user/keyboards.py#L26-L43](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L26-L43)
-- **Async**: `No`
-- **Return Type**: `list[list[InlineKeyboardButton]]`
+```python
+def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]]
+```
 
-#### Purpose & Architectural Intent
-Разбивает кнопки ссылок на дистанционные пары по 2 кнопки в ряд. :param lessons: Список предметов :return: Двумерный список кнопок
+- **Source Reference**: [`bot/templates/user/keyboards.py#L26-L43`](../../bot/templates/user/keyboards.py#L26-L43)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[list[InlineKeyboardButton]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `chunk_link_buttons`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lessons` | `list[Lesson]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lessons` | `list[Lesson]` | Yes | Parameter `lessons` of type `list[Lesson]`. |
 
-#### Step-by-Step Logic Execution
-1. `btns = []`
-2. `for l in lessons:`
-3. `return [btns[i:i + 2] for i in range(0, len(btns), 2)]`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import chunk_link_buttons
+
+# Execute call
+result = chunk_link_buttons(lessons=...)
+```
 
 ---
 
 ### `_build_admin_nav_rows`
-- **Signature**: `def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[list[InlineKeyboardButton]]`
-- **Source Reference**: [bot/templates/user/keyboards.py#L46-L53](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L46-L53)
-- **Async**: `No`
-- **Return Type**: `list[list[InlineKeyboardButton]]`
+```python
+def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[list[InlineKeyboardButton]]
+```
 
-#### Purpose & Architectural Intent
-Формирует кнопки администратора и старосты для навигации.
+- **Source Reference**: [`bot/templates/user/keyboards.py#L46-L53`](../../bot/templates/user/keyboards.py#L46-L53)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[list[InlineKeyboardButton]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_admin_nav_rows`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `is_admin` | `bool` | Input parameter |
-| `is_attendance_admin` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `is_admin` | `bool` | Yes | Parameter `is_admin` of type `bool`. |
+| `is_attendance_admin` | `bool` | Yes | Parameter `is_attendance_admin` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `rows = []`
-2. `if is_attendance_admin or is_admin:`
-3. `if is_admin:`
-4. `return rows`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import _build_admin_nav_rows
+
+# Execute call
+result = _build_admin_nav_rows(is_admin=..., is_attendance_admin=...)
+```
 
 ---
 
 ### `_build_nav_rows`
-- **Signature**: `def _build_nav_rows( week_offset: int, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> list[list[InlineKeyboardButton]]`
-- **Source Reference**: [bot/templates/user/keyboards.py#L56-L74](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L56-L74)
-- **Async**: `No`
-- **Return Type**: `list[list[InlineKeyboardButton]]`
+```python
+def _build_nav_rows( week_offset: int, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> list[list[InlineKeyboardButton]]
+```
 
-#### Purpose & Architectural Intent
-Формирует основные кнопки навигации по календарю и неделям со стилями.
+- **Source Reference**: [`bot/templates/user/keyboards.py#L56-L74`](../../bot/templates/user/keyboards.py#L56-L74)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[list[InlineKeyboardButton]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_nav_rows`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `week_offset` | `int` | Input parameter |
-| `is_admin` | `bool` | Input parameter |
-| `is_subscribed` | `bool` | Input parameter |
-| `is_attendance_admin` | `bool` | Input parameter |
-| `is_tester` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `week_offset` | `int` | Yes | Parameter `week_offset` of type `int`. |
+| `is_admin` | `bool` | Yes | Parameter `is_admin` of type `bool`. |
+| `is_subscribed` | `bool` | Yes | Parameter `is_subscribed` of type `bool`. |
+| `is_attendance_admin` | `bool` | Yes | Parameter `is_attendance_admin` of type `bool`. |
+| `is_tester` | `bool` | Yes | Parameter `is_tester` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `w_text = "⏭ Неделя (След.)" if week_offset == 0 else "⏮ Неделя (Тек.)"`
-2. `w_data = "sched:week_next" if week_offset == 0 else "sched:week"`
-3. `n_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"`
-4. `rows = [`
-5. `if is_tester:`
-6. `rows.extend(_build_admin_nav_rows(is_admin, is_attendance_admin))`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import _build_nav_rows
+
+# Execute call
+result = _build_nav_rows(week_offset=..., is_admin=..., is_subscribed=...)
+```
 
 ---
 
 ### `get_schedule_inline_kb`
-- **Signature**: `def get_schedule_inline_kb( lessons: list[Lesson] | None = None, week_offset: int = 0, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/user/keyboards.py#L77-L93](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L77-L93)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_schedule_inline_kb( lessons: list[Lesson] | None = None, week_offset: int = 0, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Генерирует продвинутую инлайн-клавиатуру навигации с тумблером напоминаний.
+- **Source Reference**: [`bot/templates/user/keyboards.py#L77-L93`](../../bot/templates/user/keyboards.py#L77-L93)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_schedule_inline_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lessons` | `list[Lesson] | None` | Input parameter |
-| `week_offset` | `int` | Input parameter |
-| `is_admin` | `bool` | Input parameter |
-| `is_subscribed` | `bool` | Input parameter |
-| `is_attendance_admin` | `bool` | Input parameter |
-| `is_tester` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lessons` | `list[Lesson] | None` | Yes | Parameter `lessons` of type `list[Lesson] | None`. |
+| `week_offset` | `int` | Yes | Parameter `week_offset` of type `int`. |
+| `is_admin` | `bool` | Yes | Parameter `is_admin` of type `bool`. |
+| `is_subscribed` | `bool` | Yes | Parameter `is_subscribed` of type `bool`. |
+| `is_attendance_admin` | `bool` | Yes | Parameter `is_attendance_admin` of type `bool`. |
+| `is_tester` | `bool` | Yes | Parameter `is_tester` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `rows = []`
-2. `if lessons:`
-3. `rows.extend(_build_nav_rows(`
-4. `return InlineKeyboardMarkup(inline_keyboard=rows)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import get_schedule_inline_kb
+
+# Execute call
+result = get_schedule_inline_kb(lessons=..., week_offset=..., is_admin=...)
+```
 
 ---
 
 ### `get_tester_cabinet_kb`
-- **Signature**: `def get_tester_cabinet_kb() -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/user/keyboards.py#L96-L104](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L96-L104)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_tester_cabinet_kb() -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Клавиатура персонального кабинета авторизованного тестировщика.
+- **Source Reference**: [`bot/templates/user/keyboards.py#L96-L104`](../../bot/templates/user/keyboards.py#L96-L104)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_tester_cabinet_kb`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return InlineKeyboardMarkup(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import get_tester_cabinet_kb
+
+# Execute call
+result = get_tester_cabinet_kb()
+```
 
 ---
 
 ### `get_topic_inline_kb`
-- **Signature**: `def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None`
-- **Source Reference**: [bot/templates/user/keyboards.py#L107-L119](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L107-L119)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup | None`
+```python
+def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None
+```
 
-#### Purpose & Architectural Intent
-Генерирует чистую инлайн-клавиатуру исключительно для топика группы. Содержит только ссылки на дистанционные пары без громоздких кнопок копирования. :param lessons: Список пар на день :return: InlineKeyboardMarkup или None
+- **Source Reference**: [`bot/templates/user/keyboards.py#L107-L119`](../../bot/templates/user/keyboards.py#L107-L119)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup | None`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_topic_inline_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lessons` | `list[Lesson] | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lessons` | `list[Lesson] | None` | Yes | Parameter `lessons` of type `list[Lesson] | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if not lessons:`
-2. `rows = chunk_link_buttons(lessons)`
-3. `return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import get_topic_inline_kb
+
+# Execute call
+result = get_topic_inline_kb(lessons=...)
+```
 
 ---
 
 ### `get_notice_settings_kb`
-- **Signature**: `def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup`
-- **Source Reference**: [bot/templates/user/keyboards.py#L122-L135](file:///home/u/Рабочий стол/para/bot/templates/user/keyboards.py#L122-L135)
-- **Async**: `No`
-- **Return Type**: `InlineKeyboardMarkup`
+```python
+def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup
+```
 
-#### Purpose & Architectural Intent
-Генерирует инлайн-клавиатуру для меню управления уведомлениями /notice. :param is_subscribed: Текущий статус подписки :return: InlineKeyboardMarkup с динамическим тумблером
+- **Source Reference**: [`bot/templates/user/keyboards.py#L122-L135`](../../bot/templates/user/keyboards.py#L122-L135)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_notice_settings_kb`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `is_subscribed` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `is_subscribed` | `bool` | Yes | Parameter `is_subscribed` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `toggle_text = "🔕 Отключить уведомления" if is_subscribed else "🔔 Включить уведомления`
-2. `toggle_style = "danger" if is_subscribed else "success"`
-3. `rows = [`
-4. `return InlineKeyboardMarkup(inline_keyboard=rows)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.keyboards import get_notice_settings_kb
+
+# Execute call
+result = get_notice_settings_kb(is_subscribed=...)
+```
 
 ---

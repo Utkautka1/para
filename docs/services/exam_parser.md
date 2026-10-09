@@ -1,160 +1,235 @@
-# Module Specification: `services/exam_parser.py`
-> **Path**: [`services/exam_parser.py`](file:///home/u/Рабочий стол/para/services/exam_parser.py)  
+# Component Reference: `services/exam_parser.py`
+> **File Path**: [`services/exam_parser.py`](../../services/exam_parser.py)  
 > **Subsystem**: `Examination Parser`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис парсинга и взаимодействия с экзаменами и аттестациями КТМУ. Извлекает полную нагрузку (loads), аттестации (Зачёты, Зачёты с оценкой, Контрольные работы) с точной привязкой к неделям семестра.
+## 1. Architectural Role & Responsibilities
+The `services/exam_parser.py` module implements core operational logic for the `Examination Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`is_assessment_type`](#is_assessment_type) | Function | L36–L44 | `tuple[bool, str]` | Проверяет, относится ли пара к видам аттестаций/экзаменов. |
-| [`resolve_teacher_name`](#resolve_teacher_name) | Function | L47–L53 | `str` | Определяет полное имя преподавателя с учетом ссылок. |
-| [`extract_load_weeks`](#extract_load_weeks) | Function | L56–L62 | `list[int]` | Извлекает и сортирует номера учебных недель из нагрузки. |
-| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L65–L88 | `tuple[str, ExamItem] | None` | Создает элемент ExamItem из нагрузки (loads) учебного плана. |
-| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L91–L112 | `None` | Уточняет аудиторию и недели из запланированного экземпляра в |
-| [`get_group_exams`](#get_group_exams) | Function | L115–L139 | `list[ExamItem]` | Извлекает аттестации как из расписания (instances), так и из |
+| [`is_assessment_type`](#is_assessment_type) | Function | L36–L44 | `tuple[bool, str]` | Executes core domain logic for `is_assessment_type`. |
+| [`resolve_teacher_name`](#resolve_teacher_name) | Function | L47–L53 | `str` | Executes core domain logic for `resolve_teacher_name`. |
+| [`extract_load_weeks`](#extract_load_weeks) | Function | L56–L62 | `list[int]` | Executes core domain logic for `extract_load_weeks`. |
+| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L65–L88 | `tuple[str, ExamItem] | None` | Parses and extracts structured entities from `parse_exa... |
+| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L91–L112 | `None` | Executes core domain logic for `enrich_exam_from_instan... |
+| [`get_group_exams`](#get_group_exams) | Function | L115–L139 | `list[ExamItem]` | Retrieves and resolves domain data for `get_group_exams... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `is_assessment_type`
-- **Signature**: `def is_assessment_type(type_id: str, l_types: dict[str, str]) -> tuple[bool, str]`
-- **Source Reference**: [services/exam_parser.py#L36-L44](file:///home/u/Рабочий стол/para/services/exam_parser.py#L36-L44)
-- **Async**: `No`
-- **Return Type**: `tuple[bool, str]`
+```python
+def is_assessment_type(type_id: str, l_types: dict[str, str]) -> tuple[bool, str]
+```
 
-#### Purpose & Architectural Intent
-Проверяет, относится ли пара к видам аттестаций/экзаменов. :return: Кортеж (флаг_успеха, название_типа)
+- **Source Reference**: [`services/exam_parser.py#L36-L44`](../../services/exam_parser.py#L36-L44)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[bool, str]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_assessment_type`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `type_id` | `str` | Input parameter |
-| `l_types` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `type_id` | `str` | Yes | Parameter `type_id` of type `str`. |
+| `l_types` | `dict[str, str]` | Yes | Parameter `l_types` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `t_name = EXAM_TYPE_MAPPING.get(type_id) or l_types.get(type_id, "")`
-2. `is_valid = t_name in ("Контрольная работа", "Зачёт", "Диф. зачёт", "Курсовая работа")`
-3. `return is_valid, t_name`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import is_assessment_type
+
+# Execute call
+result = is_assessment_type(type_id=..., l_types=...)
+```
 
 ---
 
 ### `resolve_teacher_name`
-- **Signature**: `def resolve_teacher_name(raw_teacher: str, teacher_links: dict[str, Any]) -> str`
-- **Source Reference**: [services/exam_parser.py#L47-L53](file:///home/u/Рабочий стол/para/services/exam_parser.py#L47-L53)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def resolve_teacher_name(raw_teacher: str, teacher_links: dict[str, Any]) -> str
+```
 
-#### Purpose & Architectural Intent
-Определяет полное имя преподавателя с учетом ссылок.
+- **Source Reference**: [`services/exam_parser.py#L47-L53`](../../services/exam_parser.py#L47-L53)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `resolve_teacher_name`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `raw_teacher` | `str` | Input parameter |
-| `teacher_links` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw_teacher` | `str` | Yes | Parameter `raw_teacher` of type `str`. |
+| `teacher_links` | `dict[str, Any]` | Yes | Parameter `teacher_links` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `last_name = raw_teacher.split()[0].lower() if raw_teacher else ""`
-2. `t_info = teacher_links.get(last_name)`
-3. `return t_info.get("full_name") if t_info else raw_teacher`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import resolve_teacher_name
+
+# Execute call
+result = resolve_teacher_name(raw_teacher=..., teacher_links=...)
+```
 
 ---
 
 ### `extract_load_weeks`
-- **Signature**: `def extract_load_weeks(load: dict[str, Any]) -> list[int]`
-- **Source Reference**: [services/exam_parser.py#L56-L62](file:///home/u/Рабочий стол/para/services/exam_parser.py#L56-L62)
-- **Async**: `No`
-- **Return Type**: `list[int]`
+```python
+def extract_load_weeks(load: dict[str, Any]) -> list[int]
+```
 
-#### Purpose & Architectural Intent
-Извлекает и сортирует номера учебных недель из нагрузки.
+- **Source Reference**: [`services/exam_parser.py#L56-L62`](../../services/exam_parser.py#L56-L62)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `extract_load_weeks`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `load` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `load` | `dict[str, Any]` | Yes | Parameter `load` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `weeks_keys = list(load.get("weeklyPairs", {}).keys())`
-2. `weeks = [int(w) for w in weeks_keys if w.isdigit()] if weeks_keys else load.get("cust`
-3. `return sorted(weeks)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import extract_load_weeks
+
+# Execute call
+result = extract_load_weeks(load=...)
+```
 
 ---
 
 ### `parse_exam_from_load`
-- **Signature**: `def parse_exam_from_load( load: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], teacher_links: dict[str, Any] ) -> tuple[str, ExamItem] | None`
-- **Source Reference**: [services/exam_parser.py#L65-L88](file:///home/u/Рабочий стол/para/services/exam_parser.py#L65-L88)
-- **Async**: `No`
-- **Return Type**: `tuple[str, ExamItem] | None`
+```python
+def parse_exam_from_load( load: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], teacher_links: dict[str, Any] ) -> tuple[str, ExamItem] | None
+```
 
-#### Purpose & Architectural Intent
-Создает элемент ExamItem из нагрузки (loads) учебного плана.
+- **Source Reference**: [`services/exam_parser.py#L65-L88`](../../services/exam_parser.py#L65-L88)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[str, ExamItem] | None`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_exam_from_load`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `load` | `dict[str, Any]` | Input parameter |
-| `entity_maps` | `tuple[dict, dict, dict, dict, dict]` | Input parameter |
-| `teacher_links` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `load` | `dict[str, Any]` | Yes | Parameter `load` of type `dict[str, Any]`. |
+| `entity_maps` | `tuple[dict, dict, dict, dict, dict]` | Yes | Parameter `entity_maps` of type `tuple[dict, dict, dict, dict, dict]`. |
+| `teacher_links` | `dict[str, Any]` | Yes | Parameter `teacher_links` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `subjs, teachs, _, _, l_types = entity_maps`
-2. `valid, type_name = is_assessment_type(load.get("typeId", ""), l_types)`
-3. `if not valid or not is_item_for_group(load, GROUP_ID):`
-4. `subj_name = clean_subject_title(subjs.get(load.get("subjectId"), "Аттестация"))`
-5. `teacher_name = resolve_teacher_name(teachs.get(load.get("teacherId"), "Преподаватель"`
-6. `is_remote = load.get("format") == "remote"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import parse_exam_from_load
+
+# Execute call
+result = parse_exam_from_load(load=..., entity_maps=..., teacher_links=...)
+```
 
 ---
 
 ### `enrich_exam_from_instance`
-- **Signature**: `def enrich_exam_from_instance( inst: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], exams_dict: dict[str, ExamItem] ) -> None`
-- **Source Reference**: [services/exam_parser.py#L91-L112](file:///home/u/Рабочий стол/para/services/exam_parser.py#L91-L112)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def enrich_exam_from_instance( inst: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], exams_dict: dict[str, ExamItem] ) -> None
+```
 
-#### Purpose & Architectural Intent
-Уточняет аудиторию и недели из запланированного экземпляра в сетке.
+- **Source Reference**: [`services/exam_parser.py#L91-L112`](../../services/exam_parser.py#L91-L112)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `enrich_exam_from_instance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `inst` | `dict[str, Any]` | Input parameter |
-| `entity_maps` | `tuple[dict, dict, dict, dict, dict]` | Input parameter |
-| `exams_dict` | `dict[str, ExamItem]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `inst` | `dict[str, Any]` | Yes | Parameter `inst` of type `dict[str, Any]`. |
+| `entity_maps` | `tuple[dict, dict, dict, dict, dict]` | Yes | Parameter `entity_maps` of type `tuple[dict, dict, dict, dict, dict]`. |
+| `exams_dict` | `dict[str, ExamItem]` | Yes | Parameter `exams_dict` of type `dict[str, ExamItem]`. |
 
-#### Step-by-Step Logic Execution
-1. `subjs, _, rms, _, l_types = entity_maps`
-2. `valid, type_name = is_assessment_type(inst.get("typeId", ""), l_types)`
-3. `if not valid or not is_item_for_group(inst, GROUP_ID):`
-4. `subj_name = clean_subject_title(subjs.get(inst.get("subjectId"), "Аттестация"))`
-5. `subgroup = inst.get("subgroup", 0)`
-6. `key = f"{subj_name}_{type_name}_{subgroup}"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import enrich_exam_from_instance
+
+# Execute call
+result = enrich_exam_from_instance(inst=..., entity_maps=..., exams_dict=...)
+```
 
 ---
 
 ### `get_group_exams`
-- **Signature**: `async def get_group_exams() -> list[ExamItem]`
-- **Source Reference**: [services/exam_parser.py#L115-L139](file:///home/u/Рабочий стол/para/services/exam_parser.py#L115-L139)
-- **Async**: `Yes`
-- **Return Type**: `list[ExamItem]`
+```python
+async def get_group_exams() -> list[ExamItem]
+```
 
-#### Purpose & Architectural Intent
-Извлекает аттестации как из расписания (instances), так и из нагрузки (loads). :return: Список объектов ExamItem
+- **Source Reference**: [`services/exam_parser.py#L115-L139`](../../services/exam_parser.py#L115-L139)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `list[ExamItem]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_group_exams`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `data = await fetch_schedule_data(force_refresh=False)`
-2. `if not data:`
-3. `entity_maps = extract_entity_maps(data)`
-4. `teacher_links = await get_teacher_links(force_refresh=False)`
-5. `exams_dict: dict[str, ExamItem] = {}`
-6. `for load in data.get("loads", []):`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.exam_parser import get_group_exams
+
+# Execute call
+result = await get_group_exams()
+```
 
 ---

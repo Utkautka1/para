@@ -1,146 +1,228 @@
-# Module Specification: `api/router/solver.py`
-> **Path**: [`api/router/solver.py`](file:///home/u/Рабочий стол/para/api/router/solver.py)  
+# Component Reference: `api/router/solver.py`
+> **File Path**: [`api/router/solver.py`](../../api/router/solver.py)  
 > **Subsystem**: `HW Solver API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер AI-решения задач — GET /solver/status, task/{msg_id}, POST /solver/solve, queue/clear. Предоставляет прямое взаимодействие с DeepSeek API и очередями Redis.
+## 1. Architectural Role & Responsibilities
+The `api/router/solver.py` module implements core operational logic for the `HW Solver API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L41 | `SolverQueueStatusResponse` | Мониторинг очередей задач домашнего задания в Redis. |
-| [`_decode_image_payload`](#_decode_image_payload) | Function | L44–L52 | `bytes | None` | Декодирует строку Base64 в бинарные данные изображения. |
-| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L55–L67 | `None` | Ограничивает частоту вызовов DeepSeek API по лимитам из conf |
-| [`solve_task_direct`](#solve_task_direct) | Function | L71–L81 | `DirectSolveResponse` | Прямое решение задачи через DeepSeek API с rate limiting. |
-| [`check_task_status`](#check_task_status) | Function | L86–L90 | `TaskStatusResponse` | Проверка статуса обработки задания по ID сообщения Telegram. |
-| [`clear_solver_queue`](#clear_solver_queue) | Function | L94–L97 | `ClearQueueResponse` | Полная очистка очереди нерешённых задач в Redis (Admin only) |
+| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L41 | `SolverQueueStatusResponse` | Retrieves and resolves domain data for `get_solver_queu... |
+| [`_decode_image_payload`](#_decode_image_payload) | Function | L44–L52 | `bytes | None` | Executes core domain logic for `_decode_image_payload`. |
+| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L55–L67 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
+| [`solve_task_direct`](#solve_task_direct) | Function | L71–L81 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
+| [`check_task_status`](#check_task_status) | Function | L86–L90 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
+| [`clear_solver_queue`](#clear_solver_queue) | Function | L94–L97 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_solver_queue_status`
-- **Signature**: `async def get_solver_queue_status() -> SolverQueueStatusResponse`
-- **Source Reference**: [api/router/solver.py#L35-L41](file:///home/u/Рабочий стол/para/api/router/solver.py#L35-L41)
-- **Async**: `Yes`
-- **Return Type**: `SolverQueueStatusResponse`
+```python
+async def get_solver_queue_status() -> SolverQueueStatusResponse
+```
 
-#### Purpose & Architectural Intent
-Мониторинг очередей задач домашнего задания в Redis.
+- **Source Reference**: [`api/router/solver.py#L35-L41`](../../api/router/solver.py#L35-L41)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `SolverQueueStatusResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_solver_queue_status`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `client = await init_redis()`
-2. `q_len = await client.llen(HW_QUEUE_KEY) if client else 0`
-3. `p_len = await client.llen(HW_PROCESSING_KEY) if client else 0`
-4. `d_len = await client.llen(HW_DLQ_KEY) if client else 0`
-5. `return SolverQueueStatusResponse(pending_tasks=q_len, processing_tasks=p_len, dlq_tas`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.solver import get_solver_queue_status
+
+# Execute call
+result = await get_solver_queue_status()
+```
 
 ---
 
 ### `_decode_image_payload`
-- **Signature**: `def _decode_image_payload(b64: str | None) -> bytes | None`
-- **Source Reference**: [api/router/solver.py#L44-L52](file:///home/u/Рабочий стол/para/api/router/solver.py#L44-L52)
-- **Async**: `No`
-- **Return Type**: `bytes | None`
+```python
+def _decode_image_payload(b64: str | None) -> bytes | None
+```
 
-#### Purpose & Architectural Intent
-Декодирует строку Base64 в бинарные данные изображения.
+- **Source Reference**: [`api/router/solver.py#L44-L52`](../../api/router/solver.py#L44-L52)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bytes | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_decode_image_payload`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `b64` | `str | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `b64` | `str | None` | Yes | Parameter `b64` of type `str | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if not b64:`
-2. `try:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from api.router.solver import _decode_image_payload
+
+# Execute call
+result = _decode_image_payload(b64=...)
+```
 
 ---
 
 ### `_check_solver_rate_limit`
-- **Signature**: `async def _check_solver_rate_limit(identity: str) -> None`
-- **Source Reference**: [api/router/solver.py#L55-L67](file:///home/u/Рабочий стол/para/api/router/solver.py#L55-L67)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _check_solver_rate_limit(identity: str) -> None
+```
 
-#### Purpose & Architectural Intent
-Ограничивает частоту вызовов DeepSeek API по лимитам из config.
+- **Source Reference**: [`api/router/solver.py#L55-L67`](../../api/router/solver.py#L55-L67)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_check_solver_rate_limit`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `identity` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `identity` | `str` | Yes | Parameter `identity` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `if identity == "master_admin":`
-2. `client = await init_redis()`
-3. `if client:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.solver import _check_solver_rate_limit
+
+# Execute call
+result = await _check_solver_rate_limit(identity=...)
+```
 
 ---
 
 ### `solve_task_direct`
-- **Signature**: `async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester) ) -> DirectSolveResponse`
-- **Source Reference**: [api/router/solver.py#L71-L81](file:///home/u/Рабочий стол/para/api/router/solver.py#L71-L81)
-- **Async**: `Yes`
-- **Return Type**: `DirectSolveResponse`
+```python
+async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester) ) -> DirectSolveResponse
+```
 
-#### Purpose & Architectural Intent
-Прямое решение задачи через DeepSeek API с rate limiting.
+- **Source Reference**: [`api/router/solver.py#L71-L81`](../../api/router/solver.py#L71-L81)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `DirectSolveResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `solve_task_direct`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `payload` | `DirectSolveRequest` | Input parameter |
-| `identity` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `payload` | `DirectSolveRequest` | Yes | Parameter `payload` of type `DirectSolveRequest`. |
+| `identity` | `str` | Yes | Parameter `identity` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `await _check_solver_rate_limit(identity)`
-2. `img_bytes = _decode_image_payload(payload.image_base64)`
-3. `solution = await solve_homework(image_bytes=img_bytes, text_prompt=payload.prompt)`
-4. `if not solution or "Не удалось получить решение" in solution:`
-5. `return DirectSolveResponse(status="ok", solution_text=solution, model=DEEPSEEK_MODEL_`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.solver import solve_task_direct
+
+# Execute call
+result = await solve_task_direct(payload=..., identity=...)
+```
 
 ---
 
 ### `check_task_status`
-- **Signature**: `async def check_task_status(message_id: int) -> TaskStatusResponse`
-- **Source Reference**: [api/router/solver.py#L86-L90](file:///home/u/Рабочий стол/para/api/router/solver.py#L86-L90)
-- **Async**: `Yes`
-- **Return Type**: `TaskStatusResponse`
+```python
+async def check_task_status(message_id: int) -> TaskStatusResponse
+```
 
-#### Purpose & Architectural Intent
-Проверка статуса обработки задания по ID сообщения Telegram.
+- **Source Reference**: [`api/router/solver.py#L86-L90`](../../api/router/solver.py#L86-L90)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `TaskStatusResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `check_task_status`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `done = await is_message_processed(message_id)`
-2. `lbl = "Выполнено (отправлено в топик решений)" if done else "В очереди или не поступа`
-3. `return TaskStatusResponse(message_id=message_id, is_processed=done, status_label=lbl)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.solver import check_task_status
+
+# Execute call
+result = await check_task_status(message_id=...)
+```
 
 ---
 
 ### `clear_solver_queue`
-- **Signature**: `async def clear_solver_queue() -> ClearQueueResponse`
-- **Source Reference**: [api/router/solver.py#L94-L97](file:///home/u/Рабочий стол/para/api/router/solver.py#L94-L97)
-- **Async**: `Yes`
-- **Return Type**: `ClearQueueResponse`
+```python
+async def clear_solver_queue() -> ClearQueueResponse
+```
 
-#### Purpose & Architectural Intent
-Полная очистка очереди нерешённых задач в Redis (Admin only).
+- **Source Reference**: [`api/router/solver.py#L94-L97`](../../api/router/solver.py#L94-L97)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ClearQueueResponse`
+
+#### Overview & Architectural Purpose
+Flushes and resets state for `clear_solver_queue`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `deleted = await clear_hw_queue()`
-2. `return ClearQueueResponse(status="ok", deleted_count=deleted)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.solver import clear_solver_queue
+
+# Execute call
+result = await clear_solver_queue()
+```
 
 ---

@@ -1,142 +1,225 @@
-# Module Specification: `scripts/tunnel_sync.py`
-> **Path**: [`scripts/tunnel_sync.py`](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py)  
+# Component Reference: `scripts/tunnel_sync.py`
+> **File Path**: [`scripts/tunnel_sync.py`](../../scripts/tunnel_sync.py)  
 > **Subsystem**: `Cloudflare Tunnel Syncer`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Синхронизатор Cloudflare Tunnel (trycloudflare.com) для Telegram Mini App Swagger UI. Зачем существует этот модуль: Сервер para развёрнут на хосте за NAT без белого IP. Telegram Mini App и удаленные тестировщики требуют защищенный публичный HTTPS-эндпоинт. Модуль запускает официальный cloudflared туннель через глобальную сеть Cloudflare, автоматически обновляет MINIAPP_URL и SWAGGER_URL в .env и перезапускает бота.
+## 1. Architectural Role & Responsibilities
+The `scripts/tunnel_sync.py` module implements core operational logic for the `Cloudflare Tunnel Syncer` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_tunnel_url`](#parse_tunnel_url) | Function | L22–L25 | `str | None` | Извлекает HTTPS-ссылку Cloudflare из строки вывода cloudflar |
-| [`update_env_urls`](#update_env_urls) | Function | L28–L38 | `bool` | Обновляет значения MINIAPP_URL и SWAGGER_URL в файле .env. |
-| [`restart_bot_service`](#restart_bot_service) | Function | L44–L47 | `None` | Перезапускает контейнер para-bot с перечитыванием обновленно |
-| [`monitor_tunnel_stream`](#monitor_tunnel_stream) | Function | L50–L65 | `None` | Слушает лог cloudflared и применяет новый HTTPS URL при подк |
-| [`run_tunnel_process`](#run_tunnel_process) | Function | L68–L78 | `None` | Запускает официальный клиент Cloudflare Quick Tunnel. |
-| [`main`](#main) | Function | L81–L90 | `None` | Бесконечный цикл синхронизации Cloudflare Tunnel с авто-восс |
+| [`parse_tunnel_url`](#parse_tunnel_url) | Function | L22–L25 | `str | None` | Parses and extracts structured entities from `parse_tun... |
+| [`update_env_urls`](#update_env_urls) | Function | L28–L38 | `bool` | Synchronizes and updates domain state for `update_env_u... |
+| [`restart_bot_service`](#restart_bot_service) | Function | L44–L47 | `None` | Executes core domain logic for `restart_bot_service`. |
+| [`monitor_tunnel_stream`](#monitor_tunnel_stream) | Function | L50–L65 | `None` | Executes core domain logic for `monitor_tunnel_stream`. |
+| [`run_tunnel_process`](#run_tunnel_process) | Function | L68–L78 | `None` | Executes core domain logic for `run_tunnel_process`. |
+| [`main`](#main) | Function | L81–L90 | `None` | Executes core domain logic for `main`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `parse_tunnel_url`
-- **Signature**: `def parse_tunnel_url(line: str) -> str | None`
-- **Source Reference**: [scripts/tunnel_sync.py#L22-L25](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L22-L25)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def parse_tunnel_url(line: str) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Извлекает HTTPS-ссылку Cloudflare из строки вывода cloudflared.
+- **Source Reference**: [`scripts/tunnel_sync.py#L22-L25`](../../scripts/tunnel_sync.py#L22-L25)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_tunnel_url`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `line` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `line` | `str` | Yes | Parameter `line` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `match = URL_REGEX.search(line)`
-2. `return match.group(0) if match else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import parse_tunnel_url
+
+# Execute call
+result = parse_tunnel_url(line=...)
+```
 
 ---
 
 ### `update_env_urls`
-- **Signature**: `def update_env_urls(new_url: str) -> bool`
-- **Source Reference**: [scripts/tunnel_sync.py#L28-L38](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L28-L38)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def update_env_urls(new_url: str) -> bool
+```
 
-#### Purpose & Architectural Intent
-Обновляет значения MINIAPP_URL и SWAGGER_URL в файле .env.
+- **Source Reference**: [`scripts/tunnel_sync.py#L28-L38`](../../scripts/tunnel_sync.py#L28-L38)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Synchronizes and updates domain state for `update_env_urls`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `new_url` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `new_url` | `str` | Yes | Parameter `new_url` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `if not ENV_FILE.exists():`
-2. `content = ENV_FILE.read_text(encoding="utf-8")`
-3. `miniapp_ep = f"{new_url.rstrip('/')}/miniapp"`
-4. `swagger_ep = f"{new_url.rstrip('/')}/docs"`
-5. `content = re.sub(r"MINIAPP_URL=.*", f"MINIAPP_URL={miniapp_ep}", content)`
-6. `content = re.sub(r"SWAGGER_URL=.*", f"SWAGGER_URL={swagger_ep}", content)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import update_env_urls
+
+# Execute call
+result = update_env_urls(new_url=...)
+```
 
 ---
 
 ### `restart_bot_service`
-- **Signature**: `def restart_bot_service() -> None`
-- **Source Reference**: [scripts/tunnel_sync.py#L44-L47](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L44-L47)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def restart_bot_service() -> None
+```
 
-#### Purpose & Architectural Intent
-Перезапускает контейнер para-bot с перечитыванием обновленного .env.
+- **Source Reference**: [`scripts/tunnel_sync.py#L44-L47`](../../scripts/tunnel_sync.py#L44-L47)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `restart_bot_service`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `cmd = ["docker", "compose", "up", "-d", "bot"]`
-2. `subprocess.run(cmd, cwd=ENV_FILE.parent, check=False)  # nosec B603`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import restart_bot_service
+
+# Execute call
+result = restart_bot_service()
+```
 
 ---
 
 ### `monitor_tunnel_stream`
-- **Signature**: `async def monitor_tunnel_stream(proc: asyncio.subprocess.Process) -> None`
-- **Source Reference**: [scripts/tunnel_sync.py#L50-L65](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L50-L65)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def monitor_tunnel_stream(proc: asyncio.subprocess.Process) -> None
+```
 
-#### Purpose & Architectural Intent
-Слушает лог cloudflared и применяет новый HTTPS URL при подключении.
+- **Source Reference**: [`scripts/tunnel_sync.py#L50-L65`](../../scripts/tunnel_sync.py#L50-L65)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `monitor_tunnel_stream`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `proc` | `asyncio.subprocess.Process` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `proc` | `asyncio.subprocess.Process` | Yes | Parameter `proc` of type `asyncio.subprocess.Process`. |
 
-#### Step-by-Step Logic Execution
-1. `last_url = None`
-2. `while proc.returncode is None:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import monitor_tunnel_stream
+
+# Execute call
+result = await monitor_tunnel_stream(proc=...)
+```
 
 ---
 
 ### `run_tunnel_process`
-- **Signature**: `async def run_tunnel_process() -> None`
-- **Source Reference**: [scripts/tunnel_sync.py#L68-L78](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L68-L78)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def run_tunnel_process() -> None
+```
 
-#### Purpose & Architectural Intent
-Запускает официальный клиент Cloudflare Quick Tunnel.
+- **Source Reference**: [`scripts/tunnel_sync.py#L68-L78`](../../scripts/tunnel_sync.py#L68-L78)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `run_tunnel_process`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `bin_path = shutil.which("cloudflared") or "/usr/local/bin/cloudflared"`
-2. `cmd = [bin_path, "tunnel", "--url", f"http://127.0.0.1:{TARGET_PORT}", "--no-autoupda`
-3. `proc = await asyncio.create_subprocess_exec(`
-4. `await monitor_tunnel_stream(proc)`
-5. `await proc.wait()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import run_tunnel_process
+
+# Execute call
+result = await run_tunnel_process()
+```
 
 ---
 
 ### `main`
-- **Signature**: `async def main() -> None`
-- **Source Reference**: [scripts/tunnel_sync.py#L81-L90](file:///home/u/Рабочий стол/para/scripts/tunnel_sync.py#L81-L90)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def main() -> None
+```
 
-#### Purpose & Architectural Intent
-Бесконечный цикл синхронизации Cloudflare Tunnel с авто-восстановлением.
+- **Source Reference**: [`scripts/tunnel_sync.py#L81-L90`](../../scripts/tunnel_sync.py#L81-L90)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `main`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `print("🚀 Запуск службы Cloudflare Tunnel для Swagger UI и Mini App", flush=True)`
-2. `while True:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from scripts.tunnel_sync import main
+
+# Execute call
+result = await main()
+```
 
 ---

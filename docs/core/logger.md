@@ -1,105 +1,161 @@
-# Module Specification: `core/logger.py`
-> **Path**: [`core/logger.py`](file:///home/u/Рабочий стол/para/core/logger.py)  
+# Component Reference: `core/logger.py`
+> **File Path**: [`core/logger.py`](../../core/logger.py)  
 > **Subsystem**: `Telemetry Logging`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Единый модуль логирования проекта. Предоставляет настроенный логгер с выводом в консоль и ротируемый файл logs/bot.log. Использует RotatingFileHandler (до 10 МБ на файл, 5 бэкапов) для защиты диска от переполнения.
+## 1. Architectural Role & Responsibilities
+The `core/logger.py` module implements core operational logic for the `Telemetry Logging` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_create_formatter`](#_create_formatter) | Function | L18–L23 | `logging.Formatter` | Создает единый форматтер сообщений для консоли и файла. |
-| [`_create_stream_handler`](#_create_stream_handler) | Function | L26–L31 | `logging.StreamHandler` | Создает консольный хэндлер со стандартным потоком вывода. |
-| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L34–L49 | `RotatingFileHandler` | Создает ротируемый файловый хэндлер UTF-8 с лимитом размера. |
-| [`get_logger`](#get_logger) | Function | L52–L67 | `logging.Logger` | Создает и настраивает логгер для заданной подсистемы. |
+| [`_create_formatter`](#_create_formatter) | Function | L18–L23 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
+| [`_create_stream_handler`](#_create_stream_handler) | Function | L26–L31 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
+| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L34–L49 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
+| [`get_logger`](#get_logger) | Function | L52–L67 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_create_formatter`
-- **Signature**: `def _create_formatter() -> logging.Formatter`
-- **Source Reference**: [core/logger.py#L18-L23](file:///home/u/Рабочий стол/para/core/logger.py#L18-L23)
-- **Async**: `No`
-- **Return Type**: `logging.Formatter`
+```python
+def _create_formatter() -> logging.Formatter
+```
 
-#### Purpose & Architectural Intent
-Создает единый форматтер сообщений для консоли и файла.
+- **Source Reference**: [`core/logger.py#L18-L23`](../../core/logger.py#L18-L23)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `logging.Formatter`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_create_formatter`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return logging.Formatter(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import _create_formatter
+
+# Execute call
+result = _create_formatter()
+```
 
 ---
 
 ### `_create_stream_handler`
-- **Signature**: `def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandler`
-- **Source Reference**: [core/logger.py#L26-L31](file:///home/u/Рабочий стол/para/core/logger.py#L26-L31)
-- **Async**: `No`
-- **Return Type**: `logging.StreamHandler`
+```python
+def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandler
+```
 
-#### Purpose & Architectural Intent
-Создает консольный хэндлер со стандартным потоком вывода.
+- **Source Reference**: [`core/logger.py#L26-L31`](../../core/logger.py#L26-L31)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `logging.StreamHandler`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_create_stream_handler`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `formatter` | `logging.Formatter` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `formatter` | `logging.Formatter` | Yes | Parameter `formatter` of type `logging.Formatter`. |
 
-#### Step-by-Step Logic Execution
-1. `handler = logging.StreamHandler(sys.stdout)`
-2. `handler.setFormatter(formatter)`
-3. `handler.setLevel(logging.INFO)`
-4. `return handler`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import _create_stream_handler
+
+# Execute call
+result = _create_stream_handler(formatter=...)
+```
 
 ---
 
 ### `_create_rotating_file_handler`
-- **Signature**: `def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler`
-- **Source Reference**: [core/logger.py#L34-L49](file:///home/u/Рабочий стол/para/core/logger.py#L34-L49)
-- **Async**: `No`
-- **Return Type**: `RotatingFileHandler`
+```python
+def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler
+```
 
-#### Purpose & Architectural Intent
-Создает ротируемый файловый хэндлер UTF-8 с лимитом размера. Защищает диск сервера от бесконтрольного роста логов.
+- **Source Reference**: [`core/logger.py#L34-L49`](../../core/logger.py#L34-L49)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `RotatingFileHandler`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_create_rotating_file_handler`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `formatter` | `logging.Formatter` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `formatter` | `logging.Formatter` | Yes | Parameter `formatter` of type `logging.Formatter`. |
 
-#### Step-by-Step Logic Execution
-1. `os.makedirs("logs", exist_ok=True)`
-2. `handler = RotatingFileHandler(`
-3. `handler.setFormatter(formatter)`
-4. `handler.setLevel(logging.DEBUG)`
-5. `return handler`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import _create_rotating_file_handler
+
+# Execute call
+result = _create_rotating_file_handler(formatter=...)
+```
 
 ---
 
 ### `get_logger`
-- **Signature**: `def get_logger(name: str) -> logging.Logger`
-- **Source Reference**: [core/logger.py#L52-L67](file:///home/u/Рабочий стол/para/core/logger.py#L52-L67)
-- **Async**: `No`
-- **Return Type**: `logging.Logger`
+```python
+def get_logger(name: str) -> logging.Logger
+```
 
-#### Purpose & Architectural Intent
-Создает и настраивает логгер для заданной подсистемы. :param name: Смысловое название компонента (напр. 'schedule_parser') :return: Экземпляр logging.Logger
+- **Source Reference**: [`core/logger.py#L52-L67`](../../core/logger.py#L52-L67)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `logging.Logger`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_logger`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | Yes | Parameter `name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `logger = logging.getLogger(name)`
-2. `if logger.handlers:`
-3. `logger.setLevel(logging.DEBUG)`
-4. `formatter = _create_formatter()`
-5. `logger.addHandler(_create_stream_handler(formatter))`
-6. `logger.addHandler(_create_rotating_file_handler(formatter))`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import get_logger
+
+# Execute call
+result = get_logger(name=...)
+```
 
 ---

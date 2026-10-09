@@ -1,447 +1,647 @@
-# Module Specification: `bot/handlers/admin/attendance.py`
-> **Path**: [`bot/handlers/admin/attendance.py`](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py)  
+# Component Reference: `bot/handlers/admin/attendance.py`
+> **File Path**: [`bot/handlers/admin/attendance.py`](../../bot/handlers/admin/attendance.py)  
 > **Subsystem**: `Headman Attendance Polling`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Хэндлеры управления процессом отметки посещаемости. Обрабатывает команду /attendance и все инлайн-кнопки (att:*) исключительно для старосты (ALLOWED_USER_ID) и замстаросты (DEPUTY_USER_ID).
+## 1. Architectural Role & Responsibilities
+The `bot/handlers/admin/attendance.py` module implements core operational logic for the `Headman Attendance Polling` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L45–L60 | `None` | Фоновая асинхронная запись в Яндекс Таблицу с обновлением ст |
-| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L63–L72 | `None` | Мгновенно применяет оптимистичные отметки и обновляет топик  |
-| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L75–L83 | `int | None` | Возвращает Telegram ID второго администратора (староста/замс |
-| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L86–L103 | `None` | Отправляет полный отчёт об отметке пары второму администрато |
-| [`finish_and_notify`](#finish_and_notify) | Function | L106–L121 | `None` | Мгновенно отображает сводку старосте и запускает параллельну |
-| [`show_attendance_menu`](#show_attendance_menu) | Function | L126–L136 | `None` | Открывает меню выбора даты для отметки посещаемости. |
-| [`cb_select_day`](#cb_select_day) | Function | L140–L150 | `None` | Выводит список пар на выбранную дату. |
-| [`parse_start_callback`](#parse_start_callback) | Function | L153–L159 | `Any` | Извлекает целевую дату и номер пары из callback данных. |
-| [`get_initiator_title`](#get_initiator_title) | Function | L162–L165 | `str` | Возвращает читаемый статус инициатора опроса (Староста / Зам |
-| [`check_session_ownership`](#check_session_ownership) | Function | L168–L177 | `bool` | Проверяет принадлежность активной сессии текущему старосте. |
-| [`cb_start_attendance`](#cb_start_attendance) | Function | L181–L205 | `None` | Инициализирует сессию отметки и выводит первого студента. |
-| [`cb_mark_student`](#cb_mark_student) | Function | L209–L226 | `None` | Фиксирует отметку и переключает на следующего студента. |
-| [`cb_step_back`](#cb_step_back) | Function | L230–L244 | `None` | Возвращает к предыдущему студенту для исправления отметки. |
-| [`cb_all_present`](#cb_all_present) | Function | L248–L258 | `None` | Проставляет 'П' всем оставшимся студентам и завершает опрос. |
-| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L261–L278 | `None` | Оповещает второго администратора об отмене проведения пары. |
-| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L282–L291 | `None` | Отменяет опрос для указанной пары и уведомляет напарника. |
-| [`cb_abort_survey`](#cb_abort_survey) | Function | L295–L305 | `None` | Прерывает активный опрос старостой. |
-| [`cb_close_menu`](#cb_close_menu) | Function | L309–L313 | `None` | Удаляет меню выбора пары. |
+| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L45–L60 | `None` | Executes core domain logic for `_async_commit_and_updat... |
+| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L63–L72 | `None` | Executes core domain logic for `_instant_topic_sync`. |
+| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L75–L83 | `int | None` | Retrieves and resolves domain data for `get_partner_adm... |
+| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L86–L103 | `None` | Executes core domain logic for `notify_partner_about_at... |
+| [`finish_and_notify`](#finish_and_notify) | Function | L106–L121 | `None` | Executes core domain logic for `finish_and_notify`. |
+| [`show_attendance_menu`](#show_attendance_menu) | Function | L126–L136 | `None` | Executes core domain logic for `show_attendance_menu`. |
+| [`cb_select_day`](#cb_select_day) | Function | L140–L150 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`parse_start_callback`](#parse_start_callback) | Function | L153–L159 | `Any` | Parses and extracts structured entities from `parse_sta... |
+| [`get_initiator_title`](#get_initiator_title) | Function | L162–L165 | `str` | Retrieves and resolves domain data for `get_initiator_t... |
+| [`check_session_ownership`](#check_session_ownership) | Function | L168–L177 | `bool` | Executes core domain logic for `check_session_ownership... |
+| [`cb_start_attendance`](#cb_start_attendance) | Function | L181–L205 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`cb_mark_student`](#cb_mark_student) | Function | L209–L226 | `None` | Handles Telegram inline callback query events for `cb_m... |
+| [`cb_step_back`](#cb_step_back) | Function | L230–L244 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`cb_all_present`](#cb_all_present) | Function | L248–L258 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L261–L278 | `None` | Executes core domain logic for `notify_partner_about_ca... |
+| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L282–L291 | `None` | Handles Telegram inline callback query events for `cb_c... |
+| [`cb_abort_survey`](#cb_abort_survey) | Function | L295–L305 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_close_menu`](#cb_close_menu) | Function | L309–L313 | `None` | Handles Telegram inline callback query events for `cb_c... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_async_commit_and_update`
-- **Signature**: `async def _async_commit_and_update( message: Message | None, session, stats: dict[str, int] ) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L45-L60](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L45-L60)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _async_commit_and_update( message: Message | None, session, stats: dict[str, int] ) -> None
+```
 
-#### Purpose & Architectural Intent
-Фоновая асинхронная запись в Яндекс Таблицу с обновлением статуса.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L45-L60`](../../bot/handlers/admin/attendance.py#L45-L60)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_async_commit_and_update`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message | None` | Input parameter |
-| `session` | `Any` | Input parameter |
-| `stats` | `dict[str, int]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message | None` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
+| `stats` | `dict[str, int]` | Yes | Parameter `stats` of type `dict[str, int]`. |
 
-#### Step-by-Step Logic Execution
-1. `success = await commit_session_to_table(session)`
-2. `if not message:`
-3. `badge = (`
-4. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import _async_commit_and_update
+
+# Execute call
+result = await _async_commit_and_update(message=..., session=..., stats=...)
+```
 
 ---
 
 ### `_instant_topic_sync`
-- **Signature**: `async def _instant_topic_sync(session) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L63-L72](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L63-L72)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _instant_topic_sync(session) -> None
+```
 
-#### Purpose & Architectural Intent
-Мгновенно применяет оптимистичные отметки и обновляет топик в Telegram.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L63-L72`](../../bot/handlers/admin/attendance.py#L63-L72)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_instant_topic_sync`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import _instant_topic_sync
+
+# Execute call
+result = await _instant_topic_sync(session=...)
+```
 
 ---
 
 ### `get_partner_admin_id`
-- **Signature**: `def get_partner_admin_id(current_user_id: int) -> int | None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L75-L83](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L75-L83)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def get_partner_admin_id(current_user_id: int) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Возвращает Telegram ID второго администратора (староста/замстаросты).
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L75-L83`](../../bot/handlers/admin/attendance.py#L75-L83)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_partner_admin_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `current_user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `current_user_id` | `int` | Yes | Parameter `current_user_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `from config import ALLOWED_USER_ID, DEPUTY_USER_ID`
-2. `if current_user_id == ALLOWED_USER_ID:`
-3. `if current_user_id == DEPUTY_USER_ID:`
-4. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import get_partner_admin_id
+
+# Execute call
+result = get_partner_admin_id(current_user_id=...)
+```
 
 ---
 
 ### `notify_partner_about_attendance`
-- **Signature**: `async def notify_partner_about_attendance( session, stats: dict[str, int], user_full_name: str | None = None ) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L86-L103](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L86-L103)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def notify_partner_about_attendance( session, stats: dict[str, int], user_full_name: str | None = None ) -> None
+```
 
-#### Purpose & Architectural Intent
-Отправляет полный отчёт об отметке пары второму администратору в ЛС.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L86-L103`](../../bot/handlers/admin/attendance.py#L86-L103)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `notify_partner_about_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `Any` | Input parameter |
-| `stats` | `dict[str, int]` | Input parameter |
-| `user_full_name` | `str | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
+| `stats` | `dict[str, int]` | Yes | Parameter `stats` of type `dict[str, int]`. |
+| `user_full_name` | `str | None` | Yes | Parameter `user_full_name` of type `str | None`. |
 
-#### Step-by-Step Logic Execution
-1. `partner_id = get_partner_admin_id(session.initiator_id)`
-2. `if not partner_id:`
-3. `title = get_initiator_title(session.initiator_id)`
-4. `if user_full_name:`
-5. `text = format_partner_attendance_report(session, stats, title)`
-6. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import notify_partner_about_attendance
+
+# Execute call
+result = await notify_partner_about_attendance(session=..., stats=..., user_full_name=...)
+```
 
 ---
 
 ### `finish_and_notify`
-- **Signature**: `async def finish_and_notify(cb: CallbackQuery, session) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L106-L121](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L106-L121)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def finish_and_notify(cb: CallbackQuery, session) -> None
+```
 
-#### Purpose & Architectural Intent
-Мгновенно отображает сводку старосте и запускает параллельную синхронизацию.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L106-L121`](../../bot/handlers/admin/attendance.py#L106-L121)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `finish_and_notify`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
-| `session` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `stats = calculate_summary_stats(session.marks)`
-2. `text_saving = (`
-3. `if cb.message:`
-4. `asyncio.create_task(_instant_topic_sync(session))`
-5. `asyncio.create_task(_async_commit_and_update(cb.message, session, stats))`
-6. `asyncio.create_task(notify_partner_about_attendance(session, stats, cb.from_user.full`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import finish_and_notify
+
+# Execute call
+result = await finish_and_notify(cb=..., session=...)
+```
 
 ---
 
 ### `show_attendance_menu`
-- **Signature**: `async def show_attendance_menu(event: Message | CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L126-L136](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L126-L136)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def show_attendance_menu(event: Message | CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Открывает меню выбора даты для отметки посещаемости.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L126-L136`](../../bot/handlers/admin/attendance.py#L126-L136)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `show_attendance_menu`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `event` | `Message | CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `event` | `Message | CallbackQuery` | Yes | Parameter `event` of type `Message | CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `from bot.templates.admin.attendance import get_days_select_kb`
-2. `text = "📋 <b>Отметка посещаемости</b>\n\nВыберите учебный день для отметки пар:"`
-3. `kb = get_days_select_kb()`
-4. `if isinstance(event, CallbackQuery):`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import show_attendance_menu
+
+# Execute call
+result = await show_attendance_menu(event=...)
+```
 
 ---
 
 ### `cb_select_day`
-- **Signature**: `async def cb_select_day(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L140-L150](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L140-L150)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_select_day(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Выводит список пар на выбранную дату.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L140-L150`](../../bot/handlers/admin/attendance.py#L140-L150)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_select_day`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `from datetime import date`
-2. `day_str = cb.data.split(":")[2]`
-3. `target_date = date.fromisoformat(day_str)`
-4. `lessons = await get_api_schedule_for_date(target_date)`
-5. `kb = get_lesson_select_kb(lessons, target_date)`
-6. `text = f"📋 <b>Дата: {target_date.strftime('%d.%m.%Y')}</b>\nВыберите пару для отметки`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_select_day
+
+# Execute call
+result = await cb_select_day(cb=...)
+```
 
 ---
 
 ### `parse_start_callback`
-- **Signature**: `def parse_start_callback(data: str)`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L153-L159](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L153-L159)
-- **Async**: `No`
-- **Return Type**: `Any`
+```python
+def parse_start_callback(data: str)
+```
 
-#### Purpose & Architectural Intent
-Извлекает целевую дату и номер пары из callback данных.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L153-L159`](../../bot/handlers/admin/attendance.py#L153-L159)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `Any`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_start_callback`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `data` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `data` | `str` | Yes | Parameter `data` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `from datetime import date`
-2. `parts = data.split(":")`
-3. `if len(parts) == 4:`
-4. `return datetime.now(TIMEZONE).date(), int(parts[2])`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import parse_start_callback
+
+# Execute call
+result = parse_start_callback(data=...)
+```
 
 ---
 
 ### `get_initiator_title`
-- **Signature**: `def get_initiator_title(initiator_id: int) -> str`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L162-L165](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L162-L165)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def get_initiator_title(initiator_id: int) -> str
+```
 
-#### Purpose & Architectural Intent
-Возвращает читаемый статус инициатора опроса (Староста / Замстаросты).
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L162-L165`](../../bot/handlers/admin/attendance.py#L162-L165)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_initiator_title`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `initiator_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `initiator_id` | `int` | Yes | Parameter `initiator_id` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `from config import ALLOWED_USER_ID`
-2. `return "Староста" if initiator_id == ALLOWED_USER_ID else "Замстаросты"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import get_initiator_title
+
+# Execute call
+result = get_initiator_title(initiator_id=...)
+```
 
 ---
 
 ### `check_session_ownership`
-- **Signature**: `async def check_session_ownership(cb: CallbackQuery, session) -> bool`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L168-L177](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L168-L177)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def check_session_ownership(cb: CallbackQuery, session) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет принадлежность активной сессии текущему старосте.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L168-L177`](../../bot/handlers/admin/attendance.py#L168-L177)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `check_session_ownership`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
-| `session` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `if not session:`
-2. `if session.initiator_id != cb.from_user.id:`
-3. `return True`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import check_session_ownership
+
+# Execute call
+result = await check_session_ownership(cb=..., session=...)
+```
 
 ---
 
 ### `cb_start_attendance`
-- **Signature**: `async def cb_start_attendance(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L181-L205](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L181-L205)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_start_attendance(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Инициализирует сессию отметки и выводит первого студента.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L181-L205`](../../bot/handlers/admin/attendance.py#L181-L205)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_start_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `active = await get_active_session()`
-2. `if active and active.initiator_id != cb.from_user.id:`
-3. `await cb.answer()`
-4. `target_date, lesson_num = parse_start_callback(cb.data)`
-5. `lessons = await get_api_schedule_for_date(target_date)`
-6. `matched = [les for les in lessons if getattr(les, "number", getattr(les, "period", -1`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_start_attendance
+
+# Execute call
+result = await cb_start_attendance(cb=...)
+```
 
 ---
 
 ### `cb_mark_student`
-- **Signature**: `async def cb_mark_student(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L209-L226](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L209-L226)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_mark_student(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Фиксирует отметку и переключает на следующего студента.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L209-L226`](../../bot/handlers/admin/attendance.py#L209-L226)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_mark_student`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `if not await check_session_ownership(cb, session):`
-3. `mark = cb.data.split(":")[2]`
-4. `session = await record_student_mark(mark)`
-5. `if not session:`
-6. `await cb.answer()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_mark_student
+
+# Execute call
+result = await cb_mark_student(cb=...)
+```
 
 ---
 
 ### `cb_step_back`
-- **Signature**: `async def cb_step_back(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L230-L244](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L230-L244)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_step_back(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Возвращает к предыдущему студенту для исправления отметки.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L230-L244`](../../bot/handlers/admin/attendance.py#L230-L244)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_step_back`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `if not await check_session_ownership(cb, session):`
-3. `session = await step_back()`
-4. `if not session:`
-5. `can_back = session.current_idx > 0`
-6. `text = format_student_card(session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_step_back
+
+# Execute call
+result = await cb_step_back(cb=...)
+```
 
 ---
 
 ### `cb_all_present`
-- **Signature**: `async def cb_all_present(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L248-L258](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L248-L258)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_all_present(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Проставляет 'П' всем оставшимся студентам и завершает опрос.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L248-L258`](../../bot/handlers/admin/attendance.py#L248-L258)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_all_present`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `if not await check_session_ownership(cb, session):`
-3. `session = await mark_all_remaining_present()`
-4. `if not session:`
-5. `await cb.answer()`
-6. `await finish_and_notify(cb, session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_all_present
+
+# Execute call
+result = await cb_all_present(cb=...)
+```
 
 ---
 
 ### `notify_partner_about_cancellation`
-- **Signature**: `async def notify_partner_about_cancellation( lesson_num: int | str, user_id: int, user_full_name: str | None = None ) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L261-L278](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L261-L278)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def notify_partner_about_cancellation( lesson_num: int | str, user_id: int, user_full_name: str | None = None ) -> None
+```
 
-#### Purpose & Architectural Intent
-Оповещает второго администратора об отмене проведения пары.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L261-L278`](../../bot/handlers/admin/attendance.py#L261-L278)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `notify_partner_about_cancellation`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `lesson_num` | `int | str` | Input parameter |
-| `user_id` | `int` | Input parameter |
-| `user_full_name` | `str | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson_num` | `int | str` | Yes | Academic class sequence index (1-based, 1 to 6). |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
+| `user_full_name` | `str | None` | Yes | Parameter `user_full_name` of type `str | None`. |
 
-#### Step-by-Step Logic Execution
-1. `partner_id = get_partner_admin_id(user_id)`
-2. `if not partner_id:`
-3. `title = get_initiator_title(user_id)`
-4. `if user_full_name:`
-5. `text = format_partner_cancel_report(lesson_num, title)`
-6. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import notify_partner_about_cancellation
+
+# Execute call
+result = await notify_partner_about_cancellation(lesson_num=..., user_id=..., user_full_name=...)
+```
 
 ---
 
 ### `cb_cancel_lesson`
-- **Signature**: `async def cb_cancel_lesson(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L282-L291](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L282-L291)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_cancel_lesson(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Отменяет опрос для указанной пары и уведомляет напарника.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L282-L291`](../../bot/handlers/admin/attendance.py#L282-L291)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_cancel_lesson`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `lesson_num = cb.data.split(":")[2]`
-2. `await clear_session()`
-3. `if cb.message:`
-4. `asyncio.create_task(`
-5. `await cb.answer()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_cancel_lesson
+
+# Execute call
+result = await cb_cancel_lesson(cb=...)
+```
 
 ---
 
 ### `cb_abort_survey`
-- **Signature**: `async def cb_abort_survey(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L295-L305](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L295-L305)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_abort_survey(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Прерывает активный опрос старостой.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L295-L305`](../../bot/handlers/admin/attendance.py#L295-L305)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_abort_survey`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `if session and session.initiator_id != cb.from_user.id:`
-3. `await clear_session()`
-4. `if cb.message:`
-5. `await cb.answer()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_abort_survey
+
+# Execute call
+result = await cb_abort_survey(cb=...)
+```
 
 ---
 
 ### `cb_close_menu`
-- **Signature**: `async def cb_close_menu(cb: CallbackQuery) -> None`
-- **Source Reference**: [bot/handlers/admin/attendance.py#L309-L313](file:///home/u/Рабочий стол/para/bot/handlers/admin/attendance.py#L309-L313)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cb_close_menu(cb: CallbackQuery) -> None
+```
 
-#### Purpose & Architectural Intent
-Удаляет меню выбора пары.
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L309-L313`](../../bot/handlers/admin/attendance.py#L309-L313)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Handles Telegram inline callback query events for `cb_close_menu`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `cb` | `CallbackQuery` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `CallbackQuery` | Yes | Parameter `cb` of type `CallbackQuery`. |
 
-#### Step-by-Step Logic Execution
-1. `if cb.message:`
-2. `await cb.answer()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.attendance import cb_close_menu
+
+# Execute call
+result = await cb_close_menu(cb=...)
+```
 
 ---

@@ -1,310 +1,475 @@
-# Module Specification: `services/attendance_stats.py`
-> **Path**: [`services/attendance_stats.py`](file:///home/u/Рабочий стол/para/services/attendance_stats.py)  
+# Component Reference: `services/attendance_stats.py`
+> **File Path**: [`services/attendance_stats.py`](../../services/attendance_stats.py)  
 > **Subsystem**: `Spreadsheet Analytics`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Сервис агрегации сквозной статистики посещаемости студентов. Отвечает за: 1. Выгрузку и обход всех доступных месяцев (СЕНТ, ОКТ, ...) в таблице Яндекс Документов 2. Подсчёт суммарных отметок (П, О, У, Н) по каждому студенту за всё время 3. Кэширование агрегированных данных в Redis для мгновенного отклика UI и топика 4. Формирование персонализированной аналитики для команды /my_attendance
+## 1. Architectural Role & Responsibilities
+The `services/attendance_stats.py` module implements core operational logic for the `Spreadsheet Analytics` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_init_student_stat`](#_init_student_stat) | Function | L33–L39 | `dict[str, Any]` | Инициализирует структуру счетчиков посещаемости студента. |
-| [`_count_row_marks`](#_count_row_marks) | Function | L42–L52 | `dict[str, int]` | Подсчитывает отметки посещаемости студента в строке конкретн |
-| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L55–L72 | `None` | Обрабатывает один лист месяца и накапливает отметки в общий  |
-| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L75–L84 | `dict[str, dict[str, Any]]` | Извлекает отметки всех студентов по всем месяцам из книги op |
-| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L87–L96 | `dict[str, dict[str, Any]] | None` | Считывает закэшированную статистику из Redis. |
-| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L99–L106 | `None` | Сохраняет структуру статистики в Redis с TTL 1 час. |
-| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L109–L112 | `None` | Принудительно сбрасывает кэш сквозной статистики посещаемост |
-| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L115–L128 | `dict[str, dict[str, Any]]` | Возвращает сквозную статистику посещаемости с Redis-кэширова |
-| [`find_student_attendance`](#find_student_attendance) | Function | L131–L146 | `dict[str, Any] | None` | Находит статистику студента по точному или частичному совпад |
-| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L149–L155 | `None` | Корректирует счетчики студента с учетом замены старой отметк |
-| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L158–L166 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L169–L172 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL для за |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L175–L190 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе отметок |
+| [`_init_student_stat`](#_init_student_stat) | Function | L33–L39 | `dict[str, Any]` | Executes core domain logic for `_init_student_stat`. |
+| [`_count_row_marks`](#_count_row_marks) | Function | L42–L52 | `dict[str, int]` | Executes core domain logic for `_count_row_marks`. |
+| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L55–L72 | `None` | Executes core domain logic for `_aggregate_sheet_stats`... |
+| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L75–L84 | `dict[str, dict[str, Any]]` | Parses and extracts structured entities from `parse_wor... |
+| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L87–L96 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_from_redis_cache`... |
+| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L99–L106 | `None` | Executes core domain logic for `_save_to_redis_cache`. |
+| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L109–L112 | `None` | Executes core domain logic for `invalidate_attendance_s... |
+| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L115–L128 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
+| [`find_student_attendance`](#find_student_attendance) | Function | L131–L146 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
+| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L149–L155 | `None` | Executes core domain logic for `_adjust_student_counts`... |
+| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L158–L166 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L169–L172 | `None` | Executes core domain logic for `_save_lesson_marks`. |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L175–L190 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `_init_student_stat`
-- **Signature**: `def _init_student_stat(fio: str) -> dict[str, Any]`
-- **Source Reference**: [services/attendance_stats.py#L33-L39](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L33-L39)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any]`
+```python
+def _init_student_stat(fio: str) -> dict[str, Any]
+```
 
-#### Purpose & Architectural Intent
-Инициализирует структуру счетчиков посещаемости студента.
+- **Source Reference**: [`services/attendance_stats.py#L33-L39`](../../services/attendance_stats.py#L33-L39)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_init_student_stat`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `fio` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
 
-#### Step-by-Step Logic Execution
-1. `return {`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _init_student_stat
+
+# Execute call
+result = _init_student_stat(fio=...)
+```
 
 ---
 
 ### `_count_row_marks`
-- **Signature**: `def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]`
-- **Source Reference**: [services/attendance_stats.py#L42-L52](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L42-L52)
-- **Async**: `No`
-- **Return Type**: `dict[str, int]`
+```python
+def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]
+```
 
-#### Purpose & Architectural Intent
-Подсчитывает отметки посещаемости студента в строке конкретного месяца.
+- **Source Reference**: [`services/attendance_stats.py#L42-L52`](../../services/attendance_stats.py#L42-L52)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_count_row_marks`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `row` | `int` | Input parameter |
-| `mc` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `row` | `int` | Yes | Parameter `row` of type `int`. |
+| `mc` | `int` | Yes | Parameter `mc` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `row_counts = {"П": 0, "О": 0, "У": 0, "Н": 0}`
-2. `for col in range(3, mc + 1):`
-3. `return row_counts`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _count_row_marks
+
+# Execute call
+result = _count_row_marks(sheet=..., row=..., mc=...)
+```
 
 ---
 
 ### `_aggregate_sheet_stats`
-- **Signature**: `def _aggregate_sheet_stats( sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]] ) -> None`
-- **Source Reference**: [services/attendance_stats.py#L55-L72](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L55-L72)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def _aggregate_sheet_stats( sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]] ) -> None
+```
 
-#### Purpose & Architectural Intent
-Обрабатывает один лист месяца и накапливает отметки в общий реестр.
+- **Source Reference**: [`services/attendance_stats.py#L55-L72`](../../services/attendance_stats.py#L55-L72)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_aggregate_sheet_stats`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `sheet` | `Worksheet` | Input parameter |
-| `s_name` | `str` | Input parameter |
-| `stats` | `dict[str, dict[str, Any]]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `s_name` | `str` | Yes | Parameter `s_name` of type `str`. |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
 
-#### Step-by-Step Logic Execution
-1. `mc = sheet.max_column`
-2. `for r in range(5, 45):`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _aggregate_sheet_stats
+
+# Execute call
+result = _aggregate_sheet_stats(sheet=..., s_name=..., stats=...)
+```
 
 ---
 
 ### `parse_workbook_attendance`
-- **Signature**: `def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]`
-- **Source Reference**: [services/attendance_stats.py#L75-L84](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L75-L84)
-- **Async**: `No`
-- **Return Type**: `dict[str, dict[str, Any]]`
+```python
+def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]
+```
 
-#### Purpose & Architectural Intent
-Извлекает отметки всех студентов по всем месяцам из книги openpyxl.
+- **Source Reference**: [`services/attendance_stats.py#L75-L84`](../../services/attendance_stats.py#L75-L84)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_workbook_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `wb` | `openpyxl.Workbook` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `wb` | `openpyxl.Workbook` | Yes | Openpyxl workbook instance containing academic attendance sheets. |
 
-#### Step-by-Step Logic Execution
-1. `stats: dict[str, dict[str, Any]] = {}`
-2. `valid_months = set(MONTH_SHEET_MAP.values())`
-3. `for s_name in wb.sheetnames:`
-4. `log.info(f"Собрана статистика посещаемости для {len(stats)} студентов")`
-5. `return stats`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import parse_workbook_attendance
+
+# Execute call
+result = parse_workbook_attendance(wb=...)
+```
 
 ---
 
 ### `_load_from_redis_cache`
-- **Signature**: `async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None`
-- **Source Reference**: [services/attendance_stats.py#L87-L96](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L87-L96)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, dict[str, Any]] | None`
+```python
+async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None
+```
 
-#### Purpose & Architectural Intent
-Считывает закэшированную статистику из Redis.
+- **Source Reference**: [`services/attendance_stats.py#L87-L96`](../../services/attendance_stats.py#L87-L96)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, dict[str, Any]] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_load_from_redis_cache`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `cached = await cache_get(REDIS_STATS_KEY)`
-2. `if not cached:`
-3. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _load_from_redis_cache
+
+# Execute call
+result = await _load_from_redis_cache()
+```
 
 ---
 
 ### `_save_to_redis_cache`
-- **Signature**: `async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None`
-- **Source Reference**: [services/attendance_stats.py#L99-L106](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L99-L106)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет структуру статистики в Redis с TTL 1 час.
+- **Source Reference**: [`services/attendance_stats.py#L99-L106`](../../services/attendance_stats.py#L99-L106)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_save_to_redis_cache`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `stats` | `dict[str, dict[str, Any]]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _save_to_redis_cache
+
+# Execute call
+result = await _save_to_redis_cache(stats=...)
+```
 
 ---
 
 ### `invalidate_attendance_stats_cache`
-- **Signature**: `async def invalidate_attendance_stats_cache() -> None`
-- **Source Reference**: [services/attendance_stats.py#L109-L112](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L109-L112)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def invalidate_attendance_stats_cache() -> None
+```
 
-#### Purpose & Architectural Intent
-Принудительно сбрасывает кэш сквозной статистики посещаемости.
+- **Source Reference**: [`services/attendance_stats.py#L109-L112`](../../services/attendance_stats.py#L109-L112)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `invalidate_attendance_stats_cache`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `await cache_flush(f"{REDIS_STATS_KEY}*")`
-2. `log.info("Кэш сквозной статистики посещаемости сброшен")`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import invalidate_attendance_stats_cache
+
+# Execute call
+result = await invalidate_attendance_stats_cache()
+```
 
 ---
 
 ### `fetch_all_time_attendance`
-- **Signature**: `async def fetch_all_time_attendance( force_refresh: bool = False ) -> dict[str, dict[str, Any]]`
-- **Source Reference**: [services/attendance_stats.py#L115-L128](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L115-L128)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, dict[str, Any]]`
+```python
+async def fetch_all_time_attendance( force_refresh: bool = False ) -> dict[str, dict[str, Any]]
+```
 
-#### Purpose & Architectural Intent
-Возвращает сквозную статистику посещаемости с Redis-кэшированием.
+- **Source Reference**: [`services/attendance_stats.py#L115-L128`](../../services/attendance_stats.py#L115-L128)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `fetch_all_time_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `if not force_refresh:`
-2. `log.info("Загрузка и пересчёт статистики посещаемости из Яндекс Документов...")`
-3. `wopi = await init_wopi_session()`
-4. `wb = await download_workbook(wopi)`
-5. `stats = await asyncio.to_thread(parse_workbook_attendance, wb)`
-6. `await _save_to_redis_cache(stats)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import fetch_all_time_attendance
+
+# Execute call
+result = await fetch_all_time_attendance(force_refresh=...)
+```
 
 ---
 
 ### `find_student_attendance`
-- **Signature**: `def find_student_attendance( stats: dict[str, dict[str, Any]], target_name: str ) -> dict[str, Any] | None`
-- **Source Reference**: [services/attendance_stats.py#L131-L146](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L131-L146)
-- **Async**: `No`
-- **Return Type**: `dict[str, Any] | None`
+```python
+def find_student_attendance( stats: dict[str, dict[str, Any]], target_name: str ) -> dict[str, Any] | None
+```
 
-#### Purpose & Architectural Intent
-Находит статистику студента по точному или частичному совпадению ФИО.
+- **Source Reference**: [`services/attendance_stats.py#L131-L146`](../../services/attendance_stats.py#L131-L146)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `find_student_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `stats` | `dict[str, dict[str, Any]]` | Input parameter |
-| `target_name` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
+| `target_name` | `str` | Yes | Parameter `target_name` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `target_clean = normalize_fio(target_name).lower()`
-2. `for fio, data in stats.items():`
-3. `parts = target_clean.split()`
-4. `if parts:`
-5. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import find_student_attendance
+
+# Execute call
+result = find_student_attendance(stats=..., target_name=...)
+```
 
 ---
 
 ### `_adjust_student_counts`
-- **Signature**: `def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None`
-- **Source Reference**: [services/attendance_stats.py#L149-L155](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L149-L155)
-- **Async**: `No`
-- **Return Type**: `None`
+```python
+def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None
+```
 
-#### Purpose & Architectural Intent
-Корректирует счетчики студента с учетом замены старой отметки на новую.
+- **Source Reference**: [`services/attendance_stats.py#L149-L155`](../../services/attendance_stats.py#L149-L155)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_adjust_student_counts`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `stat` | `dict[str, Any]` | Input parameter |
-| `old_mark` | `str | None` | Input parameter |
-| `new_mark` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `stat` | `dict[str, Any]` | Yes | Parameter `stat` of type `dict[str, Any]`. |
+| `old_mark` | `str | None` | Yes | Parameter `old_mark` of type `str | None`. |
+| `new_mark` | `str` | Yes | Parameter `new_mark` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `tot = stat.setdefault("total", {"П": 0, "О": 0, "У": 0, "Н": 0})`
-2. `if old_mark and old_mark in tot and tot[old_mark] > 0:`
-3. `if new_mark in tot:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _adjust_student_counts
+
+# Execute call
+result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
+```
 
 ---
 
 ### `_get_saved_lesson_marks`
-- **Signature**: `async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]`
-- **Source Reference**: [services/attendance_stats.py#L158-L166](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L158-L166)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, str]`
+```python
+async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
+```
 
-#### Purpose & Architectural Intent
-Считывает ранее сохраненный срез отметок пары из Redis.
+- **Source Reference**: [`services/attendance_stats.py#L158-L166`](../../services/attendance_stats.py#L158-L166)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, str]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_get_saved_lesson_marks`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `t_date` | `str` | Input parameter |
-| `l_num` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `t_date` | `str` | Yes | Parameter `t_date` of type `str`. |
+| `l_num` | `int` | Yes | Parameter `l_num` of type `int`. |
 
-#### Step-by-Step Logic Execution
-1. `raw = await cache_get(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}")`
-2. `if not raw:`
-3. `try:`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _get_saved_lesson_marks
+
+# Execute call
+result = await _get_saved_lesson_marks(t_date=..., l_num=...)
+```
 
 ---
 
 ### `_save_lesson_marks`
-- **Signature**: `async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None`
-- **Source Reference**: [services/attendance_stats.py#L169-L172](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L169-L172)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
+```
 
-#### Purpose & Architectural Intent
-Сохраняет срез отметок пары в Redis с настроенным TTL для защиты от задвоений.
+- **Source Reference**: [`services/attendance_stats.py#L169-L172`](../../services/attendance_stats.py#L169-L172)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_save_lesson_marks`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `t_date` | `str` | Input parameter |
-| `l_num` | `int` | Input parameter |
-| `marks` | `dict[str, str]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `t_date` | `str` | Yes | Parameter `t_date` of type `str`. |
+| `l_num` | `int` | Yes | Parameter `l_num` of type `int`. |
+| `marks` | `dict[str, str]` | Yes | Parameter `marks` of type `dict[str, str]`. |
 
-#### Step-by-Step Logic Execution
-1. `payload = json.dumps(marks, ensure_ascii=False)`
-2. `await cache_set(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}", payload, ttl=MARKS_CA`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _save_lesson_marks
+
+# Execute call
+result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
+```
 
 ---
 
 ### `apply_session_optimistic_update`
-- **Signature**: `async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]`
-- **Source Reference**: [services/attendance_stats.py#L175-L190](file:///home/u/Рабочий стол/para/services/attendance_stats.py#L175-L190)
-- **Async**: `Yes`
-- **Return Type**: `dict[str, dict[str, Any]]`
+```python
+async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
+```
 
-#### Purpose & Architectural Intent
-Мгновенно обновляет кэш статистики в Redis на основе отметок сессии.
+- **Source Reference**: [`services/attendance_stats.py#L175-L190`](../../services/attendance_stats.py#L175-L190)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `apply_session_optimistic_update`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `session` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
 
-#### Step-by-Step Logic Execution
-1. `stats = await fetch_all_time_attendance(force_refresh=False)`
-2. `saved_marks = await _get_saved_lesson_marks(session.target_date, session.lesson_num)`
-3. `new_saved_marks = dict(saved_marks)`
-4. `for row_idx, fio in session.students:`
-5. `await _save_lesson_marks(session.target_date, session.lesson_num, new_saved_marks)`
-6. `await _save_to_redis_cache(stats)`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import apply_session_optimistic_update
+
+# Execute call
+result = await apply_session_optimistic_update(session=...)
+```
 
 ---

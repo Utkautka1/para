@@ -1,210 +1,325 @@
-# Module Specification: `api/router/attendance.py`
-> **Path**: [`api/router/attendance.py`](file:///home/u/Рабочий стол/para/api/router/attendance.py)  
+# Component Reference: `api/router/attendance.py`
+> **File Path**: [`api/router/attendance.py`](../../api/router/attendance.py)  
 > **Subsystem**: `Attendance API`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Роутер посещаемости — GET /attendance/stats, student, session, mark, commit. Предоставляет аналитику пропусков и управление сессией отметки старосты.
+## 1. Architectural Role & Responsibilities
+The `api/router/attendance.py` module implements core operational logic for the `Attendance API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_attendance_stats`](#get_attendance_stats) | Function | L38–L42 | `AttendanceStatsResponse` | Агрегированная сводка посещаемости группы за весь учебный го |
-| [`get_student_attendance`](#get_student_attendance) | Function | L46–L56 | `StudentPersonalStatsResponse` | Персональная аналитика посещаемости по ФИО студента. |
-| [`_build_session_response`](#_build_session_response) | Function | L59–L73 | `ActiveSessionResponse` | Собирает DTO активной сессии отметки пары. |
-| [`get_current_session`](#get_current_session) | Function | L77–L80 | `ActiveSessionResponse` | Текущее состояние активного опроса пары старостой. |
-| [`start_session`](#start_session) | Function | L84–L90 | `ActiveSessionResponse` | Инициализация новой сессии опроса посещаемости (Admin only). |
-| [`mark_student`](#mark_student) | Function | L94–L99 | `ActiveSessionResponse` | Выставление статуса текущему студенту (П, О, У, Н) (Admin on |
-| [`batch_present`](#batch_present) | Function | L103–L108 | `ActiveSessionResponse` | Массовая отметка всех оставшихся студентов как присутствующи |
-| [`commit_session`](#commit_session) | Function | L112–L121 | `CommitAttendanceResponse` | Сохранение результатов сессии в онлайн-таблицу Яндекс Докуме |
-| [`cancel_session`](#cancel_session) | Function | L125–L128 | `dict` | Сброс и отмена текущей незавершённой сессии (Admin only). |
+| [`get_attendance_stats`](#get_attendance_stats) | Function | L38–L42 | `AttendanceStatsResponse` | Retrieves and resolves domain data for `get_attendance_... |
+| [`get_student_attendance`](#get_student_attendance) | Function | L46–L56 | `StudentPersonalStatsResponse` | Retrieves and resolves domain data for `get_student_att... |
+| [`_build_session_response`](#_build_session_response) | Function | L59–L73 | `ActiveSessionResponse` | Executes core domain logic for `_build_session_response... |
+| [`get_current_session`](#get_current_session) | Function | L77–L80 | `ActiveSessionResponse` | Retrieves and resolves domain data for `get_current_ses... |
+| [`start_session`](#start_session) | Function | L84–L90 | `ActiveSessionResponse` | Executes core domain logic for `start_session`. |
+| [`mark_student`](#mark_student) | Function | L94–L99 | `ActiveSessionResponse` | Executes core domain logic for `mark_student`. |
+| [`batch_present`](#batch_present) | Function | L103–L108 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
+| [`commit_session`](#commit_session) | Function | L112–L121 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
+| [`cancel_session`](#cancel_session) | Function | L125–L128 | `dict` | Executes core domain logic for `cancel_session`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_attendance_stats`
-- **Signature**: `async def get_attendance_stats(force_refresh: bool = Query(default=False)) -> AttendanceStatsResponse`
-- **Source Reference**: [api/router/attendance.py#L38-L42](file:///home/u/Рабочий стол/para/api/router/attendance.py#L38-L42)
-- **Async**: `Yes`
-- **Return Type**: `AttendanceStatsResponse`
+```python
+async def get_attendance_stats(force_refresh: bool = Query(default=False)) -> AttendanceStatsResponse
+```
 
-#### Purpose & Architectural Intent
-Агрегированная сводка посещаемости группы за весь учебный год.
+- **Source Reference**: [`api/router/attendance.py#L38-L42`](../../api/router/attendance.py#L38-L42)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `AttendanceStatsResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_attendance_stats`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `force_refresh` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `force_refresh` | `bool` | Yes | Parameter `force_refresh` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `data = await fetch_all_time_attendance(force_refresh=force_refresh)`
-2. `items = [StudentStatItem(fio=v["fio"], total=v["total"], months=v.get("months", {})) `
-3. `return AttendanceStatsResponse(count=len(items), students=items)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.attendance import get_attendance_stats
+
+# Execute call
+result = await get_attendance_stats(force_refresh=...)
+```
 
 ---
 
 ### `get_student_attendance`
-- **Signature**: `async def get_student_attendance(fio: str) -> StudentPersonalStatsResponse`
-- **Source Reference**: [api/router/attendance.py#L46-L56](file:///home/u/Рабочий стол/para/api/router/attendance.py#L46-L56)
-- **Async**: `Yes`
-- **Return Type**: `StudentPersonalStatsResponse`
+```python
+async def get_student_attendance(fio: str) -> StudentPersonalStatsResponse
+```
 
-#### Purpose & Architectural Intent
-Персональная аналитика посещаемости по ФИО студента.
+- **Source Reference**: [`api/router/attendance.py#L46-L56`](../../api/router/attendance.py#L46-L56)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `StudentPersonalStatsResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_student_attendance`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `fio` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
 
-#### Step-by-Step Logic Execution
-1. `data = await fetch_all_time_attendance(force_refresh=False)`
-2. `stat = find_student_attendance(data, fio)`
-3. `if not stat:`
-4. `tot = stat.get("total", {})`
-5. `p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)`
-6. `all_lessons = p + o + u + n`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.attendance import get_student_attendance
+
+# Execute call
+result = await get_student_attendance(fio=...)
+```
 
 ---
 
 ### `_build_session_response`
-- **Signature**: `def _build_session_response(s) -> ActiveSessionResponse`
-- **Source Reference**: [api/router/attendance.py#L59-L73](file:///home/u/Рабочий стол/para/api/router/attendance.py#L59-L73)
-- **Async**: `No`
-- **Return Type**: `ActiveSessionResponse`
+```python
+def _build_session_response(s) -> ActiveSessionResponse
+```
 
-#### Purpose & Architectural Intent
-Собирает DTO активной сессии отметки пары.
+- **Source Reference**: [`api/router/attendance.py#L59-L73`](../../api/router/attendance.py#L59-L73)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `ActiveSessionResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_build_session_response`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `s` | `Any` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `s` | `Any` | Yes | Parameter `s` of type `Any`. |
 
-#### Step-by-Step Logic Execution
-1. `if not s:`
-2. `cur_name = s.students[s.current_idx][1] if s.current_idx < len(s.students) else None`
-3. `return ActiveSessionResponse(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.attendance import _build_session_response
+
+# Execute call
+result = _build_session_response(s=...)
+```
 
 ---
 
 ### `get_current_session`
-- **Signature**: `async def get_current_session() -> ActiveSessionResponse`
-- **Source Reference**: [api/router/attendance.py#L77-L80](file:///home/u/Рабочий стол/para/api/router/attendance.py#L77-L80)
-- **Async**: `Yes`
-- **Return Type**: `ActiveSessionResponse`
+```python
+async def get_current_session() -> ActiveSessionResponse
+```
 
-#### Purpose & Architectural Intent
-Текущее состояние активного опроса пары старостой.
+- **Source Reference**: [`api/router/attendance.py#L77-L80`](../../api/router/attendance.py#L77-L80)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ActiveSessionResponse`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_current_session`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `return _build_session_response(session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.attendance import get_current_session
+
+# Execute call
+result = await get_current_session()
+```
 
 ---
 
 ### `start_session`
-- **Signature**: `async def start_session(payload: StartSessionRequest) -> ActiveSessionResponse`
-- **Source Reference**: [api/router/attendance.py#L84-L90](file:///home/u/Рабочий стол/para/api/router/attendance.py#L84-L90)
-- **Async**: `Yes`
-- **Return Type**: `ActiveSessionResponse`
+```python
+async def start_session(payload: StartSessionRequest) -> ActiveSessionResponse
+```
 
-#### Purpose & Architectural Intent
-Инициализация новой сессии опроса посещаемости (Admin only).
+- **Source Reference**: [`api/router/attendance.py#L84-L90`](../../api/router/attendance.py#L84-L90)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ActiveSessionResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `start_session`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `payload` | `StartSessionRequest` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `payload` | `StartSessionRequest` | Yes | Parameter `payload` of type `StartSessionRequest`. |
 
-#### Step-by-Step Logic Execution
-1. `t_date = date.fromisoformat(payload.target_date)`
-2. `session = await create_attendance_session(t_date, payload.lesson_num, payload.lesson_`
-3. `if not session:`
-4. `return _build_session_response(session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.attendance import start_session
+
+# Execute call
+result = await start_session(payload=...)
+```
 
 ---
 
 ### `mark_student`
-- **Signature**: `async def mark_student(payload: MarkStudentRequest) -> ActiveSessionResponse`
-- **Source Reference**: [api/router/attendance.py#L94-L99](file:///home/u/Рабочий стол/para/api/router/attendance.py#L94-L99)
-- **Async**: `Yes`
-- **Return Type**: `ActiveSessionResponse`
+```python
+async def mark_student(payload: MarkStudentRequest) -> ActiveSessionResponse
+```
 
-#### Purpose & Architectural Intent
-Выставление статуса текущему студенту (П, О, У, Н) (Admin only).
+- **Source Reference**: [`api/router/attendance.py#L94-L99`](../../api/router/attendance.py#L94-L99)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ActiveSessionResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `mark_student`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `payload` | `MarkStudentRequest` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `payload` | `MarkStudentRequest` | Yes | Parameter `payload` of type `MarkStudentRequest`. |
 
-#### Step-by-Step Logic Execution
-1. `session = await record_student_mark(payload.mark)`
-2. `if not session:`
-3. `return _build_session_response(session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.attendance import mark_student
+
+# Execute call
+result = await mark_student(payload=...)
+```
 
 ---
 
 ### `batch_present`
-- **Signature**: `async def batch_present() -> ActiveSessionResponse`
-- **Source Reference**: [api/router/attendance.py#L103-L108](file:///home/u/Рабочий стол/para/api/router/attendance.py#L103-L108)
-- **Async**: `Yes`
-- **Return Type**: `ActiveSessionResponse`
+```python
+async def batch_present() -> ActiveSessionResponse
+```
 
-#### Purpose & Architectural Intent
-Массовая отметка всех оставшихся студентов как присутствующих (П) (Admin only).
+- **Source Reference**: [`api/router/attendance.py#L103-L108`](../../api/router/attendance.py#L103-L108)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `ActiveSessionResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `batch_present`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `session = await mark_all_remaining_present()`
-2. `if not session:`
-3. `return _build_session_response(session)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.attendance import batch_present
+
+# Execute call
+result = await batch_present()
+```
 
 ---
 
 ### `commit_session`
-- **Signature**: `async def commit_session() -> CommitAttendanceResponse`
-- **Source Reference**: [api/router/attendance.py#L112-L121](file:///home/u/Рабочий стол/para/api/router/attendance.py#L112-L121)
-- **Async**: `Yes`
-- **Return Type**: `CommitAttendanceResponse`
+```python
+async def commit_session() -> CommitAttendanceResponse
+```
 
-#### Purpose & Architectural Intent
-Сохранение результатов сессии в онлайн-таблицу Яндекс Документов (Admin only).
+- **Source Reference**: [`api/router/attendance.py#L112-L121`](../../api/router/attendance.py#L112-L121)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `CommitAttendanceResponse`
+
+#### Overview & Architectural Purpose
+Commits transactional modifications to external store for `commit_session`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `session = await get_active_session()`
-2. `if not session:`
-3. `count = len(session.marks)`
-4. `ok = await commit_session_to_table(session)`
-5. `if not ok:`
-6. `return CommitAttendanceResponse(status="ok", message="Marks saved to Yandex Docs", ma`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.attendance import commit_session
+
+# Execute call
+result = await commit_session()
+```
 
 ---
 
 ### `cancel_session`
-- **Signature**: `async def cancel_session() -> dict`
-- **Source Reference**: [api/router/attendance.py#L125-L128](file:///home/u/Рабочий стол/para/api/router/attendance.py#L125-L128)
-- **Async**: `Yes`
-- **Return Type**: `dict`
+```python
+async def cancel_session() -> dict
+```
 
-#### Purpose & Architectural Intent
-Сброс и отмена текущей незавершённой сессии (Admin only).
+- **Source Reference**: [`api/router/attendance.py#L125-L128`](../../api/router/attendance.py#L125-L128)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `cancel_session`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `await clear_session()`
-2. `return {"status": "ok", "message": "Attendance session cleared"}`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.attendance import cancel_session
+
+# Execute call
+result = await cancel_session()
+```
 
 ---

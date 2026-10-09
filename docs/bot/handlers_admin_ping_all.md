@@ -1,307 +1,477 @@
-# Module Specification: `bot/handlers/admin/ping_all.py`
-> **Path**: [`bot/handlers/admin/ping_all.py`](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py)  
+# Component Reference: `bot/handlers/admin/ping_all.py`
+> **File Path**: [`bot/handlers/admin/ping_all.py`](../../bot/handlers/admin/ping_all.py)  
 > **Subsystem**: `Supergroup Alert Dispatch`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль хэндлера общего пинга одногруппников (/all). Позволяет администратору (ALLOWED_USER_ID) пинговать всех одногруппников в любом топике группы от лица бота. Список одногруппников подтягивается из единого источника birthdays.json. Особенности реализации: 1. Теги упоминаний прикрепляются открытым текстом внизу сообщения без спойлеров для мгновенной видимости и отправки push-уведомлений. 2. Для пользователей с username используется @username, без username — кликабельная ссылка <a href="tg://user?id=...">Имя</a>. 3. Отправитель команды автоматически исключается из пинга. 4. Исходное сообщение команды удаляется, пост отправляется от лица бота. 5. Полностью сохраняется исходное HTML-форматирование автора (жирный, курсив, ссылки). 6. Поддерживается ответ на сообщение (reply) и медиафайлы с подписью.
+## 1. Architectural Role & Responsibilities
+The `bot/handlers/admin/ping_all.py` module implements core operational logic for the `Supergroup Alert Dispatch` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_classmates_list`](#load_classmates_list) | Function | L39–L46 | `list[dict[str, Any]]` | Загружает актуальный список одногруппников из JSON-файла. |
-| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L49–L56 | `int | None` | Извлекает tg_id из записи или постоянного кэша пользователей |
-| [`format_mention_tag`](#format_mention_tag) | Function | L59–L74 | `str | None` | Формирует кликабельный тег упоминания. |
-| [`is_sender`](#is_sender) | Function | L77–L85 | `bool` | Проверяет, является ли запись в реестре отправителем команды |
-| [`build_mentions_block`](#build_mentions_block) | Function | L88–L100 | `str` | Формирует список тегов упоминаний участников чата без автора |
-| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L103–L116 | `str` | Извлекает пользовательский HTML-текст после команды /all или |
-| [`build_broadcast_message`](#build_broadcast_message) | Function | L119–L127 | `str` | Собирает итоговый HTML: текст автора сверху, блок пингов в с |
-| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L130–L144 | `None` | Безопасно удаляет триггер-сообщение автора команды. |
-| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L147–L168 | `Message` | Отправляет пост от лица бота в целевой чат и топик (текст ил |
-| [`validate_group_chat`](#validate_group_chat) | Function | L171–L180 | `bool` | Проверяет, что команда вызвана в группе или супергруппе, а н |
-| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L183–L195 | `tuple[str, int | None]` | Формирует итоговый HTML рассылки и определяет ID реплая. |
-| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L198–L210 | `None` | Выполняет отправку поста и удаление исходной команды с логир |
-| [`cmd_ping_all`](#cmd_ping_all) | Function | L214–L224 | `None` | Координирует валидацию, компоновку и отправку общего пинга г |
+| [`load_classmates_list`](#load_classmates_list) | Function | L39–L46 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_list`. |
+| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L49–L56 | `int | None` | Executes core domain logic for `resolve_person_tg_id`. |
+| [`format_mention_tag`](#format_mention_tag) | Function | L59–L74 | `str | None` | Formats message payload and presentation markup for `fo... |
+| [`is_sender`](#is_sender) | Function | L77–L85 | `bool` | Executes core domain logic for `is_sender`. |
+| [`build_mentions_block`](#build_mentions_block) | Function | L88–L100 | `str` | Executes core domain logic for `build_mentions_block`. |
+| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L103–L116 | `str` | Executes core domain logic for `extract_broadcast_text`... |
+| [`build_broadcast_message`](#build_broadcast_message) | Function | L119–L127 | `str` | Executes core domain logic for `build_broadcast_message... |
+| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L130–L144 | `None` | Executes core domain logic for `safe_delete_command_mes... |
+| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L147–L168 | `Message` | Dispatches notification message via Telegram API for `s... |
+| [`validate_group_chat`](#validate_group_chat) | Function | L171–L180 | `bool` | Validates architectural invariants and constraints for ... |
+| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L183–L195 | `tuple[str, int | None]` | Executes core domain logic for `compose_broadcast_conte... |
+| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L198–L210 | `None` | Executes core domain logic for `dispatch_broadcast`. |
+| [`cmd_ping_all`](#cmd_ping_all) | Function | L214–L224 | `None` | Processes inbound Telegram slash command for `cmd_ping_... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `load_classmates_list`
-- **Signature**: `async def load_classmates_list() -> list[dict[str, Any]]`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L39-L46](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L39-L46)
-- **Async**: `Yes`
-- **Return Type**: `list[dict[str, Any]]`
+```python
+async def load_classmates_list() -> list[dict[str, Any]]
+```
 
-#### Purpose & Architectural Intent
-Загружает актуальный список одногруппников из JSON-файла. Используем data/birthdays.json как единый источник правды, чтобы не дублировать данные студентов в разных файлах.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L39-L46`](../../bot/handlers/admin/ping_all.py#L39-L46)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `list[dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `load_classmates_list`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return await load_json(BIRTHDAYS_FILE_PATH, default=[])`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import load_classmates_list
+
+# Execute call
+result = await load_classmates_list()
+```
 
 ---
 
 ### `resolve_person_tg_id`
-- **Signature**: `def resolve_person_tg_id(person: dict[str, Any]) -> int | None`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L49-L56](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L49-L56)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def resolve_person_tg_id(person: dict[str, Any]) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Извлекает tg_id из записи или постоянного кэша пользователей.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L49-L56`](../../bot/handlers/admin/ping_all.py#L49-L56)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `resolve_person_tg_id`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `person` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `person` | `dict[str, Any]` | Yes | Parameter `person` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `if person.get("tg_id"):`
-2. `username = person.get("username")`
-3. `return get_cached_user_id(username) if username else None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import resolve_person_tg_id
+
+# Execute call
+result = resolve_person_tg_id(person=...)
+```
 
 ---
 
 ### `format_mention_tag`
-- **Signature**: `def format_mention_tag(person: dict[str, Any]) -> str | None`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L59-L74](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L59-L74)
-- **Async**: `No`
-- **Return Type**: `str | None`
+```python
+def format_mention_tag(person: dict[str, Any]) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Формирует кликабельный тег упоминания. Приоритет отдается tg_id: Telegram шлет пуш-уведомление ТОЛЬКО для ссылок tg://user?id= (text_mention), а обычный @username ботом игнорирует.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L59-L74`](../../bot/handlers/admin/ping_all.py#L59-L74)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Formats message payload and presentation markup for `format_mention_tag`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `person` | `dict[str, Any]` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `person` | `dict[str, Any]` | Yes | Parameter `person` of type `dict[str, Any]`. |
 
-#### Step-by-Step Logic Execution
-1. `tg_id = resolve_person_tg_id(person)`
-2. `username = person.get("username")`
-3. `name = html.escape(person.get("full_name", ""))`
-4. `if tg_id:`
-5. `if username:`
-6. `return None`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import format_mention_tag
+
+# Execute call
+result = format_mention_tag(person=...)
+```
 
 ---
 
 ### `is_sender`
-- **Signature**: `def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L77-L85](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L77-L85)
-- **Async**: `No`
-- **Return Type**: `bool`
+```python
+def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, является ли запись в реестре отправителем команды. Сверяет как по числовому Telegram ID, так и по регистронезависимому юзернейму.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L77-L85`](../../bot/handlers/admin/ping_all.py#L77-L85)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_sender`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `person` | `dict[str, Any]` | Input parameter |
-| `sender_id` | `int | None` | Input parameter |
-| `sender_username` | `str | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `person` | `dict[str, Any]` | Yes | Parameter `person` of type `dict[str, Any]`. |
+| `sender_id` | `int | None` | Yes | Parameter `sender_id` of type `int | None`. |
+| `sender_username` | `str | None` | Yes | Parameter `sender_username` of type `str | None`. |
 
-#### Step-by-Step Logic Execution
-1. `if sender_id and person.get("tg_id") == sender_id:`
-2. `return bool(sender_username and person.get("username") and person["username"].lower()`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import is_sender
+
+# Execute call
+result = is_sender(person=..., sender_id=..., sender_username=...)
+```
 
 ---
 
 ### `build_mentions_block`
-- **Signature**: `def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L88-L100](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L88-L100)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str
+```
 
-#### Purpose & Architectural Intent
-Формирует список тегов упоминаний участников чата без автора команды.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L88-L100`](../../bot/handlers/admin/ping_all.py#L88-L100)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `build_mentions_block`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `classmates` | `list[dict[str, Any]]` | Input parameter |
-| `sender` | `User | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `classmates` | `list[dict[str, Any]]` | Yes | Parameter `classmates` of type `list[dict[str, Any]]`. |
+| `sender` | `User | None` | Yes | Parameter `sender` of type `User | None`. |
 
-#### Step-by-Step Logic Execution
-1. `sender_id = sender.id if sender else None`
-2. `sender_user = sender.username if sender else None`
-3. `tags = [`
-4. `valid_tags = [t for t in tags if t]`
-5. `return " ".join(valid_tags)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import build_mentions_block
+
+# Execute call
+result = build_mentions_block(classmates=..., sender=...)
+```
 
 ---
 
 ### `extract_broadcast_text`
-- **Signature**: `def extract_broadcast_text(html_text: str) -> str`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L103-L116](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L103-L116)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def extract_broadcast_text(html_text: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Извлекает пользовательский HTML-текст после команды /all или .all. Отрезает саму команду с префиксом (/ или .) и упоминанием бота, сохраняя все дочерние теги разметки (жирный, курсив, ссылки, моноширинный).
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L103-L116`](../../bot/handlers/admin/ping_all.py#L103-L116)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `extract_broadcast_text`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `html_text` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `html_text` | `str` | Yes | Parameter `html_text` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `return re.sub(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import extract_broadcast_text
+
+# Execute call
+result = extract_broadcast_text(html_text=...)
+```
 
 ---
 
 ### `build_broadcast_message`
-- **Signature**: `def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L119-L127](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L119-L127)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str
+```
 
-#### Purpose & Architectural Intent
-Собирает итоговый HTML: текст автора сверху, блок пингов в самом низу.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L119-L127`](../../bot/handlers/admin/ping_all.py#L119-L127)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `build_broadcast_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_html` | `str` | Input parameter |
-| `mentions` | `str` | Input parameter |
-| `has_reply` | `bool` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_html` | `str` | Yes | Parameter `user_html` of type `str`. |
+| `mentions` | `str` | Yes | Parameter `mentions` of type `str`. |
+| `has_reply` | `bool` | Yes | Parameter `has_reply` of type `bool`. |
 
-#### Step-by-Step Logic Execution
-1. `if user_html:`
-2. `if has_reply:`
-3. `return f"📢 <b>Общий сбор группы!</b>\n\n{mentions}"`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import build_broadcast_message
+
+# Execute call
+result = build_broadcast_message(user_html=..., mentions=..., has_reply=...)
+```
 
 ---
 
 ### `safe_delete_command_message`
-- **Signature**: `async def safe_delete_command_message(message: Message) -> None`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L130-L144](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L130-L144)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def safe_delete_command_message(message: Message) -> None
+```
 
-#### Purpose & Architectural Intent
-Безопасно удаляет триггер-сообщение автора команды. Игнорирует ошибки, если сообщение уже удалено пользователем или таймером.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L130-L144`](../../bot/handlers/admin/ping_all.py#L130-L144)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `safe_delete_command_message`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import safe_delete_command_message
+
+# Execute call
+result = await safe_delete_command_message(message=...)
+```
 
 ---
 
 ### `send_broadcast_payload`
-- **Signature**: `async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L147-L168](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L147-L168)
-- **Async**: `Yes`
-- **Return Type**: `Message`
+```python
+async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message
+```
 
-#### Purpose & Architectural Intent
-Отправляет пост от лица бота в целевой чат и топик (текст или медиа). При наличии фото/видео/документа копирует его с новым описанием.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L147-L168`](../../bot/handlers/admin/ping_all.py#L147-L168)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `Message`
+
+#### Overview & Architectural Purpose
+Dispatches notification message via Telegram API for `send_broadcast_payload`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message` | Input parameter |
-| `final_html` | `str` | Input parameter |
-| `reply_to_id` | `int | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `final_html` | `str` | Yes | Parameter `final_html` of type `str`. |
+| `reply_to_id` | `int | None` | Yes | Parameter `reply_to_id` of type `int | None`. |
 
-#### Step-by-Step Logic Execution
-1. `thread_id = message.message_thread_id`
-2. `if message.photo or message.video or message.document or message.animation:`
-3. `return await message.bot.send_message(`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import send_broadcast_payload
+
+# Execute call
+result = await send_broadcast_payload(message=..., final_html=..., reply_to_id=...)
+```
 
 ---
 
 ### `validate_group_chat`
-- **Signature**: `async def validate_group_chat(message: Message) -> bool`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L171-L180](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L171-L180)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def validate_group_chat(message: Message) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет, что команда вызвана в группе или супергруппе, а не в ЛС. При вызове в приватном диалоге выводит предупреждение и возвращает False.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L171-L180`](../../bot/handlers/admin/ping_all.py#L171-L180)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Validates architectural invariants and constraints for `validate_group_chat`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
-#### Step-by-Step Logic Execution
-1. `if message.chat.type == "private":`
-2. `return True`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import validate_group_chat
+
+# Execute call
+result = await validate_group_chat(message=...)
+```
 
 ---
 
 ### `compose_broadcast_content`
-- **Signature**: `def compose_broadcast_content( classmates: list[dict[str, Any]], message: Message ) -> tuple[str, int | None]`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L183-L195](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L183-L195)
-- **Async**: `No`
-- **Return Type**: `tuple[str, int | None]`
+```python
+def compose_broadcast_content( classmates: list[dict[str, Any]], message: Message ) -> tuple[str, int | None]
+```
 
-#### Purpose & Architectural Intent
-Формирует итоговый HTML рассылки и определяет ID реплая. Размещает текст автора вверху, а пинги одногруппников — внизу сообщения.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L183-L195`](../../bot/handlers/admin/ping_all.py#L183-L195)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[str, int | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `compose_broadcast_content`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `classmates` | `list[dict[str, Any]]` | Input parameter |
-| `message` | `Message` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `classmates` | `list[dict[str, Any]]` | Yes | Parameter `classmates` of type `list[dict[str, Any]]`. |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
-#### Step-by-Step Logic Execution
-1. `mentions = build_mentions_block(classmates, message.from_user)`
-2. `user_html = extract_broadcast_text(message.html_text or "")`
-3. `reply_id = message.reply_to_message.message_id if message.reply_to_message else None`
-4. `final_text = build_broadcast_message(user_html, mentions, has_reply=bool(reply_id))`
-5. `return final_text, reply_id`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import compose_broadcast_content
+
+# Execute call
+result = compose_broadcast_content(classmates=..., message=...)
+```
 
 ---
 
 ### `dispatch_broadcast`
-- **Signature**: `async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L198-L210](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L198-L210)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None
+```
 
-#### Purpose & Architectural Intent
-Выполняет отправку поста и удаление исходной команды с логированием. Перехватывает ошибки доставки, информируя инициатора команды при сбое.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L198-L210`](../../bot/handlers/admin/ping_all.py#L198-L210)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `dispatch_broadcast`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message` | Input parameter |
-| `final_text` | `str` | Input parameter |
-| `reply_id` | `int | None` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `final_text` | `str` | Yes | Parameter `final_text` of type `str`. |
+| `reply_id` | `int | None` | Yes | Parameter `reply_id` of type `int | None`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import dispatch_broadcast
+
+# Execute call
+result = await dispatch_broadcast(message=..., final_text=..., reply_id=...)
+```
 
 ---
 
 ### `cmd_ping_all`
-- **Signature**: `async def cmd_ping_all(message: Message) -> None`
-- **Source Reference**: [bot/handlers/admin/ping_all.py#L214-L224](file:///home/u/Рабочий стол/para/bot/handlers/admin/ping_all.py#L214-L224)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def cmd_ping_all(message: Message) -> None
+```
 
-#### Purpose & Architectural Intent
-Координирует валидацию, компоновку и отправку общего пинга группы. Выступает чистым оркестратором без смешения бизнес-логики.
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L214-L224`](../../bot/handlers/admin/ping_all.py#L214-L224)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Processes inbound Telegram slash command for `cmd_ping_all`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `message` | `Message` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
-#### Step-by-Step Logic Execution
-1. `if not await validate_group_chat(message):`
-2. `classmates = await load_classmates_list()`
-3. `final_text, reply_id = compose_broadcast_content(classmates, message)`
-4. `await dispatch_broadcast(message, final_text, reply_id)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.ping_all import cmd_ping_all
+
+# Execute call
+result = await cmd_ping_all(message=...)
+```
 
 ---

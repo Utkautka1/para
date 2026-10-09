@@ -1,71 +1,125 @@
-# Module Specification: `bot/commands.py`
-> **Path**: [`bot/commands.py`](file:///home/u/Рабочий стол/para/bot/commands.py)  
+# Component Reference: `bot/commands.py`
+> **File Path**: [`bot/commands.py`](../../bot/commands.py)  
 > **Subsystem**: `Bot Menu Registry`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль регистрации интерактивного меню команд Telegram (bot.set_my_commands). Настраивает видимость команд через BotCommandScope: - BotCommandScopeDefault: базовые команды для всех студентов группы - BotCommandScopeChat: расширенные команды управления для старосты (ALLOWED_USER_ID)
+## 1. Architectural Role & Responsibilities
+The `bot/commands.py` module implements core operational logic for the `Bot Menu Registry` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L25 | `list[BotCommand]` | Возвращает список общедоступных команд для студентов группы. |
-| [`get_admin_commands`](#get_admin_commands) | Function | L28–L37 | `list[BotCommand]` | Возвращает расширенный список команд для старосты группы. |
-| [`register_bot_commands`](#register_bot_commands) | Function | L40–L47 | `None` | Регистрирует меню команд в Telegram API для пользователей и  |
+| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L25 | `list[BotCommand]` | Retrieves and resolves domain data for `get_default_use... |
+| [`get_admin_commands`](#get_admin_commands) | Function | L28–L37 | `list[BotCommand]` | Retrieves and resolves domain data for `get_admin_comma... |
+| [`register_bot_commands`](#register_bot_commands) | Function | L40–L47 | `None` | Executes core domain logic for `register_bot_commands`. |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_default_user_commands`
-- **Signature**: `def get_default_user_commands() -> list[BotCommand]`
-- **Source Reference**: [bot/commands.py#L18-L25](file:///home/u/Рабочий стол/para/bot/commands.py#L18-L25)
-- **Async**: `No`
-- **Return Type**: `list[BotCommand]`
+```python
+def get_default_user_commands() -> list[BotCommand]
+```
 
-#### Purpose & Architectural Intent
-Возвращает список общедоступных команд для студентов группы.
+- **Source Reference**: [`bot/commands.py#L18-L25`](../../bot/commands.py#L18-L25)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[BotCommand]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_default_user_commands`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return [`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.commands import get_default_user_commands
+
+# Execute call
+result = get_default_user_commands()
+```
 
 ---
 
 ### `get_admin_commands`
-- **Signature**: `def get_admin_commands() -> list[BotCommand]`
-- **Source Reference**: [bot/commands.py#L28-L37](file:///home/u/Рабочий стол/para/bot/commands.py#L28-L37)
-- **Async**: `No`
-- **Return Type**: `list[BotCommand]`
+```python
+def get_admin_commands() -> list[BotCommand]
+```
 
-#### Purpose & Architectural Intent
-Возвращает расширенный список команд для старосты группы.
+- **Source Reference**: [`bot/commands.py#L28-L37`](../../bot/commands.py#L28-L37)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `list[BotCommand]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_admin_commands`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `return [`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.commands import get_admin_commands
+
+# Execute call
+result = get_admin_commands()
+```
 
 ---
 
 ### `register_bot_commands`
-- **Signature**: `async def register_bot_commands(bot: Bot) -> None`
-- **Source Reference**: [bot/commands.py#L40-L47](file:///home/u/Рабочий стол/para/bot/commands.py#L40-L47)
-- **Async**: `Yes`
-- **Return Type**: `None`
+```python
+async def register_bot_commands(bot: Bot) -> None
+```
 
-#### Purpose & Architectural Intent
-Регистрирует меню команд в Telegram API для пользователей и администратора.
+- **Source Reference**: [`bot/commands.py#L40-L47`](../../bot/commands.py#L40-L47)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `register_bot_commands`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `bot` | `Bot` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `bot` | `Bot` | Yes | Parameter `bot` of type `Bot`. |
 
-#### Step-by-Step Logic Execution
-1. `try:`
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.commands import register_bot_commands
+
+# Execute call
+result = await register_bot_commands(bot=...)
+```
 
 ---

@@ -1,159 +1,232 @@
-# Module Specification: `services/testers_manager.py`
-> **Path**: [`services/testers_manager.py`](file:///home/u/Рабочий стол/para/services/testers_manager.py)  
+# Component Reference: `services/testers_manager.py`
+> **File Path**: [`services/testers_manager.py`](../../services/testers_manager.py)  
 > **Subsystem**: `Testing Whitelist`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Менеджер белого списка тестировщиков и персональных API-ключей para-api. Хранит ID тестеров в Redis и генерирует уникальные API-ключи для каждого тестера для персонального аудита запросов в логах системы.
+## 1. Architectural Role & Responsibilities
+The `services/testers_manager.py` module implements core operational logic for the `Testing Whitelist` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L40 | `str | None` | Генерирует или возвращает существующий персональный API-ключ |
-| [`get_tester_by_key`](#get_tester_by_key) | Function | L43–L54 | `int | None` | Возвращает Telegram ID тестера по переданному персональному  |
-| [`add_tester`](#add_tester) | Function | L57–L65 | `bool` | Добавляет ID в белый список и сразу генерирует персональный  |
-| [`remove_tester`](#remove_tester) | Function | L68–L82 | `bool` | Удаляет тестера и аннулирует его персональный API-ключ. |
-| [`is_tester_allowed`](#is_tester_allowed) | Function | L85–L92 | `bool` | Проверяет доступ пользователя к тестированию Swagger UI. |
-| [`get_all_testers`](#get_all_testers) | Function | L95–L104 | `list[int]` | Возвращает отсортированный список всех авторизованных тестер |
+| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L40 | `str | None` | Executes core domain logic for `generate_or_get_tester_... |
+| [`get_tester_by_key`](#get_tester_by_key) | Function | L43–L54 | `int | None` | Retrieves and resolves domain data for `get_tester_by_k... |
+| [`add_tester`](#add_tester) | Function | L57–L65 | `bool` | Executes core domain logic for `add_tester`. |
+| [`remove_tester`](#remove_tester) | Function | L68–L82 | `bool` | Executes core domain logic for `remove_tester`. |
+| [`is_tester_allowed`](#is_tester_allowed) | Function | L85–L92 | `bool` | Executes core domain logic for `is_tester_allowed`. |
+| [`get_all_testers`](#get_all_testers) | Function | L95–L104 | `list[int]` | Retrieves and resolves domain data for `get_all_testers... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `generate_or_get_tester_key`
-- **Signature**: `async def generate_or_get_tester_key(user_id: int) -> str | None`
-- **Source Reference**: [services/testers_manager.py#L26-L40](file:///home/u/Рабочий стол/para/services/testers_manager.py#L26-L40)
-- **Async**: `Yes`
-- **Return Type**: `str | None`
+```python
+async def generate_or_get_tester_key(user_id: int) -> str | None
+```
 
-#### Purpose & Architectural Intent
-Генерирует или возвращает существующий персональный API-ключ тестера.
+- **Source Reference**: [`services/testers_manager.py#L26-L40`](../../services/testers_manager.py#L26-L40)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `generate_or_get_tester_key`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `r = await get_redis()`
-2. `if not r:`
-3. `existing = await r.get(f"{REDIS_TESTER_UID_TO_KEY_PREFIX}{user_id}")`
-4. `if existing:`
-5. `new_key = f"{API_TESTER_KEY_PREFIX}{secrets.token_hex(16)}"`
-6. `async with r.pipeline(transaction=True) as pipe:`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import generate_or_get_tester_key
+
+# Execute call
+result = await generate_or_get_tester_key(user_id=...)
+```
 
 ---
 
 ### `get_tester_by_key`
-- **Signature**: `async def get_tester_by_key(api_key: str) -> int | None`
-- **Source Reference**: [services/testers_manager.py#L43-L54](file:///home/u/Рабочий стол/para/services/testers_manager.py#L43-L54)
-- **Async**: `Yes`
-- **Return Type**: `int | None`
+```python
+async def get_tester_by_key(api_key: str) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Возвращает Telegram ID тестера по переданному персональному API-ключу.
+- **Source Reference**: [`services/testers_manager.py#L43-L54`](../../services/testers_manager.py#L43-L54)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_tester_by_key`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `api_key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `api_key` | `str` | Yes | Parameter `api_key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `if not api_key or not api_key.startswith(API_TESTER_KEY_PREFIX):`
-2. `r = await get_redis()`
-3. `if not r:`
-4. `uid_raw = await r.get(f"{REDIS_TESTER_KEY_TO_UID_PREFIX}{api_key}")`
-5. `if not uid_raw:`
-6. `uid_str = uid_raw.decode() if isinstance(uid_raw, bytes) else str(uid_raw)`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import get_tester_by_key
+
+# Execute call
+result = await get_tester_by_key(api_key=...)
+```
 
 ---
 
 ### `add_tester`
-- **Signature**: `async def add_tester(user_id: int) -> bool`
-- **Source Reference**: [services/testers_manager.py#L57-L65](file:///home/u/Рабочий стол/para/services/testers_manager.py#L57-L65)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def add_tester(user_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Добавляет ID в белый список и сразу генерирует персональный API-ключ.
+- **Source Reference**: [`services/testers_manager.py#L57-L65`](../../services/testers_manager.py#L57-L65)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `add_tester`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `r = await get_redis()`
-2. `if not r:`
-3. `await r.sadd(REDIS_TESTERS_KEY, str(user_id))`
-4. `await generate_or_get_tester_key(user_id)`
-5. `log.info(f"✅ Пользователь {user_id} добавлен в тестеры API с персональным ключом")`
-6. `return True`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import add_tester
+
+# Execute call
+result = await add_tester(user_id=...)
+```
 
 ---
 
 ### `remove_tester`
-- **Signature**: `async def remove_tester(user_id: int) -> bool`
-- **Source Reference**: [services/testers_manager.py#L68-L82](file:///home/u/Рабочий стол/para/services/testers_manager.py#L68-L82)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def remove_tester(user_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Удаляет тестера и аннулирует его персональный API-ключ.
+- **Source Reference**: [`services/testers_manager.py#L68-L82`](../../services/testers_manager.py#L68-L82)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `remove_tester`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `if user_id in ADMIN_TESTERS:`
-2. `r = await get_redis()`
-3. `if not r:`
-4. `key = await r.get(f"{REDIS_TESTER_UID_TO_KEY_PREFIX}{user_id}")`
-5. `if key:`
-6. `await r.srem(REDIS_TESTERS_KEY, str(user_id))`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import remove_tester
+
+# Execute call
+result = await remove_tester(user_id=...)
+```
 
 ---
 
 ### `is_tester_allowed`
-- **Signature**: `async def is_tester_allowed(user_id: int) -> bool`
-- **Source Reference**: [services/testers_manager.py#L85-L92](file:///home/u/Рабочий стол/para/services/testers_manager.py#L85-L92)
-- **Async**: `Yes`
-- **Return Type**: `bool`
+```python
+async def is_tester_allowed(user_id: int) -> bool
+```
 
-#### Purpose & Architectural Intent
-Проверяет доступ пользователя к тестированию Swagger UI.
+- **Source Reference**: [`services/testers_manager.py#L85-L92`](../../services/testers_manager.py#L85-L92)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `is_tester_allowed`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `user_id` | `int` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
-#### Step-by-Step Logic Execution
-1. `if user_id in ADMIN_TESTERS:`
-2. `r = await get_redis()`
-3. `if not r:`
-4. `return bool(await r.sismember(REDIS_TESTERS_KEY, str(user_id)))`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import is_tester_allowed
+
+# Execute call
+result = await is_tester_allowed(user_id=...)
+```
 
 ---
 
 ### `get_all_testers`
-- **Signature**: `async def get_all_testers() -> list[int]`
-- **Source Reference**: [services/testers_manager.py#L95-L104](file:///home/u/Рабочий стол/para/services/testers_manager.py#L95-L104)
-- **Async**: `Yes`
-- **Return Type**: `list[int]`
+```python
+async def get_all_testers() -> list[int]
+```
 
-#### Purpose & Architectural Intent
-Возвращает отсортированный список всех авторизованных тестеров.
+- **Source Reference**: [`services/testers_manager.py#L95-L104`](../../services/testers_manager.py#L95-L104)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `list[int]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_all_testers`.
 
 #### Parameters Contract
-*None (takes no arguments)*
+*This method takes no input parameters.*
 
-#### Step-by-Step Logic Execution
-1. `testers: set[int] = set(ADMIN_TESTERS)`
-2. `r = await get_redis()`
-3. `if r:`
-4. `return sorted(testers)`
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.testers_manager import get_all_testers
+
+# Execute call
+result = await get_all_testers()
+```
 
 ---

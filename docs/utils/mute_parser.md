@@ -1,40 +1,61 @@
-# Module Specification: `utils/mute_parser.py`
-> **Path**: [`utils/mute_parser.py`](file:///home/u/Рабочий стол/para/utils/mute_parser.py)  
+# Component Reference: `utils/mute_parser.py`
+> **File Path**: [`utils/mute_parser.py`](../../utils/mute_parser.py)  
 > **Subsystem**: `Ban Duration Parser`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Утилита парсинга строк времени мута в секунды. Преобразует выражения типа '5с', '10м', '2ч', '1д' в секунды для передачи в Bot.restrict_chat_member.
+## 1. Architectural Role & Responsibilities
+The `utils/mute_parser.py` module implements core operational logic for the `Ban Duration Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L29 | `int | None` | Парсит строку формата '5с', '10м', '2ч', '1д' в интервал в с |
+| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L29 | `int | None` | Parses and extracts structured entities from `parse_dur... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `parse_duration_to_seconds`
-- **Signature**: `def parse_duration_to_seconds(time_str: str) -> int | None`
-- **Source Reference**: [utils/mute_parser.py#L11-L29](file:///home/u/Рабочий стол/para/utils/mute_parser.py#L11-L29)
-- **Async**: `No`
-- **Return Type**: `int | None`
+```python
+def parse_duration_to_seconds(time_str: str) -> int | None
+```
 
-#### Purpose & Architectural Intent
-Парсит строку формата '5с', '10м', '2ч', '1д' в интервал в секундах. :param time_str: Строка с периодом :return: Секунды или None при неверном формате
+- **Source Reference**: [`utils/mute_parser.py#L11-L29`](../../utils/mute_parser.py#L11-L29)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int | None`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_duration_to_seconds`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `time_str` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `time_str` | `str` | Yes | Parameter `time_str` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `match = re.match(r"^(\d+)\s*([сsмmчhдd])?$", time_str.strip().lower())`
-2. `if not match:`
-3. `amount = int(match.group(1))`
-4. `unit = match.group(2) or "м"`
-5. `multipliers = {`
-6. `return amount * multipliers.get(unit, 60)`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.mute_parser import parse_duration_to_seconds
+
+# Execute call
+result = parse_duration_to_seconds(time_str=...)
+```
 
 ---

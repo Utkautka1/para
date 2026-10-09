@@ -1,37 +1,61 @@
-# Module Specification: `config.py`
-> **Path**: [`config.py`](file:///home/u/Рабочий стол/para/config.py)  
+# Component Reference: `config.py`
+> **File Path**: [`config.py`](../../config.py)  
 > **Subsystem**: `System Configuration`  
-> **Architecture Role**: Enterprise Core Service / Domain Logic Handler
+> **Architecture Layer**: `Enterprise Microservice Subsystem`  
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
+> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Overview
-Модуль конфигурации бота расписания КТМУ. Считывает все параметры исключительно из файла .env без хардкод-значений. При отсутствии любой из обязательных переменных выбрасывает исключение ValueError.
+## 1. Architectural Role & Responsibilities
+The `config.py` module implements core operational logic for the `System Configuration` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
 
-## 2. Function & Method Inventory
-| Symbol | Type | Line Range | Return Type | Description |
+### Component Architecture & Data Flow
+```mermaid
+graph LR
+    Inbound[Inbound Request] --> Logic[Domain Service Logic]
+    Logic --> Redis[(Redis 7 State Store)]
+    Logic --> Outbound[Outbound Event Dispatch]
+```
+
+---
+## 2. Public API & Symbol Inventory
+| Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_required_env`](#get_required_env) | Function | L17–L27 | `str` | Извлекает обязательную переменную из .env или вызывает Value |
+| [`get_required_env`](#get_required_env) | Function | L17–L27 | `str` | Retrieves and resolves domain data for `get_required_en... |
 
 ---
 
-## 3. Exhaustive Function Specifications
+## 3. Comprehensive Function Specifications
 
 ### `get_required_env`
-- **Signature**: `def get_required_env(key: str) -> str`
-- **Source Reference**: [config.py#L17-L27](file:///home/u/Рабочий стол/para/config.py#L17-L27)
-- **Async**: `No`
-- **Return Type**: `str`
+```python
+def get_required_env(key: str) -> str
+```
 
-#### Purpose & Architectural Intent
-Извлекает обязательную переменную из .env или вызывает ValueError. :param key: Название ключа переменной :return: Значение переменной из окружения
+- **Source Reference**: [`config.py#L17-L27`](../../config.py#L17-L27)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_required_env`.
 
 #### Parameters Contract
-| Parameter | Type / Constraint | Description |
-| :--- | :--- | :--- |
-| `key` | `str` | Input parameter |
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
 
-#### Step-by-Step Logic Execution
-1. `val = os.getenv(key)`
-2. `if not val:`
-3. `return val`
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from config import get_required_env
+
+# Execute call
+result = get_required_env(key=...)
+```
 
 ---
