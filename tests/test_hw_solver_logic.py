@@ -7,7 +7,8 @@ Unit-тесты валидации и подготовки заданий в м�
   3. Корректное объединение инструкций реплая и основного задания (combine_prompt_and_instructions)
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from aiogram.types import Message
 
@@ -15,6 +16,7 @@ from bot.handlers.user.hw_solver import (
     combine_prompt_and_instructions,
     compute_content_hash,
     is_valid_homework_prompt,
+    validate_hw_file_size,
 )
 
 
@@ -140,12 +142,38 @@ def test_combine_prompt_and_instructions_captions() -> None:
 @pytest.mark.asyncio
 async def test_is_hw_allowed_admin_rate_limit_bypass() -> None:
     """Проверяет, что администратор игнорирует ограничения rate-limit."""
-    from unittest.mock import AsyncMock, patch
-    from config import ALLOWED_USER_ID
     from bot.handlers.user.hw_solver import is_hw_allowed
+    from config import ALLOWED_USER_ID
 
     msg = MagicMock(spec=Message, message_id=1, text="реши задачу 1", caption=None, photo=[], document=None)
     with patch("bot.handlers.user.hw_solver.check_user_rate_limit", AsyncMock(return_value=False)), \
          patch("bot.handlers.user.hw_solver.is_message_processed", AsyncMock(return_value=False)):
         assert await is_hw_allowed(msg, msg, 999999) is False
         assert await is_hw_allowed(msg, msg, ALLOWED_USER_ID) is True
+
+
+@pytest.mark.asyncio
+async def test_validate_hw_file_size_allowed() -> None:
+    """Проверяет пропуск файлов допустимого размера (< 20 МБ)."""
+    bot = MagicMock()
+    bot.set_message_reaction = AsyncMock()
+    msg = MagicMock(spec=Message, chat=MagicMock(id=123), message_id=456)
+
+    # 5 МБ
+    is_valid = await validate_hw_file_size(bot, msg, 5 * 1024 * 1024, "test.pdf")
+    assert is_valid is True
+    bot.set_message_reaction.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_validate_hw_file_size_rejected() -> None:
+    """Проверяет отклонение файлов более 20 МБ с установкой реакции-плеча."""
+    bot = MagicMock()
+    bot.set_message_reaction = AsyncMock()
+    msg = MagicMock(spec=Message, chat=MagicMock(id=123), message_id=456)
+
+    # 25 МБ
+    is_valid = await validate_hw_file_size(bot, msg, 25 * 1024 * 1024, "large.pdf")
+    assert is_valid is False
+    bot.set_message_reaction.assert_awaited_once()
+
