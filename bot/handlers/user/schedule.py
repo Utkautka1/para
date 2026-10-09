@@ -122,7 +122,7 @@ async def _show_tester_cabinet(message: Message, uid: int) -> None:
         "🧪 <b>Кабинет тестировщика para-api</b>\n\n"
         "Вы успешно авторизованы как тестировщик API!\n\n"
         f"🔑 Ваш персональный <b>API-ключ</b>:\n<code>{key}</code>\n\n"
-        "💡 <i>Вставьте ключ в Swagger UI (Authorize -> ApiKeyAuth)"
+        "💡 <i>Вставьте ключ в Swagger UI (Authorize -> ApiKeyAuth).</i>"
     )
     await message.answer(text, reply_markup=get_tester_cabinet_kb())
 
