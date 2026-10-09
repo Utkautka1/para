@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.responses import HTMLResponse
 
-from api.deps import verify_api_key
+from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.miniapp import (
     MiniappAuthRequest,
     MiniappAuthResponse,
@@ -86,7 +86,7 @@ async def check_tester_status(para_session: str = Cookie(default=None)) -> Minia
     return MiniappCheckResponse(authenticated=True, user_id=uid, is_tester=allowed)
 
 
-@router.get("/testers", response_model=TesterListResponse, dependencies=[Depends(verify_api_key)])
+@router.get("/testers", response_model=TesterListResponse, dependencies=[Depends(verify_api_or_tester)])
 async def list_api_testers() -> TesterListResponse:
     """Возвращает список всех зарегистрированных тестеров API."""
     uids = await get_all_testers()
@@ -94,18 +94,18 @@ async def list_api_testers() -> TesterListResponse:
     return TesterListResponse(count=len(items), testers=items)
 
 
-@router.post("/testers/{user_id}", dependencies=[Depends(verify_api_key)])
+@router.post("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
 async def api_add_tester(user_id: int) -> dict:
-    """Добавляет пользователя в белый список тестеров API."""
+    """Добавляет пользователя в белый список тестеров API (Admin only)."""
     success = await add_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to add tester")
     return {"status": "ok", "user_id": user_id}
 
 
-@router.delete("/testers/{user_id}", dependencies=[Depends(verify_api_key)])
+@router.delete("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
 async def api_remove_tester(user_id: int) -> dict:
-    """Удаляет пользователя из белого списка тестеров API."""
+    """Удаляет пользователя из белого списка тестеров API (Admin only)."""
     success = await remove_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Cannot remove admin or error")
