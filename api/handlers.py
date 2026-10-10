@@ -25,8 +25,9 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Обрабатывает ошибки валидации параметров Pydantic (HTTP 422)."""
     log.warning(f"⚠️ Ошибка валидации {request.method} {request.url.path}: {exc.errors()}")
+    status_code = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status_code,
         content={"detail": exc.errors(), "code": "VALIDATION_ERROR"}
     )
 
