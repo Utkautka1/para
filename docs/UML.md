@@ -572,6 +572,17 @@ classDiagram
         +attendance_topic_sync_loop() void
     }
 
+    class ZenCookieSyncUtility {
+        +find_zen_cookies_db() Path
+        +extract_raw_yandex_cookies(db_path) dict
+        +build_cookie_header(cookies) str
+        +verify_yandex_cookie(cookie_hdr, test_url) bool
+        +update_env_file(env_path, cookie_hdr) void
+        +send_cookie_to_remote_env(cookie_hdr, host, remote_dir) void
+        +update_remote_redis_and_restart(cookie_hdr, host, remote_dir) void
+        +sync_cookies(host) bool
+    }
+
     WopiController --> RedisCacheManager : session token validation
     WopiController --> YandexDiskClient : reads and writes xlsx
     WopiController ..> AttendanceSession : parses session context
@@ -579,7 +590,11 @@ classDiagram
     AttendanceTopicUpdater --> AttendanceStatsService : requests aggregated metrics
     AttendanceTopicUpdater --> RedisCacheManager : caches snapshot and acquires redis_lock
     AttendanceStatsService --> YandexDiskClient : downloads workbook sheets
+    ZenCookieSyncUtility --> RedisCacheManager : updates yandex:session_cookie
+    ZenCookieSyncUtility --> YandexDiskClient : validates auth via client-config
+    ZenCookieSyncUtility ..> WopiController : provisions YANDEX_COOKIE in .env
 ```
+
 
 ### WOPI Session Lifecycle & All-Time Registry
 
