@@ -251,39 +251,41 @@ Empirical telemetry and performance benchmarks captured under production workloa
 
 ### 1. Cross-Microservice Latency & Throughput SLA Matrix
 
-Every microservice operates within strict single-digit millisecond or sub-millisecond budgets. Heavy external operations (cloud office sync, neural vision synthesis) are decoupled through asynchronous at-least-once queues and OS-level worker threadpools.
+Every microservice operates within strict single-digit millisecond or sub-millisecond budgets. Heavy operations (cloud office sync, neural vision synthesis) are decoupled through asynchronous at-least-once queues and OS-level threadpools.
 
-| Microservice | Operation / Ingress Channel | P50 (Median) | P95 | P99 | Throughput (RPS) | Wire / Memory Payload | Engineering Guarantee |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`para-api`** | `GET /schedule/day` (Warm L1 Cache) | **0.03 ms** | **0.05 ms** | **0.08 ms** | `4,200+ req/s` | `4.8 KB JSON` | Zero I/O in-memory dict lookup |
-| **`para-api`** | `gRPC ScheduleService/GetDaySchedule` | **0.38 ms** | **0.55 ms** | **0.82 ms** | `3,800+ req/s` | `1.3 KB Protobuf` | ~73% wire compaction vs REST |
-| **`para-api`** | `GET /schedule/day` (L2 Redis Snapshot) | **1.40 ms** | **2.10 ms** | **2.80 ms** | `1,600+ req/s` | `4.8 KB JSON` | Non-blocking async Redis cache hit |
-| **`para-api`** | `GET /health` (Internal Loopback Probe) | **0.85 ms** | **1.05 ms** | **1.20 ms** | `5,000+ req/s` | `< 0.2 KB` | Sub-millisecond container healthcheck |
-| **`para-bot`** | Telegram Update Dispatch Pipeline | **8.2 ms** | **12.5 ms** | **16.0 ms** | `1,200+ msg/s` | Telegram Updates | Fast-path middleware router |
-| **`para-bot`** | Optimistic Attendance Mark Ack | **8.5 ms** | **11.2 ms** | **14.8 ms** | Line-rate | `0.4 KB State` | Instant UI response before WOPI settling |
-| **`para-bot`** | Token Bucket Anti-Flood Gate | **250 ms** | **250 ms** | **250 ms** | Rate-Limited | Drop on violation | Strict debounce window prevents spam |
-| **`para-bot`** | FSM State Transaction (`RedisStorage`) | **0.35 ms** | **0.52 ms** | **0.85 ms** | `2,800+ ops/s` | JSON State | Non-blocking Redis FSM state persistence |
-| **`para-worker`**| Live Schedule Forum Topic Render & Edit | **95 ms** | **115 ms** | **145 ms** | 1 / 60s per group | Rich HTML Text | Ephemeral atomic Telegram message update |
-| **`para-worker`**| Academic Bell Reminder Cron Trigger | **18 ms** | **35 ms** | **45 ms** | Scheduled event | Notification Batch | Sub-50ms APScheduler jitter |
-| **`para-worker`**| Upstream API Fallback Failover | **10.0 s** | **10.0 s** | **10.05 s** | Failover switch | Normalized JSON | 10s budget per mirror with instant fallback |
-| **`para-worker`**| WOPI 12-Sheet Cloud Excel Aggregation | **1.25 s** | **1.45 s** | **1.80 s** | Background sync | `~120 KB XLSX` | Offloaded to `asyncio.to_thread` |
-| **`para-solver`**| Atomic Task Pop (`BLMOVE` Queue Transfer)| **0.18 ms** | **0.25 ms** | **0.40 ms** | `5,000+ ops/s` | Task JSON | Crash-resilient at-least-once queue |
-| **`para-solver`**| Multimodal DeepSeek-V3/R1 Reasoning | **4.80 s** | **6.20 s** | **8.10 s** | 3 slots max | Solution Markdown | Bounded concurrency (`asyncio.Semaphore(3)`)|
-| **`para-solver`**| GOST 7.32-2017 Academic DOCX Builder | **280 ms** | **340 ms** | **420 ms** | Serial worker | `~65 KB DOCX` | Thread-pool offloaded Word generation |
-| **`para-redis`** | Local Docker Engine Roundtrip Latency | **0.18 ms** | **0.42 ms** | **0.85 ms** | `50,000+ ops/s`| Binary RESP | AOF append-only with volatile-LRU eviction |
+| Service | Target Operation | P50 | P99 | Throughput | Architectural Guarantee |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`para-api`** | `GET /schedule/day` (Warm L1) | **0.03 ms** | **0.08 ms** | `4,200+ req/s` | Zero I/O in-memory dict lookup |
+| **`para-api`** | `gRPC GetDaySchedule` (Protobuf) | **0.38 ms** | **0.82 ms** | `3,800+ req/s` | ~73% wire compaction vs REST (1.3 KB) |
+| **`para-api`** | `GET /schedule/day` (L2 Redis) | **1.40 ms** | **2.80 ms** | `1,600+ req/s` | Non-blocking async Redis snapshot hit |
+| **`para-api`** | `GET /health` (Internal Loopback) | **0.85 ms** | **1.20 ms** | `5,000+ req/s` | Sub-millisecond container healthcheck |
+| **`para-bot`** | Telegram Update Dispatch Pipeline| **8.2 ms** | **16.0 ms** | `1,200+ msg/s` | Fast-path middleware routing pipeline |
+| **`para-bot`** | Optimistic Attendance Mark Ack | **8.5 ms** | **14.8 ms** | Line-rate | Instant UI response before WOPI settling |
+| **`para-bot`** | Anti-Flood Debounce Gate | **250 ms** | **250 ms** | Rate-Limited | Token bucket window drops bursts |
+| **`para-bot`** | FSM State Save (`RedisStorage`) | **0.35 ms** | **0.85 ms** | `2,800+ ops/s` | Non-blocking Redis FSM persistence |
+| **`para-worker`**| Live Schedule Topic Forum Edit | **95 ms** | **145 ms** | 1 / 60s group | Ephemeral atomic Telegram message update |
+| **`para-worker`**| Bell Reminder Cron Trigger | **18 ms** | **45 ms** | Cron event | Sub-50ms APScheduler event jitter |
+| **`para-worker`**| Upstream API Fallback Failover | **10.0 s** | **10.05 s** | Failover | 10s budget per mirror with failover |
+| **`para-worker`**| WOPI 12-Sheet Excel Aggregation | **1.25 s** | **1.80 s** | Background | Offloaded to `asyncio.to_thread` |
+| **`para-solver`**| Atomic Task Pop (`BLMOVE` Queue) | **0.18 ms** | **0.40 ms** | `5,000+ ops/s` | Crash-resilient at-least-once queue |
+| **`para-solver`**| Multimodal DeepSeek Reasoning | **4.80 s** | **8.10 s** | 3 slots max | Bounded concurrency (`Semaphore(3)`) |
+| **`para-solver`**| GOST 7.32-2017 Academic DOCX | **280 ms** | **420 ms** | Serial worker | Threadpool-offloaded Word builder |
+| **`para-redis`** | Local Docker Roundtrip Latency | **0.18 ms** | **0.85 ms** | `50,000+ ops/s`| Binary RESP with volatile-LRU eviction |
+
 
 ### 2. Live Production Resource Utilization (Host Telemetry)
 
 Real production memory footprints, CPU utilization, and thread allocation measured in live production runtime across all containerized workloads:
 
-| Microservice Container | Role & Engine | CPU % (Idle / Active) | Production RSS Memory | Container Hard Limit | Memory Quota Used | Active Thread PIDs | Health Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`para-redis`** | In-Memory Cache & Distributed Lock Store | `0.10%` / `0.41%` | **4.03 MiB** | `64 MiB` | **6.3%** | 7 | `healthy` |
-| **`para-api`** | Dual-Protocol REST & gRPC HTTP/2 Server | `0.05%` / `0.18%` | **211.6 MiB** | `1024 MiB` | **20.7%** | 13 | `healthy` |
-| **`para-worker`** | Telemetry Daemon & APScheduler Engine | `0.02%` / `0.08%` | **272.3 MiB** | `768 MiB` | **35.5%** | 9 | `running` |
-| **`para-solver`** | Asynchronous DeepSeek AI Worker | `0.01%` / `0.04%` | **182.3 MiB** | `1024 MiB` | **17.8%** | 2 | `running` |
-| **`para-bot`** | Telegram Gateway & FSM Dispatcher | `0.04%` / `0.09%` | **399.2 MiB** | `768 MiB` | **51.9%** | 9 | `running` |
-| **Total Cluster Baseline** | **5-Tier Microservices Mesh** | **0.22%** / **0.80%** | **~1,069 MiB (~1.04 GiB)** | `3648 MiB` | **~29.3%** | **40 PIDs** | **100% Operational** |
+| Service Container | Engine Role | RAM (RSS) | Hard Limit | Quota Used | CPU (Peak) | Health Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`para-redis`** | In-Memory Cache & Distributed Lock Store | **4.03 MiB** | `64 MiB` | **6.3%** | `0.41%` | `healthy` |
+| **`para-api`** | Dual-Protocol REST & gRPC HTTP/2 Server | **211.6 MiB** | `1024 MiB` | **20.7%** | `0.18%` | `healthy` |
+| **`para-worker`** | Telemetry Daemon & APScheduler Engine | **272.3 MiB** | `768 MiB` | **35.5%** | `0.08%` | `running` |
+| **`para-solver`** | Asynchronous DeepSeek AI Worker | **182.3 MiB** | `1024 MiB` | **17.8%** | `0.04%` | `running` |
+| **`para-bot`** | Telegram Gateway & FSM Dispatcher | **399.2 MiB** | `768 MiB` | **51.9%** | `0.09%` | `running` |
+| **Total Cluster** | **5-Tier Microservices Mesh (40 PIDs)** | **~1,069 MiB** | `3648 MiB` | **~29.3%** | **0.80%** | **100% Operational** |
+
 
 ### 3. Senior Architectural Performance Principles
 
