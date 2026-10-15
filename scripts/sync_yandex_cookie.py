@@ -3,10 +3,10 @@
 
 Скрипт решает проблему истекающих сессий в Yandex Docs:
   1. Извлекает свежие Cookie авторизации (.yandex.ru) из профиля Zen Browser.
-  2. Проверяет их валидность прямым HTTP-запросом к документу посещаемости.
-  3. Обновляет YANDEX_COOKIE в локальном файле .env.
-  4. Передает обновленный заголовок на удаленный сервер через SSH.
-  5. Сбрасывает устаревший кэш в Redis и перезапускает сервис воркера.
+  2. Продлевает сессию через сервис обновления Яндекс Паспорта.
+  3. Проверяет валидность прямым HTTP-запросом к документу посещаемости.
+  4. Обновляет YANDEX_COOKIE и API URLs в локальном и удаленном файлах .env.
+  5. Сбрасывает устаревший кэш в Redis и перезапускает сервисы.
 """
 
 import base64
@@ -16,10 +16,10 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
-# Список обязательных Cookie для авторизованного доступа к Яндекс Документам
 REQUIRED_COOKIE_NAMES = (
     "Session_id", "sessionid2", "sessar", "_yasc",
     "yandexuid", "i", "yandex_login", "yp", "L"
@@ -27,12 +27,20 @@ REQUIRED_COOKIE_NAMES = (
 TEST_DOC_URL = "https://disk.yandex.ru/i/uDcaWTFcGbuwZg"
 
 
+def get_target_doc_url() -> str:
+    """Возвращает боевой URL таблицы посещаемости из config или fallback."""
+    try:
+        from config import ATTENDANCE_DOC_URL
+        return ATTENDANCE_DOC_URL or TEST_DOC_URL
+    except Exception:
+        return TEST_DOC_URL
+
+
 def find_zen_cookies_db() -> Path:
     """
     Находит путь к базе данных cookies.sqlite в профиле Zen Browser.
 
     Проверяет ~/.config/zen на наличие профилей и выбирает самый свежий.
-    Возвращает путь к активному файлу cookies.sqlite.
     """
     zen_dir = Path.home() / ".config" / "zen"
     if not zen_dir.exists():
@@ -40,7 +48,6 @@ def find_zen_cookies_db() -> Path:
     candidates = list(zen_dir.glob("*/cookies.sqlite"))
     if not candidates:
         raise FileNotFoundError("Файл cookies.sqlite не найден в профилях Zen Browser")
-    # Выбираем профиль с самым свежим временем модификации базы
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
@@ -49,7 +56,6 @@ def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
     Копирует cookies.sqlite во временный файл и извлекает куки Яндекса.
 
     Копирование необходимо для обхода файловой блокировки работающего браузера.
-    Возвращает словарь имя -> значение для домена yandex.ru.
     """
     tmp_path = Path("/tmp") / f"zen_cookies_{os.getpid()}.sqlite"
     shutil.copy2(db_path, tmp_path)
@@ -69,6 +75,32 @@ def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
     finally:
         if tmp_path.exists():
             tmp_path.unlink()
+
+
+def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str, str]:
+    """
+    Продлевает сессию Яндекс через эндпоинт обновления Паспорта.
+
+    Перехватывает Set-Cookie из ответа для получения свежих Session_id и sessar.
+    """
+    encoded_url = urllib.parse.quote(target_url, safe="")
+    passport_url = f"https://passport.yandex.ru/auth/update/?from=cloud&origin=disk_client_web_signin_ru&retpath={encoded_url}"
+    cookie_str = "; ".join(f"{k}={v}" for k, v in cookies.items())
+    req = urllib.request.Request(passport_url, headers={"User-Agent": "Mozilla/5.0", "Cookie": cookie_str})
+    
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    try:
+        urllib.request.build_opener(NoRedirect).open(req, timeout=10)
+    except urllib.error.HTTPError as exc:
+        for sc in exc.headers.get_all("Set-Cookie") or []:
+            part = sc.split(";")[0]
+            if "=" in part:
+                k, v = part.split("=", 1)
+                cookies[k] = v
+    return cookies
 
 
 def build_cookie_header(cookies: dict[str, str]) -> str:
@@ -152,44 +184,59 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
     subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
 
 
+def send_api_urls_to_remote_env(
+    api_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
+    host: str = "home",
+    remote_dir: str = "/root/para"
+) -> None:
+    """Синхронизирует переменные SCHEDULE_API_URL и EXAM_SCHEDULE_API_URL на сервере."""
+    py = (
+        f"import re, os; p = '{remote_dir}/.env'; "
+        f"s = open(p).read() if os.path.exists(p) else ''; "
+        f"s = re.sub(r'SCHEDULE_API_URL=.*\\n', 'SCHEDULE_API_URL={api_url}\\n', s); "
+        f"s = re.sub(r'EXAM_SCHEDULE_API_URL=.*\\n', 'EXAM_SCHEDULE_API_URL={api_url}\\n', s); "
+        f"open(p, 'w').write(s)"
+    )
+    subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
+
+
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
     """
-    Обновляет сессию в Redis и перезапускает para-worker на сервере.
+    Обновляет сессию в Redis и перезапускает контейнеры на сервере.
 
-    Сбрасывает ключ yandex:session_cookie и применяет изменения через docker compose.
+    Сбрасывает ключ yandex:session_cookie и перезапускает сервисы worker и bot.
     """
     b64 = base64.b64encode(cookie_hdr.encode("utf-8")).decode("ascii")
     py = (
         f"import base64, subprocess; "
         f"c = base64.b64decode('{b64}').decode('utf-8'); "
         f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', 'yandex:session_cookie', c, 'ex', '604800'], check=True); "
-        f"subprocess.run(['docker', 'compose', 'restart', 'worker'], cwd='{remote_dir}', check=True)"
+        f"subprocess.run(['docker', 'compose', 'restart', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
     )
     subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
 
 
 def sync_cookies(host: str = "home") -> bool:
-    """
-    Основной пайплайн синхронизации Cookie из Zen Browser на сервер.
-
-    Координирует поиск, валидацию, локальное и удаленное обновление.
-    """
+    """Основной пайплайн синхронизации Cookie из Zen Browser на сервер."""
     print("1. Поиск базы данных cookies в профиле Zen Browser...")
     db_path = find_zen_cookies_db()
     raw_cookies = extract_raw_yandex_cookies(db_path)
-    cookie_hdr = build_cookie_header(raw_cookies)
-    print("2. Проверка валидности Cookie через запрос к Яндекс Документам...")
-    if not verify_yandex_cookie(cookie_hdr):
+    target_url = get_target_doc_url()
+    print("2. Продление сессии через Яндекс Паспорт...")
+    refreshed_cookies = refresh_yandex_session(raw_cookies, target_url)
+    cookie_hdr = build_cookie_header(refreshed_cookies)
+    print("3. Проверка валидности Cookie через запрос к Яндекс Документам...")
+    if not verify_yandex_cookie(cookie_hdr, target_url):
         print("Ошибка: извлеченные Cookie не прошли авторизацию в Яндекс Документах!")
         return False
-    print("3. Обновление локального .env...")
-    local_env = Path(__file__).resolve().parent.parent / ".env"
-    update_env_file(local_env, cookie_hdr)
-    print(f"4. Обновление .env на удаленном сервере ({host})...")
+    print("4. Обновление локального .env...")
+    update_env_file(Path(__file__).resolve().parent.parent / ".env", cookie_hdr)
+    print(f"5. Обновление .env на удаленном сервере ({host})...")
     send_cookie_to_remote_env(cookie_hdr, host)
-    print("5. Обновление Redis и перезапуск para-worker...")
+    send_api_urls_to_remote_env(host=host)
+    print("6. Обновление Redis и перезапуск сервисов...")
     update_remote_redis_and_restart(cookie_hdr, host)
-    print("Успех: Cookie обновлены, воркер перезапущен и готов к работе!")
+    print("Успех: Cookie и API URLs обновлены, сервисы перезапущены!")
     return True
 
 
