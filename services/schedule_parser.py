@@ -25,6 +25,7 @@ from config import (
     SCHEDULE_API_URL,
     SCHEDULE_CACHE_TTL_SECONDS,
     SCHEDULE_COOLDOWN_SECONDS,
+    SCHEDULE_FALLBACK_API_URL,
 )
 from core.logger import get_logger
 from integrations.docx_parser import TeacherData, get_teacher_links
@@ -309,15 +310,46 @@ async def process_api_response(res: httpx.Response, now: float) -> dict[str, Any
 _IS_REFRESHING: bool = False
 
 
-async def _fetch_remote_schedule() -> httpx.Response:
-    """Выполняет HTTP-запрос к расписанию КТМУ с заголовками кэширования."""
-    client = get_http_client()
-    headers = {}
+def _build_cache_headers() -> dict[str, str]:
+    """Формирует заголовки условного запроса ETag и Last-Modified для кэширования."""
+    headers: dict[str, str] = {}
     if _LAST_ETAG:
         headers["If-None-Match"] = _LAST_ETAG
     if _LAST_MODIFIED:
         headers["If-Modified-Since"] = _LAST_MODIFIED
-    return await client.get(SCHEDULE_API_URL, headers=headers)
+    return headers
+
+
+async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Response:
+    """Выполняет HTTP GET запрос к конкретному эндпоинту API с защитным таймаутом."""
+    client = get_http_client()
+    # 10 сек позволяет быстро переключиться на fallback, если основной домен лежит
+    return await client.get(url, headers=headers, timeout=10.0)
+
+
+async def _fetch_remote_schedule() -> httpx.Response:
+    """
+    Запрашивает расписание из основного API с авто-переходом на резервный при сбое.
+
+    Опрашивает SCHEDULE_API_URL, а при ошибке обращается к SCHEDULE_FALLBACK_API_URL.
+    """
+    headers = _build_cache_headers()
+    endpoints = [u for u in (SCHEDULE_API_URL, SCHEDULE_FALLBACK_API_URL) if u]
+    last_exc: Exception | None = None
+    for idx, url in enumerate(endpoints):
+        try:
+            res = await _fetch_single_endpoint(url, headers)
+            if res.status_code in (200, 304):
+                if idx > 0:
+                    log.info(f"Основной API недоступен, данные получены из запасного API: {url}")
+                return res
+            log.warning(f"Эндпоинт {url} вернул статус {res.status_code}, переключаемся...")
+        except Exception as e:
+            last_exc = e
+            log.warning(f"Сбой подключения к эндпоинту расписания ({url}): {e}")
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Все доступные эндпоинты расписания КТМУ недоступны")
 
 
 async def refresh_schedule_in_background(force: bool = False) -> None:

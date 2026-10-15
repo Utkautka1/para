@@ -185,16 +185,20 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
 
 
 def send_api_urls_to_remote_env(
-    api_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
+    primary_url: str = "https://timetable-ktmu.ru/api/storage/schedule-data-v2",
+    fallback_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
     host: str = "home",
     remote_dir: str = "/root/para"
 ) -> None:
-    """Синхронизирует переменные SCHEDULE_API_URL и EXAM_SCHEDULE_API_URL на сервере."""
+    """Синхронизирует основной и запасной адреса API расписания на сервере."""
     py = (
         f"import re, os; p = '{remote_dir}/.env'; "
         f"s = open(p).read() if os.path.exists(p) else ''; "
-        f"s = re.sub(r'SCHEDULE_API_URL=.*\\n', 'SCHEDULE_API_URL={api_url}\\n', s); "
-        f"s = re.sub(r'EXAM_SCHEDULE_API_URL=.*\\n', 'EXAM_SCHEDULE_API_URL={api_url}\\n', s); "
+        f"s = re.sub(r'SCHEDULE_API_URL=.*\\n', 'SCHEDULE_API_URL={primary_url}\\n', s); "
+        f"s = re.sub(r'EXAM_SCHEDULE_API_URL=.*\\n', 'EXAM_SCHEDULE_API_URL={primary_url}\\n', s); "
+        f"v_fb = f'SCHEDULE_FALLBACK_API_URL={fallback_url}\\nEXAM_SCHEDULE_FALLBACK_API_URL={fallback_url}\\n'; "
+        f"s = re.sub(r'SCHEDULE_FALLBACK_API_URL=.*\\n', '', s); "
+        f"s = re.sub(r'EXAM_SCHEDULE_FALLBACK_API_URL=.*\\n', '', s) + v_fb; "
         f"open(p, 'w').write(s)"
     )
     subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)

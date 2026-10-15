@@ -33,6 +33,7 @@ ALLOWED_USER_ID: int = int(get_required_env("ALLOWED_USER_ID"))
 
 # URL-адреса API расписания и Яндекс Диска
 SCHEDULE_API_URL: str = get_required_env("SCHEDULE_API_URL")
+SCHEDULE_FALLBACK_API_URL: str = os.getenv("SCHEDULE_FALLBACK_API_URL", "")
 YANDEX_DOC_PUBLIC_URL: str = get_required_env("YANDEX_DOC_PUBLIC_URL")
 
 # Параметры целевой группы
@@ -59,6 +60,7 @@ BIRTHDAY_TOPIC_THREAD_ID: int = int(get_required_env("BIRTHDAY_TOPIC_THREAD_ID")
 IMPORTANT_TOPIC_THREAD_ID: int = int(get_required_env("IMPORTANT_TOPIC_THREAD_ID"))
 ATTENDANCE_TOPIC_THREAD_ID: int = int(get_required_env("ATTENDANCE_TOPIC_THREAD_ID"))
 EXAM_SCHEDULE_API_URL: str = get_required_env("EXAM_SCHEDULE_API_URL")
+EXAM_SCHEDULE_FALLBACK_API_URL: str = os.getenv("EXAM_SCHEDULE_FALLBACK_API_URL", "")
 
 # Настройки прокси (опционально)
 PROXY_URL: str | None = os.getenv("PROXY_URL")

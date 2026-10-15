@@ -164,6 +164,7 @@ classDiagram
 
     class KTMUProvider {
         +fetch_all_schedule() json
+        +fetch_fallback_schedule() json
     }
 
     class DeepSeekProvider {
@@ -288,6 +289,9 @@ classDiagram
         -Timeout _http_timeout
         +fetch_schedule(group) dict
         +refresh_schedule_in_background(force) void
+        +_fetch_single_endpoint(url, headers) Response
+        +_fetch_remote_schedule() Response
+        +_build_cache_headers() dict
         +_parse_and_clean_payload(content) tuple
         +get_day(group, target_date) List~Lesson~
         +get_week(group, week_num) dict
