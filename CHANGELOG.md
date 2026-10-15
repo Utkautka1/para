@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.4.1] - 2026-10-15
+
+### Added
+- **Dual-Endpoint Fallback API Topology**: Implemented multi-tier upstream polling in `services/schedule_parser.py` (`SCHEDULE_FALLBACK_API_URL` and `EXAM_SCHEDULE_FALLBACK_API_URL`). Timetable requests automatically fall back to the secondary mirror upon network timeout or upstream 5xx errors with independent 10-second request budgets.
+- **Automated Zen Browser Session Extractor & Passport Refresh**: Built `scripts/sync_yandex_cookie.py` with `ZenCookieSyncUtility` capable of querying Zen/Firefox SQLite cookies (`yandexuid`, `Session_id`), hitting `passport.yandex.ru/auth/update/` for fresh session tokens, syncing Redis remotely and locally, and orchestrating container reload.
+- **Unauthenticated Ingress Flow & Security Telemetry**: Hardened `bot/handlers/user/auth_fallback.py` to trap unauthorized interactions, log structured security events, and present graceful registration guidance.
+- **Expanded Test Suite (561 Tests)**: Added 15 new test cases across `tests/test_schedule_fallback.py` and `tests/test_sync_yandex_cookie.py` validating failover mechanics, error handling, session renewal, and database queries.
+
+### Changed
+- **Schedule Parser Architecture**: Refactored `services/schedule_parser.py` into decoupled single-responsibility functions under 25 lines (`_build_cache_headers`, `_fetch_single_endpoint`, `_fetch_remote_schedule`).
+- **Configuration Sanitization**: Updated `.env`, `.env.example`, and `.env.ci` to include fallback URLs while strictly sanitizing example secrets to prevent sensitive internal endpoint leakage.
+
+### Fixed
+- **Upstream Network Latency Spikes**: Eliminated worker crashes and hung requests caused by primary schedule API timeouts by enforcing bounded 10s per-endpoint timeouts.
+- **Documentation Drift**: Resynchronized `docs/services/schedule_parser.md`, `docs/UML.md`, and test suite statistics.
+
+---
+
 ## [v2.4.0] - 2026-10-10
 
 ### Added

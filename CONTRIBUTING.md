@@ -19,6 +19,8 @@ All contributors must adhere to the core architectural principles established in
 4. **Resilience & Storage Invariants**:
    - Transient operations must acquire distributed locks via Redis (`redis_lock`) with explicit TTL bounds.
    - At-least-once queue processing must utilize atomic Redis operations (`BLMOVE` / `LPUSH`).
+5. **Dual-Endpoint Fallback & Resilient Ingress**:
+   - External HTTP dependencies (such as upstream timetable APIs) must provide fallback mirrors with independent timeout bounds (<= 10s) and automatic failover.
 
 ---
 
@@ -72,7 +74,7 @@ ruff check . --fix
 # Run Bandit AST security scan
 bandit -r services/ bot/ core/ api/ -c pyproject.toml
 
-# Run the complete test suite (546 tests)
+# Run the complete test suite (561 tests)
 PYTHONPATH=. pytest tests/ -v
 ```
 
@@ -106,12 +108,13 @@ Documentation is treated as a first-class production artifact:
    - `fix/<issue-id>-bug-name`
    - `docs/<topic>-update`
 2. **Commit Message Format (Conventional Commits)**:
-   - `feat(service): add optimistic topic update settling pass`
+   - `feat(schedule): add dual-endpoint fallback mechanism for timetable API`
+   - `feat(yandex): add zen browser cookie sync utility and update UML diagram`
    - `fix(bot): resolve race condition in attendance session ownership`
    - `docs(api): update gRPC servicer parameter specifications`
    - `test(solver): add chaos test for DeepSeek DLQ retry backoff`
 3. **Pull Request Checklist**:
-   - [ ] All 546+ automated unit and integration tests pass.
+   - [ ] All 561+ automated unit and integration tests pass.
    - [ ] `ruff check .` produces zero linting warnings.
    - [ ] Every new or modified method is ≤ 25 lines.
    - [ ] Documentation regenerated via `scripts/generate_docs_suite.py`.
