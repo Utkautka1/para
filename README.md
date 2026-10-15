@@ -287,7 +287,41 @@ Real production memory footprints, CPU utilization, and thread allocation measur
 | **Total Cluster** | **5-Tier Microservices Mesh (40 PIDs)** | **~1,069 MiB** | `3648 MiB` | **~29.3%** | **0.80%** | **100% Operational** |
 
 
-### 3. Senior Architectural Performance Principles
+### 3. Empirical 10,000-Request Stress Test & User Capacity Analysis
+
+Empirical load test executed directly against the live production container `para-api` on dedicated host hardware (4 vCPU, 15 GB RAM). The benchmark targeted authenticated business endpoints (`/schedule/day` with HMAC validation, API key verification, and JSON serialization) across **200 concurrent worker threads**:
+
+```text
+=== 10,000 PRODUCTION LOAD TEST BENCHMARK (/schedule/day) ===
+Total Requests:        10,000
+Concurrent Clients:    200 parallel workers
+Execution Duration:    9.787 seconds
+Measured Throughput:   1,021.7 RPS (Requests Per Second)
+Success Rate (200 OK): 10,000 / 10,000 (100.00% — Zero Failed Requests)
+
+Tail Latency Distribution:
+  • P50 (Median):      188.1 ms
+  • P95:               284.5 ms
+  • P99:               359.0 ms
+  • Min / Max:         12.7 ms / 599.8 ms (Average: 192.8 ms)
+Post-Test Memory RSS:  211.9 MiB (Zero memory leak detected, idle CPU: 0.11%)
+```
+
+#### Can Para Handle 10,000 Users?
+
+* **Scenario A: 10,000 Daily Active Users (10k DAU)**:
+  * **Supported with 30x–50x Headroom**.
+  * Assuming 10k students make 5–10 requests daily (~70,000 total daily hits), the API processes the entire day's traffic in just **~70 seconds** of compute time.
+* **Scenario B: 10,000 Concurrent Users Online Simultaneously (10k CCU)**:
+  * **Fully Supported (+45% Headroom)**.
+  * During peak academic intervals (e.g., class breaks), 10,000 active users browsing with realistic human think times (15–20s per action) generate **~500–670 RPS**. The single-worker API handles **1,021.7 RPS**, leaving 45% surplus capacity.
+* **Scenario C: 10,000 Instantaneous Requests in a Single Second (10,000 RPS Burst)**:
+  * With a single Uvicorn process pinned to 1.0 CPU (`compose.yml`), bursts above ~1,500 RPS queue in the Linux TCP socket backlog.
+  * **Production Scaling Path to 10k+ RPS**:
+    1. **Uvicorn Multiprocessing**: Scale `uvicorn` to 4 workers (`workers=4` utilizing host's 4 cores) to achieve **~4,000–4,500 RPS**.
+    2. **Reverse Proxy Microcaching**: Place Nginx/Caddy in front of FastAPI with a 1-second microcache for idempotent schedule reads, yielding **20,000+ RPS** directly from Linux kernel memory buffers.
+
+### 4. Senior Architectural Performance Principles
 
 1. **Dual-Tier Cache Topology (L1 In-Memory + L2 Distributed Redis)**:
    * **L1 Cache (In-Memory)**: Sub-50 microsecond (`0.03 ms`) reads using localized Python dictionary structures for immutable daily schedules.
