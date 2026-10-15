@@ -24,14 +24,17 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`find_zen_cookies_db`](#find_zen_cookies_db) | Function | L30–L45 | `Path` | Locates the most recently modified Zen Browser SQLite database. |
-| [`extract_raw_yandex_cookies`](#extract_raw_yandex_cookies) | Function | L48–L72 | `dict[str, str]` | Extracts yandex.ru cookies bypassing active file lock. |
-| [`build_cookie_header`](#build_cookie_header) | Function | L75–L87 | `str` | Constructs valid HTTP Cookie header string. |
-| [`verify_yandex_cookie`](#verify_yandex_cookie) | Function | L90–L113 | `bool` | Validates session against Yandex Docs endpoint. |
-| [`update_env_file`](#update_env_file) | Function | L116–L134 | `None` | Idempotently updates YANDEX_COOKIE in target .env. |
-| [`send_cookie_to_remote_env`](#send_cookie_to_remote_env) | Function | L137–L153 | `None` | Safely transfers Cookie header to remote host via SSH. |
-| [`update_remote_redis_and_restart`](#update_remote_redis_and_restart) | Function | L156–L166 | `None` | Updates Redis cache and restarts worker container. |
-| [`sync_cookies`](#sync_cookies) | Function | L169–L189 | `bool` | Coordinates end-to-end sync workflow. |
+| [`get_target_doc_url`](#get_target_doc_url) | Function | L32–L40 | `str` | Returns actual attendance doc URL from config or fallback. |
+| [`find_zen_cookies_db`](#find_zen_cookies_db) | Function | L42–L56 | `Path` | Locates the most recently modified Zen Browser SQLite database. |
+| [`extract_raw_yandex_cookies`](#extract_raw_yandex_cookies) | Function | L58–L80 | `dict[str, str]` | Extracts yandex.ru cookies bypassing active file lock. |
+| [`refresh_yandex_session`](#refresh_yandex_session) | Function | L83–L105 | `dict[str, str]` | Extends Yandex session via Passport auth update endpoint. |
+| [`build_cookie_header`](#build_cookie_header) | Function | L107–L119 | `str` | Constructs valid HTTP Cookie header string. |
+| [`verify_yandex_cookie`](#verify_yandex_cookie) | Function | L122–L145 | `bool` | Validates session against Yandex Docs endpoint. |
+| [`update_env_file`](#update_env_file) | Function | L147–L166 | `None` | Idempotently updates YANDEX_COOKIE in target .env. |
+| [`send_cookie_to_remote_env`](#send_cookie_to_remote_env) | Function | L168–L184 | `None` | Safely transfers Cookie header to remote host via SSH. |
+| [`send_api_urls_to_remote_env`](#send_api_urls_to_remote_env) | Function | L186–L201 | `None` | Synchronizes SCHEDULE_API_URL and EXAM_SCHEDULE_API_URL on remote host. |
+| [`update_remote_redis_and_restart`](#update_remote_redis_and_restart) | Function | L203–L217 | `None` | Updates Redis cache and recreates worker and bot containers. |
+| [`sync_cookies`](#sync_cookies) | Function | L219–L242 | `bool` | Coordinates end-to-end sync workflow. |
 
 ---
 
