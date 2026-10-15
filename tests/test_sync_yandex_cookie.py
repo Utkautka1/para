@@ -6,10 +6,14 @@ import sqlite3
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import urllib.error
 import pytest
 from scripts.sync_yandex_cookie import (
+    TEST_DOC_URL,
     build_cookie_header,
     extract_raw_yandex_cookies,
+    get_target_doc_url,
+    refresh_yandex_session,
     update_env_file,
     verify_yandex_cookie,
 )
@@ -93,3 +97,23 @@ def test_extract_raw_yandex_cookies(tmp_path: Path):
     extracted = extract_raw_yandex_cookies(db_file)
     assert extracted.get("Session_id") == "sess_val"
     assert "other" not in extracted
+
+
+def test_refresh_yandex_session_extracts_set_cookie():
+    """Проверяет перехват обновленных Cookie из 302 ответа Паспорта."""
+    mock_headers = MagicMock()
+    mock_headers.get_all.return_value = ["Session_id=new_sess; Path=/", "sessar=new_sessar; Path=/"]
+    err = urllib.error.HTTPError("url", 302, "Found", mock_headers, None)
+    with patch("urllib.request.build_opener") as mock_opener:
+        mock_opener.return_value.open.side_effect = err
+        cookies = {"Session_id": "old_sess"}
+        updated = refresh_yandex_session(cookies, "https://docs.yandex.ru/test")
+        assert updated["Session_id"] == "new_sess"
+        assert updated["sessar"] == "new_sessar"
+
+
+def test_get_target_doc_url_fallback():
+    """Проверяет корректный fallback при отсутствии ATTENDANCE_DOC_URL в config."""
+    with patch("config.ATTENDANCE_DOC_URL", ""):
+        assert get_target_doc_url() == TEST_DOC_URL
+
