@@ -307,6 +307,20 @@ Tail Latency Distribution:
 Post-Test Memory RSS:  211.9 MiB (Zero memory leak detected, idle CPU: 0.11%)
 ```
 
+#### Multi-Stage Saturation & Breaking Point Summary
+
+To establish physical capacity bounds, `para-api` was subjected to progressive 4-stage saturation testing (up to 1,500 concurrent connections):
+
+| Stage | Concurrent Clients | Total Requests | RPS | Success Rate | Latency P50 / P99 | Operational Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Stage 1 (Baseline Load)** | `200` | 5,000 | **1,000.6** | `100.00%` (0 err) | **187.8 ms** / **369.2 ms** | 🟢 Nominal Performance |
+| **Stage 2 (Heavy Pressure)** | `500` | 10,000 | **956.5** | `100.00%` (0 err) | **482.4 ms** / **990.7 ms** | 🟢 Stable Non-Degraded |
+| **Stage 3 (Saturation Bound)** | `800` | 15,000 | **1,000.6** | `100.00%` (0 err) | **734.3 ms** / **1,386.1 ms**| 🟡 Maximum Stable Envelope |
+| **Stage 4 (Physical Saturation)**| `1,500` | 20,000 | **1,608.3** | `40.87%` (11.8k err)| **1,199.5 ms** / **3,143.8 ms**| 🔴 Breaking Point (Linux FD `ulimit -n 1024`) |
+
+> [!NOTE]
+> **Resilience Invariant**: At Stage 4, connections exceeded the Linux `ulimit -n 1024` socket descriptor ceiling and single-core CPU limit (`cpus: '1.00'`). The container never crashed (zero OOM-kills, memory remained steady at 222 MiB) and instantaneously self-recovered to 0.10% CPU and 0.8 ms response time upon load cessation.
+
 #### Can Para Handle 10,000 Users?
 
 * **Scenario A: 10,000 Daily Active Users (10k DAU)**:
