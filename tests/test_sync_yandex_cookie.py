@@ -3,11 +3,12 @@
 """
 
 import sqlite3
+import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import urllib.error
 import pytest
+
 from scripts.sync_yandex_cookie import (
     TEST_DOC_URL,
     build_cookie_header,
@@ -74,7 +75,7 @@ def test_verify_yandex_cookie_success():
 def test_verify_yandex_cookie_failure():
     """Проверяет неуспешную валидацию Cookie при редиректе на авторизацию."""
     mock_resp = MagicMock()
-    mock_resp.read.return_value = "<html><title>Авторизация</title></html>".encode("utf-8")
+    mock_resp.read.return_value = "<html><title>Авторизация</title></html>".encode()
     mock_resp.__enter__.return_value = mock_resp
     with patch("urllib.request.urlopen", return_value=mock_resp):
         assert verify_yandex_cookie("Session_id=123") is False
