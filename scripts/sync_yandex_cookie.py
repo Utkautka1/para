@@ -11,7 +11,6 @@
 
 import base64
 import os
-import re
 import shutil
 import sqlite3
 import subprocess
@@ -87,7 +86,7 @@ def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str
     passport_url = f"https://passport.yandex.ru/auth/update/?from=cloud&origin=disk_client_web_signin_ru&retpath={encoded_url}"
     cookie_str = "; ".join(f"{k}={v}" for k, v in cookies.items())
     req = urllib.request.Request(passport_url, headers={"User-Agent": "Mozilla/5.0", "Cookie": cookie_str})
-    
+
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             return None
