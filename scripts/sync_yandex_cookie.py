@@ -211,7 +211,7 @@ def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_
         f"import base64, subprocess; "
         f"c = base64.b64decode('{b64}').decode('utf-8'); "
         f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', 'yandex:session_cookie', c, 'ex', '604800'], check=True); "
-        f"subprocess.run(['docker', 'compose', 'restart', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
+        f"subprocess.run(['docker', 'compose', 'up', '-d', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
     )
     subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
 

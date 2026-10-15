@@ -573,12 +573,15 @@ classDiagram
     }
 
     class ZenCookieSyncUtility {
+        +get_target_doc_url() str
         +find_zen_cookies_db() Path
         +extract_raw_yandex_cookies(db_path) dict
+        +refresh_yandex_session(cookies, target_url) dict
         +build_cookie_header(cookies) str
         +verify_yandex_cookie(cookie_hdr, test_url) bool
         +update_env_file(env_path, cookie_hdr) void
         +send_cookie_to_remote_env(cookie_hdr, host, remote_dir) void
+        +send_api_urls_to_remote_env(api_url, host, remote_dir) void
         +update_remote_redis_and_restart(cookie_hdr, host, remote_dir) void
         +sync_cookies(host) bool
     }
