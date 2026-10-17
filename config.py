@@ -145,6 +145,16 @@ ATTENDANCE_COMMIT_RETRY_DELAY_SECONDS: int = 5
 ATTENDANCE_STATS_CACHE_TTL_SECONDS: int = 300
 SCHEDULE_COOLDOWN_SECONDS: int = 300
 
+
+# Лимиты безопасности для голосовых сообщений в Telegram боте
+MAX_AUDIO_DURATION: int = 300  # 5 минут
+MAX_AUDIO_SIZE: int = 20 * 1024 * 1024  # 20 МБ
+MAX_CONCURRENT_PER_USER: int = 2  # максимум одновременных аудио на пользователя
+DOWNLOAD_TIMEOUT: float = 25.0  # секунд
+TRANSCRIBE_TIMEOUT: float = 90.0  # секунд
+
+_USER_IN_FLIGHT: dict[int, int] = {}
+
 # Параметры параллелизма и Rate Limiting решателя ДЗ
 SOLVER_MAX_CONCURRENT_TASKS: int = int(os.getenv("SOLVER_MAX_CONCURRENT_TASKS", "3"))
 SOLVER_RATE_LIMIT_PER_MINUTE: int = int(os.getenv("SOLVER_RATE_LIMIT_PER_MINUTE", "5"))
