@@ -25,3 +25,7 @@ logs/
 scratch/
 *.tmp
 *.docx
+
+# Data cache (volume-mounted)
+data/whisper_models/
+data/redis/
