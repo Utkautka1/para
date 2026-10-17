@@ -230,3 +230,33 @@ async def test_transcriber_service_transcribe_file() -> None:
 
     res = await tr.transcribe_file("/tmp/fake_test.ogg")
     assert res == "Привет мир!"
+
+
+@pytest.mark.asyncio
+async def test_transcriber_runtime_fallback_to_cpu() -> None:
+    """Проверяет переключение на CPU модель при runtime ошибке GPU инференса."""
+    tr = AudioTranscriber()
+    gpu_engine = MagicMock()
+    gpu_engine.transcribe.side_effect = RuntimeError("CUDA out of memory")
+    cpu_engine = MagicMock()
+    cpu_seg = MagicMock(text="Спасенный текст")
+    cpu_engine.transcribe.return_value = ([cpu_seg], None)
+    tr._model = gpu_engine
+    tr._get_cpu_model = AsyncMock(return_value=cpu_engine)
+
+    res = await tr.transcribe_file("/tmp/audio.ogg")
+    assert res == "Спасенный текст"
+    tr._get_cpu_model.assert_awaited_once()
+
+
+def test_transcriber_anti_hallucination_params() -> None:
+    """Проверяет передачу параметров против галлюцинаций в transcribe."""
+    tr = AudioTranscriber(language="ru", beam_size=1)
+    mock_engine = MagicMock()
+    mock_engine.transcribe.return_value = ([], None)
+    tr._sync_transcribe(mock_engine, "/tmp/scream.ogg")
+    call_kwargs = mock_engine.transcribe.call_args[1]
+    assert call_kwargs["language"] == "ru"
+    assert call_kwargs["beam_size"] == 1
+    assert call_kwargs["condition_on_previous_text"] is False
+    assert call_kwargs["no_speech_threshold"] == 0.6

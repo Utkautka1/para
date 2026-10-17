@@ -12,9 +12,11 @@ import os
 from typing import Optional
 
 from config import (
+    WHISPER_BEAM_SIZE,
     WHISPER_COMPUTE_TYPE,
     WHISPER_DEVICE,
     WHISPER_DOWNLOAD_ROOT,
+    WHISPER_LANGUAGE,
     WHISPER_MODEL_NAME,
 )
 from core.logger import get_logger
@@ -31,6 +33,8 @@ class AudioTranscriber:
         device: str | None = None,
         compute_type: str | None = None,
         download_root: str | None = None,
+        language: str | None = None,
+        beam_size: int | None = None,
     ):
         # model_name — идентификатор модели (large-v3-turbo / base)
         # device — целевое устройство (cuda / cpu)
@@ -40,10 +44,12 @@ class AudioTranscriber:
         self.device = device or WHISPER_DEVICE
         self.compute_type = compute_type or WHISPER_COMPUTE_TYPE
         self.download_root = download_root or WHISPER_DOWNLOAD_ROOT
+        self.language = language or WHISPER_LANGUAGE
+        self.beam_size = beam_size or WHISPER_BEAM_SIZE
         self._model = None
+        self._cpu_model = None
         self._lock = asyncio.Lock()
-
-
+        self._gpu_semaphore = asyncio.Semaphore(1)
 
     def _init_whisper_engine(self, device: str | None = None, compute_type: str | None = None):
         """Создает экземпляр WhisperModel с обработкой CUDA fallback."""
@@ -77,30 +83,40 @@ class AudioTranscriber:
                 self._model = await asyncio.to_thread(self._init_whisper_engine)
         return self._model
 
+    async def _get_cpu_model(self):
+        """Возвращает кэшированный экземпляр резервной CPU-модели Whisper."""
+        if self._cpu_model is None:
+            self._cpu_model = await asyncio.to_thread(self._init_whisper_engine, "cpu", "int8")
+        return self._cpu_model
+
     async def warmup(self) -> None:
         """Прогревает модель Whisper в фоне, загружая веса в память GPU."""
         await self.get_model()
 
     def _sync_transcribe(self, model, audio_path: str, language: Optional[str] = None) -> str:
-        """Синхронный прогон инференса faster-whisper в фоновом потоке."""
+        """Синхронный прогон инференса faster-whisper с подавлением галлюцинаций."""
+        target_lang = language or self.language
         segments, _ = model.transcribe(
             audio_path,
-            language=language,
+            language=target_lang,
             vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=500),
-            beam_size=5,
+            vad_parameters=dict(min_silence_duration_ms=500, speech_pad_ms=200),
+            beam_size=self.beam_size,
+            condition_on_previous_text=False,
+            no_speech_threshold=0.6,
         )
         return " ".join(seg.text.strip() for seg in segments if seg.text).strip()
 
     async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> str:
-        """Асинхронно транскрибирует аудиофайл с автоматическим CPU fallback при сбое GPU."""
-        model = await self.get_model()
-        try:
-            return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
-        except Exception as e:
-            log.warning(f"⚠️ Ошибка выполнения на GPU ({e}). Повторная попытка на CPU")
-            cpu_model = await asyncio.to_thread(self._init_whisper_engine, "cpu", "int8")
-            return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
+        """Асинхронно транскрибирует аудиофайл через семафор с CPU fallback."""
+        async with self._gpu_semaphore:
+            model = await self.get_model()
+            try:
+                return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
+            except Exception as e:
+                log.warning(f"⚠️ Ошибка выполнения на GPU ({e}). Повторная попытка на CPU")
+                cpu_model = await self._get_cpu_model()
+                return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
 
 
 def split_text_to_chunks(text: str, max_chunk_len: int = 4000) -> list[str]:

@@ -189,6 +189,8 @@ WHISPER_MODEL_NAME: str = get_required_env("WHISPER_MODEL_NAME")
 WHISPER_DEVICE: str = get_required_env("WHISPER_DEVICE")
 WHISPER_COMPUTE_TYPE: str = get_required_env("WHISPER_COMPUTE_TYPE")
 WHISPER_DOWNLOAD_ROOT: str = get_required_env("WHISPER_DOWNLOAD_ROOT")
+WHISPER_LANGUAGE: str = get_required_env("WHISPER_LANGUAGE")
+WHISPER_BEAM_SIZE: int = int(get_required_env("WHISPER_BEAM_SIZE"))
 
 
 

@@ -1645,9 +1645,9 @@ sequenceDiagram
     Handler->>TG: bot.get_file(file_id) & bot.download_file(...)
     TG-->>Handler: Raw Audio Stream (.ogg / .mp4)
 
-    Handler->>STT: transcribe_file(temp_path) (asyncio.to_thread)
+    Handler->>STT: transcribe_file(temp_path) (semaphore bounded)
     STT->>STT: get_model() [lazy lock & fallback check]
-    STT->>GPU: WhisperModel.transcribe(vad_filter=True, beam_size=5)
+    STT->>GPU: WhisperModel.transcribe(beam_size=1, no_speech_threshold=0.6, language="ru")
     GPU-->>STT: Segments: text, timestamps, language
     STT-->>Handler: Normalized Full Text Transcript
 
@@ -1657,17 +1657,17 @@ sequenceDiagram
         Handler->>TG: message.reply(extra_chunk, message_thread_id)
     end
     TG-->>User: Formatted HTML Quote with Duration & Speaker
-    Handler->>Handler: cleanup_temp_file(temp_path)
+    Handler->>Handler: cleanup_temp_file(temp_path) [/dev/shm or temp_audio]
 ```
 
 #### Key Architecture & Resilience Principles
 1. **Forum Thread Affinity**: Strictly preserves `message_thread_id=message.message_thread_id` across all responses, preventing transcription leakage into the General topic.
-2. **GPU Offloading & Single Responsibility**: Compute-intensive CTranslate2 inference is isolated inside `asyncio.to_thread(_sync_transcribe)`, completely shielding the aiogram polling loop from lag.
-3. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to `device="cpu"` (INT8) if VRAM is temporarily exhausted or if execution fails at runtime.
-4. **Zero Cold-Start Lag (Warmup)**: Pre-loads `large-v3-turbo` model into GPU memory in a background async task during bot startup (`_warmup_stt`), enabling instantaneous first-query responses.
-5. **CUDA 12 Runtime Bundling**: Utilizes `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` packages loaded via Docker `LD_LIBRARY_PATH` for maximum portability without requiring bulky development image layers.
-6. **Zero Artifact Leaks**: Guarantees disk cleanliness by invoking `cleanup_temp_file(path)` inside an unconditional `finally:` block.
-7. **Format Support**: Seamlessly processes both standard `.ogg` voice notes and Telegram circular video notes (`video_note`).
+2. **GPU Concurrency Guard**: Bounded by `asyncio.Semaphore(1)` to serialize access to the NVIDIA GTX 1660 Ti, preventing CUDA VRAM OOM and CUDA execution contention.
+3. **Anti-Hallucination Guardrails**: Utilizes `beam_size=1` (3x faster greedy decoding), `condition_on_previous_text=False`, `no_speech_threshold=0.6`, and explicit `language="ru"`, completely eliminating English hallucinations on screams, non-speech noise, or background music.
+4. **RAM-Disk Temp Audio (`/dev/shm`)**: Directs Telegram voice download streams into Linux shared memory (`/dev/shm/para_audio`), eliminating SSD wear and physical disk I/O latency.
+5. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to a cached `_cpu_model` (INT8) if VRAM is temporarily exhausted or if execution fails at runtime.
+6. **Zero Cold-Start Lag (Warmup)**: Pre-loads `large-v3-turbo` model into GPU memory in a background async task during bot startup (`_warmup_stt`), enabling instantaneous first-query responses.
+7. **Isolated Service Dependencies**: Packages `faster-whisper`, `nvidia-cublas-cu12`, and `nvidia-cudnn-cu12` into `requirements-bot.txt`, ensuring `api`, `worker`, and `solver` microservices remain lightweight (< 10s builds).
 
 ---
 

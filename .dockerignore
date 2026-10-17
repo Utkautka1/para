@@ -26,6 +26,5 @@ scratch/
 *.tmp
 *.docx
 
-# Data cache (volume-mounted)
-data/whisper_models/
-data/redis/
+# Data (volume-mounted at runtime in compose.yml)
+data/

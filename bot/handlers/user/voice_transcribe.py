@@ -42,9 +42,10 @@ def extract_audio_meta(message: Message) -> tuple[str, int, str]:
 
 
 async def download_temp_audio(file_id: str) -> str:
-    """Скачивает аудиофайл Telegram во временную директорию."""
-    os.makedirs("data/temp_audio", exist_ok=True)
-    temp_path = f"data/temp_audio/{uuid.uuid4().hex}_{file_id[:10]}.ogg"
+    """Скачивает аудиофайл Telegram в RAM-диск (/dev/shm) или временную директорию."""
+    base_dir = "/dev/shm/para_audio" if os.path.exists("/dev/shm") else "data/temp_audio"
+    os.makedirs(base_dir, exist_ok=True)
+    temp_path = f"{base_dir}/{uuid.uuid4().hex}_{file_id[:10]}.ogg"
     telegram_file = await bot.get_file(file_id)
     await bot.download_file(telegram_file.file_path, destination=temp_path)
     return temp_path
