@@ -1663,9 +1663,11 @@ sequenceDiagram
 #### Key Architecture & Resilience Principles
 1. **Forum Thread Affinity**: Strictly preserves `message_thread_id=message.message_thread_id` across all responses, preventing transcription leakage into the General topic.
 2. **GPU Offloading & Single Responsibility**: Compute-intensive CTranslate2 inference is isolated inside `asyncio.to_thread(_sync_transcribe)`, completely shielding the aiogram polling loop from lag.
-3. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to `device="cpu"` (INT8) if VRAM is temporarily exhausted or during development without an NVIDIA GPU.
-4. **Zero Artifact Leaks**: Guarantees disk cleanliness by invoking `cleanup_temp_file(path)` inside an unconditional `finally:` block.
-5. **Format Support**: Seamlessly processes both standard `.ogg` voice notes and Telegram circular video notes (`video_note`).
+3. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to `device="cpu"` (INT8) if VRAM is temporarily exhausted or if execution fails at runtime.
+4. **Zero Cold-Start Lag (Warmup)**: Pre-loads `large-v3-turbo` model into GPU memory in a background async task during bot startup (`_warmup_stt`), enabling instantaneous first-query responses.
+5. **CUDA 12 Runtime Bundling**: Utilizes `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` packages loaded via Docker `LD_LIBRARY_PATH` for maximum portability without requiring bulky development image layers.
+6. **Zero Artifact Leaks**: Guarantees disk cleanliness by invoking `cleanup_temp_file(path)` inside an unconditional `finally:` block.
+7. **Format Support**: Seamlessly processes both standard `.ogg` voice notes and Telegram circular video notes (`video_note`).
 
 ---
 

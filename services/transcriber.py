@@ -45,20 +45,22 @@ class AudioTranscriber:
 
 
 
-    def _init_whisper_engine(self):
+    def _init_whisper_engine(self, device: str | None = None, compute_type: str | None = None):
         """Создает экземпляр WhisperModel с обработкой CUDA fallback."""
         from faster_whisper import WhisperModel
         os.makedirs(self.download_root, exist_ok=True)
+        dev = device or self.device
+        comp = compute_type or self.compute_type
         try:
-            log.info(f"Загрузка модели STT: {self.model_name} на {self.device} ({self.compute_type})")
+            log.info(f"Загрузка модели STT: {self.model_name} на {dev} ({comp})")
             return WhisperModel(
                 self.model_name,
-                device=self.device,
-                compute_type=self.compute_type,
+                device=dev,
+                compute_type=comp,
                 download_root=self.download_root,
             )
         except Exception as e:
-            log.warning(f"⚠️ Сбой загрузки на {self.device}: {e}. Переключение на CPU (int8)")
+            log.warning(f"⚠️ Сбой загрузки на {dev}: {e}. Переключение на CPU (int8)")
             return WhisperModel(
                 self.model_name,
                 device="cpu",
@@ -75,6 +77,10 @@ class AudioTranscriber:
                 self._model = await asyncio.to_thread(self._init_whisper_engine)
         return self._model
 
+    async def warmup(self) -> None:
+        """Прогревает модель Whisper в фоне, загружая веса в память GPU."""
+        await self.get_model()
+
     def _sync_transcribe(self, model, audio_path: str, language: Optional[str] = None) -> str:
         """Синхронный прогон инференса faster-whisper в фоновом потоке."""
         segments, _ = model.transcribe(
@@ -87,15 +93,14 @@ class AudioTranscriber:
         return " ".join(seg.text.strip() for seg in segments if seg.text).strip()
 
     async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> str:
-        """
-        Асинхронно транскрибирует аудиофайл с помощью модели Whisper.
-
-        :param audio_path: Путь к локальному аудиофайлу (.ogg, .mp4, .mp3, .wav)
-        :param language: Языковой код (например, 'ru'), либо None для автоопределения
-        :return: Распознанный текст или пустая строка
-        """
+        """Асинхронно транскрибирует аудиофайл с автоматическим CPU fallback при сбое GPU."""
         model = await self.get_model()
-        return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
+        try:
+            return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
+        except Exception as e:
+            log.warning(f"⚠️ Ошибка выполнения на GPU ({e}). Повторная попытка на CPU")
+            cpu_model = await asyncio.to_thread(self._init_whisper_engine, "cpu", "int8")
+            return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
 
 
 def split_text_to_chunks(text: str, max_chunk_len: int = 4000) -> list[str]:

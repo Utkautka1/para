@@ -77,6 +77,16 @@ def setup_all_middlewares() -> None:
     dp.callback_query.middleware(CallbackThrottleMiddleware())
 
 
+async def _warmup_stt() -> None:
+    """Асинхронно прогревает STT-модель в фоне при старте бота."""
+    from services.transcriber import transcriber_service
+    try:
+        await transcriber_service.warmup()
+        log.info("✅ STT модель (faster-whisper) прогрета и готова к работе")
+    except Exception as e:
+        log.warning(f"⚠️ Ошибка фонового прогрева STT модели: {e}")
+
+
 async def main() -> None:
     """Основная асинхронная функция инициализации и запуска бота."""
     from bot.commands import register_bot_commands
@@ -87,6 +97,7 @@ async def main() -> None:
     setup_all_middlewares()
     await init_redis()
     await register_bot_commands(bot)
+    asyncio.create_task(_warmup_stt())
     try:
         await dp.start_polling(bot, drop_pending_updates=True)
     except Exception as e:
