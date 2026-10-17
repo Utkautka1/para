@@ -23,22 +23,22 @@ graph TD
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`save_session_to_redis`](#save_session_to_redis) | Function | L52–L60 | `None` | Persists the active attendance polling session state to... |
-| [`get_active_session`](#get_active_session) | Function | L63–L77 | `AttendanceSession | None` | Retrieves the currently active attendance polling sessi... |
-| [`clear_session`](#clear_session) | Function | L80–L85 | `None` | Evicts the active attendance polling session from Redis... |
-| [`_fetch_students_from_wopi`](#_fetch_students_from_wopi) | Function | L88–L96 | `list[tuple[int, str]]` | Executes core domain logic for `_fetch_students_from_wo... |
-| [`fetch_target_students`](#fetch_target_students) | Function | L99–L112 | `list[tuple[int, str]]` | Retrieves the student roster, utilizing Redis L2 cache ... |
-| [`create_attendance_session`](#create_attendance_session) | Function | L116–L136 | `AttendanceSession` | Initializes a new attendance polling session for an aca... |
-| [`record_student_mark`](#record_student_mark) | Function | L139–L152 | `AttendanceSession | None` | Records an attendance mark for the current student and ... |
-| [`step_back`](#step_back) | Function | L155–L168 | `AttendanceSession | None` | Reverts the attendance polling session pointer to the p... |
-| [`mark_all_remaining_present`](#mark_all_remaining_present) | Function | L171–L186 | `AttendanceSession | None` | Batch-assigns 'Present' status to all remaining unpolle... |
-| [`ensure_summary_headers`](#ensure_summary_headers) | Function | L189–L203 | `None` | Executes core domain logic for `ensure_summary_headers`... |
-| [`apply_marks_to_sheet`](#apply_marks_to_sheet) | Function | L206–L209 | `None` | Executes core domain logic for `apply_marks_to_sheet`. |
-| [`_prepare_updated_workbook`](#_prepare_updated_workbook) | Function | L212–L223 | `Any` | Executes core domain logic for `_prepare_updated_workbo... |
-| [`_try_commit_once`](#_try_commit_once) | Function | L226–L240 | `bool` | Executes core domain logic for `_try_commit_once`. |
-| [`_post_commit_sync`](#_post_commit_sync) | Function | L243–L253 | `None` | Executes core domain logic for `_post_commit_sync`. |
-| [`commit_session_to_table`](#commit_session_to_table) | Function | L256–L278 | `bool` | Commits all recorded attendance marks to Yandex Docs vi... |
-| [`calculate_summary_stats`](#calculate_summary_stats) | Function | L281–L287 | `dict[str, int]` | Aggregates summary statistics counting total attendance... |
+| [`save_session_to_redis`](#save_session_to_redis) | Function | L59–L75 | `None` | Persists the active attendance polling session state to... |
+| [`get_active_session`](#get_active_session) | Function | L78–L100 | `AttendanceSession | None` | Retrieves the currently active attendance polling sessi... |
+| [`clear_session`](#clear_session) | Function | L103–L114 | `None` | Evicts the active attendance polling session from Redis... |
+| [`_fetch_students_from_wopi`](#_fetch_students_from_wopi) | Function | L117–L133 | `list[tuple[int, str]]` | Executes core domain logic for `_fetch_students_from_wo... |
+| [`fetch_target_students`](#fetch_target_students) | Function | L136–L161 | `list[tuple[int, str]]` | Retrieves the student roster, utilizing Redis L2 cache ... |
+| [`create_attendance_session`](#create_attendance_session) | Function | L164–L193 | `AttendanceSession` | Initializes a new attendance polling session for an aca... |
+| [`record_student_mark`](#record_student_mark) | Function | L196–L215 | `AttendanceSession | None` | Records an attendance mark for the current student and ... |
+| [`step_back`](#step_back) | Function | L218–L236 | `AttendanceSession | None` | Reverts the attendance polling session pointer to the p... |
+| [`mark_all_remaining_present`](#mark_all_remaining_present) | Function | L239–L260 | `AttendanceSession | None` | Batch-assigns 'Present' status to all remaining unpolle... |
+| [`ensure_summary_headers`](#ensure_summary_headers) | Function | L263–L277 | `None` | Executes core domain logic for `ensure_summary_headers`... |
+| [`apply_marks_to_sheet`](#apply_marks_to_sheet) | Function | L280–L289 | `None` | Executes core domain logic for `apply_marks_to_sheet`. |
+| [`_prepare_updated_workbook`](#_prepare_updated_workbook) | Function | L292–L303 | `Any` | Executes core domain logic for `_prepare_updated_workbo... |
+| [`_try_commit_once`](#_try_commit_once) | Function | L306–L320 | `bool` | Executes core domain logic for `_try_commit_once`. |
+| [`_post_commit_sync`](#_post_commit_sync) | Function | L323–L333 | `None` | Executes core domain logic for `_post_commit_sync`. |
+| [`commit_session_to_table`](#commit_session_to_table) | Function | L336–L358 | `bool` | Commits all recorded attendance marks to Yandex Docs vi... |
+| [`calculate_summary_stats`](#calculate_summary_stats) | Function | L361–L367 | `dict[str, int]` | Aggregates summary statistics counting total attendance... |
 
 ---
 
@@ -53,7 +53,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceSession`.
 async def save_session_to_redis(session: AttendanceSession) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L52-L60`](../../services/attendance_manager.py#L52-L60)
+- **Source Reference**: [`services/attendance_manager.py#L59-L75`](../../services/attendance_manager.py#L59-L75)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -88,7 +88,7 @@ result = await save_session_to_redis(session=...)
 async def get_active_session() -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L63-L77`](../../services/attendance_manager.py#L63-L77)
+- **Source Reference**: [`services/attendance_manager.py#L78-L100`](../../services/attendance_manager.py#L78-L100)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -121,7 +121,7 @@ result = await get_active_session()
 async def clear_session() -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L80-L85`](../../services/attendance_manager.py#L80-L85)
+- **Source Reference**: [`services/attendance_manager.py#L103-L114`](../../services/attendance_manager.py#L103-L114)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -153,7 +153,7 @@ result = await clear_session()
 async def _fetch_students_from_wopi(target_date: date) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L88-L96`](../../services/attendance_manager.py#L88-L96)
+- **Source Reference**: [`services/attendance_manager.py#L117-L133`](../../services/attendance_manager.py#L117-L133)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -186,7 +186,7 @@ result = await _fetch_students_from_wopi(target_date=...)
 async def fetch_target_students(target_date: date) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L99-L112`](../../services/attendance_manager.py#L99-L112)
+- **Source Reference**: [`services/attendance_manager.py#L136-L161`](../../services/attendance_manager.py#L136-L161)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -221,7 +221,7 @@ result = await fetch_target_students(target_date=...)
 async def create_attendance_session( target_date: date, lesson_num: int, lesson_title: str, initiator_id: int ) -> AttendanceSession
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L116-L136`](../../services/attendance_manager.py#L116-L136)
+- **Source Reference**: [`services/attendance_manager.py#L164-L193`](../../services/attendance_manager.py#L164-L193)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession`
 
@@ -257,7 +257,7 @@ result = await create_attendance_session(target_date=..., lesson_num=..., lesson
 async def record_student_mark(mark: str) -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L139-L152`](../../services/attendance_manager.py#L139-L152)
+- **Source Reference**: [`services/attendance_manager.py#L196-L215`](../../services/attendance_manager.py#L196-L215)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -290,7 +290,7 @@ result = await record_student_mark(mark=...)
 async def step_back() -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L155-L168`](../../services/attendance_manager.py#L155-L168)
+- **Source Reference**: [`services/attendance_manager.py#L218-L236`](../../services/attendance_manager.py#L218-L236)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -321,7 +321,7 @@ result = await step_back()
 async def mark_all_remaining_present() -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L171-L186`](../../services/attendance_manager.py#L171-L186)
+- **Source Reference**: [`services/attendance_manager.py#L239-L260`](../../services/attendance_manager.py#L239-L260)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -352,7 +352,7 @@ result = await mark_all_remaining_present()
 def ensure_summary_headers(sheet) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L189-L203`](../../services/attendance_manager.py#L189-L203)
+- **Source Reference**: [`services/attendance_manager.py#L263-L277`](../../services/attendance_manager.py#L263-L277)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -385,7 +385,7 @@ result = ensure_summary_headers(sheet=...)
 def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L206-L209`](../../services/attendance_manager.py#L206-L209)
+- **Source Reference**: [`services/attendance_manager.py#L280-L289`](../../services/attendance_manager.py#L280-L289)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -420,7 +420,7 @@ result = apply_marks_to_sheet(sheet=..., session=..., col=...)
 async def _prepare_updated_workbook( wopi, t_date: date, session: AttendanceSession )
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L212-L223`](../../services/attendance_manager.py#L212-L223)
+- **Source Reference**: [`services/attendance_manager.py#L292-L303`](../../services/attendance_manager.py#L292-L303)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -455,7 +455,7 @@ result = await _prepare_updated_workbook(wopi=..., t_date=..., session=...)
 async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L226-L240`](../../services/attendance_manager.py#L226-L240)
+- **Source Reference**: [`services/attendance_manager.py#L306-L320`](../../services/attendance_manager.py#L306-L320)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -489,7 +489,7 @@ result = await _try_commit_once(session=..., t_date=...)
 async def _post_commit_sync() -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L243-L253`](../../services/attendance_manager.py#L243-L253)
+- **Source Reference**: [`services/attendance_manager.py#L323-L333`](../../services/attendance_manager.py#L323-L333)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -520,7 +520,7 @@ result = await _post_commit_sync()
 async def commit_session_to_table(session: AttendanceSession) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L256-L278`](../../services/attendance_manager.py#L256-L278)
+- **Source Reference**: [`services/attendance_manager.py#L336-L358`](../../services/attendance_manager.py#L336-L358)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -553,7 +553,7 @@ result = await commit_session_to_table(session=...)
 def calculate_summary_stats(marks: dict[str, str]) -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L281-L287`](../../services/attendance_manager.py#L281-L287)
+- **Source Reference**: [`services/attendance_manager.py#L361-L367`](../../services/attendance_manager.py#L361-L367)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 

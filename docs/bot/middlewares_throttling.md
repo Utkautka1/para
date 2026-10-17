@@ -21,11 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_determine_cooldown`](#_determine_cooldown) | Function | L25–L31 | `float` | Executes core domain logic for `_determine_cooldown`. |
-| [`CallbackThrottleMiddleware.__init__`](#callbackthrottlemiddleware__init__) | Method | L37–L39 | `None` | Executes core domain logic for `__init__`. |
-| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L41–L47 | `None` | Executes core domain logic for `_cleanup_old_entries`. |
-| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L49–L66 | `bool` | Executes core domain logic for `_handle_callback_thrott... |
-| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L68–L77 | `Any` | Executes core domain logic for `__call__`. |
+| [`_determine_cooldown`](#_determine_cooldown) | Function | L30–L36 | `float` | Executes core domain logic for `_determine_cooldown`. |
+| [`CallbackThrottleMiddleware.__init__`](#callbackthrottlemiddleware__init__) | Method | L42–L44 | `None` | Executes core domain logic for `__init__`. |
+| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L46–L52 | `None` | Executes core domain logic for `_cleanup_old_entries`. |
+| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L54–L71 | `bool` | Executes core domain logic for `_handle_callback_thrott... |
+| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L73–L82 | `Any` | Executes core domain logic for `__call__`. |
 
 ---
 
@@ -36,7 +36,7 @@ graph LR
 def _determine_cooldown(cb_data: str) -> float
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L25-L31`](../../bot/middlewares/throttling.py#L25-L31)
+- **Source Reference**: [`bot/middlewares/throttling.py#L30-L36`](../../bot/middlewares/throttling.py#L30-L36)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
@@ -73,7 +73,7 @@ Encapsulates domain entities and data transfer logic for `CallbackThrottleMiddle
 def __init__(self) -> None
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L37-L39`](../../bot/middlewares/throttling.py#L37-L39)
+- **Source Reference**: [`bot/middlewares/throttling.py#L42-L44`](../../bot/middlewares/throttling.py#L42-L44)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -104,7 +104,7 @@ result = __init__()
 def _cleanup_old_entries(self, now: float) -> None
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L41-L47`](../../bot/middlewares/throttling.py#L41-L47)
+- **Source Reference**: [`bot/middlewares/throttling.py#L46-L52`](../../bot/middlewares/throttling.py#L46-L52)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -137,7 +137,7 @@ result = _cleanup_old_entries(now=...)
 async def _handle_callback_throttle( self, event: CallbackQuery, now: float ) -> bool
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L49-L66`](../../bot/middlewares/throttling.py#L49-L66)
+- **Source Reference**: [`bot/middlewares/throttling.py#L54-L71`](../../bot/middlewares/throttling.py#L54-L71)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -171,7 +171,7 @@ result = await _handle_callback_throttle(event=..., now=...)
 async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any], ) -> Any
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L68-L77`](../../bot/middlewares/throttling.py#L68-L77)
+- **Source Reference**: [`bot/middlewares/throttling.py#L73-L82`](../../bot/middlewares/throttling.py#L73-L82)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 

@@ -21,15 +21,15 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`combine_prompt_and_instructions`](#combine_prompt_and_instructions) | Function | L32–L38 | `str` | Executes core domain logic for `combine_prompt_and_inst... |
-| [`is_valid_homework_prompt`](#is_valid_homework_prompt) | Function | L41–L58 | `bool` | Executes core domain logic for `is_valid_homework_promp... |
-| [`extract_media_meta`](#extract_media_meta) | Function | L61–L70 | `tuple[str | None, str | None, str | None, str | None, int]` | Executes core domain logic for `extract_media_meta`. |
-| [`compute_content_hash`](#compute_content_hash) | Function | L73–L80 | `str` | Executes core domain logic for `compute_content_hash`. |
-| [`is_hw_allowed`](#is_hw_allowed) | Function | L83–L96 | `bool` | Executes core domain logic for `is_hw_allowed`. |
-| [`acknowledge_hw_task`](#acknowledge_hw_task) | Function | L99–L108 | `None` | Executes core domain logic for `acknowledge_hw_task`. |
-| [`dispatch_hw_task`](#dispatch_hw_task) | Function | L111–L132 | `None` | Executes core domain logic for `dispatch_hw_task`. |
-| [`validate_hw_file_size`](#validate_hw_file_size) | Function | L135–L148 | `bool` | Validates architectural invariants and constraints for ... |
-| [`handle_new_homework`](#handle_new_homework) | Function | L155–L175 | `None` | Executes core domain logic for `handle_new_homework`. |
+| [`combine_prompt_and_instructions`](#combine_prompt_and_instructions) | Function | L32–L48 | `str` | Executes core domain logic for `combine_prompt_and_inst... |
+| [`is_valid_homework_prompt`](#is_valid_homework_prompt) | Function | L51–L73 | `bool` | Executes core domain logic for `is_valid_homework_promp... |
+| [`extract_media_meta`](#extract_media_meta) | Function | L76–L97 | `tuple[str | None, str | None, str | None, str | None, int]` | Executes core domain logic for `extract_media_meta`. |
+| [`compute_content_hash`](#compute_content_hash) | Function | L100–L116 | `str` | Executes core domain logic for `compute_content_hash`. |
+| [`is_hw_allowed`](#is_hw_allowed) | Function | L119–L144 | `bool` | Executes core domain logic for `is_hw_allowed`. |
+| [`acknowledge_hw_task`](#acknowledge_hw_task) | Function | L147–L161 | `None` | Executes core domain logic for `acknowledge_hw_task`. |
+| [`dispatch_hw_task`](#dispatch_hw_task) | Function | L164–L195 | `None` | Executes core domain logic for `dispatch_hw_task`. |
+| [`validate_hw_file_size`](#validate_hw_file_size) | Function | L198–L216 | `bool` | Validates architectural invariants and constraints for ... |
+| [`handle_new_homework`](#handle_new_homework) | Function | L223–L247 | `None` | Executes core domain logic for `handle_new_homework`. |
 
 ---
 
@@ -40,7 +40,7 @@ graph LR
 def combine_prompt_and_instructions(msg: Message, target: Message) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L32-L38`](../../bot/handlers/user/hw_solver.py#L32-L38)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L32-L48`](../../bot/handlers/user/hw_solver.py#L32-L48)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -74,7 +74,7 @@ result = combine_prompt_and_instructions(msg=..., target=...)
 def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L41-L58`](../../bot/handlers/user/hw_solver.py#L41-L58)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L51-L73`](../../bot/handlers/user/hw_solver.py#L51-L73)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -108,7 +108,7 @@ result = is_valid_homework_prompt(text=..., has_media=...)
 def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str | None, str | None, str | None, int]
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L61-L70`](../../bot/handlers/user/hw_solver.py#L61-L70)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L76-L97`](../../bot/handlers/user/hw_solver.py#L76-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str | None, str | None, str | None, str | None, int]`
 
@@ -142,7 +142,7 @@ result = extract_media_meta(msg=..., target=...)
 def compute_content_hash(text: str | None, unique_id: str | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L73-L80`](../../bot/handlers/user/hw_solver.py#L73-L80)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L100-L116`](../../bot/handlers/user/hw_solver.py#L100-L116)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -176,7 +176,7 @@ result = compute_content_hash(text=..., unique_id=...)
 async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L83-L96`](../../bot/handlers/user/hw_solver.py#L83-L96)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L119-L144`](../../bot/handlers/user/hw_solver.py#L119-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -211,7 +211,7 @@ result = await is_hw_allowed(msg=..., target=..., user_id=...)
 async def acknowledge_hw_task(bot: Bot, msg: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L99-L108`](../../bot/handlers/user/hw_solver.py#L99-L108)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L147-L161`](../../bot/handlers/user/hw_solver.py#L147-L161)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -242,10 +242,10 @@ result = await acknowledge_hw_task(bot=..., msg=...)
 
 ### `dispatch_hw_task`
 ```python
-async def dispatch_hw_task( bot: Bot, msg: Message, user_id: int, prompt: str, meta: tuple[str | None, str | None, str | None, int] ) -> None
+async def dispatch_hw_task( bot: Bot, msg: Message, user_id: int, prompt: str, meta: tuple[str | None, str | None, str | None, int], c_hash: str, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L111-L132`](../../bot/handlers/user/hw_solver.py#L111-L132)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L164-L195`](../../bot/handlers/user/hw_solver.py#L164-L195)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -260,6 +260,7 @@ Executes core domain logic for `dispatch_hw_task`.
 | `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 | `prompt` | `str` | Yes | Parameter `prompt` of type `str`. |
 | `meta` | `tuple[str | None, str | None, str | None, int]` | Yes | Parameter `meta` of type `tuple[str | None, str | None, str | None, int]`. |
+| `c_hash` | `str` | Yes | Parameter `c_hash` of type `str`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -282,7 +283,7 @@ result = await dispatch_hw_task(bot=..., msg=..., user_id=...)
 async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L135-L148`](../../bot/handlers/user/hw_solver.py#L135-L148)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L198-L216`](../../bot/handlers/user/hw_solver.py#L198-L216)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -318,7 +319,7 @@ result = await validate_hw_file_size(bot=..., msg=..., f_size=...)
 async def handle_new_homework(msg: Message, bot: Bot) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L155-L175`](../../bot/handlers/user/hw_solver.py#L155-L175)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L223-L247`](../../bot/handlers/user/hw_solver.py#L223-L247)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

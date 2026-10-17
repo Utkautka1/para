@@ -21,11 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_deepseek_client`](#get_deepseek_client) | Function | L24–L32 | `AsyncOpenAI` | Retrieves and resolves domain data for `get_deepseek_cl... |
-| [`close_deepseek_client`](#close_deepseek_client) | Function | L35–L40 | `None` | Executes core domain logic for `close_deepseek_client`. |
-| [`encode_image_bytes`](#encode_image_bytes) | Function | L43–L45 | `str` | Executes core domain logic for `encode_image_bytes`. |
-| [`build_deepseek_messages`](#build_deepseek_messages) | Function | L48–L67 | `list[dict]` | Executes core domain logic for `build_deepseek_messages... |
-| [`solve_homework`](#solve_homework) | Function | L70–L88 | `str` | Executes core domain logic for `solve_homework`. |
+| [`get_deepseek_client`](#get_deepseek_client) | Function | L14–L22 | `AsyncOpenAI` | Retrieves and resolves domain data for `get_deepseek_cl... |
+| [`close_deepseek_client`](#close_deepseek_client) | Function | L25–L30 | `None` | Executes core domain logic for `close_deepseek_client`. |
+| [`encode_image_bytes`](#encode_image_bytes) | Function | L33–L35 | `str` | Executes core domain logic for `encode_image_bytes`. |
+| [`build_deepseek_messages`](#build_deepseek_messages) | Function | L38–L57 | `list[dict]` | Executes core domain logic for `build_deepseek_messages... |
+| [`solve_homework`](#solve_homework) | Function | L60–L79 | `str` | Executes core domain logic for `solve_homework`. |
 
 ---
 
@@ -36,7 +36,7 @@ graph LR
 def get_deepseek_client() -> AsyncOpenAI
 ```
 
-- **Source Reference**: [`integrations/deepseek.py#L24-L32`](../../integrations/deepseek.py#L24-L32)
+- **Source Reference**: [`integrations/deepseek.py#L14-L22`](../../integrations/deepseek.py#L14-L22)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AsyncOpenAI`
 
@@ -67,7 +67,7 @@ result = get_deepseek_client()
 async def close_deepseek_client() -> None
 ```
 
-- **Source Reference**: [`integrations/deepseek.py#L35-L40`](../../integrations/deepseek.py#L35-L40)
+- **Source Reference**: [`integrations/deepseek.py#L25-L30`](../../integrations/deepseek.py#L25-L30)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -98,7 +98,7 @@ result = await close_deepseek_client()
 def encode_image_bytes(image_bytes: bytes) -> str
 ```
 
-- **Source Reference**: [`integrations/deepseek.py#L43-L45`](../../integrations/deepseek.py#L43-L45)
+- **Source Reference**: [`integrations/deepseek.py#L33-L35`](../../integrations/deepseek.py#L33-L35)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -131,7 +131,7 @@ result = encode_image_bytes(image_bytes=...)
 def build_deepseek_messages( image_bytes: bytes | None, text_prompt: str | None ) -> list[dict]
 ```
 
-- **Source Reference**: [`integrations/deepseek.py#L48-L67`](../../integrations/deepseek.py#L48-L67)
+- **Source Reference**: [`integrations/deepseek.py#L38-L57`](../../integrations/deepseek.py#L38-L57)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[dict]`
 
@@ -165,7 +165,7 @@ result = build_deepseek_messages(image_bytes=..., text_prompt=...)
 async def solve_homework( image_bytes: bytes | None = None, text_prompt: str | None = None ) -> str
 ```
 
-- **Source Reference**: [`integrations/deepseek.py#L70-L88`](../../integrations/deepseek.py#L70-L88)
+- **Source Reference**: [`integrations/deepseek.py#L60-L79`](../../integrations/deepseek.py#L60-L79)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 

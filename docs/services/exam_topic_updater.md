@@ -22,19 +22,19 @@ graph LR
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
 | [`get_default_semester_start`](#get_default_semester_start) | Function | L31–L35 | `date` | Retrieves and resolves domain data for `get_default_sem... |
-| [`get_effective_semester_start`](#get_effective_semester_start) | Function | L41–L52 | `date` | Retrieves and resolves domain data for `get_effective_s... |
-| [`load_exam_topic_state`](#load_exam_topic_state) | Function | L55–L58 | `int | None` | Executes core domain logic for `load_exam_topic_state`. |
-| [`save_exam_topic_state`](#save_exam_topic_state) | Function | L61–L63 | `None` | Saves serialized entity data to storage for `save_exam_... |
-| [`get_week_date_range_str`](#get_week_date_range_str) | Function | L66–L75 | `str` | Retrieves and resolves domain data for `get_week_date_r... |
-| [`format_exam_card`](#format_exam_card) | Function | L78–L97 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_exams_schedule_message`](#format_exams_schedule_message) | Function | L101–L111 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_pin_exam_silently`](#_pin_exam_silently) | Function | L114–L122 | `None` | Executes core domain logic for `_pin_exam_silently`. |
-| [`create_exam_message`](#create_exam_message) | Function | L125–L135 | `int` | Initializes and constructs a new instance of `create_ex... |
-| [`handle_exam_edit_error`](#handle_exam_edit_error) | Function | L138–L152 | `bool` | Executes core domain logic for `handle_exam_edit_error`... |
-| [`send_or_edit_exam_msg`](#send_or_edit_exam_msg) | Function | L155–L173 | `bool` | Dispatches notification message via Telegram API for `s... |
-| [`recreate_exam_topic_message`](#recreate_exam_topic_message) | Function | L176–L192 | `bool` | Executes core domain logic for `recreate_exam_topic_mes... |
-| [`sync_exam_topic_message`](#sync_exam_topic_message) | Function | L195–L212 | `bool` | Executes core domain logic for `sync_exam_topic_message... |
-| [`exam_topic_sync_loop`](#exam_topic_sync_loop) | Function | L215–L225 | `None` | Executes core domain logic for `exam_topic_sync_loop`. |
+| [`get_effective_semester_start`](#get_effective_semester_start) | Function | L38–L49 | `date` | Retrieves and resolves domain data for `get_effective_s... |
+| [`load_exam_topic_state`](#load_exam_topic_state) | Function | L52–L55 | `int | None` | Executes core domain logic for `load_exam_topic_state`. |
+| [`save_exam_topic_state`](#save_exam_topic_state) | Function | L58–L60 | `None` | Saves serialized entity data to storage for `save_exam_... |
+| [`get_week_date_range_str`](#get_week_date_range_str) | Function | L63–L72 | `str` | Retrieves and resolves domain data for `get_week_date_r... |
+| [`format_exam_card`](#format_exam_card) | Function | L75–L94 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_exams_schedule_message`](#format_exams_schedule_message) | Function | L98–L108 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_pin_exam_silently`](#_pin_exam_silently) | Function | L111–L119 | `None` | Executes core domain logic for `_pin_exam_silently`. |
+| [`create_exam_message`](#create_exam_message) | Function | L122–L132 | `int` | Initializes and constructs a new instance of `create_ex... |
+| [`handle_exam_edit_error`](#handle_exam_edit_error) | Function | L135–L149 | `bool` | Executes core domain logic for `handle_exam_edit_error`... |
+| [`send_or_edit_exam_msg`](#send_or_edit_exam_msg) | Function | L152–L170 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`recreate_exam_topic_message`](#recreate_exam_topic_message) | Function | L173–L189 | `bool` | Executes core domain logic for `recreate_exam_topic_mes... |
+| [`sync_exam_topic_message`](#sync_exam_topic_message) | Function | L192–L209 | `bool` | Executes core domain logic for `sync_exam_topic_message... |
+| [`exam_topic_sync_loop`](#exam_topic_sync_loop) | Function | L212–L222 | `None` | Executes core domain logic for `exam_topic_sync_loop`. |
 
 ---
 
@@ -76,7 +76,7 @@ result = get_default_semester_start()
 async def get_effective_semester_start() -> date
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L41-L52`](../../services/exam_topic_updater.py#L41-L52)
+- **Source Reference**: [`services/exam_topic_updater.py#L38-L49`](../../services/exam_topic_updater.py#L38-L49)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `date`
 
@@ -107,7 +107,7 @@ result = await get_effective_semester_start()
 def load_exam_topic_state() -> int | None
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L55-L58`](../../services/exam_topic_updater.py#L55-L58)
+- **Source Reference**: [`services/exam_topic_updater.py#L52-L55`](../../services/exam_topic_updater.py#L52-L55)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -138,7 +138,7 @@ result = load_exam_topic_state()
 def save_exam_topic_state(msg_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L61-L63`](../../services/exam_topic_updater.py#L61-L63)
+- **Source Reference**: [`services/exam_topic_updater.py#L58-L60`](../../services/exam_topic_updater.py#L58-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -171,7 +171,7 @@ result = save_exam_topic_state(msg_id=...)
 def get_week_date_range_str(week_num: int, semester_start: date | None = None) -> str
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L66-L75`](../../services/exam_topic_updater.py#L66-L75)
+- **Source Reference**: [`services/exam_topic_updater.py#L63-L72`](../../services/exam_topic_updater.py#L63-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -205,7 +205,7 @@ result = get_week_date_range_str(week_num=..., semester_start=...)
 def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L78-L97`](../../services/exam_topic_updater.py#L78-L97)
+- **Source Reference**: [`services/exam_topic_updater.py#L75-L94`](../../services/exam_topic_updater.py#L75-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -239,7 +239,7 @@ result = format_exam_card(ex=..., semester_start=...)
 def format_exams_schedule_message(exams: list[ExamItem], semester_start: date | None = None) -> str
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L101-L111`](../../services/exam_topic_updater.py#L101-L111)
+- **Source Reference**: [`services/exam_topic_updater.py#L98-L108`](../../services/exam_topic_updater.py#L98-L108)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -273,7 +273,7 @@ result = format_exams_schedule_message(exams=..., semester_start=...)
 async def _pin_exam_silently(message_id: int) -> None
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L114-L122`](../../services/exam_topic_updater.py#L114-L122)
+- **Source Reference**: [`services/exam_topic_updater.py#L111-L119`](../../services/exam_topic_updater.py#L111-L119)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -306,7 +306,7 @@ result = await _pin_exam_silently(message_id=...)
 async def create_exam_message(text: str) -> int
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L125-L135`](../../services/exam_topic_updater.py#L125-L135)
+- **Source Reference**: [`services/exam_topic_updater.py#L122-L132`](../../services/exam_topic_updater.py#L122-L132)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -339,7 +339,7 @@ result = await create_exam_message(text=...)
 async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L138-L152`](../../services/exam_topic_updater.py#L138-L152)
+- **Source Reference**: [`services/exam_topic_updater.py#L135-L149`](../../services/exam_topic_updater.py#L135-L149)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -374,7 +374,7 @@ result = await handle_exam_edit_error(text=..., err_str=..., retry=...)
 async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L155-L173`](../../services/exam_topic_updater.py#L155-L173)
+- **Source Reference**: [`services/exam_topic_updater.py#L152-L170`](../../services/exam_topic_updater.py#L152-L170)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -408,7 +408,7 @@ result = await send_or_edit_exam_msg(text=..., _retry=...)
 async def recreate_exam_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L176-L192`](../../services/exam_topic_updater.py#L176-L192)
+- **Source Reference**: [`services/exam_topic_updater.py#L173-L189`](../../services/exam_topic_updater.py#L173-L189)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -439,7 +439,7 @@ result = await recreate_exam_topic_message()
 async def sync_exam_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L195-L212`](../../services/exam_topic_updater.py#L195-L212)
+- **Source Reference**: [`services/exam_topic_updater.py#L192-L209`](../../services/exam_topic_updater.py#L192-L209)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -470,7 +470,7 @@ result = await sync_exam_topic_message()
 async def exam_topic_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/exam_topic_updater.py#L215-L225`](../../services/exam_topic_updater.py#L215-L225)
+- **Source Reference**: [`services/exam_topic_updater.py#L212-L222`](../../services/exam_topic_updater.py#L212-L222)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
