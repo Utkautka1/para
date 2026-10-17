@@ -17,30 +17,43 @@ from core.redis import close_redis, init_redis
 log = get_logger("bot_main")
 
 
-def register_all_routers() -> None:
-    """Регистрирует все хэндлеры и роутеры в диспетчере aiogram."""
+def _register_admin_routers() -> None:
+    """Регистрирует административные роутеры в диспетчере."""
     from bot.handlers.admin.attendance import router as attendance_router
     from bot.handlers.admin.mute import router as mute_router
     from bot.handlers.admin.panel import router as admin_router
     from bot.handlers.admin.ping_all import router as ping_all_router
     from bot.handlers.admin.testers import router as testers_router
-    from bot.handlers.errors import router as error_router
+    dp.include_router(attendance_router)
+    dp.include_router(mute_router)
+    dp.include_router(ping_all_router)
+    dp.include_router(testers_router)
+    dp.include_router(admin_router)
+
+
+def _register_user_routers() -> None:
+    """Регистрирует пользовательские роутеры в диспетчере."""
     from bot.handlers.user.attendance import router as user_att_router
     from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.user.schedule import router as user_router
-    dp.include_router(attendance_router)
-    dp.include_router(mute_router)
-    dp.include_router(ping_all_router)
-    dp.include_router(testers_router)
+    from bot.handlers.user.voice_transcribe import router as voice_router
+    dp.include_router(voice_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
-    dp.include_router(admin_router)
     dp.include_router(user_att_router)
     dp.include_router(user_router)
     dp.include_router(fallback_router)
+
+
+def register_all_routers() -> None:
+    """Регистрирует все группы роутеров в диспетчере aiogram."""
+    from bot.handlers.errors import router as error_router
+    _register_admin_routers()
+    _register_user_routers()
     dp.include_router(error_router)
+
 
 
 async def shutdown_bot() -> None:

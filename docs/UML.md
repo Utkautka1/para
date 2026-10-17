@@ -29,6 +29,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.13. [Global Exception Trapping & User-Facing Error Fallback (errors.py)](#813-global-exception-trapping--user-facing-error-fallback-errorspy)
    - 8.14. [Scoped Interactive Telegram Command Menus (commands.py)](#814-scoped-interactive-telegram-command-menus-commandspy)
    - 8.15. [Distributed Redis FSM Storage & Resilient Fallback (core/bot.py)](#815-distributed-redis-fsm-storage--resilient-fallback-corebotpy)
+   - 8.16. [Voice & Video Note STT Transcription Flow (voice_transcribe.py)](#816-voice--video-note-stt-transcription-flow-voice_transcribepy)
 9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
@@ -177,8 +178,29 @@ classDiagram
         +write_disk_xlsx(path, data) bool
     }
 
+    class AudioTranscriberService {
+        -_model WhisperModel
+        -_lock Lock
+        +get_model() WhisperModel
+        -_init_whisper_engine() WhisperModel
+        -_sync_transcribe(model, path, lang) str
+        +transcribe_file(path, lang) str
+    }
+
+    class VoiceTranscribeHandler {
+        +is_allowed_chat(chat_id, chat_type) bool
+        +extract_audio_meta(message) tuple
+        +download_temp_audio(file_id) str
+        +cleanup_temp_file(path) void
+        +deliver_transcription(message, status_msg, sender, duration, text) void
+        +process_audio_pipeline(file_id, sender, duration, message, status_msg) void
+        +handle_voice_or_video_note(message) void
+    }
+
     CallbackThrottleMiddleware --> TelegramGateway : debounces rapid inline-clicks & prevents handler flooding
     RetryAfterMiddleware --> TelegramGateway : wraps ingress updates & transparent 429 backoff
+    TelegramGateway --> VoiceTranscribeHandler : routes voice & video_note updates
+    VoiceTranscribeHandler --> AudioTranscriberService : offloads async speech recognition
     TelegramGateway --> ScheduleApiService : HTTP GET schedule
     TelegramGateway --> RedisStateManager : LPUSH HW queue
     TelegramGateway --> WopiAttendanceService : POST init session
@@ -1597,6 +1619,53 @@ classDiagram
 2. **Namespaced Keys**: FSM keys are organized under prefix `fsm:` (`fsm:{chat_id}:{user_id}:state` / `data`), preventing key collision with timetable cache or attendance records.
 3. **High-Availability Fallback**: If Redis service is unreachable or uninstalled during standalone test runs, `create_fsm_storage()` seamlessly falls back to `MemoryStorage`.
 4. **Graceful Shutdown**: On process exit (`shutdown_bot`), `dp.storage.close()` is awaited to cleanly release active network descriptors and pool slots.
+
+### 8.16 Voice & Video Note STT Transcription Flow (voice_transcribe.py)
+
+Autonomous pipeline capturing voice notes (`voice`) and video round notes (`video_note`) across any forum topic in the target group chat or private DMs, executing high-precision speech-to-text recognition via GPU-accelerated `faster-whisper` (`large-v3-turbo`) with fallback to CPU.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Telegram User
+    participant Bot as Aiogram Dispatcher
+    participant Handler as voice_transcribe.py
+    participant TG as Telegram Bot API
+    participant STT as AudioTranscriber (faster-whisper)
+    participant GPU as NVIDIA GTX 1660 Ti (CUDA)
+
+    User->>Bot: Sends Voice / Video Note (in Topic or DM)
+    Bot->>Handler: handle_voice_or_video_note(message)
+    Handler->>Handler: is_allowed_chat(chat_id, type)
+    Handler->>Handler: extract_audio_meta(message)
+    Handler->>TG: message.reply("Расшифровываю...", message_thread_id)
+    TG-->>User: Visual Status Indicator
+
+    Handler->>Handler: process_audio_pipeline(...)
+    Handler->>TG: bot.get_file(file_id) & bot.download_file(...)
+    TG-->>Handler: Raw Audio Stream (.ogg / .mp4)
+
+    Handler->>STT: transcribe_file(temp_path) (asyncio.to_thread)
+    STT->>STT: get_model() [lazy lock & fallback check]
+    STT->>GPU: WhisperModel.transcribe(vad_filter=True, beam_size=5)
+    GPU-->>STT: Segments: text, timestamps, language
+    STT-->>Handler: Normalized Full Text Transcript
+
+    Handler->>Handler: split_text_to_chunks(text, max_chunk_len=4000)
+    Handler->>TG: status_msg.edit_text(format_transcription_result(...))
+    opt If text > 4000 characters
+        Handler->>TG: message.reply(extra_chunk, message_thread_id)
+    end
+    TG-->>User: Formatted HTML Quote with Duration & Speaker
+    Handler->>Handler: cleanup_temp_file(temp_path)
+```
+
+#### Key Architecture & Resilience Principles
+1. **Forum Thread Affinity**: Strictly preserves `message_thread_id=message.message_thread_id` across all responses, preventing transcription leakage into the General topic.
+2. **GPU Offloading & Single Responsibility**: Compute-intensive CTranslate2 inference is isolated inside `asyncio.to_thread(_sync_transcribe)`, completely shielding the aiogram polling loop from lag.
+3. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to `device="cpu"` (INT8) if VRAM is temporarily exhausted or during development without an NVIDIA GPU.
+4. **Zero Artifact Leaks**: Guarantees disk cleanliness by invoking `cleanup_temp_file(path)` inside an unconditional `finally:` block.
+5. **Format Support**: Seamlessly processes both standard `.ogg` voice notes and Telegram circular video notes (`video_note`).
 
 ---
 

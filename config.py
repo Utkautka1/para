@@ -184,4 +184,11 @@ SWAGGER_SERVERS_URL: str = get_required_env("SWAGGER_SERVERS_URL")
 SWAGGER_SERVERS_DESCRIPTION: str = get_required_env("SWAGGER_SERVERS_DESCRIPTION")
 SWAGGER_MASK_HOST_PATTERN: str = get_required_env("SWAGGER_MASK_HOST_PATTERN")
 
+# Настройки распознавания речи Whisper (только из .env)
+WHISPER_MODEL_NAME: str = get_required_env("WHISPER_MODEL_NAME")
+WHISPER_DEVICE: str = get_required_env("WHISPER_DEVICE")
+WHISPER_COMPUTE_TYPE: str = get_required_env("WHISPER_COMPUTE_TYPE")
+WHISPER_DOWNLOAD_ROOT: str = get_required_env("WHISPER_DOWNLOAD_ROOT")
+
+
 

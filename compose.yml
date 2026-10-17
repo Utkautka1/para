@@ -76,10 +76,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
-          cpus: '1.00'
+          memory: 4096M
+          cpus: '2.00'
         reservations:
-          memory: 128M
+          memory: 256M
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     logging:
       driver: "json-file"
       options:
