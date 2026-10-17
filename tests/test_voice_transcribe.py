@@ -321,3 +321,10 @@ def test_transcriber_anti_hallucination_params() -> None:
     assert call_kwargs["beam_size"] == 1
     assert call_kwargs["condition_on_previous_text"] is False
     assert call_kwargs["no_speech_threshold"] == 0.6
+
+
+def test_transcriber_clean_hallucinations() -> None:
+    """Проверяет фильтрацию типовых галлюцинаций Whisper на тишине."""
+    assert AudioTranscriber._clean_hallucinations("Спасибо за просмотр!") == ""
+    assert AudioTranscriber._clean_hallucinations("Продолжение следует...") == ""
+    assert AudioTranscriber._clean_hallucinations("Привет, это пара!") == "Привет, это пара!"

@@ -189,6 +189,7 @@ classDiagram
         -_get_cpu_model() WhisperModel
         -_init_whisper_engine() WhisperModel
         -_sync_transcribe(model, path, lang) str
+        -_clean_hallucinations(text) str
         -_infer_with_fallback(path, lang) str
         +transcribe_file(path, lang) str
         +warmup() void

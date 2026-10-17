@@ -99,19 +99,32 @@ class AudioTranscriber:
         """Прогревает модель Whisper в фоне, загружая веса в память GPU."""
         await self.get_model()
 
+    @staticmethod
+    def _clean_hallucinations(text: str) -> str:
+        """Очищает стандартные артефакты Whisper на тишине или шуме."""
+        raw = text.strip()
+        lower = raw.lower().rstrip(".!?,")
+        hallucinations = (
+            "спасибо за просмотр",
+            "продолжение следует",
+            "субтитры сделал",
+            "редактор субтитров",
+            "до скорой встречи",
+        )
+        return "" if lower in hallucinations else raw
+
     def _sync_transcribe(self, model, audio_path: str, language: str | None = None) -> str:
         """Синхронный прогон инференса faster-whisper с подавлением галлюцинаций."""
         target_lang = language or self.language
         segments, _ = model.transcribe(
             audio_path,
             language=target_lang,
-            vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=500, speech_pad_ms=200),
             beam_size=self.beam_size,
             condition_on_previous_text=False,
             no_speech_threshold=0.6,
         )
-        return " ".join(seg.text.strip() for seg in segments if seg.text).strip()
+        raw_text = " ".join(seg.text.strip() for seg in segments if seg.text).strip()
+        return self._clean_hallucinations(raw_text)
 
     async def _infer_with_fallback(self, audio_path: str, language: str | None) -> str:
         """Запускает инференс на GPU с автоматическим переходом на CPU при сбое."""
