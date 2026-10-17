@@ -61,9 +61,8 @@ def cleanup_temp_file(path: str) -> None:
 
 async def send_overflow_chunks(message: Message, chunks: list[str]) -> None:
     """Отправляет последующие части длинного сообщения в исходный топик."""
-    thread_id = message.message_thread_id
     for extra_chunk in chunks:
-        await message.reply(f"«{extra_chunk}»", message_thread_id=thread_id)
+        await message.reply(f"«{extra_chunk}»")
 
 
 async def deliver_transcription(
@@ -112,8 +111,6 @@ async def handle_voice_or_video_note(message: Message) -> None:
     file_id, duration, sender = extract_audio_meta(message)
     if not file_id:
         return
-    status_msg = await message.reply(
-        format_transcription_status(),
-        message_thread_id=message.message_thread_id
-    )
+    status_msg = await message.reply(format_transcription_status())
     await process_audio_pipeline(file_id, sender, duration, message, status_msg)
+

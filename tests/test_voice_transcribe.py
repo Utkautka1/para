@@ -145,8 +145,9 @@ async def test_send_overflow_chunks() -> None:
     msg.reply = AsyncMock()
     await send_overflow_chunks(msg, ["кусок 1", "кусок 2"])
     assert msg.reply.await_count == 2
-    msg.reply.assert_any_await("«кусок 1»", message_thread_id=777)
-    msg.reply.assert_any_await("«кусок 2»", message_thread_id=777)
+    msg.reply.assert_any_await("«кусок 1»")
+    msg.reply.assert_any_await("«кусок 2»")
+
 
 
 @pytest.mark.asyncio
@@ -201,8 +202,9 @@ async def test_handle_voice_or_video_note_success() -> None:
 
     with patch("bot.handlers.user.voice_transcribe.process_audio_pipeline") as mock_pipe:
         await handle_voice_or_video_note(msg)
-        msg.reply.assert_awaited_once_with(format_transcription_status(), message_thread_id=555)
+        msg.reply.assert_awaited_once_with(format_transcription_status())
         mock_pipe.assert_awaited_once_with("v_ok", "Петр", 12, msg, status_mock)
+
 
 
 def test_transcriber_cpu_fallback() -> None:
