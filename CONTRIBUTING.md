@@ -21,6 +21,10 @@ All contributors must adhere to the core architectural principles established in
    - At-least-once queue processing must utilize atomic Redis operations (`BLMOVE` / `LPUSH`).
 5. **Dual-Endpoint Fallback & Resilient Ingress**:
    - External HTTP dependencies (such as upstream timetable APIs) must provide fallback mirrors with independent timeout bounds (<= 10s) and automatic failover.
+6. **Configuration Centralization Invariant**:
+   - All runtime variables, timeouts, rate limits, and external service URLs must be centralized in `config.py` and mirrored in `.env.example` and `.env.ci`. Hardcoding magic numbers or URLs across application modules is prohibited.
+7. **gRPC Interceptor Security Invariant**:
+   - All inter-service gRPC invocations must include authenticated metadata (`x-api-key`), validated at the server gateway via `ApiKeyAuthInterceptor` using constant-time cryptographic comparisons.
 
 ---
 

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.6.0] - 2026-10-18
+
+### Added
+- **gRPC API Key Authentication Interceptor (`ApiKeyAuthInterceptor`)**: Secured internal binary RPC endpoints (`ScheduleService`, `ExamsService`, `TeachersService`) over HTTP/2 using constant-time verification (`secrets.compare_digest`) against `API_SECRET_KEY`, returning `StatusCode.UNAUTHENTICATED` for unauthorized callers.
+- **Top-Level `/start` Command in Telegram Menu**: Placed `/start` (🚀 Главное меню) at the top of the command list in `bot/commands.py` (`BotCommandScopeDefault`), ensuring immediate one-tap navigation for group members and administrators.
+- **Unified Configuration & Environment Centralization**: Extracted all critical sync constants (`YANDEX_COOKIE_TEST_DOC_URL`, `YANDEX_REQUIRED_COOKIE_NAMES`), logging parameters (`LOG_MAX_BYTES`, `LOG_BACKUP_COUNT`), throttling settings, MiniApp paths, and DeepSeek system prompt into `.env`, `.env.example`, and `.env.ci`, centralized in `config.py`.
+- **AI Solver Input Validation**: Enforced strict size limits in `api/schemas/solver.py` for `prompt` (max 4,000 characters) and `image_base64` (max 15 MB) to prevent out-of-memory crashes and denial-of-service vectors.
+- **DeepSeek Request Timeout Budget**: Added configurable `DEEPSEEK_TIMEOUT_SECONDS = 90` to eliminate indefinite hangs during LLM inference.
+- **Expanded Test Suite (594 Tests)**: Added new unit tests in `tests/test_audit_fixes.py` and `tests/test_grpc_services.py` validating schema constraints, auth interceptor status codes, and command ordering.
+
+### Changed
+- **Container Hardening & Least-Privilege Isolation**:
+  - `compose.yml`: Masked Redis credentials in CLI healthcheck via `REDISCLI_AUTH`, configured exact capabilities for bind-mount volume persistence (`SETUID`, `SETGID`, `DAC_OVERRIDE`), added `shm_size: '512m'`, and dropped all Linux capabilities (`cap_drop: [ALL]`) for `para-bot`.
+  - Removed deprecated legacy root `Dockerfile` and cleaned orphaned JSON files from `data/bot/`.
+- **Strict Method Decomposition (<= 25 Lines)**: Decomposed `download_temp_audio` and attendance management methods into clean, single-responsibility helpers (`_resolve_temp_audio_dir`, `_determine_audio_extension`), enforcing intent-focused docstrings and vertical rhythm.
+- **Resilient Solver Hash Pipeline**: In `bot/handlers/user/hw_solver.py`, message and photo hashes are marked as processed strictly after atomic queue insertion (`push_hw_task`), eliminating task loss during network partitions.
+
+### Fixed
+- **Host & Path Injection in Sync Utility**: Enforced strict regex validation for remote hostnames and directory paths in `scripts/sync_yandex_cookie.py`.
+- **Dead Code Pruning**: Eliminated redundant unused functions and constants (`_format_compact_marks`, `DEFAULT_SEMESTER_START`).
+- **Architectural Specification Alignment**: Updated Mermaid diagrams and flowcharts in `docs/UML.md` to reflect gRPC authentication interceptors and centralized configuration.
+
+---
+
 ## [v2.5.0] - 2026-10-17
 
 ### Added

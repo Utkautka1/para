@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
-    <img src="https://img.shields.io/badge/TESTS-588%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 588 Passed">
+    <img src="https://img.shields.io/badge/TESTS-594%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 594 Passed">
   </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/PYTHON-3.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Versions">
@@ -85,7 +85,7 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 | **AI Task Execution** | Synchronous LLM calls freezing event loops | **At-Least-Once Distributed Queue** (`BLMOVE`) with DLQ and GOST Word builder |
 | **Voice / STT Ingress** | Unsupported or manual playback | **GPU-Accelerated faster-whisper** (`large-v3-turbo`, 0.36s inference) + `/dev/shm` RAM-disk |
 | **Error Trapping** | Silent crashes and unresponsive inline buttons | **Global `@dp.error` Trapper** with automated retry backoff & user modal alerts |
-| **Quality Assurance** | "Tested in production" (manual testing) | **588 Automated Tests**, strict Ruff linting, Bandit AST security & GitHub Actions CI |
+| **Quality Assurance** | "Tested in production" (manual testing) | **594 Automated Tests**, strict Ruff linting, Bandit AST security & GitHub Actions CI |
 
 ---
 
@@ -368,7 +368,7 @@ To establish physical capacity bounds, `para-api` was subjected to progressive 4
 5. **Bounded Concurrency & Memory Guards**:
    * Memory leaks are prevented via strict container limits (`deploy.resources.limits`), while AI processing concurrency is capped to 3 tasks via `asyncio.Semaphore(3)` to eliminate out-of-memory kernel traps.
 6. **Automated Test Suite Execution Speed**:
-   * Complete test suite (**588 tests**, 100% passing) executes in **23.6 s** locally and in GitHub Actions CI matrixes.
+   * Complete test suite (**594 tests**, 100% passing) executes in **23.6 s** locally and in GitHub Actions CI matrixes.
 
 ---
 
@@ -523,7 +523,7 @@ para/
 │   ├── UML.md                # Comprehensive Mermaid UML architectural specification
 │   └── PRIVACY.md            # Data privacy & user telemetry policy
 │
-└── tests/                    # Comprehensive Test Suite (588 tests, 100% passing)
+└── tests/                    # Comprehensive Test Suite (594 tests, 100% passing)
 ```
 
 ---
@@ -582,7 +582,7 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
    * `ruff check .` — validates strict PEP compliance, import sorting, and Python 3.12+ syntax.
    * `bandit -r services/ bot/ core/ api/ -c pyproject.toml` — verifies zero cryptographic flaws, socket vulnerabilities, or injection vectors.
 2. **Stage 2 (Isolated Matrix Testing)**:
-   * Python 3.11 & 3.12 test execution across all 588 unit and integration test suites.
+   * Python 3.11 & 3.12 test execution across all 594 unit and integration test suites.
 3. **Stage 3 (Container Delivery Verification)**:
    * `docker compose build --parallel` — confirms that all four microservice Dockerfiles compile cleanly.
 
