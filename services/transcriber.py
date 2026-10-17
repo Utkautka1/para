@@ -9,6 +9,7 @@
 
 import asyncio
 import os
+import time
 from typing import Optional
 
 from config import (
@@ -50,10 +51,16 @@ class AudioTranscriber:
         self._cpu_model = None
         self._lock = asyncio.Lock()
         self._gpu_semaphore = asyncio.Semaphore(1)
+        self._queue_count = 0
+
+    @property
+    def queue_size(self) -> int:
+        """Возвращает число задач в очереди ожидания GPU."""
+        return max(0, self._queue_count - 1)
 
     def _init_whisper_engine(self, device: str | None = None, compute_type: str | None = None):
         """Создает экземпляр WhisperModel с обработкой CUDA fallback."""
-        from faster_whisper import WhisperModel
+        from faster_whisper import WhisperModel  # type: ignore
         os.makedirs(self.download_root, exist_ok=True)
         dev = device or self.device
         comp = compute_type or self.compute_type
@@ -107,16 +114,34 @@ class AudioTranscriber:
         )
         return " ".join(seg.text.strip() for seg in segments if seg.text).strip()
 
-    async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> str:
-        """Асинхронно транскрибирует аудиофайл через семафор с CPU fallback."""
-        async with self._gpu_semaphore:
+    async def _infer_with_fallback(self, audio_path: str, language: Optional[str]) -> str:
+        """Запускает инференс на GPU с автоматическим переходом на CPU при сбое."""
+        fname = os.path.basename(audio_path)
+        try:
             model = await self.get_model()
-            try:
-                return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
-            except Exception as e:
-                log.warning(f"⚠️ Ошибка выполнения на GPU ({e}). Повторная попытка на CPU")
-                cpu_model = await self._get_cpu_model()
-                return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
+            return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
+        except Exception as e:
+            log.warning(f"⚠️ Ошибка GPU инференса ({e}). Переход на CPU fallback: {fname}")
+            cpu_model = await self._get_cpu_model()
+            return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
+
+    async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> str:
+        """Асинхронно транскрибирует аудиофайл через семафор с замером времени и очереди."""
+        self._queue_count += 1
+        start_time = time.monotonic()
+        fname = os.path.basename(audio_path)
+        log.debug(f"Файл {fname} встал в очередь STT (ожидают в очереди: {self.queue_size})")
+        try:
+            async with self._gpu_semaphore:
+                infer_start = time.monotonic()
+                log.info(f"▶️ Начало STT инференса ({self.device}): {fname} (beam={self.beam_size})")
+                text = await self._infer_with_fallback(audio_path, language)
+                infer_time = time.monotonic() - infer_start
+                total_time = time.monotonic() - start_time
+                log.info(f"✅ STT инференс {fname} завершен: время={infer_time:.2f}с (всего={total_time:.2f}с, {len(text)} симв.)")
+                return text
+        finally:
+            self._queue_count -= 1
 
 
 def split_text_to_chunks(text: str, max_chunk_len: int = 4000) -> list[str]:

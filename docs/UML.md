@@ -180,20 +180,32 @@ classDiagram
 
     class AudioTranscriberService {
         -_model WhisperModel
+        -_cpu_model WhisperModel
         -_lock Lock
+        -_gpu_semaphore Semaphore
+        -_queue_count int
+        +queue_size int
         +get_model() WhisperModel
+        -_get_cpu_model() WhisperModel
         -_init_whisper_engine() WhisperModel
         -_sync_transcribe(model, path, lang) str
+        -_infer_with_fallback(path, lang) str
         +transcribe_file(path, lang) str
+        +warmup() void
     }
 
     class VoiceTranscribeHandler {
         +is_allowed_chat(chat_id, chat_type) bool
-        +extract_audio_meta(message) tuple
+        +extract_audio_meta(message) AudioMeta
+        +validate_audio_limits(duration, file_size, sender) str
+        +acquire_user_slot(user_id) bool
+        +release_user_slot(user_id) void
+        +log_voice_request(meta) void
         +download_temp_audio(file_id) str
         +cleanup_temp_file(path) void
+        +send_overflow_chunks(message, chunks) void
         +deliver_transcription(message, status_msg, sender, duration, text) void
-        +process_audio_pipeline(file_id, sender, duration, message, status_msg) void
+        +process_audio_pipeline(file_id, sender, duration, message, status_msg, user_id) void
         +handle_voice_or_video_note(message) void
     }
 
@@ -1638,26 +1650,30 @@ sequenceDiagram
     Bot->>Handler: handle_voice_or_video_note(message)
     Handler->>Handler: is_allowed_chat(chat_id, type)
     Handler->>Handler: extract_audio_meta(message)
+    Handler->>Handler: validate_audio_limits(duration<=300s, size<=20MB)
+    Handler->>Handler: acquire_user_slot(user_id) [Flood control]
     Handler->>TG: message.reply("Расшифровываю...", message_thread_id)
     TG-->>User: Visual Status Indicator
 
     Handler->>Handler: process_audio_pipeline(...)
-    Handler->>TG: bot.get_file(file_id) & bot.download_file(...)
-    TG-->>Handler: Raw Audio Stream (.ogg / .mp4)
+    Handler->>TG: bot.get_file(file_id) & bot.download_file(...) [timeout=25s]
+    TG-->>Handler: Raw Audio Stream (.ogg / .mp4 in /dev/shm)
 
-    Handler->>STT: transcribe_file(temp_path) (semaphore bounded)
+    Handler->>STT: transcribe_file(temp_path) [timeout=90s]
+    STT->>STT: acquire _gpu_semaphore (bound concurrency & track queue_size)
     STT->>STT: get_model() [lazy lock & fallback check]
     STT->>GPU: WhisperModel.transcribe(beam_size=1, no_speech_threshold=0.6, language="ru")
     GPU-->>STT: Segments: text, timestamps, language
     STT-->>Handler: Normalized Full Text Transcript
 
     Handler->>Handler: split_text_to_chunks(text, max_chunk_len=4000)
-    Handler->>TG: status_msg.edit_text(format_transcription_result(...))
+    Handler->>TG: status_msg.edit_text(format_transcription_result(...)) [HTML safe]
     opt If text > 4000 characters
-        Handler->>TG: message.reply(extra_chunk, message_thread_id)
+        Handler->>TG: message.reply(extra_chunk, message_thread_id) [HTML safe]
     end
     TG-->>User: Formatted HTML Quote with Duration & Speaker
-    Handler->>Handler: cleanup_temp_file(temp_path) [/dev/shm or temp_audio]
+    Handler->>Handler: cleanup_temp_file(temp_path) [/dev/shm]
+    Handler->>Handler: release_user_slot(user_id)
 ```
 
 #### Key Architecture & Resilience Principles

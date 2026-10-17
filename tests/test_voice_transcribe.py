@@ -203,8 +203,68 @@ async def test_handle_voice_or_video_note_success() -> None:
     with patch("bot.handlers.user.voice_transcribe.process_audio_pipeline") as mock_pipe:
         await handle_voice_or_video_note(msg)
         msg.reply.assert_awaited_once_with(format_transcription_status())
-        mock_pipe.assert_awaited_once_with("v_ok", "Петр", 12, msg, status_mock)
+        mock_pipe.assert_awaited_once_with("v_ok", "Петр", 12, msg, status_mock, 10)
 
+
+@pytest.mark.asyncio
+async def test_handle_voice_too_long() -> None:
+    """Проверяет отклонение слишком длинного аудиосообщения."""
+    msg = MagicMock(spec=Message)
+    msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
+    msg.from_user = User(id=11, is_bot=False, first_name="Долгий")
+    msg.voice = Voice(file_id="v_long", file_unique_id="u_long", duration=301)
+    msg.video_note = None
+    msg.reply = AsyncMock()
+
+    with patch("bot.handlers.user.voice_transcribe.process_audio_pipeline") as mock_pipe:
+        await handle_voice_or_video_note(msg)
+        mock_pipe.assert_not_called()
+        msg.reply.assert_awaited_once()
+        assert "слишком длинное" in msg.reply.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_handle_voice_rate_limit() -> None:
+    """Проверяет срабатывание троттлинга при флуде аудио от одного пользователя."""
+    from bot.handlers.user.voice_transcribe import _USER_IN_FLIGHT
+    _USER_IN_FLIGHT[99] = 2  # лимит исчерпан
+    msg = MagicMock(spec=Message)
+    msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
+    msg.from_user = User(id=99, is_bot=False, first_name="Флудер")
+    msg.voice = Voice(file_id="v_spam", file_unique_id="u_spam", duration=5)
+    msg.video_note = None
+    msg.reply = AsyncMock()
+
+    with patch("bot.handlers.user.voice_transcribe.process_audio_pipeline") as mock_pipe:
+        await handle_voice_or_video_note(msg)
+        mock_pipe.assert_not_called()
+        assert "предыдущее аудиосообщение" in msg.reply.call_args[0][0]
+    _USER_IN_FLIGHT.pop(99, None)
+
+
+@pytest.mark.asyncio
+async def test_send_overflow_chunks_html_escaping() -> None:
+    """Проверяет обязательное экранирование HTML-тегов в оверфлоу чанках."""
+    msg = MagicMock(spec=Message)
+    msg.reply = AsyncMock()
+    await send_overflow_chunks(msg, ["<script>alert(1)</script> & Co"])
+    msg.reply.assert_awaited_once_with("«&lt;script&gt;alert(1)&lt;/script&gt; &amp; Co»")
+
+
+@pytest.mark.asyncio
+async def test_multi_user_concurrent_transcriptions() -> None:
+    """Проверяет параллельную обработку 5 пользователей без блокировок и утечек."""
+    import asyncio
+    tr = AudioTranscriber()
+    mock_engine = MagicMock()
+    mock_engine.transcribe.return_value = ([MagicMock(text="Привет")], None)
+    tr._model = mock_engine
+
+    tasks = [tr.transcribe_file(f"/tmp/user_{i}.ogg") for i in range(5)]
+    results = await asyncio.gather(*tasks)
+    assert len(results) == 5
+    assert all(r == "Привет" for r in results)
+    assert tr.queue_size == 0
 
 
 def test_transcriber_cpu_fallback() -> None:

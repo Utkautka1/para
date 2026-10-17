@@ -81,33 +81,28 @@ def test_tester_session_lifecycle() -> None:
 
 
 @pytest.mark.asyncio
-async def test_testers_manager_logic() -> None:
-    """Проверяет добавление, удаление тестеров и защиту администраторов."""
+async def test_testers_manager_add_and_check() -> None:
+    """Проверяет добавление тестеров и проверку прав доступа."""
     mock_redis = AsyncMock()
     mock_redis.sadd = AsyncMock(return_value=1)
-    mock_redis.srem = AsyncMock(return_value=1)
     mock_redis.sismember = AsyncMock(return_value=True)
-    mock_redis.smembers = AsyncMock(return_value={b"555", b"666"})
-
     with patch("services.testers_manager.get_redis", return_value=mock_redis):
-        # Добавление
         assert await add_tester(555) is True
         mock_redis.sadd.assert_called_once()
-
-        # Проверка админа (без обращения в Redis)
         assert await is_tester_allowed(ALLOWED_USER_ID) is True
         assert await is_tester_allowed(DEPUTY_USER_ID) is True
-
-        # Проверка обычного тестера (через Redis)
         assert await is_tester_allowed(555) is True
 
-        # Защита админа от удаления
+
+@pytest.mark.asyncio
+async def test_testers_manager_remove_and_list() -> None:
+    """Проверяет удаление тестеров и защиту администраторов."""
+    mock_redis = AsyncMock()
+    mock_redis.srem = AsyncMock(return_value=1)
+    mock_redis.smembers = AsyncMock(return_value={b"555", b"666"})
+    with patch("services.testers_manager.get_redis", return_value=mock_redis):
         assert await remove_tester(ALLOWED_USER_ID) is False
-
-        # Удаление обычного тестера
         assert await remove_tester(555) is True
-
-        # Получение полного списка
         all_uids = await get_all_testers()
         assert ALLOWED_USER_ID in all_uids
         assert 555 in all_uids

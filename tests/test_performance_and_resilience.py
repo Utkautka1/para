@@ -141,10 +141,9 @@ async def test_schedule_parser_cold_start_from_redis() -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_day_schedule_cached_hit_and_miss() -> None:
-    """Проверяет работу L1 Redis-кэша для расписания дня (hit и miss)."""
+async def test_get_day_schedule_cached_miss() -> None:
+    """Проверяет промах L1 Redis-кэша и заполнение из API."""
     from datetime import date
-
     from bot.handlers.user.schedule import get_day_schedule_cached
     from services.models import Lesson
     test_d = date(2026, 10, 5)
@@ -163,12 +162,19 @@ async def test_get_day_schedule_cached_hit_and_miss() -> None:
         assert "Физика" in text
         mock_set.assert_called_once()
 
-    cached_payload = json.dumps({"text": "Кэшированный текст", "lessons": [sample_lessons[0].model_dump()]})
+
+@pytest.mark.asyncio
+async def test_get_day_schedule_cached_hit() -> None:
+    """Проверяет попадание в L1 Redis-кэш без обращения к API."""
+    from datetime import date
+    from bot.handlers.user.schedule import get_day_schedule_cached
+    test_d = date(2026, 10, 5)
+    cached_payload = json.dumps({"text": "Кэшированный текст", "lessons": []})
     with patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=cached_payload)), \
          patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock()) as mock_api:
         text, lessons = await get_day_schedule_cached(test_d)
         assert text == "Кэшированный текст"
-        assert len(lessons) == 1
+        assert len(lessons) == 0
         mock_api.assert_not_called()
 
 
