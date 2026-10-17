@@ -11,12 +11,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt requirements-bot.txt ./
-
+# Слой 1: Тяжелые CUDA-библиотеки (кэшируются намертво, 0.0s при правках кода)
+COPY requirements-bot.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
-    pip install -r requirements.txt -r requirements-bot.txt
+    pip install -r requirements-bot.txt
 
+# Слой 2: Легкие Python-зависимости бота
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+# Слой 3: Код приложения (собирается за 0.3s)
 COPY . ./
 
 CMD ["python", "bot.py"]
