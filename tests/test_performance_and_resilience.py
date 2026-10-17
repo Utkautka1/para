@@ -144,6 +144,7 @@ async def test_schedule_parser_cold_start_from_redis() -> None:
 async def test_get_day_schedule_cached_miss() -> None:
     """Проверяет промах L1 Redis-кэша и заполнение из API."""
     from datetime import date
+
     from bot.handlers.user.schedule import get_day_schedule_cached
     from services.models import Lesson
     test_d = date(2026, 10, 5)
@@ -167,6 +168,7 @@ async def test_get_day_schedule_cached_miss() -> None:
 async def test_get_day_schedule_cached_hit() -> None:
     """Проверяет попадание в L1 Redis-кэш без обращения к API."""
     from datetime import date
+
     from bot.handlers.user.schedule import get_day_schedule_cached
     test_d = date(2026, 10, 5)
     cached_payload = json.dumps({"text": "Кэшированный текст", "lessons": []})

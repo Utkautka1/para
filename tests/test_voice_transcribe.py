@@ -8,8 +8,9 @@
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from aiogram.types import Chat, Message, User, Voice, VideoNote
+from aiogram.types import Chat, Message, User, VideoNote, Voice
 
 from bot.handlers.user.voice_transcribe import (
     cleanup_temp_file,

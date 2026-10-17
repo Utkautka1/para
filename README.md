@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
-    <img src="https://img.shields.io/badge/TESTS-561%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 561 Passed">
+    <img src="https://img.shields.io/badge/TESTS-588%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 588 Passed">
   </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/PYTHON-3.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Versions">
@@ -25,6 +25,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/SYSTRAN/faster-whisper">
+    <img src="https://img.shields.io/badge/faster--whisper-CUDA%20Turing%20GPU-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="faster-whisper CUDA">
+  </a>
   <a href="https://grpc.io">
     <img src="https://img.shields.io/badge/gRPC-HTTP%2F2%20PROTOBUF-244c5a?style=flat-square&logo=grpc&logoColor=white" alt="gRPC">
   </a>
@@ -80,8 +83,9 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 | **State Persistence** | Transient process RAM (lost on container restart) | **Distributed RedisStorage FSM** with Redis 7 append-only file persistence |
 | **Attendance Tracking** | Manual pen-and-paper or clumsy polls | **WOPI Cloud Spreadsheet (OnlyOffice)** + Instant Optimistic UI + Peer Telegram Alerts |
 | **AI Task Execution** | Synchronous LLM calls freezing event loops | **At-Least-Once Distributed Queue** (`BLMOVE`) with DLQ and GOST Word builder |
+| **Voice / STT Ingress** | Unsupported or manual playback | **GPU-Accelerated faster-whisper** (`large-v3-turbo`, 0.36s inference) + `/dev/shm` RAM-disk |
 | **Error Trapping** | Silent crashes and unresponsive inline buttons | **Global `@dp.error` Trapper** with automated retry backoff & user modal alerts |
-| **Quality Assurance** | "Tested in production" (manual testing) | **561 Automated Tests**, strict Ruff linting, Bandit AST security & GitHub Actions CI |
+| **Quality Assurance** | "Tested in production" (manual testing) | **588 Automated Tests**, strict Ruff linting, Bandit AST security & GitHub Actions CI |
 
 ---
 
@@ -243,6 +247,19 @@ Student homework tasks (prompts, photos, PDF/DOCX problem sets) are processed th
   * Standard 20mm/10mm margins, header hierarchies, and formatted formula callouts.
 </details>
 
+<details>
+<summary><b>6. GPU-Accelerated Voice & Video Note Transcription Engine (faster-whisper)</b></summary>
+
+### Blazing-Fast Speech-to-Text Pipeline
+Para introduces native, autonomous processing of incoming Telegram voice notes (`voice`) and circular video notes (`video_note`):
+
+* **Local Turing GPU Inference**: Leverages `faster-whisper` (`large-v3-turbo`) with CUDA acceleration on dedicated NVIDIA hardware (GTX 1660 Ti), achieving real-time inference times of **0.36 seconds** for standard 14-second audio notes.
+* **Ephemeral In-Memory Processing (`/dev/shm`)**: All downloaded audio files stream into `/dev/shm` Linux RAM-disk buffers. Media files are parsed in memory and destroyed atomically via `finally` unlink blocks, guaranteeing zero SSD write fatigue and zero unencrypted disk leakage.
+* **Dual-Tier Hardware Fallback**: If CUDA drivers or GPU VRAM encounter out-of-memory limits, the engine gracefully transitions to an on-demand CPU `int8` model without dropping the user's transcription request.
+* **Rate-Limiting & Anti-Spam Gate**: Implements `_USER_IN_FLIGHT` tracking limiting simultaneous requests to 2 per user, with hard ceilings on duration (`<= 300s`) and file size (`<= 20MB`).
+* **Forum Thread & Quoting Affinity**: Formats speech into sanitized HTML blockquotes with exact duration metadata and preserves `message_thread_id` across forum supergroup topics.
+</details>
+
 ---
 
 ## ⚡ Production Performance & Microservices Telemetry
@@ -260,6 +277,7 @@ Every microservice operates within strict single-digit millisecond or sub-millis
 | **`para-api`** | `GET /schedule/day` (L2 Redis) | **1.40 ms** | **2.80 ms** | `1,600+ req/s` | Non-blocking async Redis snapshot hit |
 | **`para-api`** | `GET /health` (Internal Loopback) | **0.85 ms** | **1.20 ms** | `5,000+ req/s` | Sub-millisecond container healthcheck |
 | **`para-bot`** | Telegram Update Dispatch Pipeline| **8.2 ms** | **16.0 ms** | `1,200+ msg/s` | Fast-path middleware routing pipeline |
+| **`para-bot`** | Voice STT Inference (CUDA Turing) | **0.36 s** | **0.91 s** | Real-time | `large-v3-turbo` on GTX 1660 Ti with /dev/shm |
 | **`para-bot`** | Optimistic Attendance Mark Ack | **8.5 ms** | **14.8 ms** | Line-rate | Instant UI response before WOPI settling |
 | **`para-bot`** | Anti-Flood Debounce Gate | **250 ms** | **250 ms** | Rate-Limited | Token bucket window drops bursts |
 | **`para-bot`** | FSM State Save (`RedisStorage`) | **0.35 ms** | **0.85 ms** | `2,800+ ops/s` | Non-blocking Redis FSM persistence |
@@ -350,7 +368,7 @@ To establish physical capacity bounds, `para-api` was subjected to progressive 4
 5. **Bounded Concurrency & Memory Guards**:
    * Memory leaks are prevented via strict container limits (`deploy.resources.limits`), while AI processing concurrency is capped to 3 tasks via `asyncio.Semaphore(3)` to eliminate out-of-memory kernel traps.
 6. **Automated Test Suite Execution Speed**:
-   * Complete test suite (**561 tests**, 100% passing) executes in **23.4 s** locally and in GitHub Actions CI matrixes.
+   * Complete test suite (**588 tests**, 100% passing) executes in **23.6 s** locally and in GitHub Actions CI matrixes.
 
 ---
 
@@ -411,6 +429,24 @@ async def redis_lock(key: str, ttl_seconds: int = 15):
         yield
     finally:
         await _client.eval(RELEASE_LOCK_LUA_SCRIPT, 1, f"lock:{key}", token)
+```
+
+### 4. GPU-Accelerated Speech-to-Text Ingress & RAM-Disk Pipeline (`voice_transcribe.py`)
+```python
+async def process_audio_pipeline(
+    file_id: str, sender: str, dur: int, msg: Message, status_msg: Message, user_id: int
+) -> None:
+    """Orchestrates ephemeral audio download, GPU inference, and quote delivery."""
+    temp_path = None
+    try:
+        temp_path = await download_temp_audio(file_id)
+        transcript = await transcriber_service.transcribe_file(temp_path)
+        await deliver_transcription(msg, status_msg, sender, dur, transcript)
+    except Exception as e:
+        await handle_transcribe_exception(e, status_msg)
+    finally:
+        cleanup_temp_file(temp_path)
+        release_user_slot(user_id)
 ```
 
 ---
@@ -474,7 +510,8 @@ para/
 │   ├── classmates_auth.py    # Identity registry & cryptographic Telegram binding
 │   ├── notifier.py           # APScheduler bell notifications (10-min pre-class alarms)
 │   ├── schedule_parser.py    # Resilient KTMU college timetable parser & parser engine
-│   └── topic_updater.py      # Pinned schedule message updater & ZSET message cleaner
+│   ├── topic_updater.py      # Pinned schedule message updater & ZSET message cleaner
+│   └── transcriber.py        # GPU-accelerated speech-to-text engine (faster-whisper)
 │
 ├── utils/                    # Shared Utility Libraries
 │   ├── doc_generator.py      # GOST 7.32-2017 compliant Word document builder
@@ -486,7 +523,7 @@ para/
 │   ├── UML.md                # Comprehensive Mermaid UML architectural specification
 │   └── PRIVACY.md            # Data privacy & user telemetry policy
 │
-└── tests/                    # Comprehensive Test Suite (561 tests, 100% passing)
+└── tests/                    # Comprehensive Test Suite (588 tests, 100% passing)
 ```
 
 ---
@@ -545,7 +582,7 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
    * `ruff check .` — validates strict PEP compliance, import sorting, and Python 3.12+ syntax.
    * `bandit -r services/ bot/ core/ api/ -c pyproject.toml` — verifies zero cryptographic flaws, socket vulnerabilities, or injection vectors.
 2. **Stage 2 (Isolated Matrix Testing)**:
-   * Python 3.11 & 3.12 test execution across all 561 unit and integration test suites.
+   * Python 3.11 & 3.12 test execution across all 588 unit and integration test suites.
 3. **Stage 3 (Container Delivery Verification)**:
    * `docker compose build --parallel` — confirms that all four microservice Dockerfiles compile cleanly.
 

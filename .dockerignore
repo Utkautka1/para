@@ -28,3 +28,16 @@ scratch/
 
 # Data (volume-mounted at runtime in compose.yml)
 data/
+
+# Tests and Coverage (not required in production containers)
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation and Development Scripts
+docs/
+*.md
+Makefile
+docker-compose.override.yml
+

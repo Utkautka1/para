@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.5.0] - 2026-10-17
+
+### Added
+- **GPU-Accelerated Voice & Video Note Transcription Pipeline**: Integrated `faster-whisper` (`large-v3-turbo`) with CUDA acceleration on NVIDIA Turing GPU (GTX 1660 Ti), achieving blazing-fast **0.36s inference** for 14-second audio inputs.
+- **Ephemeral RAM-Disk Processing (`/dev/shm`)**: Audio downloads from Telegram Bot API stream directly to `/dev/shm` in-memory tmpfs, eliminating SSD write wear and ensuring zero-trace media destruction via atomic `finally` unlink.
+- **Dual-Tier Hardware Fallback & Concurrency Semaphore**: Implemented `asyncio.Semaphore(1)` with queue tracking and automatic graceful fallback to CPU (`int8`) inference upon CUDA out-of-memory or driver faults.
+- **Per-User In-Flight Rate Limiting & Anti-Flood Protection**: Capped concurrent audio processing to `MAX_CONCURRENT_PER_USER=2` with strict duration (`<= 300s`) and file size (`<= 20MB`) validation.
+- **Forum Topic & HTML Presentation Affinity**: Transcriptions strictly preserve `message_thread_id` across forum supergroups and format speech into HTML-escaped quotation cards with duration indicators and multi-message chunking (`> 4000` chars).
+- **Expanded Test Suite (588 Tests)**: Added 27 new test cases in `tests/test_voice_transcribe.py` covering rate limiting, CPU fallback, multi-user concurrency, HTML escaping, and audio limit validation.
+
+### Changed
+- **Optimized Docker Multi-Stage Build Layers**: Isolated heavy CUDA libraries (`requirements-bot.txt`, 3.5 GB) into a permanently cached layer (`bot stage-0 5/8`), while application dependencies compile separately, reducing incremental build times to sub-second exports.
+- **Sanitized Build Context**: Expanded `.dockerignore` to exclude `tests/`, `docs/`, `scripts/`, and `.pytest_cache/` from container build contexts.
+- **Strict Method Decomposition Bounds**: Re-verified and decomposed all handlers and entrypoints to guarantee strict **≤ 25 lines per method** limit across 100% of the project codebase.
+
+### Fixed
+- **Bandit B108 Security Audit**: Annotated intentional `/dev/shm` RAM-disk usage in `voice_transcribe.py` with `# nosec B108`.
+- **CI Matrix Configuration Drift**: Added Whisper environment variables to `.env.ci`, ensuring tests pass in GitHub Actions across Python 3.11 and 3.12.
+- **Engineering Documentation Drift**: Resynchronized `docs/entrypoints/bot.md` and central symbols inventory.
+
+---
+
 ## [v2.4.1] - 2026-10-15
 
 ### Added

@@ -10,7 +10,6 @@
 import asyncio
 import os
 import time
-from typing import Optional
 
 from config import (
     WHISPER_BEAM_SIZE,
@@ -100,7 +99,7 @@ class AudioTranscriber:
         """Прогревает модель Whisper в фоне, загружая веса в память GPU."""
         await self.get_model()
 
-    def _sync_transcribe(self, model, audio_path: str, language: Optional[str] = None) -> str:
+    def _sync_transcribe(self, model, audio_path: str, language: str | None = None) -> str:
         """Синхронный прогон инференса faster-whisper с подавлением галлюцинаций."""
         target_lang = language or self.language
         segments, _ = model.transcribe(
@@ -114,7 +113,7 @@ class AudioTranscriber:
         )
         return " ".join(seg.text.strip() for seg in segments if seg.text).strip()
 
-    async def _infer_with_fallback(self, audio_path: str, language: Optional[str]) -> str:
+    async def _infer_with_fallback(self, audio_path: str, language: str | None) -> str:
         """Запускает инференс на GPU с автоматическим переходом на CPU при сбое."""
         fname = os.path.basename(audio_path)
         try:
@@ -125,7 +124,7 @@ class AudioTranscriber:
             cpu_model = await self._get_cpu_model()
             return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
 
-    async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> str:
+    async def transcribe_file(self, audio_path: str, language: str | None = None) -> str:
         """Асинхронно транскрибирует аудиофайл через семафор с замером времени и очереди."""
         self._queue_count += 1
         start_time = time.monotonic()

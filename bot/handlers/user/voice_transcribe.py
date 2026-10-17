@@ -11,7 +11,6 @@ import html
 import os
 import time
 import uuid
-from typing import NamedTuple, Optional
 
 from aiogram import F, Router
 from aiogram.types import Message
@@ -26,15 +25,14 @@ from bot.templates.user.voice import (
     format_transcription_status,
 )
 from config import (
-    TOPIC_CHAT_ID,
+    _USER_IN_FLIGHT,
+    DOWNLOAD_TIMEOUT,
     MAX_AUDIO_DURATION,
     MAX_AUDIO_SIZE,
     MAX_CONCURRENT_PER_USER,
-    DOWNLOAD_TIMEOUT,
+    TOPIC_CHAT_ID,
     TRANSCRIBE_TIMEOUT,
-    _USER_IN_FLIGHT,
 )
-
 from core.bot import bot
 from core.logger import get_logger
 from services.transcriber import split_text_to_chunks, transcriber_service
@@ -57,7 +55,7 @@ class AudioMeta:
         user_id: int = 0,
         username: str = "",
         chat_id: int = 0,
-        thread_id: Optional[int] = None,
+        thread_id: int | None = None,
         media_type: str = "voice",
     ):
         self.file_id = file_id
@@ -117,7 +115,7 @@ def release_user_slot(user_id: int) -> None:
             _USER_IN_FLIGHT.pop(user_id, None)
 
 
-def validate_audio_limits(duration: int, file_size: int, sender: str) -> Optional[str]:
+def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | None:
     """Проверяет ограничения по длительности и размеру аудиофайла."""
     if duration > MAX_AUDIO_DURATION:
         log.warning(f"⚠️ Аудио от {sender} отклонено: длительность {duration}с > {MAX_AUDIO_DURATION}с")
@@ -140,8 +138,8 @@ def log_voice_request(meta: AudioMeta) -> None:
 
 
 async def download_temp_audio(file_id: str) -> str:
-    """Скачивает аудиофайл Telegram в RAM-диск (/dev/shm) с таймаутом."""
-    base_dir = "/dev/shm/para_audio" if os.path.exists("/dev/shm") else "data/temp_audio"
+    # RAM-диск /dev/shm используется для сверхбыстрого I/O без износа диска
+    base_dir = "/dev/shm/para_audio" if os.path.exists("/dev/shm") else "data/temp_audio"  # nosec B108
     os.makedirs(base_dir, exist_ok=True)
     temp_path = f"{base_dir}/{uuid.uuid4().hex}.ogg"
     dl_start = time.monotonic()
