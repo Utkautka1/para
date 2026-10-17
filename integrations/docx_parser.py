@@ -14,7 +14,11 @@ from typing import Any, TypedDict
 import defusedxml.ElementTree as ET
 import httpx
 
-from config import DOCX_CACHE_TTL_SECONDS, YANDEX_DOC_PUBLIC_URL
+from config import (
+    DOCX_CACHE_TTL_SECONDS,
+    DOCX_MIN_REFRESH_INTERVAL_SECONDS,
+    YANDEX_DOC_PUBLIC_URL,
+)
 from core.logger import get_logger
 
 log = get_logger("docx_parser")
@@ -91,7 +95,7 @@ def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]:
     return teachers_map
 
 
-MIN_DOCX_REFRESH_INTERVAL_SECONDS = 30.0
+MIN_DOCX_REFRESH_INTERVAL_SECONDS = DOCX_MIN_REFRESH_INTERVAL_SECONDS
 _DOCX_LOCK: asyncio.Lock | None = None
 
 

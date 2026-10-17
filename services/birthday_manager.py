@@ -15,23 +15,30 @@ from typing import Any
 from aiogram.exceptions import TelegramBadRequest
 
 from config import (
+    BIRTHDAY_TOPIC_STATE_FILE,
     BIRTHDAY_TOPIC_THREAD_ID,
+    BIRTHDAYS_FILE_PATH,
+    CONGRATS_STATE_FILE_PATH,
+    HISTORY_FILE_PATH,
     IMPORTANT_TOPIC_THREAD_ID,
+    STAROSTA_HISTORY_FILE_PATH,
+    STAROSTA_WISHES_FILE_PATH,
     TIMEZONE,
     TOPIC_CHAT_ID,
+    WISHES_FILE_PATH,
 )
 from core.bot import bot
 from core.logger import get_logger
 
 log = get_logger("birthday_manager")
 
-BIRTHDAYS_FILE = "data/birthdays.json"
-WISHES_FILE = "data/birthday_wishes.json"
-STAROSTA_WISHES_FILE = "data/starosta_wishes.json"
-STATE_FILE = "data/birthday_topic_state.json"
-HISTORY_FILE = "data/birthday_history.json"
-STAROSTA_HISTORY_FILE = "data/starosta_history.json"
-CONGRATS_STATE_FILE = "data/birthday_congrats_state.json"
+BIRTHDAYS_FILE = BIRTHDAYS_FILE_PATH
+WISHES_FILE = WISHES_FILE_PATH
+STAROSTA_WISHES_FILE = STAROSTA_WISHES_FILE_PATH
+STATE_FILE = BIRTHDAY_TOPIC_STATE_FILE
+HISTORY_FILE = HISTORY_FILE_PATH
+STAROSTA_HISTORY_FILE = STAROSTA_HISTORY_FILE_PATH
+CONGRATS_STATE_FILE = CONGRATS_STATE_FILE_PATH
 
 
 from utils.storage import sync_atomic_save_json as save_json_file

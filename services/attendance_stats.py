@@ -15,7 +15,12 @@ from typing import Any
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
-from config import MARKS_CACHE_TTL_SECONDS, REDIS_MARKS_CACHE_PREFIX
+from config import (
+    ATTENDANCE_STATS_CACHE_TTL_SECONDS,
+    ATTENDANCE_STATS_REDIS_KEY,
+    MARKS_CACHE_TTL_SECONDS,
+    REDIS_MARKS_CACHE_PREFIX,
+)
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from integrations.yandex_docs import (
@@ -26,8 +31,8 @@ from integrations.yandex_docs import (
 )
 
 log = get_logger("attendance_stats")
-REDIS_STATS_KEY = "att:stats:all_time"
-CACHE_TTL_SECONDS = 3600
+REDIS_STATS_KEY = ATTENDANCE_STATS_REDIS_KEY
+CACHE_TTL_SECONDS = ATTENDANCE_STATS_CACHE_TTL_SECONDS
 
 
 def _init_student_stat(fio: str) -> dict[str, Any]:

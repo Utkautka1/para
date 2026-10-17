@@ -18,7 +18,12 @@ from api.schemas.miniapp import (
     TesterItemResponse,
     TesterListResponse,
 )
-from config import ALLOWED_USER_ID, DEPUTY_USER_ID, SESSION_MAX_AGE_SECONDS
+from config import (
+    ALLOWED_USER_ID,
+    DEPUTY_USER_ID,
+    MINIAPP_HTML_FILE_PATH,
+    SESSION_MAX_AGE_SECONDS,
+)
 from core.logger import get_logger
 from services.testers_manager import (
     add_tester,
@@ -36,7 +41,7 @@ log = get_logger("miniapp_router")
 
 router = APIRouter(tags=["Telegram Mini App"], prefix="/miniapp")
 
-_HTML_PATH = Path("data/api/miniapp.html")
+_HTML_PATH = Path(MINIAPP_HTML_FILE_PATH)
 
 
 def _set_tester_cookie(response: Response, user_id: int) -> None:

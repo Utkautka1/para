@@ -214,3 +214,24 @@ def test_config_requires_redis_password() -> None:
         get_required_env("REDIS_PASSWORD")
 
 
+@pytest.mark.asyncio
+async def test_solver_payload_length_limits() -> None:
+    """Проверяет валидацию 422 при превышении лимита размера промпта."""
+    from fastapi import FastAPI
+    from httpx import ASGITransport, AsyncClient
+
+    from api.deps import verify_api_or_tester
+    from api.router.solver import router
+    from config import HW_MAX_PROMPT_TEXT_LENGTH
+
+    test_app = FastAPI()
+    test_app.dependency_overrides[verify_api_or_tester] = lambda: "test_user"
+    test_app.include_router(router)
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        too_long_prompt = "a" * (HW_MAX_PROMPT_TEXT_LENGTH + 10)
+        res = await client.post("/solver/solve", json={"prompt": too_long_prompt})
+        assert res.status_code == 422
+
+
+

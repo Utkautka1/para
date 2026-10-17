@@ -18,6 +18,7 @@ from aiogram.exceptions import TelegramBadRequest
 from config import (
     ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS,
     ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS,
+    ATTENDANCE_TOPIC_STATE_FILE,
     ATTENDANCE_TOPIC_THREAD_ID,
     TIMEZONE,
     TOPIC_CHAT_ID,
@@ -29,7 +30,7 @@ from services.attendance_stats import fetch_all_time_attendance
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("att_topic_updater")
-STATE_FILE = "data/attendance_topic_state.json"
+STATE_FILE = ATTENDANCE_TOPIC_STATE_FILE
 _ATT_MAIN_MSG_ID: int | None = None
 
 
@@ -48,17 +49,6 @@ def make_progress_bar(pct: float) -> str:
     """Формирует аккуратную 4-символьную шкалу прогресса посещаемости."""
     filled = max(0, min(4, round(pct / 25.0)))
     return "▰" * filled + "▱" * (4 - filled)
-
-
-def _format_compact_marks(p: int, o: int, u: int, n: int) -> str:
-    """Формирует понятные отметки, исключая оптическую иллюзию 1О -> 10."""
-    parts = [f"{p}П"]
-    if o > 0:
-        parts.append(f"{o} оп")
-    if u > 0:
-        parts.append(f"{u}У")
-    parts.append(f"{n}Н")
-    return " · ".join(parts)
 
 
 def extract_short_fio(fio: str) -> str:

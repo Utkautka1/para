@@ -35,9 +35,6 @@ def get_default_semester_start() -> date:
     return date(start_year, 9, 1)
 
 
-DEFAULT_SEMESTER_START = get_default_semester_start()
-
-
 async def get_effective_semester_start() -> date:
     """Определяет актуальную дату старта семестра из расписания КТМУ."""
     try:

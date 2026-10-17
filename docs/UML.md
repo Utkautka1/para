@@ -1772,12 +1772,22 @@ classDiagram
         +process_tester_id_input(message, state) void
     }
 
+    class ApiKeyAuthInterceptor {
+        -_secret_key str
+        +intercept_service(continuation, handler_call_details) Coroutine
+    }
+
+    GrpcServerManager --> ApiKeyAuthInterceptor : attaches interceptor
     GrpcServerManager --> ScheduleServiceServicer : registers servicer
     GrpcServerManager --> ExamsServiceServicer : registers servicer
     GrpcServerManager --> TeachersServiceServicer : registers servicer
+    ApiKeyAuthInterceptor --> ScheduleServiceServicer : protects RPC endpoints
+    ApiKeyAuthInterceptor --> ExamsServiceServicer : protects RPC endpoints
+    ApiKeyAuthInterceptor --> TeachersServiceServicer : protects RPC endpoints
     ScheduleServiceServicer --> GrpcConverters : converts models
     ExamsServiceServicer --> GrpcConverters : converts models
     TeachersServiceServicer --> GrpcConverters : converts models
+    ApiClientGrpc --> ApiKeyAuthInterceptor : sends metadata (x-api-key)
     ApiClientGrpc --> ScheduleServiceServicer : RPC HTTP/2 stream
     ApiClientGrpc --> ExamsServiceServicer : RPC HTTP/2 stream
     ApiClientGrpc --> TeachersServiceServicer : RPC HTTP/2 stream
@@ -1790,7 +1800,7 @@ classDiagram
 
 ### 9.1. gRPC Microservices Ingress & Protobuf Multiplexing Flow
 
-Architecture governing high-performance binary RPC data exchange between microservices (`para-bot`, `para-worker`, `para-solver`) and `para-api` over HTTP/2 multiplexed streams with low-latency binary serialization.
+Architecture governing high-performance binary RPC data exchange between microservices (`para-bot`, `para-worker`, `para-solver`) and `para-api` over HTTP/2 multiplexed streams with low-latency binary serialization and cryptographic API-key validation.
 
 ```mermaid
 sequenceDiagram
@@ -1798,31 +1808,41 @@ sequenceDiagram
     actor Caller as para-bot / para-worker
     participant Client as core/api_client.py
     participant Channel as grpc.aio.Channel (:50051)
+    participant Auth as ApiKeyAuthInterceptor
     participant Servicer as ScheduleServiceServicer
     participant Parser as services/schedule_parser.py
     participant RedisStore as Redis L1/L2 Cache
 
     Caller->>Client: get_api_schedule_for_date(target_date)
-    Client->>Channel: ScheduleServiceStub.GetDaySchedule(DayScheduleRequest)
-    Channel->>Servicer: Ingest binary protobuf RPC frame
-    Servicer->>Parser: get_schedule_for_date(day, force_refresh)
-    Parser->>RedisStore: GET schedule:snapshot / L1 memory cache
-    RedisStore-->>Parser: Return cached schedule / live parse
-    Parser-->>Servicer: List[Lesson] domain models
-    Servicer->>Servicer: lesson_to_proto() converter
-    Servicer-->>Channel: DayScheduleResponse (binary frame)
-    Channel-->>Client: Receive Protobuf response
-    Client->>Client: proto_to_lesson() deserialization
-    Client-->>Caller: List[Lesson] Pydantic models
+    Client->>Channel: ScheduleServiceStub.GetDaySchedule(DayScheduleRequest, metadata=[(x-api-key, ...)])
+    Channel->>Auth: intercept_service(continuation, handler_call_details)
+    Auth->>Auth: secrets.compare_digest(request_key, API_SECRET_KEY)
+    alt API Key Invalid / Missing
+        Auth-->>Channel: grpc.StatusCode.UNAUTHENTICATED ("Invalid or missing API key")
+        Channel-->>Client: grpc.RpcError (UNAUTHENTICATED)
+        Client->>Client: Transparent REST fallback
+    else Authenticated
+        Auth->>Servicer: Ingest binary protobuf RPC frame
+        Servicer->>Parser: get_schedule_for_date(day, force_refresh)
+        Parser->>RedisStore: GET schedule:snapshot / L1 memory cache
+        RedisStore-->>Parser: Return cached schedule / live parse
+        Parser-->>Servicer: List[Lesson] domain models
+        Servicer->>Servicer: lesson_to_proto() converter
+        Servicer-->>Channel: DayScheduleResponse (binary frame)
+        Channel-->>Client: Receive Protobuf response
+        Client->>Client: proto_to_lesson() deserialization
+        Client-->>Caller: List[Lesson] Pydantic models
+    end
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Persistent Channel Multiplexing**: `ApiClientGrpc` maintains a persistent HTTP/2 connection channel (`grpc.aio.insecure_channel`) directed to `api:50051`, eliminating TCP handshake overhead for recurring timetable checks.
-2. **Binary Frame Ingress**: Methods such as `get_api_schedule_for_date` construct typed `DayScheduleRequest` protobuf structures, achieving high compression and zero JSON parsing CPU overhead.
-3. **Servicer Dispatch**: `ScheduleServiceServicer.GetDaySchedule` unpacks request parameters, delegates timetable resolution to `services/schedule_parser.py`, and inspects Redis L1/L2 snapshot caches.
-4. **Data Mapping & Serialization**: Domain `Lesson` objects are mapped to Protobuf structures by `GrpcConverters.lesson_to_proto`, preserving subgroup partitioning, stream markers, and remote lecture identifiers.
-5. **High Availability & HTTP Fallback**: If gRPC experiences communication disruption (`grpc.RpcError`), `ApiClientGrpc` intercepts the error and executes transparent fallback to legacy REST endpoints, ensuring zero downtime for end users.
+1. **Persistent Channel Multiplexing & Auth Metadata**: `ApiClientGrpc` maintains a persistent HTTP/2 connection channel (`grpc.aio.insecure_channel`) directed to `api:50051`. Each outbound RPC invocation includes secure `x-api-key` metadata retrieved from `config.py` (sourced from `.env`).
+2. **Cryptographic Interceptor Validation**: `ApiKeyAuthInterceptor` extracts metadata headers and performs constant-time validation (`secrets.compare_digest`) against `API_SECRET_KEY`, rejecting unauthenticated cross-service traffic with `StatusCode.UNAUTHENTICATED`.
+3. **Binary Frame Ingress**: Methods such as `get_api_schedule_for_date` construct typed `DayScheduleRequest` protobuf structures, achieving high compression and zero JSON parsing CPU overhead.
+4. **Servicer Dispatch**: `ScheduleServiceServicer.GetDaySchedule` unpacks request parameters, delegates timetable resolution to `services/schedule_parser.py`, and inspects Redis L1/L2 snapshot caches.
+5. **Data Mapping & Serialization**: Domain `Lesson` objects are mapped to Protobuf structures by `GrpcConverters.lesson_to_proto`, preserving subgroup partitioning, stream markers, and remote lecture identifiers.
+6. **High Availability & HTTP Fallback**: If gRPC experiences communication disruption (`grpc.RpcError`), `ApiClientGrpc` intercepts the error and executes transparent fallback to legacy REST endpoints, ensuring zero downtime for end users.
 
 ---
 

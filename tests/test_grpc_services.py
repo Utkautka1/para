@@ -7,7 +7,7 @@ Unit-тесты для gRPC сервисов и конвертеров para-api.
   3. Взаимодействие через реальный асинхронный gRPC канал.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -131,3 +131,43 @@ async def test_teachers_servicer_get_teachers() -> None:
         resp = await servicer.GetTeachers(req, context)
         assert resp.count == 1
         assert resp.teachers["Сидоров"].full_name == "Сидоров С.С."
+
+
+@pytest.mark.asyncio
+async def test_api_key_auth_interceptor_valid() -> None:
+    """Проверяет пропуск запроса с корректным X-API-Key заголовком."""
+    from api.grpc.server import ApiKeyAuthInterceptor
+    from config import API_SECRET_KEY
+
+    interceptor = ApiKeyAuthInterceptor()
+    details = MagicMock()
+    details.invocation_metadata = (("x-api-key", API_SECRET_KEY),)
+    continuation = AsyncMock(return_value="handler_ok")
+
+    handler = await interceptor.intercept_service(continuation, details)
+    assert handler == "handler_ok"
+    continuation.assert_awaited_once_with(details)
+
+
+@pytest.mark.asyncio
+async def test_api_key_auth_interceptor_invalid() -> None:
+    """Проверяет отказ и статус UNAUTHENTICATED при невалидном X-API-Key."""
+    import grpc
+
+    from api.grpc.server import ApiKeyAuthInterceptor
+
+    interceptor = ApiKeyAuthInterceptor()
+    details = MagicMock()
+    details.invocation_metadata = (("x-api-key", "wrong-secret"),)
+    continuation = AsyncMock()
+
+    handler = await interceptor.intercept_service(continuation, details)
+    continuation.assert_not_called()
+    assert handler is not None
+
+    mock_context = AsyncMock()
+    await handler.unary_unary(None, mock_context)
+    mock_context.abort.assert_awaited_once_with(
+        grpc.StatusCode.UNAUTHENTICATED, "Invalid or missing X-API-Key header"
+    )
+

@@ -13,7 +13,7 @@ from aiogram.exceptions import TelegramBadRequest
 
 from bot.templates.user.keyboards import get_topic_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
-from config import TIMEZONE, TOPIC_CHAT_ID, TOPIC_THREAD_ID
+from config import TIMEZONE, TOPIC_CHAT_ID, TOPIC_STATE_FILE, TOPIC_THREAD_ID
 from core.api_client import get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
@@ -21,7 +21,7 @@ from services.models import Lesson
 from services.notifier import parse_lesson_end_time, parse_lesson_start_time
 
 log = get_logger("topic_updater")
-STATE_FILE = "data/topic_state.json"
+STATE_FILE = TOPIC_STATE_FILE
 
 _TOPIC_MAIN_MSG_ID: int | None = None
 _SENT_REMINDERS: set = set()

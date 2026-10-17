@@ -9,6 +9,8 @@ services:
       --maxmemory 48M
       --maxmemory-policy volatile-lru
       --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDISCLI_AUTH=${REDIS_PASSWORD}
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -16,7 +18,6 @@ services:
     cap_add:
       - SETUID
       - SETGID
-      - DAC_OVERRIDE
     volumes:
       - ./data/redis:/data
     deploy:
@@ -27,7 +28,7 @@ services:
         reservations:
           memory: 16M
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -80,8 +81,11 @@ services:
     container_name: para-bot
     restart: always
     stop_grace_period: 10s
+    shm_size: '512m'
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       redis:
         condition: service_healthy

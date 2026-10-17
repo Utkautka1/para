@@ -8,14 +8,14 @@
 
 import asyncio
 
-from config import ATTENDANCE_DOC_URL
+from config import ATTENDANCE_DOC_URL, YANDEX_KEEPALIVE_INTERVAL_SECONDS
 from core.logger import get_logger
 from integrations.yandex_docs import extract_client_config, fetch_page_dom
 
 log = get_logger("yandex_keepalive")
 
-# Интервал фонового подогрева сессии (6 часов)
-KEEPALIVE_INTERVAL_SECONDS = 21600
+# Интервал фонового подогрева сессии
+KEEPALIVE_INTERVAL_SECONDS = YANDEX_KEEPALIVE_INTERVAL_SECONDS
 
 
 async def ping_yandex_session() -> bool:

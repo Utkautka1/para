@@ -12,14 +12,19 @@ from typing import Any
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, TelegramObject
 
+from config import (
+    THROTTLING_DEFAULT_COOLDOWN,
+    THROTTLING_HEAVY_COOLDOWN,
+    THROTTLING_NAV_COOLDOWN,
+)
 from core.logger import get_logger
 
 log = get_logger("throttle_middleware")
 
 # Кулдауны для категорий действий (в секундах)
-HEAVY_COOLDOWN = 4.0
-NAV_COOLDOWN = 1.0
-DEFAULT_COOLDOWN = 0.5
+HEAVY_COOLDOWN = THROTTLING_HEAVY_COOLDOWN
+NAV_COOLDOWN = THROTTLING_NAV_COOLDOWN
+DEFAULT_COOLDOWN = THROTTLING_DEFAULT_COOLDOWN
 
 
 def _determine_cooldown(cb_data: str) -> float:

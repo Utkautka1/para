@@ -10,9 +10,11 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 
-# Максимальный размер лог-файла (10 МБ) и количество архивных файлов
-MAX_LOG_BYTES = 10 * 1024 * 1024
-BACKUP_LOG_COUNT = 5
+from config import LOG_BACKUP_COUNT, LOG_MAX_BYTES
+
+# Максимальный размер лог-файла и количество архивных файлов
+MAX_LOG_BYTES = LOG_MAX_BYTES
+BACKUP_LOG_COUNT = LOG_BACKUP_COUNT
 
 
 def _create_formatter() -> logging.Formatter:

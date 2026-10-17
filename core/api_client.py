@@ -97,6 +97,9 @@ async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str,
                 raise
 
 
+GRPC_AUTH_METADATA = (("x-api-key", API_SECRET_KEY),)
+
+
 async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool) -> dict[str, Any]:
     """Вызывает gRPC метод ScheduleService.GetDaySchedule."""
     stub = schedule_pb2_grpc.ScheduleServiceStub(_get_grpc_channel())
@@ -104,7 +107,7 @@ async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool
         target_date=target_date.isoformat() if target_date else "",
         force_refresh=force_refresh,
     )
-    resp = await stub.GetDaySchedule(req, timeout=30.0)
+    resp = await stub.GetDaySchedule(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
     lessons = [proto_to_lesson(item).model_dump() for item in resp.lessons]
     return {"date": resp.date, "lessons": lessons}
 
@@ -128,7 +131,7 @@ async def _fetch_week_schedule_grpc(monday: date | None, force_refresh: bool) ->
         monday=monday.isoformat() if monday else "",
         force_refresh=force_refresh,
     )
-    resp = await stub.GetWeekSchedule(req, timeout=30.0)
+    resp = await stub.GetWeekSchedule(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
     days = [{"date": d.date, "lessons": [proto_to_lesson(item).model_dump() for item in d.lessons]} for d in resp.days]
     return {"monday": resp.monday, "days": days}
 
@@ -149,7 +152,7 @@ async def _fetch_exams_grpc(force_refresh: bool) -> dict[str, Any]:
     """Вызывает gRPC метод ExamsService.GetExams."""
     stub = exams_pb2_grpc.ExamsServiceStub(_get_grpc_channel())
     req = exams_pb2.ExamsRequest(force_refresh=force_refresh)
-    resp = await stub.GetExams(req, timeout=30.0)
+    resp = await stub.GetExams(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
     exams = [proto_to_exam_item(item).model_dump() for item in resp.exams]
     return {"count": resp.count, "exams": exams}
 
@@ -167,7 +170,7 @@ async def _fetch_teachers_grpc(force_refresh: bool) -> dict[str, Any]:
     """Вызывает gRPC метод TeachersService.GetTeachers."""
     stub = teachers_pb2_grpc.TeachersServiceStub(_get_grpc_channel())
     req = teachers_pb2.TeachersRequest(force_refresh=force_refresh)
-    resp = await stub.GetTeachers(req, timeout=30.0)
+    resp = await stub.GetTeachers(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
     teachers = {k: {"full_name": v.full_name, "link_info": v.link_info} for k, v in resp.teachers.items()}
     return {"count": resp.count, "teachers": teachers}
 

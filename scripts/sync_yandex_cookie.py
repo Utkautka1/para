@@ -11,6 +11,7 @@
 
 import base64
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -19,11 +20,25 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-REQUIRED_COOKIE_NAMES = (
-    "Session_id", "sessionid2", "sessar", "_yasc",
-    "yandexuid", "i", "yandex_login", "yp", "L"
+from config import (
+    REDIS_COOKIE_TTL_SECONDS,
+    REDIS_YANDEX_COOKIE_KEY,
+    YANDEX_COOKIE_TEST_DOC_URL,
+    YANDEX_REQUIRED_COOKIE_NAMES,
 )
-TEST_DOC_URL = "https://disk.yandex.ru/i/uDcaWTFcGbuwZg"
+
+REQUIRED_COOKIE_NAMES = YANDEX_REQUIRED_COOKIE_NAMES
+TEST_DOC_URL = YANDEX_COOKIE_TEST_DOC_URL
+SAFE_HOST_REGEX = re.compile(r"^[a-zA-Z0-9_.-]+$")
+SAFE_PATH_REGEX = re.compile(r"^[a-zA-Z0-9_/.-]+$")
+
+
+def _validate_ssh_target(host: str, remote_dir: str) -> None:
+    """Проверяет безопасность хоста и пути перед SSH вызовом."""
+    if not SAFE_HOST_REGEX.match(host):
+        raise ValueError(f"Недопустимое имя SSH хоста: {host}")
+    if not SAFE_PATH_REGEX.match(remote_dir):
+        raise ValueError(f"Недопустимый путь удаленной директории: {remote_dir}")
 
 
 def get_target_doc_url() -> str:
@@ -166,11 +181,8 @@ def update_env_file(env_path: Path, cookie_hdr: str) -> None:
 
 
 def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
-    """
-    Обновляет YANDEX_COOKIE в файле .env на удаленном сервере по SSH.
-
-    Использует base64 кодирование для исключения конфликтов кавычек в bash.
-    """
+    """Обновляет YANDEX_COOKIE в файле .env на удаленном сервере по SSH."""
+    _validate_ssh_target(host, remote_dir)
     b64 = base64.b64encode(cookie_hdr.encode("utf-8")).decode("ascii")
     py = (
         f"import base64, re, os; "
@@ -191,6 +203,7 @@ def send_api_urls_to_remote_env(
     remote_dir: str = "/root/para"
 ) -> None:
     """Синхронизирует основной и запасной адреса API расписания на сервере."""
+    _validate_ssh_target(host, remote_dir)
     py = (
         f"import re, os; p = '{remote_dir}/.env'; "
         f"s = open(p).read() if os.path.exists(p) else ''; "
@@ -205,16 +218,13 @@ def send_api_urls_to_remote_env(
 
 
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
-    """
-    Обновляет сессию в Redis и перезапускает контейнеры на сервере.
-
-    Сбрасывает ключ yandex:session_cookie и перезапускает сервисы worker и bot.
-    """
+    """Обновляет сессию в Redis и перезапускает сервисы worker и bot."""
+    _validate_ssh_target(host, remote_dir)
     b64 = base64.b64encode(cookie_hdr.encode("utf-8")).decode("ascii")
     py = (
         f"import base64, subprocess; "
         f"c = base64.b64decode('{b64}').decode('utf-8'); "
-        f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', 'yandex:session_cookie', c, 'ex', '604800'], check=True); "
+        f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', '{REDIS_YANDEX_COOKIE_KEY}', c, 'ex', '{REDIS_COOKIE_TTL_SECONDS}'], check=True); "
         f"subprocess.run(['docker', 'compose', 'up', '-d', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
     )
     subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)

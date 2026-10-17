@@ -3,10 +3,11 @@
 """
 
 
+from config import CUSTOM_TEACHERS_FILE_PATH
 from integrations.docx_parser import TeacherData
 from utils.storage import sync_atomic_save_json, sync_load_json
 
-CUSTOM_TEACHERS_FILE = "data/custom_teachers.json"
+CUSTOM_TEACHERS_FILE = CUSTOM_TEACHERS_FILE_PATH
 
 
 def load_custom_teachers() -> dict[str, TeacherData]:

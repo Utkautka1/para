@@ -6,11 +6,16 @@
 """
 
 
+import secrets
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 import grpc
 
 from api.grpc.servicers import ExamsServicer, ScheduleServicer, TeachersServicer
 from api.proto import exams_pb2_grpc, schedule_pb2_grpc, teachers_pb2_grpc
 from config import (
+    API_SECRET_KEY,
     GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA,
     GRPC_HTTP2_MIN_PING_INTERVAL_MS,
     GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS,
@@ -21,6 +26,25 @@ from config import (
 from core.logger import get_logger
 
 log = get_logger("grpc_server")
+
+
+class ApiKeyAuthInterceptor(grpc.aio.ServerInterceptor):
+    """Интерцептор проверки X-API-Key заголовка для защиты gRPC эндпоинтов."""
+
+    @staticmethod
+    async def _abort_unauthenticated(_req: Any, context: grpc.aio.ServicerContext) -> Any:
+        await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid or missing X-API-Key header")
+
+    async def intercept_service(
+        self,
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
+        handler_call_details: grpc.HandlerCallDetails,
+    ) -> grpc.RpcMethodHandler:
+        metadata = dict(handler_call_details.invocation_metadata or ())
+        api_key = metadata.get("x-api-key")
+        if not api_key or not secrets.compare_digest(api_key, API_SECRET_KEY):
+            return grpc.unary_unary_rpc_method_handler(self._abort_unauthenticated)
+        return await continuation(handler_call_details)
 
 
 def _register_servicers(server: grpc.aio.Server) -> None:
@@ -41,7 +65,7 @@ def create_grpc_server() -> grpc.aio.Server:
         ("grpc.http2.max_pings_without_data", GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA),
         ("grpc.http2.min_ping_interval_without_data_ms", GRPC_HTTP2_MIN_PING_INTERVAL_MS),
     ]
-    server = grpc.aio.server(options=options)
+    server = grpc.aio.server(options=options, interceptors=[ApiKeyAuthInterceptor()])
     _register_servicers(server)
     return server
 

@@ -5,6 +5,8 @@ Pydantic-схемы для роутера AI-решения домашних з�
 
 from pydantic import BaseModel, Field
 
+from config import HW_MAX_PROMPT_TEXT_LENGTH, SOLVER_MAX_IMAGE_BASE64_BYTES
+
 
 class SolverQueueStatusResponse(BaseModel):
     """Текущее состояние распределенной очереди задач ДЗ в Redis."""
@@ -16,8 +18,18 @@ class SolverQueueStatusResponse(BaseModel):
 
 class DirectSolveRequest(BaseModel):
     """Запрос на прямое решение учебной задачи через DeepSeek API."""
-    prompt: str = Field(..., min_length=5, description="Текст условия задания или вопроса", examples=["Реши систему уравнений: 2x + 3y = 7, x - y = 1"])
-    image_base64: str | None = Field(None, description="Опциональное изображение задачи в Base64")
+    prompt: str = Field(
+        ...,
+        min_length=5,
+        max_length=HW_MAX_PROMPT_TEXT_LENGTH,
+        description="Текст условия задания или вопроса",
+        examples=["Реши систему уравнений: 2x + 3y = 7, x - y = 1"],
+    )
+    image_base64: str | None = Field(
+        None,
+        max_length=SOLVER_MAX_IMAGE_BASE64_BYTES,
+        description="Опциональное изображение задачи в Base64",
+    )
     model: str | None = Field(None, description="Модель (по умолчанию deepseek-chat)")
 
 

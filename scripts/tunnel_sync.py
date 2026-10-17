@@ -14,7 +14,9 @@ import shutil
 import subprocess  # nosec B404
 from pathlib import Path
 
-TARGET_PORT = 8080
+from config import API_EXTERNAL_PORT
+
+TARGET_PORT = API_EXTERNAL_PORT
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 URL_REGEX = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
 
