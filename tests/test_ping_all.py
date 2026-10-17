@@ -269,9 +269,14 @@ async def test_dispatch_broadcast_handles_failure() -> None:
 
 @pytest.mark.asyncio
 async def test_load_classmates_list() -> None:
-    """Проверяет считывание реального реестра одногруппников из birthdays.json."""
-    classmates = await load_classmates_list()
-    assert isinstance(classmates, list)
-    assert len(classmates) == 23
-    assert any(c.get("username") == "Arseniymazur" for c in classmates)
-    assert any(c.get("username") == "illimitation" for c in classmates)
+    """Проверяет считывание реестра одногруппников через load_json."""
+    sample = [
+        {"full_name": "Мазур Арсений", "username": "Arseniymazur", "tg_id": 1859089085},
+        {"full_name": "Иванов Иван", "username": "illimitation", "tg_id": 1000965210},
+    ]
+    with patch("bot.handlers.admin.ping_all.load_json", AsyncMock(return_value=sample)):
+        classmates = await load_classmates_list()
+        assert isinstance(classmates, list)
+        assert len(classmates) == 2
+        assert any(c.get("username") == "Arseniymazur" for c in classmates)
+        assert any(c.get("username") == "illimitation" for c in classmates)
