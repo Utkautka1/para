@@ -89,7 +89,7 @@ Executes core domain logic for `download_file_bytes`.
 | :--- | :--- | :--- | :--- |
 | `tg_bot` | `Bot` | Yes | Parameter `tg_bot` of type `Bot`. |
 | `file_id` | `str` | Yes | Parameter `file_id` of type `str`. |
-| `file_size` | `int` | Yes | Parameter `file_size` of type `int`. |
+| `file_size` | `int` | Yes | Size of the audio file in bytes. |
 
 #### Concurrency & Side Effects
 - Emits structured telemetry events to system logging subsystem.

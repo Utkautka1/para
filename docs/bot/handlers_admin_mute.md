@@ -398,7 +398,7 @@ Executes core domain logic for `apply_user_restriction`.
 | `bot` | `Any` | Yes | Parameter `bot` of type `Any`. |
 | `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
 | `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
-| `duration_sec` | `int` | Yes | Parameter `duration_sec` of type `int`. |
+| `duration_sec` | `int` | Yes | Audio duration in seconds for message formatting. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.

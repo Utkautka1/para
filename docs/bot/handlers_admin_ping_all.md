@@ -187,7 +187,7 @@ Executes core domain logic for `build_mentions_block`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `classmates` | `list[dict[str, Any]]` | Yes | Parameter `classmates` of type `list[dict[str, Any]]`. |
-| `sender` | `User | None` | Yes | Parameter `sender` of type `User | None`. |
+| `sender` | `User | None` | Yes | Display name of the user who sent the audio message. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.

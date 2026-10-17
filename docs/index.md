@@ -53,6 +53,7 @@
 | `Schedule API` | [`api/router/schedule.py`](../api/router/schedule.py) | [📖 View Specification](api/router_schedule.md) | Enterprise Service Component |
 | `Security Dependencies` | [`api/deps.py`](../api/deps.py) | [📖 View Specification](api/deps.md) | Enterprise Service Component |
 | `Session Keepalive` | [`integrations/yandex_keepalive.py`](../integrations/yandex_keepalive.py) | [📖 View Specification](integrations/yandex_keepalive.md) | Enterprise Service Component |
+| `Speech-to-Text Whisper Engine` | [`services/transcriber.py`](../services/transcriber.py) | [📖 View Specification](services/transcriber.md) | Enterprise Service Component |
 | `Spreadsheet Analytics` | [`services/attendance_stats.py`](../services/attendance_stats.py) | [📖 View Specification](services/attendance_stats.md) | Enterprise Service Component |
 | `Student Identity Cache` | [`services/user_cache.py`](../services/user_cache.py) | [📖 View Specification](services/user_cache.md) | Enterprise Service Component |
 | `Student Lifecycle` | [`services/birthday_manager.py`](../services/birthday_manager.py) | [📖 View Specification](services/birthday_manager.md) | Enterprise Service Component |
@@ -73,6 +74,8 @@
 | `User Inline Keyboards` | [`bot/templates/user/keyboards.py`](../bot/templates/user/keyboards.py) | [📖 View Specification](bot/templates_user_keyboards.md) | Enterprise Service Component |
 | `User Message Formatter` | [`bot/templates/user/messages.py`](../bot/templates/user/messages.py) | [📖 View Specification](bot/templates_user_messages.md) | Enterprise Service Component |
 | `User Schedule Flow` | [`bot/handlers/user/schedule.py`](../bot/handlers/user/schedule.py) | [📖 View Specification](bot/handlers_user_schedule.md) | Enterprise Service Component |
+| `Voice Message Templates` | [`bot/templates/user/voice.py`](../bot/templates/user/voice.py) | [📖 View Specification](bot/templates_user_voice.md) | Enterprise Service Component |
+| `Voice Transcription Handler` | [`bot/handlers/user/voice_transcribe.py`](../bot/handlers/user/voice_transcribe.py) | [📖 View Specification](bot/handlers_user_voice_transcribe.md) | Enterprise Service Component |
 | `WOPI Cloud Service` | [`integrations/yandex_docs.py`](../integrations/yandex_docs.py) | [📖 View Specification](integrations/yandex_docs.md) | Enterprise Service Component |
 | `gRPC HTTP/2 Server` | [`api/grpc/server.py`](../api/grpc/server.py) | [📖 View Specification](api/grpc_server.md) | Enterprise Service Component |
 | `gRPC RPC Servicers` | [`api/grpc/servicers.py`](../api/grpc/servicers.py) | [📖 View Specification](api/grpc_servicers.md) | Enterprise Service Component |
