@@ -20,9 +20,11 @@ from config import ALLOWED_USER_ID
 
 
 def test_get_default_user_commands():
-    """Проверяет наличие базовых команд для студентов."""
+    """Проверяет наличие базовых команд для студентов и порядок."""
     cmds = get_default_user_commands()
     cmd_names = [c.command for c in cmds]
+    assert cmds[0].command == "start"
+    assert "start" in cmd_names
     assert "today" in cmd_names
     assert "notice" in cmd_names
     assert "my_attendance" in cmd_names

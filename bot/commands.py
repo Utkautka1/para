@@ -18,6 +18,7 @@ log = get_logger("bot_commands")
 def get_default_user_commands() -> list[BotCommand]:
     """Возвращает список общедоступных команд для студентов группы."""
     return [
+        BotCommand(command="start", description="🚀 Главное меню"),
         BotCommand(command="today", description="📅 Расписание на сегодня"),
         BotCommand(command="notice", description="🔔 Настройка напоминаний"),
         BotCommand(command="my_attendance", description="📊 Моя посещаемость"),

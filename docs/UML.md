@@ -1573,14 +1573,14 @@ classDiagram
     }
 
     BotCommandsRegistry --> TelegramBotAPI : registers scoped menu commands
-    BotCommandsRegistry ..> BotCommandScopeDefault : applies today, notice, my_attendance, help
+    BotCommandsRegistry ..> BotCommandScopeDefault : applies start, today, notice, my_attendance, help
     BotCommandsRegistry ..> BotCommandScopeChat : applies admin, attendance, all, testers, swagger to headman
     BotCommandsRegistry ..> BotCommand : creates typed commands
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **User Scope Segregation**: Standard students receive a minimalist, uncluttered menu (`/today`, `/notice`, `/my_attendance`, `/help`) via `BotCommandScopeDefault`.
+1. **User Scope Segregation**: Standard students receive a minimalist, uncluttered menu (`/start`, `/today`, `/notice`, `/my_attendance`, `/help`) via `BotCommandScopeDefault`.
 2. **Privileged Headman Scope**: Chat-scoped commands (`BotCommandScopeChat(chat_id=ALLOWED_USER_ID)`) expose admin workflows (`/admin`, `/attendance`, `/all`, `/testers`, `/swagger`).
 3. **Graceful Startup Registration**: Invoked during `main()` bootstrap, non-blocking with error capture to prevent bot launch failure on Telegram rate-limits.
 
