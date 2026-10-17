@@ -1628,7 +1628,7 @@ classDiagram
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Connection Pooling**: Utilizes shared asynchronous connection pool `get_redis_pool()` to avoid connection exhaustion under high concurrency.
+1. **Connection Pooling**: Utilizes shared authenticated asynchronous connection pool `get_redis_pool()` (with mandatory `REDIS_PASSWORD`) to avoid connection exhaustion and enforce zero-trust access control.
 2. **Namespaced Keys**: FSM keys are organized under prefix `fsm:` (`fsm:{chat_id}:{user_id}:state` / `data`), preventing key collision with timetable cache or attendance records.
 3. **High-Availability Fallback**: If Redis service is unreachable or uninstalled during standalone test runs, `create_fsm_storage()` seamlessly falls back to `MemoryStorage`.
 4. **Graceful Shutdown**: On process exit (`shutdown_bot`), `dp.storage.close()` is awaited to cleanly release active network descriptors and pool slots.

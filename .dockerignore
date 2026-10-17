@@ -37,6 +37,8 @@ htmlcov/
 
 # Documentation and Development Scripts
 docs/
+scripts/
+.agents/
 *.md
 Makefile
 docker-compose.override.yml

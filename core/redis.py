@@ -7,7 +7,7 @@
 
 from redis.asyncio import ConnectionPool, Redis
 
-from config import REDIS_HOST, REDIS_PORT
+from config import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from core.logger import get_logger
 
 log = get_logger("redis")
@@ -22,6 +22,7 @@ def get_redis_pool() -> ConnectionPool:
         _pool = ConnectionPool(
             host=REDIS_HOST,
             port=REDIS_PORT,
+            password=REDIS_PASSWORD,
             decode_responses=True,
             max_connections=20,
             socket_keepalive=True,

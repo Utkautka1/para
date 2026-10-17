@@ -71,6 +71,7 @@ SUBSCRIBERS_FILE_PATH: str = "data/subscribers.json"
 # Настройки Redis
 REDIS_HOST: str = get_required_env("REDIS_HOST")
 REDIS_PORT: int = int(get_required_env("REDIS_PORT"))
+REDIS_PASSWORD: str = get_required_env("REDIS_PASSWORD")
 REDIS_CACHE_TTL_SECONDS: int = int(get_required_env("REDIS_CACHE_TTL_SECONDS"))
 
 # Настройки DeepSeek HW Solver

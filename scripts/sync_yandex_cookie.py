@@ -56,7 +56,8 @@ def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
 
     Копирование необходимо для обхода файловой блокировки работающего браузера.
     """
-    tmp_path = Path("/tmp") / f"zen_cookies_{os.getpid()}.sqlite"
+    import tempfile
+    tmp_path = Path(tempfile.gettempdir()) / f"zen_cookies_{os.getpid()}.sqlite"  # nosec B108
     shutil.copy2(db_path, tmp_path)
     try:
         with sqlite3.connect(tmp_path) as conn:

@@ -193,3 +193,24 @@ async def test_public_copy_shows_alert() -> None:
     cb.answer.assert_awaited_once_with("Скопировано: 123456", show_alert=True)
 
 
+def test_redis_auth_pool_configuration() -> None:
+    """Проверяет передачу REDIS_PASSWORD в пул соединений Redis."""
+    from core import redis as redis_module
+    try:
+        with patch("core.redis.ConnectionPool") as mock_pool_cls:
+            redis_module._pool = None
+            redis_module.get_redis_pool()
+            mock_pool_cls.assert_called_once()
+            assert "password" in mock_pool_cls.call_args.kwargs
+            assert mock_pool_cls.call_args.kwargs["password"] is not None
+    finally:
+        redis_module._pool = None
+
+
+def test_config_requires_redis_password() -> None:
+    """Проверяет выброс ValueError при отсутствии обязательного REDIS_PASSWORD."""
+    from config import get_required_env
+    with patch.dict("os.environ", {}, clear=True), pytest.raises(ValueError, match="REDIS_PASSWORD"):
+        get_required_env("REDIS_PASSWORD")
+
+
