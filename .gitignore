@@ -24,6 +24,7 @@ logs/*
 # Local data storage & cache (никогда не коммитить в git)
 data/*
 !data/.gitkeep
+!data/*.example
 !data/api/
 !data/api/.gitkeep
 !data/api/miniapp.html

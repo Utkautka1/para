@@ -43,9 +43,9 @@ graph LR
 | [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L317–L332 | `None` | Executes core domain logic for `msg_admin_got_teacher_n... |
 | [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L336–L358 | `None` | Executes core domain logic for `msg_admin_got_teacher_l... |
 | [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L365–L377 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_unbound_students... |
-| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L381–L391 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L395–L413 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L417–L437 | `None` | Executes core domain logic for `msg_admin_got_student_i... |
+| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L381–L403 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L407–L425 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L429–L449 | `None` | Executes core domain logic for `msg_admin_got_student_i... |
 
 ---
 
@@ -791,7 +791,7 @@ result = _build_unbound_students_kb()
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L381-L391`](../../bot/handlers/admin/panel.py#L381-L391)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L381-L403`](../../bot/handlers/admin/panel.py#L381-L403)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -824,7 +824,7 @@ result = await cb_admin_list_students_for_binding(callback=...)
 async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L395-L413`](../../bot/handlers/admin/panel.py#L395-L413)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L407-L425`](../../bot/handlers/admin/panel.py#L407-L425)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -858,7 +858,7 @@ result = await cb_admin_select_student(callback=..., state=...)
 async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L417-L437`](../../bot/handlers/admin/panel.py#L417-L437)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L429-L449`](../../bot/handlers/admin/panel.py#L429-L449)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

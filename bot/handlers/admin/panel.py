@@ -379,7 +379,19 @@ def _build_unbound_students_kb() -> InlineKeyboardMarkup:
 
 @router.callback_query(F.data == "admin:bind_student")
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None:
-    """Отображает список студентов для привязки Telegram ID."""
+    """Отображает список студентов для привязки Telegram ID с проверкой на пустоту."""
+    from services.classmates_auth import load_classmates_registry
+    registry = load_classmates_registry()
+    if not registry:
+        text = (
+            "👥 <b>Привязка Telegram ID студентов</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "⚠️ <i>Реестр студентов пуст. Убедитесь, что файл data/birthdays.json заполнен.</i>"
+        )
+        back_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В главную панель", callback_data="admin:menu")]])
+        await _safe_edit_admin_message(callback.message, text, back_kb)
+        await callback.answer()
+        return
     text = (
         "👥 <b>Привязка Telegram ID студентов</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"

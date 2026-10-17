@@ -1,0 +1,18 @@
+[
+  {
+    "full_name": "Иванов Иван",
+    "day": 15,
+    "month": 5,
+    "year": 2008,
+    "username": "ivanov_tg",
+    "tg_id": null
+  },
+  {
+    "full_name": "Петров Петр",
+    "day": 20,
+    "month": 8,
+    "year": 2008,
+    "username": "petrov_tg",
+    "tg_id": null
+  }
+]
