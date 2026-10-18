@@ -11,7 +11,6 @@
 
 import base64
 import os
-import re
 import shutil
 import sqlite3
 import subprocess
@@ -20,21 +19,33 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+# Обеспечиваем доступность корневого пакета при автономном вызове скрипта
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from config import (
     REDIS_COOKIE_TTL_SECONDS,
     REDIS_YANDEX_COOKIE_KEY,
+    SAFE_HOST_REGEX,
+    SAFE_PATH_REGEX,
     YANDEX_COOKIE_TEST_DOC_URL,
     YANDEX_REQUIRED_COOKIE_NAMES,
 )
 
 REQUIRED_COOKIE_NAMES = YANDEX_REQUIRED_COOKIE_NAMES
 TEST_DOC_URL = YANDEX_COOKIE_TEST_DOC_URL
-SAFE_HOST_REGEX = re.compile(r"^[a-zA-Z0-9_.-]+$")
-SAFE_PATH_REGEX = re.compile(r"^[a-zA-Z0-9_/.-]+$")
 
 
 def _validate_ssh_target(host: str, remote_dir: str) -> None:
-    """Проверяет безопасность хоста и пути перед SSH вызовом."""
+    """
+    Проверяет безопасность целевого SSH-хоста и пути на сервере.
+
+    Защищает от инъекций шелл-команд через непроверенные аргументы командной строки.
+    Использует строгие regex-паттерны разрешенных символов.
+
+    Выбрасывает ValueError, если параметры содержат запрещенные символы.
+    """
     if not SAFE_HOST_REGEX.match(host):
         raise ValueError(f"Недопустимое имя SSH хоста: {host}")
     if not SAFE_PATH_REGEX.match(remote_dir):
@@ -42,7 +53,14 @@ def _validate_ssh_target(host: str, remote_dir: str) -> None:
 
 
 def get_target_doc_url() -> str:
-    """Возвращает боевой URL таблицы посещаемости из config или fallback."""
+    """
+    Получает целевой URL таблицы посещаемости из боевой конфигурации.
+
+    Использует ATTENDANCE_DOC_URL из config.py с отказоустойчивым переключением
+    на тестовый URL документа при отсутствии значения.
+
+    Возвращает строку с полным URL таблицы посещаемости.
+    """
     try:
         from config import ATTENDANCE_DOC_URL
         return ATTENDANCE_DOC_URL or TEST_DOC_URL
@@ -52,9 +70,12 @@ def get_target_doc_url() -> str:
 
 def find_zen_cookies_db() -> Path:
     """
-    Находит путь к базе данных cookies.sqlite в профиле Zen Browser.
+    Определяет путь к активной базе данных cookies.sqlite браузера Zen.
 
-    Проверяет ~/.config/zen на наличие профилей и выбирает самый свежий.
+    Сканирует все профили в каталоге ~/.config/zen и выбирает файл с самой
+    последней датой модификации для работы с активной сессией.
+
+    Возвращает Path к найденному cookies.sqlite или выбрасывает FileNotFoundError.
     """
     zen_dir = Path.home() / ".config" / "zen"
     if not zen_dir.exists():
@@ -67,9 +88,12 @@ def find_zen_cookies_db() -> Path:
 
 def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
     """
-    Копирует cookies.sqlite во временный файл и извлекает куки Яндекса.
+    Извлекает куки авторизации Яндекс из базы данных профиля браузера.
 
-    Копирование необходимо для обхода файловой блокировки работающего браузера.
+    Создает временную копию SQLite базы во избежание конфликтов блокировки (database locked)
+    с запущенным процессом браузера, после чего читает куки домена .yandex.ru.
+
+    Возвращает словарь {имя_куки: значение} с актуальными токенами.
     """
     import tempfile
     tmp_path = Path(tempfile.gettempdir()) / f"zen_cookies_{os.getpid()}.sqlite"  # nosec B108
@@ -94,9 +118,12 @@ def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
 
 def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str, str]:
     """
-    Продлевает сессию Яндекс через эндпоинт обновления Паспорта.
+    Продлевает срок жизни сессии Яндекс через эндпоинт обновления Паспорта.
 
-    Перехватывает Set-Cookie из ответа для получения свежих Session_id и sessar.
+    Отправляет запрос на passport.yandex.ru/auth/update без следования редиректам,
+    перехватывая свежие Set-Cookie (Session_id, sessar) из заголовков ответа.
+
+    Возвращает дополненный словарь cookies с обновленными токенами сессии.
     """
     encoded_url = urllib.parse.quote(target_url, safe="")
     passport_url = f"https://passport.yandex.ru/auth/update/?from=cloud&origin=disk_client_web_signin_ru&retpath={encoded_url}"
@@ -120,9 +147,12 @@ def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str
 
 def build_cookie_header(cookies: dict[str, str]) -> str:
     """
-    Собирает заголовок Cookie из извлеченных параметров сессии.
+    Формирует строку HTTP-заголовка Cookie из словаря параметров сессии.
 
-    Проверяет наличие критического Session_id и возвращает единую строку.
+    Проверяет наличие обязательного Session_id и включает только необходимые
+    параметры из YANDEX_REQUIRED_COOKIE_NAMES для минимизации размера заголовка.
+
+    Возвращает готовую строку формата 'name=value; name2=value2'.
     """
     if "Session_id" not in cookies:
         raise ValueError("В профиле Zen Browser отсутствует активная Session_id Яндекса")
@@ -135,9 +165,12 @@ def build_cookie_header(cookies: dict[str, str]) -> str:
 
 def verify_yandex_cookie(cookie_hdr: str, test_url: str = TEST_DOC_URL) -> bool:
     """
-    Проверяет валидность строки Cookie запросом к документу.
+    Проверяет валидность сгенерированного Cookie-заголовка прямым HTTP-запросом.
 
-    Проверяет наличие конфигурации client-config в DOM и отсутствие редиректа на логин.
+    Запрашивает HTML документа Яндекс и проверяет наличие блока client-config,
+    убеждаясь, что сессия не перенаправлена на форму входа Яндекс ID.
+
+    Возвращает True, если авторизация успешна, иначе False.
     """
     headers = {
         "User-Agent": (
@@ -160,9 +193,12 @@ def verify_yandex_cookie(cookie_hdr: str, test_url: str = TEST_DOC_URL) -> bool:
 
 def update_env_file(env_path: Path, cookie_hdr: str) -> None:
     """
-    Атомарно обновляет переменную YANDEX_COOKIE в указанном .env файле.
+    Обновляет переменную YANDEX_COOKIE в локальном файле переменных окружения.
 
-    Если переменная отсутствует, добавляет её в конец файла.
+    Ищет существующую запись YANDEX_COOKIE или добавляет новую в конец файла,
+    сохраняя все остальные переменные и комментарии без искажения.
+
+    Не возвращает значений; перезаписывает целевой .env файл в UTF-8.
     """
     if not env_path.exists():
         return
@@ -181,7 +217,14 @@ def update_env_file(env_path: Path, cookie_hdr: str) -> None:
 
 
 def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
-    """Обновляет YANDEX_COOKIE в файле .env на удаленном сервере по SSH."""
+    """
+    Передает и обновляет YANDEX_COOKIE в файле .env на удаленном сервере через SSH.
+
+    Кодирует значение в Base64 для безопасной передачи без проблем с экранированием
+    кавычек и спецсимволов в shell-команде.
+
+    Не возвращает значений; выбрасывает CalledProcessError при сбое SSH.
+    """
     _validate_ssh_target(host, remote_dir)
     b64 = base64.b64encode(cookie_hdr.encode("utf-8")).decode("ascii")
     py = (
@@ -200,9 +243,16 @@ def send_api_urls_to_remote_env(
     primary_url: str = "https://timetable-ktmu.ru/api/storage/schedule-data-v2",
     fallback_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
     host: str = "home",
-    remote_dir: str = "/root/para"
+    remote_dir: str = "/root/para",
 ) -> None:
-    """Синхронизирует основной и запасной адреса API расписания на сервере."""
+    """
+    Синхронизирует основной и резервный URL-адреса API расписания на сервере.
+
+    Обеспечивает синхронную настройку SCHEDULE_API_URL и SCHEDULE_FALLBACK_API_URL
+    для гарантии отказоустойчивости при недоступности основного сервера КТМУ.
+
+    Не возвращает значений; выбрасывает CalledProcessError при сбое SSH.
+    """
     _validate_ssh_target(host, remote_dir)
     py = (
         f"import re, os; p = '{remote_dir}/.env'; "
@@ -218,7 +268,14 @@ def send_api_urls_to_remote_env(
 
 
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
-    """Обновляет сессию в Redis и перезапускает сервисы worker и bot."""
+    """
+    Записывает актуальные Cookie в Redis на сервере и перезапускает сервисы.
+
+    Устанавливает сессию с TTL в REDIS_YANDEX_COOKIE_KEY и перезапускает контейнеры
+    para-worker и para-bot для применения свежих учетных данных без даунтайма.
+
+    Не возвращает значений; выбрасывает CalledProcessError при сбое Docker.
+    """
     _validate_ssh_target(host, remote_dir)
     b64 = base64.b64encode(cookie_hdr.encode("utf-8")).decode("ascii")
     py = (
@@ -231,7 +288,14 @@ def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_
 
 
 def sync_cookies(host: str = "home") -> bool:
-    """Основной пайплайн синхронизации Cookie из Zen Browser на сервер."""
+    """
+    Выполняет полный цикл синхронизации учетных данных Яндекса из браузера на сервер.
+
+    Координирует извлечение, обновление, валидацию и распространение cookie в локальное
+    окружение и на удаленный хост инфраструктуры проекта.
+
+    Возвращает True в случае успешной синхронизации, False при ошибке проверки.
+    """
     print("1. Поиск базы данных cookies в профиле Zen Browser...")
     db_path = find_zen_cookies_db()
     raw_cookies = extract_raw_yandex_cookies(db_path)
@@ -255,6 +319,10 @@ def sync_cookies(host: str = "home") -> bool:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("Использование: python scripts/sync_yandex_cookie.py [SSH_HOST]")
+        print("По умолчанию SSH_HOST = 'home'")
+        sys.exit(0)
     target_host = sys.argv[1] if len(sys.argv) > 1 else "home"
     is_ok = sync_cookies(target_host)
     sys.exit(0 if is_ok else 1)

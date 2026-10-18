@@ -21,15 +21,15 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_transcription_status`](#format_transcription_status) | Function | L12–L14 | `str` | Formats initial progress indicator message. |
-| [`format_duration_str`](#format_duration_str) | Function | L17–L28 | `str` | Formats integer seconds into human-readable (M:SS) time... |
-| [`format_transcription_result`](#format_transcription_result) | Function | L31–L50 | `str` | Formats completed speech transcription into quotation b... |
-| [`format_transcription_empty`](#format_transcription_empty) | Function | L53–L60 | `str` | Formats notice indicating no audible speech was detecte... |
-| [`format_transcription_error`](#format_transcription_error) | Function | L63–L65 | `str` | Formats error notification message for speech recogniti... |
-| [`format_too_long_error`](#format_too_long_error) | Function | L68–L71 | `str` | Formats validation error message when audio duration ex... |
-| [`format_too_big_error`](#format_too_big_error) | Function | L74–L76 | `str` | Formats validation error message when file size exceeds... |
-| [`format_rate_limit_error`](#format_rate_limit_error) | Function | L79–L81 | `str` | Formats throttle warning when user exceeds concurrent t... |
-| [`format_queue_status`](#format_queue_status) | Function | L84–L86 | `str` | Renders queue position indicator for pending speech rec... |
+| [`format_transcription_status`](#format_transcription_status) | Function | L12–L22 | `str` | Formats initial progress indicator message. |
+| [`format_duration_str`](#format_duration_str) | Function | L25–L41 | `str` | Formats integer seconds into human-readable (M:SS) time... |
+| [`format_transcription_result`](#format_transcription_result) | Function | L44–L65 | `str` | Formats completed speech transcription into quotation b... |
+| [`format_transcription_empty`](#format_transcription_empty) | Function | L68–L84 | `str` | Formats notice indicating no audible speech was detecte... |
+| [`format_transcription_error`](#format_transcription_error) | Function | L87–L97 | `str` | Formats error notification message for speech recogniti... |
+| [`format_too_long_error`](#format_too_long_error) | Function | L100–L112 | `str` | Formats validation error message when audio duration ex... |
+| [`format_too_big_error`](#format_too_big_error) | Function | L115–L125 | `str` | Formats validation error message when file size exceeds... |
+| [`format_rate_limit_error`](#format_rate_limit_error) | Function | L128–L138 | `str` | Formats throttle warning when user exceeds concurrent t... |
+| [`format_queue_status`](#format_queue_status) | Function | L141–L151 | `str` | Renders queue position indicator for pending speech rec... |
 
 ---
 
@@ -40,7 +40,7 @@ graph LR
 def format_transcription_status() -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L12-L14`](../../bot/templates/user/voice.py#L12-L14)
+- **Source Reference**: [`bot/templates/user/voice.py#L12-L22`](../../bot/templates/user/voice.py#L12-L22)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -71,7 +71,7 @@ result = format_transcription_status()
 def format_duration_str(duration_seconds: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L17-L28`](../../bot/templates/user/voice.py#L17-L28)
+- **Source Reference**: [`bot/templates/user/voice.py#L25-L41`](../../bot/templates/user/voice.py#L25-L41)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -104,7 +104,7 @@ result = format_duration_str(duration_seconds=...)
 def format_transcription_result( sender_name: str, duration_sec: int, transcription_text: str ) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L31-L50`](../../bot/templates/user/voice.py#L31-L50)
+- **Source Reference**: [`bot/templates/user/voice.py#L44-L65`](../../bot/templates/user/voice.py#L44-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -139,7 +139,7 @@ result = format_transcription_result(sender_name=..., duration_sec=..., transcri
 def format_transcription_empty(sender_name: str, duration_sec: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L53-L60`](../../bot/templates/user/voice.py#L53-L60)
+- **Source Reference**: [`bot/templates/user/voice.py#L68-L84`](../../bot/templates/user/voice.py#L68-L84)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -173,7 +173,7 @@ result = format_transcription_empty(sender_name=..., duration_sec=...)
 def format_transcription_error() -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L63-L65`](../../bot/templates/user/voice.py#L63-L65)
+- **Source Reference**: [`bot/templates/user/voice.py#L87-L97`](../../bot/templates/user/voice.py#L87-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -204,7 +204,7 @@ result = format_transcription_error()
 def format_too_long_error(max_seconds: int = 300) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L68-L71`](../../bot/templates/user/voice.py#L68-L71)
+- **Source Reference**: [`bot/templates/user/voice.py#L100-L112`](../../bot/templates/user/voice.py#L100-L112)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -237,7 +237,7 @@ result = format_too_long_error(max_seconds=...)
 def format_too_big_error(max_mb: int = 20) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L74-L76`](../../bot/templates/user/voice.py#L74-L76)
+- **Source Reference**: [`bot/templates/user/voice.py#L115-L125`](../../bot/templates/user/voice.py#L115-L125)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -270,7 +270,7 @@ result = format_too_big_error(max_mb=...)
 def format_rate_limit_error() -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L79-L81`](../../bot/templates/user/voice.py#L79-L81)
+- **Source Reference**: [`bot/templates/user/voice.py#L128-L138`](../../bot/templates/user/voice.py#L128-L138)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -301,7 +301,7 @@ result = format_rate_limit_error()
 def format_queue_status(queue_pos: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/voice.py#L84-L86`](../../bot/templates/user/voice.py#L84-L86)
+- **Source Reference**: [`bot/templates/user/voice.py#L141-L151`](../../bot/templates/user/voice.py#L141-L151)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 

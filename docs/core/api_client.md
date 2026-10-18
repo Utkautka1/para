@@ -21,22 +21,22 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_get_client`](#_get_client) | Function | L43–L54 | `httpx.AsyncClient` | Executes core domain logic for `_get_client`. |
-| [`_get_grpc_channel`](#_get_grpc_channel) | Function | L57–L70 | `grpc.aio.Channel` | Executes core domain logic for `_get_grpc_channel`. |
-| [`close_api_client`](#close_api_client) | Function | L73–L81 | `None` | Executes core domain logic for `close_api_client`. |
-| [`_api_get`](#_api_get) | Function | L84–L97 | `dict[str, Any]` | Executes core domain logic for `_api_get`. |
-| [`_fetch_day_schedule_grpc`](#_fetch_day_schedule_grpc) | Function | L103–L112 | `dict[str, Any]` | Executes core domain logic for `_fetch_day_schedule_grp... |
-| [`fetch_day_schedule`](#fetch_day_schedule) | Function | L115–L124 | `dict[str, Any]` | Executes core domain logic for `fetch_day_schedule`. |
-| [`_fetch_week_schedule_grpc`](#_fetch_week_schedule_grpc) | Function | L127–L136 | `dict[str, Any]` | Executes core domain logic for `_fetch_week_schedule_gr... |
-| [`fetch_week_schedule`](#fetch_week_schedule) | Function | L139–L148 | `dict[str, Any]` | Executes core domain logic for `fetch_week_schedule`. |
-| [`_fetch_exams_grpc`](#_fetch_exams_grpc) | Function | L151–L157 | `dict[str, Any]` | Executes core domain logic for `_fetch_exams_grpc`. |
-| [`fetch_exams`](#fetch_exams) | Function | L160–L166 | `dict[str, Any]` | Executes core domain logic for `fetch_exams`. |
-| [`_fetch_teachers_grpc`](#_fetch_teachers_grpc) | Function | L169–L175 | `dict[str, Any]` | Executes core domain logic for `_fetch_teachers_grpc`. |
-| [`fetch_teachers`](#fetch_teachers) | Function | L178–L184 | `dict[str, Any]` | Executes core domain logic for `fetch_teachers`. |
-| [`get_api_schedule_for_date`](#get_api_schedule_for_date) | Function | L187–L190 | `list[Lesson]` | Retrieves and resolves domain data for `get_api_schedul... |
-| [`get_api_week_schedule`](#get_api_week_schedule) | Function | L193–L201 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_api_week_sc... |
-| [`get_api_exams`](#get_api_exams) | Function | L204–L207 | `list[ExamItem]` | Retrieves and resolves domain data for `get_api_exams`. |
-| [`get_api_teachers`](#get_api_teachers) | Function | L210–L213 | `dict[str, Any]` | Retrieves and resolves domain data for `get_api_teacher... |
+| [`_get_client`](#_get_client) | Function | L45–L63 | `httpx.AsyncClient` | Executes core domain logic for `_get_client`. |
+| [`_get_grpc_channel`](#_get_grpc_channel) | Function | L66–L86 | `grpc.aio.Channel` | Executes core domain logic for `_get_grpc_channel`. |
+| [`close_api_client`](#close_api_client) | Function | L89–L104 | `None` | Executes core domain logic for `close_api_client`. |
+| [`_api_get`](#_api_get) | Function | L107–L127 | `dict[str, Any]` | Executes core domain logic for `_api_get`. |
+| [`_fetch_day_schedule_grpc`](#_fetch_day_schedule_grpc) | Function | L130–L146 | `dict[str, Any]` | Executes core domain logic for `_fetch_day_schedule_grp... |
+| [`fetch_day_schedule`](#fetch_day_schedule) | Function | L149–L165 | `dict[str, Any]` | Executes core domain logic for `fetch_day_schedule`. |
+| [`_fetch_week_schedule_grpc`](#_fetch_week_schedule_grpc) | Function | L168–L184 | `dict[str, Any]` | Executes core domain logic for `_fetch_week_schedule_gr... |
+| [`fetch_week_schedule`](#fetch_week_schedule) | Function | L187–L203 | `dict[str, Any]` | Executes core domain logic for `fetch_week_schedule`. |
+| [`_fetch_exams_grpc`](#_fetch_exams_grpc) | Function | L206–L219 | `dict[str, Any]` | Executes core domain logic for `_fetch_exams_grpc`. |
+| [`fetch_exams`](#fetch_exams) | Function | L222–L235 | `dict[str, Any]` | Executes core domain logic for `fetch_exams`. |
+| [`_fetch_teachers_grpc`](#_fetch_teachers_grpc) | Function | L238–L251 | `dict[str, Any]` | Executes core domain logic for `_fetch_teachers_grpc`. |
+| [`fetch_teachers`](#fetch_teachers) | Function | L254–L267 | `dict[str, Any]` | Executes core domain logic for `fetch_teachers`. |
+| [`get_api_schedule_for_date`](#get_api_schedule_for_date) | Function | L270–L280 | `list[Lesson]` | Retrieves and resolves domain data for `get_api_schedul... |
+| [`get_api_week_schedule`](#get_api_week_schedule) | Function | L283–L300 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_api_week_sc... |
+| [`get_api_exams`](#get_api_exams) | Function | L303–L313 | `list[ExamItem]` | Retrieves and resolves domain data for `get_api_exams`. |
+| [`get_api_teachers`](#get_api_teachers) | Function | L316–L326 | `dict[str, Any]` | Retrieves and resolves domain data for `get_api_teacher... |
 
 ---
 
@@ -47,7 +47,7 @@ graph LR
 def _get_client() -> httpx.AsyncClient
 ```
 
-- **Source Reference**: [`core/api_client.py#L43-L54`](../../core/api_client.py#L43-L54)
+- **Source Reference**: [`core/api_client.py#L45-L63`](../../core/api_client.py#L45-L63)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `httpx.AsyncClient`
 
@@ -78,7 +78,7 @@ result = _get_client()
 def _get_grpc_channel() -> grpc.aio.Channel
 ```
 
-- **Source Reference**: [`core/api_client.py#L57-L70`](../../core/api_client.py#L57-L70)
+- **Source Reference**: [`core/api_client.py#L66-L86`](../../core/api_client.py#L66-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `grpc.aio.Channel`
 
@@ -109,7 +109,7 @@ result = _get_grpc_channel()
 async def close_api_client() -> None
 ```
 
-- **Source Reference**: [`core/api_client.py#L73-L81`](../../core/api_client.py#L73-L81)
+- **Source Reference**: [`core/api_client.py#L89-L104`](../../core/api_client.py#L89-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -140,7 +140,7 @@ result = await close_api_client()
 async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L84-L97`](../../core/api_client.py#L84-L97)
+- **Source Reference**: [`core/api_client.py#L107-L127`](../../core/api_client.py#L107-L127)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -174,7 +174,7 @@ result = await _api_get(path=..., params=...)
 async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L103-L112`](../../core/api_client.py#L103-L112)
+- **Source Reference**: [`core/api_client.py#L130-L146`](../../core/api_client.py#L130-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -208,7 +208,7 @@ result = await _fetch_day_schedule_grpc(target_date=..., force_refresh=...)
 async def fetch_day_schedule(target_date: date | None = None, force_refresh: bool = False) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L115-L124`](../../core/api_client.py#L115-L124)
+- **Source Reference**: [`core/api_client.py#L149-L165`](../../core/api_client.py#L149-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -242,7 +242,7 @@ result = await fetch_day_schedule(target_date=..., force_refresh=...)
 async def _fetch_week_schedule_grpc(monday: date | None, force_refresh: bool) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L127-L136`](../../core/api_client.py#L127-L136)
+- **Source Reference**: [`core/api_client.py#L168-L184`](../../core/api_client.py#L168-L184)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -276,7 +276,7 @@ result = await _fetch_week_schedule_grpc(monday=..., force_refresh=...)
 async def fetch_week_schedule(monday: date | None = None, force_refresh: bool = False) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L139-L148`](../../core/api_client.py#L139-L148)
+- **Source Reference**: [`core/api_client.py#L187-L203`](../../core/api_client.py#L187-L203)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -310,7 +310,7 @@ result = await fetch_week_schedule(monday=..., force_refresh=...)
 async def _fetch_exams_grpc(force_refresh: bool) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L151-L157`](../../core/api_client.py#L151-L157)
+- **Source Reference**: [`core/api_client.py#L206-L219`](../../core/api_client.py#L206-L219)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -343,7 +343,7 @@ result = await _fetch_exams_grpc(force_refresh=...)
 async def fetch_exams(force_refresh: bool = False) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L160-L166`](../../core/api_client.py#L160-L166)
+- **Source Reference**: [`core/api_client.py#L222-L235`](../../core/api_client.py#L222-L235)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -376,7 +376,7 @@ result = await fetch_exams(force_refresh=...)
 async def _fetch_teachers_grpc(force_refresh: bool) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L169-L175`](../../core/api_client.py#L169-L175)
+- **Source Reference**: [`core/api_client.py#L238-L251`](../../core/api_client.py#L238-L251)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -409,7 +409,7 @@ result = await _fetch_teachers_grpc(force_refresh=...)
 async def fetch_teachers(force_refresh: bool = False) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L178-L184`](../../core/api_client.py#L178-L184)
+- **Source Reference**: [`core/api_client.py#L254-L267`](../../core/api_client.py#L254-L267)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 
@@ -442,7 +442,7 @@ result = await fetch_teachers(force_refresh=...)
 async def get_api_schedule_for_date(target_date: date | None = None, force_refresh: bool = False) -> list[Lesson]
 ```
 
-- **Source Reference**: [`core/api_client.py#L187-L190`](../../core/api_client.py#L187-L190)
+- **Source Reference**: [`core/api_client.py#L270-L280`](../../core/api_client.py#L270-L280)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
@@ -473,10 +473,10 @@ result = await get_api_schedule_for_date(target_date=..., force_refresh=...)
 
 ### `get_api_week_schedule`
 ```python
-async def get_api_week_schedule(monday: date | None = None, force_refresh: bool = False) -> list[tuple[date, list[Lesson]]]
+async def get_api_week_schedule( monday: date | None = None, force_refresh: bool = False ) -> list[tuple[date, list[Lesson]]]
 ```
 
-- **Source Reference**: [`core/api_client.py#L193-L201`](../../core/api_client.py#L193-L201)
+- **Source Reference**: [`core/api_client.py#L283-L300`](../../core/api_client.py#L283-L300)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[date, list[Lesson]]]`
 
@@ -510,7 +510,7 @@ result = await get_api_week_schedule(monday=..., force_refresh=...)
 async def get_api_exams(force_refresh: bool = False) -> list[ExamItem]
 ```
 
-- **Source Reference**: [`core/api_client.py#L204-L207`](../../core/api_client.py#L204-L207)
+- **Source Reference**: [`core/api_client.py#L303-L313`](../../core/api_client.py#L303-L313)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[ExamItem]`
 
@@ -543,7 +543,7 @@ result = await get_api_exams(force_refresh=...)
 async def get_api_teachers(force_refresh: bool = False) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`core/api_client.py#L210-L213`](../../core/api_client.py#L210-L213)
+- **Source Reference**: [`core/api_client.py#L316-L326`](../../core/api_client.py#L316-L326)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any]`
 

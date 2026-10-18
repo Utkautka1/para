@@ -38,57 +38,85 @@ router.message.filter(AuthFilter())
 
 async def load_classmates_list() -> list[dict[str, Any]]:
     """
-    Загружает актуальный список одногруппников из JSON-файла.
+    Загружает актуальный список одногруппников из файла birthdays.json.
 
-    Используем data/birthdays.json как единый источник правды, чтобы не дублировать
-    данные студентов в разных файлах.
+    Использует единый источник правды data/birthdays.json для исключения дублирования.
+    При отсутствии файла возвращает пустой список по умолчанию.
+
+    Возвращает список словарей студентов с именами, username и tg_id.
     """
+
     return await load_json(BIRTHDAYS_FILE_PATH, default=[])
 
 
 def resolve_person_tg_id(person: dict[str, Any]) -> int | None:
     """
-    Извлекает tg_id из записи или постоянного кэша пользователей.
+    Извлекает Telegram ID из записи студента либо из кэша юзернеймов Redis.
+
+    Защищает от пропуска упоминания, если tg_id отсутствует в статическом файле.
+    Ищет по сохраненному username в реестре активности пользователей.
+
+    Возвращает числовой Telegram ID или None, если не удалось найти.
     """
+
     if person.get("tg_id"):
         return person["tg_id"]
+
     username = person.get("username")
+
     return get_cached_user_id(username) if username else None
 
 
 def format_mention_tag(person: dict[str, Any]) -> str | None:
     """
-    Формирует кликабельный тег упоминания.
+    Формирует активный HTML-тег кликабельного упоминания студента.
 
-    Приоритет отдается tg_id: Telegram шлет пуш-уведомление ТОЛЬКО для
-    ссылок tg://user?id= (text_mention), а обычный @username ботом игнорирует.
+    Отдаёт абсолютный приоритет tg://user?id=, так как Telegram шлёт пуш
+    только по ID, а простые @username от ботов зачастую игнорирует.
+
+    Возвращает HTML-ссылку упоминания или @username, либо None.
     """
+
     tg_id = resolve_person_tg_id(person)
     username = person.get("username")
     name = html.escape(person.get("full_name", ""))
+
     if tg_id:
         label = f"@{username}" if username else name
         return f'<a href="tg://user?id={tg_id}">{label}</a>'
+
     if username:
         return f"@{username}"
+
     return None
 
 
 def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool:
     """
-    Проверяет, является ли запись в реестре отправителем команды.
+    Проверяет, является ли запись студента автором вызванной команды.
 
-    Сверяет как по числовому Telegram ID, так и по регистронезависимому юзернейму.
+    Сравнивает как числовой Telegram ID, так и регистронезависимый username.
+    Исключает самого администратора из списка пингуемых одногруппников.
+
+    Возвращает True, если студент является автором команды, иначе False.
     """
+
     if sender_id and person.get("tg_id") == sender_id:
         return True
+
     return bool(sender_username and person.get("username") and person["username"].lower() == sender_username.lower())
 
 
 def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str:
     """
-    Формирует список тегов упоминаний участников чата без автора команды.
+    Формирует единую строку кликабельных упоминаний одногруппников без автора.
+
+    Объединяет валидные теги через пробел в единый текстовый блок.
+    Используется в нижней части широковещательного сообщения.
+
+    Возвращает строку со всеми тегами упоминаний.
     """
+
     sender_id = sender.id if sender else None
     sender_user = sender.username if sender else None
     tags = [
@@ -97,16 +125,20 @@ def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) 
         if not is_sender(p, sender_id, sender_user)
     ]
     valid_tags = [t for t in tags if t]
+
     return " ".join(valid_tags)
 
 
 def extract_broadcast_text(html_text: str) -> str:
     """
-    Извлекает пользовательский HTML-текст после команды /all или .all.
+    Извлекает пользовательский текст сообщения после команды /all или .all.
 
-    Отрезает саму команду с префиксом (/ или .) и упоминанием бота, сохраняя
-    все дочерние теги разметки (жирный, курсив, ссылки, моноширинный).
+    Отрезает саму команду с префиксом (/ или .) и упоминанием юзернейма бота.
+    Сохраняет исходное форматирование автора (жирный, курсив, ссылки).
+
+    Возвращает очищенную HTML-строку пользовательского сообщения.
     """
+
     return re.sub(
         r"^[/.](?:all)(?:@[A-Za-z0-9_]+)?(?:\s+|$)",
         "",
@@ -118,21 +150,33 @@ def extract_broadcast_text(html_text: str) -> str:
 
 def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str:
     """
-    Собирает итоговый HTML: текст автора сверху, блок пингов в самом низу.
+    Компонует итоговый HTML-текст поста с текстом автора и пингами внизу.
+
+    Подставляет подходящий заголовок по умолчанию при пустом тексте сообщения.
+    Разделяет текст автора и теги упоминаний двойным переводом строки.
+
+    Возвращает готовый HTML-текст для рассылки.
     """
+
     if user_html:
         return f"{user_html}\n\n{mentions}"
+
     if has_reply:
         return f"📢 <b>Внимание к сообщению выше!</b>\n\n{mentions}"
+
     return f"📢 <b>Общий сбор группы!</b>\n\n{mentions}"
 
 
 async def safe_delete_command_message(message: Message) -> None:
     """
-    Безопасно удаляет триггер-сообщение автора команды.
+    Безопасно удаляет исходное командное сообщение администратора.
 
-    Игнорирует ошибки, если сообщение уже удалено пользователем или таймером.
+    Подавляет ошибки TelegramBadRequest, если сообщение уже удалено.
+    Обеспечивает эффект публикации поста напрямую от лица бота.
+
+    Ничего не возвращает.
     """
+
     try:
         await message.delete()
     except TelegramBadRequest as e:
@@ -144,12 +188,17 @@ async def safe_delete_command_message(message: Message) -> None:
         log.warning(f"Не удалось удалить команду /all: {e}")
 
 
+
 async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message:
     """
-    Отправляет пост от лица бота в целевой чат и топик (текст или медиа).
+    Отправляет пост от лица бота в целевой топик чата с сохранением вложений.
 
-    При наличии фото/видео/документа копирует его с новым описанием.
+    При наличии фото, видео или документа копирует медиафайл с новым текстом.
+    Поддерживает сохранение связи с сообщением-ответом (reply_to_message_id).
+
+    Возвращает отправленный объект Message.
     """
+
     thread_id = message.message_thread_id
     if message.photo or message.video or message.document or message.animation:
         return await message.copy_to(
@@ -159,6 +208,7 @@ async def send_broadcast_payload(message: Message, final_html: str, reply_to_id:
             parse_mode="HTML",
             reply_to_message_id=reply_to_id,
         )
+
     return await message.bot.send_message(
         chat_id=message.chat.id,
         message_thread_id=thread_id,
@@ -170,13 +220,18 @@ async def send_broadcast_payload(message: Message, final_html: str, reply_to_id:
 
 async def validate_group_chat(message: Message) -> bool:
     """
-    Проверяет, что команда вызвана в группе или супергруппе, а не в ЛС.
+    Проверяет, что команда /all вызвана в группе или супергруппе колледжа.
 
-    При вызове в приватном диалоге выводит предупреждение и возвращает False.
+    При ошибочном вызове в ЛС выводит подсказку и останавливает выполнение.
+    Защищает от бессмысленного пинга студентов в личной переписке.
+
+    Возвращает True, если чат групповой, иначе False.
     """
+
     if message.chat.type == "private":
         await message.answer("⚠️ Команда /all предназначена для вызова в топиках группы.")
         return False
+
     return True
 
 
@@ -184,23 +239,32 @@ def compose_broadcast_content(
     classmates: list[dict[str, Any]], message: Message
 ) -> tuple[str, int | None]:
     """
-    Формирует итоговый HTML рассылки и определяет ID реплая.
+    Формирует итоговый HTML-текст рассылки и извлекает ID сообщения для реплая.
 
-    Размещает текст автора вверху, а пинги одногруппников — внизу сообщения.
+    Соединяет авторский текст сообщения с кликабельным блоком упоминаний.
+    Учитывает контекст ответа на чужое сообщение в топике.
+
+    Возвращает кортеж (final_html_text, reply_message_id).
     """
+
     mentions = build_mentions_block(classmates, message.from_user)
     user_html = extract_broadcast_text(message.html_text or "")
     reply_id = message.reply_to_message.message_id if message.reply_to_message else None
     final_text = build_broadcast_message(user_html, mentions, has_reply=bool(reply_id))
+
     return final_text, reply_id
 
 
 async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None:
     """
-    Выполняет отправку поста и удаление исходной команды с логированием.
+    Отправляет широковещательный пост в чат и удаляет триггер-сообщение.
 
-    Перехватывает ошибки доставки, информируя инициатора команды при сбое.
+    Логирует успешную отправку с идентификатором чата и топика.
+    В случае ошибки отправки информирует администратора в чате.
+
+    Ничего не возвращает.
     """
+
     try:
         await send_broadcast_payload(message, final_text, reply_id)
         await safe_delete_command_message(message)
@@ -213,12 +277,18 @@ async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | 
 @router.message(Command("all", prefix="/.", ignore_case=True))
 async def cmd_ping_all(message: Message) -> None:
     """
-    Координирует валидацию, компоновку и отправку общего пинга группы.
+    Оркестрирует полный сценарий общего пинга группы 1-КПД-3 по команде /all.
 
-    Выступает чистым оркестратором без смешения бизнес-логики.
+    Проверяет тип чата, загружает реестр студентов и отправляет публикацию.
+    Не содержит смешения низкоуровневых операций форматирования.
+
+    Ничего не возвращает.
     """
+
     if not await validate_group_chat(message):
         return
+
     classmates = await load_classmates_list()
     final_text, reply_id = compose_broadcast_content(classmates, message)
     await dispatch_broadcast(message, final_text, reply_id)
+

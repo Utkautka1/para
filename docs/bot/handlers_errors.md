@@ -21,18 +21,86 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`global_error_handler`](#global_error_handler) | Function | L18–L32 | `bool` | Executes core domain logic for `global_error_handler`. |
+| [`_notify_callback_error`](#_notify_callback_error) | Function | L17–L30 | `None` | Executes core domain logic for `_notify_callback_error`... |
+| [`_notify_message_error`](#_notify_message_error) | Function | L33–L46 | `None` | Executes core domain logic for `_notify_message_error`. |
+| [`global_error_handler`](#global_error_handler) | Function | L50–L68 | `bool` | Executes core domain logic for `global_error_handler`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_notify_callback_error`
+```python
+async def _notify_callback_error(cb) -> None
+```
+
+- **Source Reference**: [`bot/handlers/errors.py#L17-L30`](../../bot/handlers/errors.py#L17-L30)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_notify_callback_error`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `cb` | `Any` | Yes | Parameter `cb` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.errors import _notify_callback_error
+
+# Execute call
+result = await _notify_callback_error(cb=...)
+```
+
+---
+
+### `_notify_message_error`
+```python
+async def _notify_message_error(msg) -> None
+```
+
+- **Source Reference**: [`bot/handlers/errors.py#L33-L46`](../../bot/handlers/errors.py#L33-L46)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_notify_message_error`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `msg` | `Any` | Yes | Parameter `msg` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.errors import _notify_message_error
+
+# Execute call
+result = await _notify_message_error(msg=...)
+```
+
+---
 
 ### `global_error_handler`
 ```python
 async def global_error_handler(event: ErrorEvent) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/errors.py#L18-L32`](../../bot/handlers/errors.py#L18-L32)
+- **Source Reference**: [`bot/handlers/errors.py#L50-L68`](../../bot/handlers/errors.py#L50-L68)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -48,7 +116,7 @@ Executes core domain logic for `global_error_handler`.
 - Emits structured telemetry events to system logging subsystem.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python

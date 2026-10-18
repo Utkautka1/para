@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cb_public_copy_value`](#cb_public_copy_value) | Function | L19–L28 | `None` | Handles Telegram inline callback query events for `cb_p... |
+| [`cb_public_copy_value`](#cb_public_copy_value) | Function | L19–L33 | `None` | Handles Telegram inline callback query events for `cb_p... |
 
 ---
 
@@ -32,7 +32,7 @@ graph LR
 async def cb_public_copy_value(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/public_copy.py#L19-L28`](../../bot/handlers/user/public_copy.py#L19-L28)
+- **Source Reference**: [`bot/handlers/user/public_copy.py#L19-L33`](../../bot/handlers/user/public_copy.py#L19-L33)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

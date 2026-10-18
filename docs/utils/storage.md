@@ -21,11 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`sync_load_json`](#sync_load_json) | Function | L20–L35 | `Any` | Executes core domain logic for `sync_load_json`. |
-| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L38–L55 | `bool` | Executes core domain logic for `_write_temp_and_replace... |
-| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L58–L66 | `bool` | Executes core domain logic for `sync_atomic_save_json`. |
-| [`load_json`](#load_json) | Function | L69–L77 | `Any` | Executes core domain logic for `load_json`. |
-| [`save_json`](#save_json) | Function | L80–L88 | `bool` | Saves serialized entity data to storage for `save_json`... |
+| [`sync_load_json`](#sync_load_json) | Function | L20–L36 | `Any` | Executes core domain logic for `sync_load_json`. |
+| [`_flush_json_to_file`](#_flush_json_to_file) | Function | L39–L50 | `None` | Executes core domain logic for `_flush_json_to_file`. |
+| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L53–L75 | `bool` | Executes core domain logic for `_write_temp_and_replace... |
+| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L78–L87 | `bool` | Executes core domain logic for `sync_atomic_save_json`. |
+| [`load_json`](#load_json) | Function | L90–L99 | `Any` | Executes core domain logic for `load_json`. |
+| [`save_json`](#save_json) | Function | L102–L111 | `bool` | Saves serialized entity data to storage for `save_json`... |
 
 ---
 
@@ -36,7 +37,7 @@ graph LR
 def sync_load_json(file_path: str, default: Any = None) -> Any
 ```
 
-- **Source Reference**: [`utils/storage.py#L20-L35`](../../utils/storage.py#L20-L35)
+- **Source Reference**: [`utils/storage.py#L20-L36`](../../utils/storage.py#L20-L36)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -65,12 +66,46 @@ result = sync_load_json(file_path=..., default=...)
 
 ---
 
+### `_flush_json_to_file`
+```python
+def _flush_json_to_file(temp_file, data: Any) -> None
+```
+
+- **Source Reference**: [`utils/storage.py#L39-L50`](../../utils/storage.py#L39-L50)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_flush_json_to_file`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `temp_file` | `Any` | Yes | Parameter `temp_file` of type `Any`. |
+| `data` | `Any` | Yes | Parameter `data` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.storage import _flush_json_to_file
+
+# Execute call
+result = _flush_json_to_file(temp_file=..., data=...)
+```
+
+---
+
 ### `_write_temp_and_replace`
 ```python
 def _write_temp_and_replace(file_path: str, data: Any) -> bool
 ```
 
-- **Source Reference**: [`utils/storage.py#L38-L55`](../../utils/storage.py#L38-L55)
+- **Source Reference**: [`utils/storage.py#L53-L75`](../../utils/storage.py#L53-L75)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -104,7 +139,7 @@ result = _write_temp_and_replace(file_path=..., data=...)
 def sync_atomic_save_json(file_path: str, data: Any) -> bool
 ```
 
-- **Source Reference**: [`utils/storage.py#L58-L66`](../../utils/storage.py#L58-L66)
+- **Source Reference**: [`utils/storage.py#L78-L87`](../../utils/storage.py#L78-L87)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -138,7 +173,7 @@ result = sync_atomic_save_json(file_path=..., data=...)
 async def load_json(file_path: str, default: Any = None) -> Any
 ```
 
-- **Source Reference**: [`utils/storage.py#L69-L77`](../../utils/storage.py#L69-L77)
+- **Source Reference**: [`utils/storage.py#L90-L99`](../../utils/storage.py#L90-L99)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -172,7 +207,7 @@ result = await load_json(file_path=..., default=...)
 async def save_json(file_path: str, data: Any) -> bool
 ```
 
-- **Source Reference**: [`utils/storage.py#L80-L88`](../../utils/storage.py#L80-L88)
+- **Source Reference**: [`utils/storage.py#L102-L111`](../../utils/storage.py#L102-L111)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

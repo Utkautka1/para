@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L29 | `int | None` | Parses and extracts structured entities from `parse_dur... |
+| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L25 | `int | None` | Parses and extracts structured entities from `parse_dur... |
 
 ---
 
@@ -32,7 +32,7 @@ graph LR
 def parse_duration_to_seconds(time_str: str) -> int | None
 ```
 
-- **Source Reference**: [`utils/mute_parser.py#L11-L29`](../../utils/mute_parser.py#L11-L29)
+- **Source Reference**: [`utils/mute_parser.py#L11-L25`](../../utils/mute_parser.py#L11-L25)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 

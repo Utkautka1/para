@@ -18,14 +18,16 @@ public_router = Router()
 @public_router.callback_query(F.data.startswith("copy:"))
 async def cb_public_copy_value(callback: CallbackQuery) -> None:
     """
-    Публичный обработчик копирования ID и паролей Zoom.
+    Отображает всплывающее окно с реквизитами конференции Zoom для копирования.
 
-    :param callback: CallbackQuery
+    Извлекает значение из callback_data и отдает во всплывающем alert клиенту Telegram.
+    Доступен всем участникам беседы без жесткой авторизации по реестру.
+
+    Ничего не возвращает.
     """
+
     val = callback.data.split("copy:", 1)[1]
     user_id = callback.from_user.id if callback.from_user else 0
     log.info(f"Публичный копир реквизитов вызван user_id={user_id}: {val}")
+
     await callback.answer(f"Скопировано: {val}", show_alert=True)
-
-
-

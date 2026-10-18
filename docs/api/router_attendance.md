@@ -21,15 +21,16 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_attendance_stats`](#get_attendance_stats) | Function | L38–L42 | `AttendanceStatsResponse` | Retrieves and resolves domain data for `get_attendance_... |
-| [`get_student_attendance`](#get_student_attendance) | Function | L46–L56 | `StudentPersonalStatsResponse` | Retrieves and resolves domain data for `get_student_att... |
-| [`_build_session_response`](#_build_session_response) | Function | L59–L73 | `ActiveSessionResponse` | Executes core domain logic for `_build_session_response... |
-| [`get_current_session`](#get_current_session) | Function | L77–L80 | `ActiveSessionResponse` | Retrieves and resolves domain data for `get_current_ses... |
-| [`start_session`](#start_session) | Function | L84–L90 | `ActiveSessionResponse` | Executes core domain logic for `start_session`. |
-| [`mark_student`](#mark_student) | Function | L94–L99 | `ActiveSessionResponse` | Executes core domain logic for `mark_student`. |
-| [`batch_present`](#batch_present) | Function | L103–L108 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
-| [`commit_session`](#commit_session) | Function | L112–L121 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
-| [`cancel_session`](#cancel_session) | Function | L125–L128 | `dict` | Executes core domain logic for `cancel_session`. |
+| [`get_attendance_stats`](#get_attendance_stats) | Function | L38–L51 | `AttendanceStatsResponse` | Retrieves and resolves domain data for `get_attendance_... |
+| [`_calculate_attendance_rate`](#_calculate_attendance_rate) | Function | L54–L68 | `float` | Executes core domain logic for `_calculate_attendance_r... |
+| [`get_student_attendance`](#get_student_attendance) | Function | L72–L95 | `StudentPersonalStatsResponse` | Retrieves and resolves domain data for `get_student_att... |
+| [`_build_session_response`](#_build_session_response) | Function | L98–L122 | `ActiveSessionResponse` | Executes core domain logic for `_build_session_response... |
+| [`get_current_session`](#get_current_session) | Function | L126–L138 | `ActiveSessionResponse` | Retrieves and resolves domain data for `get_current_ses... |
+| [`start_session`](#start_session) | Function | L142–L157 | `ActiveSessionResponse` | Executes core domain logic for `start_session`. |
+| [`mark_student`](#mark_student) | Function | L161–L175 | `ActiveSessionResponse` | Executes core domain logic for `mark_student`. |
+| [`batch_present`](#batch_present) | Function | L179–L193 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
+| [`commit_session`](#commit_session) | Function | L197–L216 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
+| [`cancel_session`](#cancel_session) | Function | L220–L232 | `dict` | Executes core domain logic for `cancel_session`. |
 
 ---
 
@@ -40,7 +41,7 @@ graph LR
 async def get_attendance_stats(force_refresh: bool = Query(default=False)) -> AttendanceStatsResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L38-L42`](../../api/router/attendance.py#L38-L42)
+- **Source Reference**: [`api/router/attendance.py#L38-L51`](../../api/router/attendance.py#L38-L51)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceStatsResponse`
 
@@ -68,12 +69,45 @@ result = await get_attendance_stats(force_refresh=...)
 
 ---
 
+### `_calculate_attendance_rate`
+```python
+def _calculate_attendance_rate(total_marks: dict) -> float
+```
+
+- **Source Reference**: [`api/router/attendance.py#L54-L68`](../../api/router/attendance.py#L54-L68)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `float`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_calculate_attendance_rate`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `total_marks` | `dict` | Yes | Parameter `total_marks` of type `dict`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.attendance import _calculate_attendance_rate
+
+# Execute call
+result = _calculate_attendance_rate(total_marks=...)
+```
+
+---
+
 ### `get_student_attendance`
 ```python
 async def get_student_attendance(fio: str) -> StudentPersonalStatsResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L46-L56`](../../api/router/attendance.py#L46-L56)
+- **Source Reference**: [`api/router/attendance.py#L72-L95`](../../api/router/attendance.py#L72-L95)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentPersonalStatsResponse`
 
@@ -106,7 +140,7 @@ result = await get_student_attendance(fio=...)
 def _build_session_response(s) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L59-L73`](../../api/router/attendance.py#L59-L73)
+- **Source Reference**: [`api/router/attendance.py#L98-L122`](../../api/router/attendance.py#L98-L122)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -139,7 +173,7 @@ result = _build_session_response(s=...)
 async def get_current_session() -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L77-L80`](../../api/router/attendance.py#L77-L80)
+- **Source Reference**: [`api/router/attendance.py#L126-L138`](../../api/router/attendance.py#L126-L138)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -170,7 +204,7 @@ result = await get_current_session()
 async def start_session(payload: StartSessionRequest) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L84-L90`](../../api/router/attendance.py#L84-L90)
+- **Source Reference**: [`api/router/attendance.py#L142-L157`](../../api/router/attendance.py#L142-L157)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -203,7 +237,7 @@ result = await start_session(payload=...)
 async def mark_student(payload: MarkStudentRequest) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L94-L99`](../../api/router/attendance.py#L94-L99)
+- **Source Reference**: [`api/router/attendance.py#L161-L175`](../../api/router/attendance.py#L161-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -236,7 +270,7 @@ result = await mark_student(payload=...)
 async def batch_present() -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L103-L108`](../../api/router/attendance.py#L103-L108)
+- **Source Reference**: [`api/router/attendance.py#L179-L193`](../../api/router/attendance.py#L179-L193)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -267,7 +301,7 @@ result = await batch_present()
 async def commit_session() -> CommitAttendanceResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L112-L121`](../../api/router/attendance.py#L112-L121)
+- **Source Reference**: [`api/router/attendance.py#L197-L216`](../../api/router/attendance.py#L197-L216)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CommitAttendanceResponse`
 
@@ -298,7 +332,7 @@ result = await commit_session()
 async def cancel_session() -> dict
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L125-L128`](../../api/router/attendance.py#L125-L128)
+- **Source Reference**: [`api/router/attendance.py#L220-L232`](../../api/router/attendance.py#L220-L232)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 

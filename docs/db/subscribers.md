@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_subscribers`](#load_subscribers) | Function | L16–L23 | `set[int]` | Executes core domain logic for `load_subscribers`. |
-| [`save_subscribers`](#save_subscribers) | Function | L26–L36 | `bool` | Saves serialized entity data to storage for `save_subsc... |
-| [`add_subscriber`](#add_subscriber) | Function | L39–L52 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`remove_subscriber`](#remove_subscriber) | Function | L55–L68 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`is_subscribed`](#is_subscribed) | Function | L71–L78 | `bool` | Executes core domain logic for `is_subscribed`. |
-| [`toggle_subscriber`](#toggle_subscriber) | Function | L81–L97 | `bool` | Executes core domain logic for `toggle_subscriber`. |
+| [`load_subscribers`](#load_subscribers) | Function | L15–L25 | `set[int]` | Executes core domain logic for `load_subscribers`. |
+| [`save_subscribers`](#save_subscribers) | Function | L28–L40 | `bool` | Saves serialized entity data to storage for `save_subsc... |
+| [`add_subscriber`](#add_subscriber) | Function | L43–L58 | `bool` | Executes core domain logic for `add_subscriber`. |
+| [`remove_subscriber`](#remove_subscriber) | Function | L61–L76 | `bool` | Executes core domain logic for `remove_subscriber`. |
+| [`is_subscribed`](#is_subscribed) | Function | L79–L88 | `bool` | Executes core domain logic for `is_subscribed`. |
+| [`toggle_subscriber`](#toggle_subscriber) | Function | L91–L109 | `bool` | Executes core domain logic for `toggle_subscriber`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 def load_subscribers() -> set[int]
 ```
 
-- **Source Reference**: [`db/subscribers.py#L16-L23`](../../db/subscribers.py#L16-L23)
+- **Source Reference**: [`db/subscribers.py#L15-L25`](../../db/subscribers.py#L15-L25)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[int]`
 
@@ -68,7 +68,7 @@ result = load_subscribers()
 def save_subscribers(subs: set[int]) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L26-L36`](../../db/subscribers.py#L26-L36)
+- **Source Reference**: [`db/subscribers.py#L28-L40`](../../db/subscribers.py#L28-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -101,7 +101,7 @@ result = save_subscribers(subs=...)
 def add_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L39-L52`](../../db/subscribers.py#L39-L52)
+- **Source Reference**: [`db/subscribers.py#L43-L58`](../../db/subscribers.py#L43-L58)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -134,7 +134,7 @@ result = add_subscriber(chat_id=...)
 def remove_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L55-L68`](../../db/subscribers.py#L55-L68)
+- **Source Reference**: [`db/subscribers.py#L61-L76`](../../db/subscribers.py#L61-L76)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -167,7 +167,7 @@ result = remove_subscriber(chat_id=...)
 def is_subscribed(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L71-L78`](../../db/subscribers.py#L71-L78)
+- **Source Reference**: [`db/subscribers.py#L79-L88`](../../db/subscribers.py#L79-L88)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -200,7 +200,7 @@ result = is_subscribed(chat_id=...)
 def toggle_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L81-L97`](../../db/subscribers.py#L81-L97)
+- **Source Reference**: [`db/subscribers.py#L91-L109`](../../db/subscribers.py#L91-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 

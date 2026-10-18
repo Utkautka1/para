@@ -12,11 +12,21 @@ router = APIRouter(tags=["Health"])
 
 
 class HealthResponse(BaseModel):
-    """Ответ healthcheck."""
+    """Модель ответа проверки жизнеспособности сервиса para-api."""
+
     status: str
 
 
 @router.get("/health", response_model=HealthResponse)
 async def healthcheck() -> HealthResponse:
-    """Простая проверка жизнеспособности API-сервиса."""
+    """
+    Выполняет быструю проверку доступности и жизнеспособности сервиса API.
+
+    Используется оркестратором Docker и внешними балансировщиками без авторизации.
+    Возвращает статический статус 'ok' при нормальной работе event loop.
+
+    Возвращает объект HealthResponse со статусом 'ok'.
+    """
+
     return HealthResponse(status="ok")
+

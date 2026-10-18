@@ -16,6 +16,11 @@ from typing import Any
 
 import pytest
 
+from config import (
+    CAMPUS_ADDRESS_REMOTE,
+    CAMPUS_ADDRESS_TSVETOCHNAYA,
+    CAMPUS_ADDRESS_VOZNESENSKY,
+)
 from services.exam_parser import (
     extract_load_weeks,
     is_assessment_type,
@@ -35,14 +40,14 @@ from services.schedule_parser import (
 @pytest.mark.parametrize(
     "room,is_remote,expected_addr",
     [
-        ("", True, "Дистанционно"),
-        ("101", True, "Дистанционно"),
-        ("В-204", False, "Вознесенский пр., 44"),
-        ("в-101", False, "Вознесенский пр., 44"),
-        ("В-Актовый", False, "Вознесенский пр., 44"),
-        ("101", False, "ул. Цветочная, д. 8"),
-        ("Ц-204", False, "ул. Цветочная, д. 8"),
-        ("Актовый зал", False, "ул. Цветочная, д. 8"),
+        ("", True, CAMPUS_ADDRESS_REMOTE),
+        ("101", True, CAMPUS_ADDRESS_REMOTE),
+        ("В-204", False, CAMPUS_ADDRESS_VOZNESENSKY),
+        ("в-101", False, CAMPUS_ADDRESS_VOZNESENSKY),
+        ("В-Актовый", False, CAMPUS_ADDRESS_VOZNESENSKY),
+        ("101", False, CAMPUS_ADDRESS_TSVETOCHNAYA),
+        ("Ц-204", False, CAMPUS_ADDRESS_TSVETOCHNAYA),
+        ("Актовый зал", False, CAMPUS_ADDRESS_TSVETOCHNAYA),
     ],
 )
 def test_resolve_room_address(room: str, is_remote: bool, expected_addr: str) -> None:

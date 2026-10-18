@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_exams`](#list_exams) | Function | L23–L26 | `ExamsResponse` | Executes core domain logic for `list_exams`. |
-| [`_resolve_current_week`](#_resolve_current_week) | Function | L29–L34 | `int` | Executes core domain logic for `_resolve_current_week`. |
-| [`upcoming_exams`](#upcoming_exams) | Function | L38–L47 | `UpcomingExamsResponse` | Executes core domain logic for `upcoming_exams`. |
-| [`refresh_exams`](#refresh_exams) | Function | L51–L55 | `ExamsRefreshResponse` | Executes core domain logic for `refresh_exams`. |
+| [`list_exams`](#list_exams) | Function | L23–L35 | `ExamsResponse` | Executes core domain logic for `list_exams`. |
+| [`_resolve_current_week`](#_resolve_current_week) | Function | L38–L52 | `int` | Executes core domain logic for `_resolve_current_week`. |
+| [`upcoming_exams`](#upcoming_exams) | Function | L56–L74 | `UpcomingExamsResponse` | Executes core domain logic for `upcoming_exams`. |
+| [`refresh_exams`](#refresh_exams) | Function | L78–L91 | `ExamsRefreshResponse` | Executes core domain logic for `refresh_exams`. |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 async def list_exams() -> ExamsResponse
 ```
 
-- **Source Reference**: [`api/router/exams.py#L23-L26`](../../api/router/exams.py#L23-L26)
+- **Source Reference**: [`api/router/exams.py#L23-L35`](../../api/router/exams.py#L23-L35)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ExamsResponse`
 
@@ -66,7 +66,7 @@ result = await list_exams()
 async def _resolve_current_week() -> int
 ```
 
-- **Source Reference**: [`api/router/exams.py#L29-L34`](../../api/router/exams.py#L29-L34)
+- **Source Reference**: [`api/router/exams.py#L38-L52`](../../api/router/exams.py#L38-L52)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -97,7 +97,7 @@ result = await _resolve_current_week()
 async def upcoming_exams( weeks_ahead: int = Query(default=4, ge=1, le=20, description="Planning horizon (weeks)"), ) -> UpcomingExamsResponse
 ```
 
-- **Source Reference**: [`api/router/exams.py#L38-L47`](../../api/router/exams.py#L38-L47)
+- **Source Reference**: [`api/router/exams.py#L56-L74`](../../api/router/exams.py#L56-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `UpcomingExamsResponse`
 
@@ -130,7 +130,7 @@ result = await upcoming_exams(weeks_ahead=...)
 async def refresh_exams() -> ExamsRefreshResponse
 ```
 
-- **Source Reference**: [`api/router/exams.py#L51-L55`](../../api/router/exams.py#L51-L55)
+- **Source Reference**: [`api/router/exams.py#L78-L91`](../../api/router/exams.py#L78-L91)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ExamsRefreshResponse`
 

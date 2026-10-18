@@ -5,7 +5,6 @@
 Обеспечивает атомарную запись через временный файл и fsync.
 """
 
-
 from config import SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -15,9 +14,12 @@ log = get_logger("subscribers")
 
 def load_subscribers() -> set[int]:
     """
-    Загружает множество ID подписанных пользователей из файла.
+    Загружает множество идентификаторов подписанных пользователей из локального файла.
 
-    :return: Сет с Telegram chat_id
+    Использует защищенную загрузку JSON с дефолтным пустым списком, предотвращая
+    сбои сервиса при повреждении или отсутствии файла на диске.
+
+    Возвращает множество (set) целочисленных Telegram chat_id.
     """
     data = sync_load_json(SUBSCRIBERS_FILE_PATH, default=[])
     return set(data) if isinstance(data, list) else set()
@@ -25,10 +27,12 @@ def load_subscribers() -> set[int]:
 
 def save_subscribers(subs: set[int]) -> bool:
     """
-    Атомарно сохраняет актуальное множество подписчиков в JSON файл.
+    Атомарно сохраняет актуальное множество подписчиков в JSON-файл.
 
-    :param subs: Множество ID подписчиков
-    :return: True в случае успеха
+    Записывает данные во временный файл с последующим атомарным переименованием
+    через fsync во избежание порчи данных при внезапном отключении питания.
+
+    Возвращает True в случае успешной записи на диск, иначе False.
     """
     ok = sync_atomic_save_json(SUBSCRIBERS_FILE_PATH, list(subs))
     if ok:
@@ -38,10 +42,12 @@ def save_subscribers(subs: set[int]) -> bool:
 
 def add_subscriber(chat_id: int) -> bool:
     """
-    Добавляет новый chat_id в список подписчиков.
+    Добавляет новый идентификатор чата в список активных подписчиков.
 
-    :param chat_id: Telegram ID чата
-    :return: True, если пользователь был добавлен впервые
+    Проверяет наличие пользователя во множестве для исключения дубликатов
+    и выполняет сохранение в файл только при реальном добавлении.
+
+    Возвращает True, если подписчик был успешно добавлен, False если уже существовал.
     """
     subs = load_subscribers()
     if chat_id not in subs:
@@ -54,10 +60,12 @@ def add_subscriber(chat_id: int) -> bool:
 
 def remove_subscriber(chat_id: int) -> bool:
     """
-    Удаляет chat_id из списка подписчиков.
+    Удаляет идентификатор чата из списка получателей рассылки.
 
-    :param chat_id: Telegram ID чата
-    :return: True, если пользователь был успешно удален
+    Безопасно исключает подписчика из множества и обновляет дисковый файл,
+    прекращая отправку утренних и предпарных уведомлений.
+
+    Возвращает True, если подписчик был найден и удален, иначе False.
     """
     subs = load_subscribers()
     if chat_id in subs:
@@ -70,20 +78,24 @@ def remove_subscriber(chat_id: int) -> bool:
 
 def is_subscribed(chat_id: int) -> bool:
     """
-    Проверяет, подписан ли пользователь на 10-минутные напоминания в ЛС.
+    Проверяет, подписан ли пользователь на персональные уведомления в ЛС.
 
-    :param chat_id: Telegram ID чата
-    :return: True, если напоминания включены
+    Используется фильтрами клавиатур и обработчиками для отображения
+    актуального статуса колокольчика на кнопках меню.
+
+    Возвращает True, если chat_id присутствует в списке подписчиков, иначе False.
     """
     return chat_id in load_subscribers()
 
 
 def toggle_subscriber(chat_id: int) -> bool:
     """
-    Инвертирует статус подписки пользователя на напоминания в ЛС.
+    Переключает статус подписки пользователя на противоположный (Toggle).
 
-    :param chat_id: Telegram ID чата
-    :return: Новый статус (True = включено, False = выключено)
+    Атомарно инвертирует состояние подписки в файле и логирует пользовательское действие
+    с информативным эмодзи статуса.
+
+    Возвращает True, если подписка включена, False если отключена.
     """
     subs = load_subscribers()
     if chat_id in subs:
@@ -95,4 +107,3 @@ def toggle_subscriber(chat_id: int) -> bool:
     save_subscribers(subs)
     log.info(f"🔔 Пользователь включил напоминания: {chat_id}")
     return True
-

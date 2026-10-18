@@ -26,7 +26,14 @@ _REGISTRY_MTIME: float = 0.0
 
 
 def clear_registry_cache() -> None:
-    """Сбрасывает кэш реестра одногруппников в оперативной памяти."""
+    """
+    Сбрасывает оперативный кэш реестра одногруппников в памяти.
+
+    Используется при модификации файла birthdays.json и в тестах для сброса
+    сохраненного снимка реестра и метки времени mtime.
+
+    Ничего не возвращает.
+    """
     global _REGISTRY_CACHE, _REGISTRY_MTIME
     _REGISTRY_CACHE = None
     _REGISTRY_MTIME = 0.0
@@ -34,9 +41,12 @@ def clear_registry_cache() -> None:
 
 def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]:
     """
-    Загружает актуальный список студентов с in-memory кэшированием по mtime.
+    Загружает актуальный список студентов группы с кэшированием в RAM по mtime.
 
-    Исключает дисковый I/O на каждый callback, возвращая срез из RAM.
+    Исключает дисковый I/O на каждый входящий запрос или команду, возвращая
+    кэшированный срез из памяти при неизменном файле birthdays.json.
+
+    Возвращает список словарей с данными студентов группы.
     """
     global _REGISTRY_CACHE, _REGISTRY_MTIME
     try:
@@ -52,10 +62,12 @@ def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]
 
 def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None:
     """
-    Ищет студента в реестре по его сохраненному Telegram ID.
+    Ищет студента в реестре группы по сохраненному числовому Telegram ID.
 
-    :param user_id: Числовой ID пользователя в Telegram
-    :return: Словарь с данными студента или None
+    Используется фильтрами авторизации для мгновенного сопоставления сессии Telegram
+    с конкретной записью в академическом списке группы.
+
+    Возвращает словарь с профилем студента или None, если ID не привязан.
     """
     registry = load_classmates_registry()
     for student in registry:
@@ -66,10 +78,12 @@ def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None:
 
 def find_unregistered_by_username(username: str) -> dict[str, Any] | None:
     """
-    Ищет студента по юзернейму, у которого еще не зафиксирован tg_id (None).
+    Ищет запись студента по юзернейму, у которой еще не зафиксирован tg_id.
 
-    :param username: Юзернейм пользователя без префикса @
-    :return: Словарь с данными студента или None
+    Позволяет определить студента при первом запуске бота по совпадению @username
+    из академического реестра до момента фиксации числового ID.
+
+    Возвращает словарь студента или None, если совпадение не найдено или уже зарегистрировано.
     """
     clean = username.lstrip("@").lower()
     registry = load_classmates_registry()
@@ -80,46 +94,71 @@ def find_unregistered_by_username(username: str) -> dict[str, Any] | None:
     return None
 
 
-def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None:
+def _find_unregistered_student(registry: list[dict[str, Any]], clean_username: str) -> dict[str, Any] | None:
     """
-    Атомарно фиксирует Telegram ID студента в birthdays.json и кэше.
+    Ищет неподтвержденную запись студента в переданном списке реестра.
 
-    Выполняется разово при первой авторизации по совпадению юзернейма.
+    Изолирует линейный поиск по юзернейму для соблюдения лимита длины функции.
+
+    Возвращает ссылку на словарь студента или None.
     """
-    registry = load_classmates_registry()
-    updated_student = None
     for student in registry:
         uname = student.get("username")
         if uname and uname.lower() == clean_username and student.get("tg_id") is None:
-            student["tg_id"] = tg_id
-            updated_student = student
-            break
-    if updated_student:
+            return student
+    return None
+
+
+def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None:
+    """
+    Атомарно фиксирует Telegram ID студента в реестре birthdays.json и кэше.
+
+    Выполняется разово при первой авторизации по совпадению юзернейма, навсегда
+    закрепляя аппаратный Telegram ID за профилем одногруппника.
+
+    Возвращает обновленный словарь студента или None, если запись не найдена.
+    """
+    registry = load_classmates_registry()
+    updated = _find_unregistered_student(registry, clean_username)
+    if updated:
+        updated["tg_id"] = tg_id
         sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
         clear_registry_cache()
         add_user_to_cache(clean_username, tg_id)
-        log.info(
-            f"🎉 Разовая фиксация ID: {updated_student['full_name']} "
-            f"(@{clean_username}) -> tg_id={tg_id}"
-        )
-    return updated_student
+        log.info(f"🎉 Разовая фиксация ID: {updated['full_name']} (@{clean_username}) -> tg_id={tg_id}")
+    return updated
+
+
+def _find_student_by_fullname(registry: list[dict[str, Any]], target_clean: str) -> dict[str, Any] | None:
+    """
+    Ищет запись студента в реестре по нормализованному ФИО.
+
+    Вспомогательная функция для ручной привязки аккаунтов без юзернейма.
+
+    Возвращает словарь студента или None.
+    """
+    for student in registry:
+        if student.get("full_name", "").strip().lower() == target_clean:
+            return student
+    return None
 
 
 def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
-    """Привязывает Telegram ID к студенту по ФИО для студентов без username."""
+    """
+    Привязывает Telegram ID к студенту по полному ФИО (для пользователей без @username).
+
+    Позволяет администраторам связывать профили студентов, не имеющих публичного
+    юзернейма в Telegram, с сохранением в JSON и локальном кэше.
+
+    Возвращает обновленный профиль студента или None, если ФИО не найдено.
+    """
     registry = load_classmates_registry()
-    target_clean = full_name.strip().lower()
-    updated = None
-    for student in registry:
-        if student.get("full_name", "").strip().lower() == target_clean:
-            student["tg_id"] = tg_id
-            updated = student
-            break
+    updated = _find_student_by_fullname(registry, full_name.strip().lower())
     if updated:
+        updated["tg_id"] = tg_id
         sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
         clear_registry_cache()
-        uname = updated.get("username")
-        if uname:
+        if uname := updated.get("username"):
             add_user_to_cache(uname.lstrip("@").lower(), tg_id)
         log.info(f"Ручная привязка ID: {updated['full_name']} -> tg_id={tg_id}")
     return updated
@@ -127,10 +166,12 @@ def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
 
 def is_authorized_user(user: User | None) -> bool:
     """
-    Проверяет, авторизован ли пользователь (Администратор или студент с ID).
+    Проверяет наличие прав доступа к функционалу бота у входящего пользователя.
 
-    :param user: Экземпляр aiogram User
-    :return: True, если доступ разрешен
+    Предоставляет доступ главному администратору (ALLOWED_USER_ID) и студентам,
+    чей числовой tg_id успешно сопоставлен с реестром группы.
+
+    Возвращает True, если пользователь авторизован, иначе False.
     """
     if not user:
         return False
@@ -141,10 +182,12 @@ def is_authorized_user(user: User | None) -> bool:
 
 def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | None]:
     """
-    Основная логика аутентификации пользователя при входе в бота.
+    Выполняет комплексную проверку статуса авторизации входящего пользователя.
 
-    Политикой Варианта А разрешен доступ только проверенным студентам
-    с подтвержденным tg_id или главному администратору.
+    Определяет права доступа: авторизован ли пользователь, требуется ли первичная
+    привязка и возвращает профиль одногруппника при наличии.
+
+    Возвращает кортеж (is_authorized, is_first_time, student_dict).
     """
     if not user:
         return False, False, None
@@ -154,4 +197,5 @@ def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | N
     if existing:
         return True, False, existing
     return False, False, None
+
 

@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`ApiKeyAuthInterceptor._abort_unauthenticated`](#apikeyauthinterceptor_abort_unauthenticated) | Method | L35–L36 | `Any` | Executes core domain logic for `_abort_unauthenticated`... |
-| [`ApiKeyAuthInterceptor.intercept_service`](#apikeyauthinterceptorintercept_service) | Method | L38–L47 | `grpc.RpcMethodHandler` | Executes core domain logic for `intercept_service`. |
-| [`_register_servicers`](#_register_servicers) | Function | L50–L54 | `None` | Executes core domain logic for `_register_servicers`. |
-| [`create_grpc_server`](#create_grpc_server) | Function | L57–L70 | `grpc.aio.Server` | Initializes and constructs a new instance of `create_gr... |
-| [`start_grpc_server`](#start_grpc_server) | Function | L73–L78 | `None` | Executes core domain logic for `start_grpc_server`. |
-| [`stop_grpc_server`](#stop_grpc_server) | Function | L81–L86 | `None` | Executes core domain logic for `stop_grpc_server`. |
+| [`ApiKeyAuthInterceptor._abort_unauthenticated`](#apikeyauthinterceptor_abort_unauthenticated) | Method | L34–L40 | `Any` | Executes core domain logic for `_abort_unauthenticated`... |
+| [`ApiKeyAuthInterceptor.intercept_service`](#apikeyauthinterceptorintercept_service) | Method | L42–L60 | `grpc.RpcMethodHandler` | Executes core domain logic for `intercept_service`. |
+| [`_register_servicers`](#_register_servicers) | Function | L63–L73 | `None` | Executes core domain logic for `_register_servicers`. |
+| [`create_grpc_server`](#create_grpc_server) | Function | L76–L97 | `grpc.aio.Server` | Initializes and constructs a new instance of `create_gr... |
+| [`start_grpc_server`](#start_grpc_server) | Function | L100–L112 | `None` | Executes core domain logic for `start_grpc_server`. |
+| [`stop_grpc_server`](#stop_grpc_server) | Function | L115–L126 | `None` | Executes core domain logic for `stop_grpc_server`. |
 
 ---
 
@@ -41,7 +41,7 @@ Encapsulates domain entities and data transfer logic for `ApiKeyAuthInterceptor`
 async def _abort_unauthenticated(_req: Any, context: grpc.aio.ServicerContext) -> Any
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L35-L36`](../../api/grpc/server.py#L35-L36)
+- **Source Reference**: [`api/grpc/server.py#L34-L40`](../../api/grpc/server.py#L34-L40)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -75,7 +75,7 @@ result = await _abort_unauthenticated(_req=..., context=...)
 async def intercept_service( self, continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]], handler_call_details: grpc.HandlerCallDetails, ) -> grpc.RpcMethodHandler
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L38-L47`](../../api/grpc/server.py#L38-L47)
+- **Source Reference**: [`api/grpc/server.py#L42-L60`](../../api/grpc/server.py#L42-L60)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `grpc.RpcMethodHandler`
 
@@ -109,7 +109,7 @@ result = await intercept_service(continuation=..., handler_call_details=...)
 def _register_servicers(server: grpc.aio.Server) -> None
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L50-L54`](../../api/grpc/server.py#L50-L54)
+- **Source Reference**: [`api/grpc/server.py#L63-L73`](../../api/grpc/server.py#L63-L73)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -142,7 +142,7 @@ result = _register_servicers(server=...)
 def create_grpc_server() -> grpc.aio.Server
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L57-L70`](../../api/grpc/server.py#L57-L70)
+- **Source Reference**: [`api/grpc/server.py#L76-L97`](../../api/grpc/server.py#L76-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `grpc.aio.Server`
 
@@ -173,7 +173,7 @@ result = create_grpc_server()
 async def start_grpc_server(server: grpc.aio.Server, host: str, port: int) -> None
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L73-L78`](../../api/grpc/server.py#L73-L78)
+- **Source Reference**: [`api/grpc/server.py#L100-L112`](../../api/grpc/server.py#L100-L112)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -208,7 +208,7 @@ result = await start_grpc_server(server=..., host=..., port=...)
 async def stop_grpc_server(server: grpc.aio.Server | None, grace: float = 5.0) -> None
 ```
 
-- **Source Reference**: [`api/grpc/server.py#L81-L86`](../../api/grpc/server.py#L81-L86)
+- **Source Reference**: [`api/grpc/server.py#L115-L126`](../../api/grpc/server.py#L115-L126)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

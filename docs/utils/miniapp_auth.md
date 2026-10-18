@@ -21,12 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_data_check_string`](#_build_data_check_string) | Function | L23–L28 | `str` | Executes core domain logic for `_build_data_check_strin... |
-| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L31–L34 | `str` | Executes core domain logic for `_compute_init_data_hash... |
-| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L37–L44 | `bool` | Executes core domain logic for `_is_auth_date_valid`. |
-| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L47–L69 | `dict[str, Any] | None` | Validates architectural invariants and constraints for ... |
-| [`generate_tester_session`](#generate_tester_session) | Function | L72–L77 | `str` | Executes core domain logic for `generate_tester_session... |
-| [`verify_tester_session`](#verify_tester_session) | Function | L80–L99 | `int | None` | Executes core domain logic for `verify_tester_session`. |
+| [`_build_data_check_string`](#_build_data_check_string) | Function | L23–L35 | `str` | Executes core domain logic for `_build_data_check_strin... |
+| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L38–L48 | `str` | Executes core domain logic for `_compute_init_data_hash... |
+| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L51–L65 | `bool` | Executes core domain logic for `_is_auth_date_valid`. |
+| [`_extract_user_payload`](#_extract_user_payload) | Function | L68–L81 | `dict[str, Any] | None` | Executes core domain logic for `_extract_user_payload`. |
+| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L84–L103 | `dict[str, Any] | None` | Validates architectural invariants and constraints for ... |
+| [`generate_tester_session`](#generate_tester_session) | Function | L106–L118 | `str` | Executes core domain logic for `generate_tester_session... |
+| [`verify_tester_session`](#verify_tester_session) | Function | L121–L142 | `int | None` | Executes core domain logic for `verify_tester_session`. |
 
 ---
 
@@ -37,7 +38,7 @@ graph LR
 def _build_data_check_string(parsed_data: dict[str, str]) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L23-L28`](../../utils/miniapp_auth.py#L23-L28)
+- **Source Reference**: [`utils/miniapp_auth.py#L23-L35`](../../utils/miniapp_auth.py#L23-L35)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -70,7 +71,7 @@ result = _build_data_check_string(parsed_data=...)
 def _compute_init_data_hash(data_check_str: str) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L31-L34`](../../utils/miniapp_auth.py#L31-L34)
+- **Source Reference**: [`utils/miniapp_auth.py#L38-L48`](../../utils/miniapp_auth.py#L38-L48)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -103,7 +104,7 @@ result = _compute_init_data_hash(data_check_str=...)
 def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> bool
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L37-L44`](../../utils/miniapp_auth.py#L37-L44)
+- **Source Reference**: [`utils/miniapp_auth.py#L51-L65`](../../utils/miniapp_auth.py#L51-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -132,12 +133,45 @@ result = _is_auth_date_valid(auth_date_str=..., max_age=...)
 
 ---
 
+### `_extract_user_payload`
+```python
+def _extract_user_payload(raw_json: str) -> dict[str, Any] | None
+```
+
+- **Source Reference**: [`utils/miniapp_auth.py#L68-L81`](../../utils/miniapp_auth.py#L68-L81)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_extract_user_payload`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw_json` | `str` | Yes | Parameter `raw_json` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from utils.miniapp_auth import _extract_user_payload
+
+# Execute call
+result = _extract_user_payload(raw_json=...)
+```
+
+---
+
 ### `validate_telegram_init_data`
 ```python
 def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L47-L69`](../../utils/miniapp_auth.py#L47-L69)
+- **Source Reference**: [`utils/miniapp_auth.py#L84-L103`](../../utils/miniapp_auth.py#L84-L103)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -153,7 +187,7 @@ Validates architectural invariants and constraints for `validate_telegram_init_d
 - Emits structured telemetry events to system logging subsystem.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -170,7 +204,7 @@ result = validate_telegram_init_data(init_data=...)
 def generate_tester_session(user_id: int) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L72-L77`](../../utils/miniapp_auth.py#L72-L77)
+- **Source Reference**: [`utils/miniapp_auth.py#L106-L118`](../../utils/miniapp_auth.py#L106-L118)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -203,7 +237,7 @@ result = generate_tester_session(user_id=...)
 def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> int | None
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L80-L99`](../../utils/miniapp_auth.py#L80-L99)
+- **Source Reference**: [`utils/miniapp_auth.py#L121-L142`](../../utils/miniapp_auth.py#L121-L142)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 

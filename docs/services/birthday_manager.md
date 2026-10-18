@@ -21,39 +21,75 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`calculate_days_and_age`](#calculate_days_and_age) | Function | L48–L67 | `dict[str, Any]` | Executes core domain logic for `calculate_days_and_age`... |
-| [`format_person_tag`](#format_person_tag) | Function | L78–L89 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_days_left_badge`](#format_days_left_badge) | Function | L92–L108 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_today_block`](#format_today_block) | Function | L111–L122 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`format_age_badge`](#format_age_badge) | Function | L125–L137 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_upcoming_block`](#format_upcoming_block) | Function | L140–L159 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`season_sort_key`](#season_sort_key) | Function | L162–L166 | `int` | Executes core domain logic for `season_sort_key`. |
-| [`format_season_block`](#format_season_block) | Function | L169–L185 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`format_birthday_registry_text`](#format_birthday_registry_text) | Function | L188–L204 | `str` | Formats message payload and presentation markup for `fo... |
-| [`pick_unique_wish`](#pick_unique_wish) | Function | L207–L221 | `str` | Executes core domain logic for `pick_unique_wish`. |
-| [`get_person_mention`](#get_person_mention) | Function | L224–L234 | `str` | Retrieves and resolves domain data for `get_person_ment... |
-| [`format_starosta_block`](#format_starosta_block) | Function | L237–L244 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_congrats_message`](#format_congrats_message) | Function | L247–L264 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_send_congrats_telegram`](#_send_congrats_telegram) | Function | L267–L279 | `None` | Executes core domain logic for `_send_congrats_telegram... |
-| [`send_congrats_for_item`](#send_congrats_for_item) | Function | L282–L294 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`is_morning_congrats_time`](#is_morning_congrats_time) | Function | L297–L299 | `bool` | Executes core domain logic for `is_morning_congrats_tim... |
-| [`check_and_send_birthday_congratulations`](#check_and_send_birthday_congratulations) | Function | L302–L311 | `None` | Executes core domain logic for `check_and_send_birthday... |
-| [`_edit_existing_birthday_message`](#_edit_existing_birthday_message) | Function | L314–L324 | `bool` | Executes core domain logic for `_edit_existing_birthday... |
-| [`_create_new_birthday_message`](#_create_new_birthday_message) | Function | L327–L342 | `bool` | Executes core domain logic for `_create_new_birthday_me... |
-| [`update_birthday_pinned_message`](#update_birthday_pinned_message) | Function | L345–L351 | `bool` | Synchronizes and updates domain state for `update_birth... |
-| [`sync_birthdays_topic`](#sync_birthdays_topic) | Function | L354–L366 | `bool` | Executes core domain logic for `sync_birthdays_topic`. |
-| [`birthday_sync_loop`](#birthday_sync_loop) | Function | L369–L378 | `None` | Executes core domain logic for `birthday_sync_loop`. |
+| [`_compute_next_birthday`](#_compute_next_birthday) | Function | L47–L68 | `tuple[int, bool, int]` | Executes core domain logic for `_compute_next_birthday`... |
+| [`calculate_days_and_age`](#calculate_days_and_age) | Function | L71–L82 | `dict[str, Any]` | Executes core domain logic for `calculate_days_and_age`... |
+| [`format_person_tag`](#format_person_tag) | Function | L85–L101 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_days_left_badge`](#format_days_left_badge) | Function | L104–L124 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_today_block`](#format_today_block) | Function | L127–L142 | `list[str]` | Formats message payload and presentation markup for `fo... |
+| [`format_age_badge`](#format_age_badge) | Function | L145–L160 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_upcoming_block`](#format_upcoming_block) | Function | L163–L186 | `list[str]` | Formats message payload and presentation markup for `fo... |
+| [`season_sort_key`](#season_sort_key) | Function | L189–L198 | `int` | Executes core domain logic for `season_sort_key`. |
+| [`format_season_block`](#format_season_block) | Function | L201–L220 | `list[str]` | Formats message payload and presentation markup for `fo... |
+| [`format_birthday_registry_text`](#format_birthday_registry_text) | Function | L223–L242 | `str` | Formats message payload and presentation markup for `fo... |
+| [`pick_unique_wish`](#pick_unique_wish) | Function | L246–L267 | `str` | Executes core domain logic for `pick_unique_wish`. |
+| [`get_person_mention`](#get_person_mention) | Function | L270–L285 | `str` | Retrieves and resolves domain data for `get_person_ment... |
+| [`format_starosta_block`](#format_starosta_block) | Function | L288–L302 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_congrats_message`](#format_congrats_message) | Function | L305–L329 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_send_congrats_telegram`](#_send_congrats_telegram) | Function | L332–L351 | `None` | Executes core domain logic for `_send_congrats_telegram... |
+| [`send_congrats_for_item`](#send_congrats_for_item) | Function | L354–L373 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`is_morning_congrats_time`](#is_morning_congrats_time) | Function | L376–L384 | `bool` | Executes core domain logic for `is_morning_congrats_tim... |
+| [`check_and_send_birthday_congratulations`](#check_and_send_birthday_congratulations) | Function | L387–L403 | `None` | Executes core domain logic for `check_and_send_birthday... |
+| [`_edit_existing_birthday_message`](#_edit_existing_birthday_message) | Function | L406–L423 | `bool` | Executes core domain logic for `_edit_existing_birthday... |
+| [`_create_new_birthday_message`](#_create_new_birthday_message) | Function | L426–L448 | `bool` | Executes core domain logic for `_create_new_birthday_me... |
+| [`update_birthday_pinned_message`](#update_birthday_pinned_message) | Function | L451–L464 | `bool` | Synchronizes and updates domain state for `update_birth... |
+| [`sync_birthdays_topic`](#sync_birthdays_topic) | Function | L467–L486 | `bool` | Executes core domain logic for `sync_birthdays_topic`. |
+| [`birthday_sync_loop`](#birthday_sync_loop) | Function | L489–L505 | `None` | Executes core domain logic for `birthday_sync_loop`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_compute_next_birthday`
+```python
+def _compute_next_birthday(today: date, b_day: int, b_month: int) -> tuple[int, bool, int]
+```
+
+- **Source Reference**: [`services/birthday_manager.py#L47-L68`](../../services/birthday_manager.py#L47-L68)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[int, bool, int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_compute_next_birthday`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `today` | `date` | Yes | Parameter `today` of type `date`. |
+| `b_day` | `int` | Yes | Parameter `b_day` of type `int`. |
+| `b_month` | `int` | Yes | Parameter `b_month` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.birthday_manager import _compute_next_birthday
+
+# Execute call
+result = _compute_next_birthday(today=..., b_day=..., b_month=...)
+```
+
+---
 
 ### `calculate_days_and_age`
 ```python
 def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L48-L67`](../../services/birthday_manager.py#L48-L67)
+- **Source Reference**: [`services/birthday_manager.py#L71-L82`](../../services/birthday_manager.py#L71-L82)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -70,7 +106,7 @@ Executes core domain logic for `calculate_days_and_age`.
 - Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -87,7 +123,7 @@ result = calculate_days_and_age(item=..., today=...)
 def format_person_tag(item: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L78-L89`](../../services/birthday_manager.py#L78-L89)
+- **Source Reference**: [`services/birthday_manager.py#L85-L101`](../../services/birthday_manager.py#L85-L101)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -120,7 +156,7 @@ result = format_person_tag(item=...)
 def format_days_left_badge(days: int) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L92-L108`](../../services/birthday_manager.py#L92-L108)
+- **Source Reference**: [`services/birthday_manager.py#L104-L124`](../../services/birthday_manager.py#L104-L124)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -153,7 +189,7 @@ result = format_days_left_badge(days=...)
 def format_today_block(today_items: list[dict[str, Any]]) -> list[str]
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L111-L122`](../../services/birthday_manager.py#L111-L122)
+- **Source Reference**: [`services/birthday_manager.py#L127-L142`](../../services/birthday_manager.py#L127-L142)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
@@ -186,7 +222,7 @@ result = format_today_block(today_items=...)
 def format_age_badge(age: int) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L125-L137`](../../services/birthday_manager.py#L125-L137)
+- **Source Reference**: [`services/birthday_manager.py#L145-L160`](../../services/birthday_manager.py#L145-L160)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -219,7 +255,7 @@ result = format_age_badge(age=...)
 def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L140-L159`](../../services/birthday_manager.py#L140-L159)
+- **Source Reference**: [`services/birthday_manager.py#L163-L186`](../../services/birthday_manager.py#L163-L186)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
@@ -252,7 +288,7 @@ result = format_upcoming_block(items=...)
 def season_sort_key(item: dict[str, Any], months: list[int]) -> int
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L162-L166`](../../services/birthday_manager.py#L162-L166)
+- **Source Reference**: [`services/birthday_manager.py#L189-L198`](../../services/birthday_manager.py#L189-L198)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -286,7 +322,7 @@ result = season_sort_key(item=..., months=...)
 def format_season_block(title: str, months: list[int], all_items: list[dict[str, Any]]) -> list[str]
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L169-L185`](../../services/birthday_manager.py#L169-L185)
+- **Source Reference**: [`services/birthday_manager.py#L201-L220`](../../services/birthday_manager.py#L201-L220)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
@@ -321,7 +357,7 @@ result = format_season_block(title=..., months=..., all_items=...)
 def format_birthday_registry_text(items: list[dict[str, Any]]) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L188-L204`](../../services/birthday_manager.py#L188-L204)
+- **Source Reference**: [`services/birthday_manager.py#L223-L242`](../../services/birthday_manager.py#L223-L242)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -354,7 +390,7 @@ result = format_birthday_registry_text(items=...)
 def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HISTORY_FILE) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L207-L221`](../../services/birthday_manager.py#L207-L221)
+- **Source Reference**: [`services/birthday_manager.py#L246-L267`](../../services/birthday_manager.py#L246-L267)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -389,7 +425,7 @@ result = pick_unique_wish(person_key=..., wishes=..., history_file=...)
 def get_person_mention(item: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L224-L234`](../../services/birthday_manager.py#L224-L234)
+- **Source Reference**: [`services/birthday_manager.py#L270-L285`](../../services/birthday_manager.py#L270-L285)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -422,7 +458,7 @@ result = get_person_mention(item=...)
 def format_starosta_block(starosta_text: str | None) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L237-L244`](../../services/birthday_manager.py#L237-L244)
+- **Source Reference**: [`services/birthday_manager.py#L288-L302`](../../services/birthday_manager.py#L288-L302)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -455,7 +491,7 @@ result = format_starosta_block(starosta_text=...)
 def format_congrats_message( item: dict[str, Any], wish_text: str, starosta_text: str | None = None ) -> str
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L247-L264`](../../services/birthday_manager.py#L247-L264)
+- **Source Reference**: [`services/birthday_manager.py#L305-L329`](../../services/birthday_manager.py#L305-L329)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -490,7 +526,7 @@ result = format_congrats_message(item=..., wish_text=..., starosta_text=...)
 async def _send_congrats_telegram( text: str, person_key: str, key: str, state: dict[str, bool] ) -> None
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L267-L279`](../../services/birthday_manager.py#L267-L279)
+- **Source Reference**: [`services/birthday_manager.py#L332-L351`](../../services/birthday_manager.py#L332-L351)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -526,7 +562,7 @@ result = await _send_congrats_telegram(text=..., person_key=..., key=...)
 async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L282-L294`](../../services/birthday_manager.py#L282-L294)
+- **Source Reference**: [`services/birthday_manager.py#L354-L373`](../../services/birthday_manager.py#L354-L373)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -560,7 +596,7 @@ result = await send_congrats_for_item(item=..., today_str=...)
 def is_morning_congrats_time(now_dt: datetime) -> bool
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L297-L299`](../../services/birthday_manager.py#L297-L299)
+- **Source Reference**: [`services/birthday_manager.py#L376-L384`](../../services/birthday_manager.py#L376-L384)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -593,7 +629,7 @@ result = is_morning_congrats_time(now_dt=...)
 async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], today: date) -> None
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L302-L311`](../../services/birthday_manager.py#L302-L311)
+- **Source Reference**: [`services/birthday_manager.py#L387-L403`](../../services/birthday_manager.py#L387-L403)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -627,7 +663,7 @@ result = await check_and_send_birthday_congratulations(items=..., today=...)
 async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L314-L324`](../../services/birthday_manager.py#L314-L324)
+- **Source Reference**: [`services/birthday_manager.py#L406-L423`](../../services/birthday_manager.py#L406-L423)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -661,7 +697,7 @@ result = await _edit_existing_birthday_message(msg_id=..., text=...)
 async def _create_new_birthday_message(text: str) -> bool
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L327-L342`](../../services/birthday_manager.py#L327-L342)
+- **Source Reference**: [`services/birthday_manager.py#L426-L448`](../../services/birthday_manager.py#L426-L448)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -694,7 +730,7 @@ result = await _create_new_birthday_message(text=...)
 async def update_birthday_pinned_message(text: str) -> bool
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L345-L351`](../../services/birthday_manager.py#L345-L351)
+- **Source Reference**: [`services/birthday_manager.py#L451-L464`](../../services/birthday_manager.py#L451-L464)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -727,7 +763,7 @@ result = await update_birthday_pinned_message(text=...)
 async def sync_birthdays_topic() -> bool
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L354-L366`](../../services/birthday_manager.py#L354-L366)
+- **Source Reference**: [`services/birthday_manager.py#L467-L486`](../../services/birthday_manager.py#L467-L486)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -758,7 +794,7 @@ result = await sync_birthdays_topic()
 async def birthday_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/birthday_manager.py#L369-L378`](../../services/birthday_manager.py#L369-L378)
+- **Source Reference**: [`services/birthday_manager.py#L489-L505`](../../services/birthday_manager.py#L489-L505)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

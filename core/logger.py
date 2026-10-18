@@ -18,15 +18,29 @@ BACKUP_LOG_COUNT = LOG_BACKUP_COUNT
 
 
 def _create_formatter() -> logging.Formatter:
-    """Создает единый форматтер сообщений для консоли и файла."""
+    """
+    Создает унифицированный форматтер строковых записей журнала событий.
+
+    Обеспечивает консистентный формат таймстемпов, уровней логирования и имени
+    подсистемы для удобного парсинга в консоли и grep-фильтрации файлов.
+
+    Возвращает настроенный экземпляр logging.Formatter.
+    """
     return logging.Formatter(
         "[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
 
 def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandler:
-    """Создает консольный хэндлер со стандартным потоком вывода."""
+    """
+    Создает потоковый обработчик для вывода сообщений журнала в стандартный поток stdout.
+
+    Позволяет Docker контейнерам перехватывать логи в реальном времени через docker logs
+    с фильтрацией уровня INFO и выше.
+
+    Возвращает сконфигурированный экземпляр logging.StreamHandler.
+    """
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     handler.setLevel(logging.INFO)
@@ -35,16 +49,19 @@ def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandle
 
 def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler:
     """
-    Создает ротируемый файловый хэндлер UTF-8 с лимитом размера.
+    Создает ротируемый файловый обработчик журналов с ограничением размера.
 
-    Защищает диск сервера от бесконтрольного роста логов.
+    Защищает дисковое пространство сервера от переполнения при активной отладке,
+    сохраняя до 5 ротированных архивных файлов по 10 МБ в кодировке UTF-8.
+
+    Возвращает экземпляр RotatingFileHandler для файла logs/bot.log.
     """
     os.makedirs("logs", exist_ok=True)
     handler = RotatingFileHandler(
         "logs/bot.log",
         maxBytes=MAX_LOG_BYTES,
         backupCount=BACKUP_LOG_COUNT,
-        encoding="utf-8"
+        encoding="utf-8",
     )
     handler.setFormatter(formatter)
     handler.setLevel(logging.DEBUG)
@@ -53,10 +70,12 @@ def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileH
 
 def get_logger(name: str) -> logging.Logger:
     """
-    Создает и настраивает логгер для заданной подсистемы.
+    Возвращает синглтон-экземпляр логгера для указанной подсистемы.
 
-    :param name: Смысловое название компонента (напр. 'schedule_parser')
-    :return: Экземпляр logging.Logger
+    Проверяет наличие уже зарегистрированных хэндлеров во избежание дублирования записей
+    в логе при повторных импортах модуля в рамках одного процесса.
+
+    Возвращает настроенный логгер с потоковым и ротируемым файловым обработчиками.
     """
     logger = logging.getLogger(name)
     if logger.handlers:

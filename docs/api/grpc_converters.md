@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`lesson_to_proto`](#lesson_to_proto) | Function | L16–L32 | `LessonProto` | Executes core domain logic for `lesson_to_proto`. |
-| [`proto_to_lesson`](#proto_to_lesson) | Function | L35–L51 | `Lesson` | Executes core domain logic for `proto_to_lesson`. |
-| [`week_days_to_proto`](#week_days_to_proto) | Function | L54–L60 | `list[WeekDayProto]` | Executes core domain logic for `week_days_to_proto`. |
-| [`exam_item_to_proto`](#exam_item_to_proto) | Function | L63–L74 | `ExamItemProto` | Executes core domain logic for `exam_item_to_proto`. |
-| [`proto_to_exam_item`](#proto_to_exam_item) | Function | L77–L88 | `ExamItem` | Executes core domain logic for `proto_to_exam_item`. |
-| [`teachers_dict_to_proto`](#teachers_dict_to_proto) | Function | L91–L99 | `TeachersResponse` | Executes core domain logic for `teachers_dict_to_proto`... |
+| [`lesson_to_proto`](#lesson_to_proto) | Function | L17–L39 | `LessonProto` | Executes core domain logic for `lesson_to_proto`. |
+| [`proto_to_lesson`](#proto_to_lesson) | Function | L42–L64 | `Lesson` | Executes core domain logic for `proto_to_lesson`. |
+| [`week_days_to_proto`](#week_days_to_proto) | Function | L67–L81 | `list[WeekDayProto]` | Executes core domain logic for `week_days_to_proto`. |
+| [`exam_item_to_proto`](#exam_item_to_proto) | Function | L84–L101 | `ExamItemProto` | Executes core domain logic for `exam_item_to_proto`. |
+| [`proto_to_exam_item`](#proto_to_exam_item) | Function | L104–L121 | `ExamItem` | Executes core domain logic for `proto_to_exam_item`. |
+| [`teachers_dict_to_proto`](#teachers_dict_to_proto) | Function | L124–L140 | `TeachersResponse` | Executes core domain logic for `teachers_dict_to_proto`... |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 def lesson_to_proto(lesson: Lesson) -> LessonProto
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L16-L32`](../../api/grpc/converters.py#L16-L32)
+- **Source Reference**: [`api/grpc/converters.py#L17-L39`](../../api/grpc/converters.py#L17-L39)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `LessonProto`
 
@@ -70,7 +70,7 @@ result = lesson_to_proto(lesson=...)
 def proto_to_lesson(proto: LessonProto) -> Lesson
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L35-L51`](../../api/grpc/converters.py#L35-L51)
+- **Source Reference**: [`api/grpc/converters.py#L42-L64`](../../api/grpc/converters.py#L42-L64)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Lesson`
 
@@ -103,7 +103,7 @@ result = proto_to_lesson(proto=...)
 def week_days_to_proto(raw_days: list[tuple[date, list[Lesson]]]) -> list[WeekDayProto]
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L54-L60`](../../api/grpc/converters.py#L54-L60)
+- **Source Reference**: [`api/grpc/converters.py#L67-L81`](../../api/grpc/converters.py#L67-L81)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[WeekDayProto]`
 
@@ -136,7 +136,7 @@ result = week_days_to_proto(raw_days=...)
 def exam_item_to_proto(exam: ExamItem) -> ExamItemProto
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L63-L74`](../../api/grpc/converters.py#L63-L74)
+- **Source Reference**: [`api/grpc/converters.py#L84-L101`](../../api/grpc/converters.py#L84-L101)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ExamItemProto`
 
@@ -169,7 +169,7 @@ result = exam_item_to_proto(exam=...)
 def proto_to_exam_item(proto: ExamItemProto) -> ExamItem
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L77-L88`](../../api/grpc/converters.py#L77-L88)
+- **Source Reference**: [`api/grpc/converters.py#L104-L121`](../../api/grpc/converters.py#L104-L121)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ExamItem`
 
@@ -199,10 +199,10 @@ result = proto_to_exam_item(proto=...)
 
 ### `teachers_dict_to_proto`
 ```python
-def teachers_dict_to_proto(raw: dict[str, dict]) -> TeachersResponse
+def teachers_dict_to_proto(raw: dict[str, dict[str, Any]]) -> TeachersResponse
 ```
 
-- **Source Reference**: [`api/grpc/converters.py#L91-L99`](../../api/grpc/converters.py#L91-L99)
+- **Source Reference**: [`api/grpc/converters.py#L124-L140`](../../api/grpc/converters.py#L124-L140)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `TeachersResponse`
 
@@ -212,7 +212,7 @@ Executes core domain logic for `teachers_dict_to_proto`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `raw` | `dict[str, dict]` | Yes | Parameter `raw` of type `dict[str, dict]`. |
+| `raw` | `dict[str, dict[str, Any]]` | Yes | Parameter `raw` of type `dict[str, dict[str, Any]]`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.

@@ -21,14 +21,16 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`clear_registry_cache`](#clear_registry_cache) | Function | L28–L32 | `None` | Flushes and resets state for `clear_registry_cache`. |
-| [`load_classmates_registry`](#load_classmates_registry) | Function | L35–L50 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_registr... |
-| [`find_classmate_by_tg_id`](#find_classmate_by_tg_id) | Function | L53–L64 | `dict[str, Any] | None` | Executes core domain logic for `find_classmate_by_tg_id... |
-| [`find_unregistered_by_username`](#find_unregistered_by_username) | Function | L67–L80 | `dict[str, Any] | None` | Executes core domain logic for `find_unregistered_by_us... |
-| [`update_classmate_tg_id`](#update_classmate_tg_id) | Function | L83–L105 | `dict[str, Any] | None` | Synchronizes and updates domain state for `update_class... |
-| [`bind_student_tg_id`](#bind_student_tg_id) | Function | L108–L125 | `dict[str, Any] | None` | Executes core domain logic for `bind_student_tg_id`. |
-| [`is_authorized_user`](#is_authorized_user) | Function | L128–L139 | `bool` | Executes core domain logic for `is_authorized_user`. |
-| [`process_user_auth`](#process_user_auth) | Function | L142–L156 | `tuple[bool, bool, dict[str, Any] | None]` | Executes core domain logic for `process_user_auth`. |
+| [`clear_registry_cache`](#clear_registry_cache) | Function | L28–L39 | `None` | Flushes and resets state for `clear_registry_cache`. |
+| [`load_classmates_registry`](#load_classmates_registry) | Function | L42–L60 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_registr... |
+| [`find_classmate_by_tg_id`](#find_classmate_by_tg_id) | Function | L63–L76 | `dict[str, Any] | None` | Executes core domain logic for `find_classmate_by_tg_id... |
+| [`find_unregistered_by_username`](#find_unregistered_by_username) | Function | L79–L94 | `dict[str, Any] | None` | Executes core domain logic for `find_unregistered_by_us... |
+| [`_find_unregistered_student`](#_find_unregistered_student) | Function | L97–L109 | `dict[str, Any] | None` | Executes core domain logic for `_find_unregistered_stud... |
+| [`update_classmate_tg_id`](#update_classmate_tg_id) | Function | L112–L129 | `dict[str, Any] | None` | Synchronizes and updates domain state for `update_class... |
+| [`_find_student_by_fullname`](#_find_student_by_fullname) | Function | L132–L143 | `dict[str, Any] | None` | Executes core domain logic for `_find_student_by_fullna... |
+| [`bind_student_tg_id`](#bind_student_tg_id) | Function | L146–L164 | `dict[str, Any] | None` | Executes core domain logic for `bind_student_tg_id`. |
+| [`is_authorized_user`](#is_authorized_user) | Function | L167–L180 | `bool` | Executes core domain logic for `is_authorized_user`. |
+| [`process_user_auth`](#process_user_auth) | Function | L183–L199 | `tuple[bool, bool, dict[str, Any] | None]` | Executes core domain logic for `process_user_auth`. |
 
 ---
 
@@ -39,7 +41,7 @@ graph LR
 def clear_registry_cache() -> None
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L28-L32`](../../services/classmates_auth.py#L28-L32)
+- **Source Reference**: [`services/classmates_auth.py#L28-L39`](../../services/classmates_auth.py#L28-L39)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -70,7 +72,7 @@ result = clear_registry_cache()
 def load_classmates_registry(force_reload: bool = False) -> list[dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L35-L50`](../../services/classmates_auth.py#L35-L50)
+- **Source Reference**: [`services/classmates_auth.py#L42-L60`](../../services/classmates_auth.py#L42-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[dict[str, Any]]`
 
@@ -103,7 +105,7 @@ result = load_classmates_registry(force_reload=...)
 def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L53-L64`](../../services/classmates_auth.py#L53-L64)
+- **Source Reference**: [`services/classmates_auth.py#L63-L76`](../../services/classmates_auth.py#L63-L76)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -136,7 +138,7 @@ result = find_classmate_by_tg_id(user_id=...)
 def find_unregistered_by_username(username: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L67-L80`](../../services/classmates_auth.py#L67-L80)
+- **Source Reference**: [`services/classmates_auth.py#L79-L94`](../../services/classmates_auth.py#L79-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -164,12 +166,46 @@ result = find_unregistered_by_username(username=...)
 
 ---
 
+### `_find_unregistered_student`
+```python
+def _find_unregistered_student(registry: list[dict[str, Any]], clean_username: str) -> dict[str, Any] | None
+```
+
+- **Source Reference**: [`services/classmates_auth.py#L97-L109`](../../services/classmates_auth.py#L97-L109)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_find_unregistered_student`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `registry` | `list[dict[str, Any]]` | Yes | Parameter `registry` of type `list[dict[str, Any]]`. |
+| `clean_username` | `str` | Yes | Parameter `clean_username` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import _find_unregistered_student
+
+# Execute call
+result = _find_unregistered_student(registry=..., clean_username=...)
+```
+
+---
+
 ### `update_classmate_tg_id`
 ```python
 def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L83-L105`](../../services/classmates_auth.py#L83-L105)
+- **Source Reference**: [`services/classmates_auth.py#L112-L129`](../../services/classmates_auth.py#L112-L129)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -198,12 +234,46 @@ result = update_classmate_tg_id(clean_username=..., tg_id=...)
 
 ---
 
+### `_find_student_by_fullname`
+```python
+def _find_student_by_fullname(registry: list[dict[str, Any]], target_clean: str) -> dict[str, Any] | None
+```
+
+- **Source Reference**: [`services/classmates_auth.py#L132-L143`](../../services/classmates_auth.py#L132-L143)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, Any] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_find_student_by_fullname`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `registry` | `list[dict[str, Any]]` | Yes | Parameter `registry` of type `list[dict[str, Any]]`. |
+| `target_clean` | `str` | Yes | Parameter `target_clean` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.classmates_auth import _find_student_by_fullname
+
+# Execute call
+result = _find_student_by_fullname(registry=..., target_clean=...)
+```
+
+---
+
 ### `bind_student_tg_id`
 ```python
 def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L108-L125`](../../services/classmates_auth.py#L108-L125)
+- **Source Reference**: [`services/classmates_auth.py#L146-L164`](../../services/classmates_auth.py#L146-L164)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -237,7 +307,7 @@ result = bind_student_tg_id(full_name=..., tg_id=...)
 def is_authorized_user(user: User | None) -> bool
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L128-L139`](../../services/classmates_auth.py#L128-L139)
+- **Source Reference**: [`services/classmates_auth.py#L167-L180`](../../services/classmates_auth.py#L167-L180)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -270,7 +340,7 @@ result = is_authorized_user(user=...)
 def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | None]
 ```
 
-- **Source Reference**: [`services/classmates_auth.py#L142-L156`](../../services/classmates_auth.py#L142-L156)
+- **Source Reference**: [`services/classmates_auth.py#L183-L199`](../../services/classmates_auth.py#L183-L199)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[bool, bool, dict[str, Any] | None]`
 

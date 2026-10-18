@@ -1,11 +1,13 @@
 """
 Сервис быстрых операций с кэшем Redis.
 
-Отвечает за сохранение и извлечение кэшированных данных кнопок бота.
+Отвечает за сохранение и извлечение кэшированных данных кнопок бота, снимков расписания,
+очереди фонового решения домашних заданий и распределенных блокировок.
 """
 
 import json
 import time
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -14,6 +16,7 @@ from config import (
     HW_DLQ_KEY,
     HW_PROCESSING_KEY,
     HW_QUEUE_KEY,
+    LUA_RELEASE_LOCK,
     REDIS_CACHE_TTL_SECONDS,
     SNAPSHOT_KEY,
     SNAPSHOT_META_KEY,
@@ -27,10 +30,12 @@ log = get_logger("redis_cache")
 
 async def cache_get(key: str) -> str | None:
     """
-    Извлекает строковое значение из Redis по ключу.
+    Извлекает строковое значение из кэша Redis по ключу.
 
-    :param key: Ключ записи
-    :return: Строка или None
+    Предотвращает падение приложения при недоступности Redis, возвращая безопасный None
+    и логируя сбои с минимальным оверхедом на дебаг-уровне.
+
+    Возвращает строку со значением из кэша или None при промахе или ошибке.
     """
     try:
         client = await init_redis()
@@ -46,11 +51,12 @@ async def cache_get(key: str) -> str | None:
 
 async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None:
     """
-    Сохраняет строковое значение в Redis с опциональным TTL (сек).
+    Сохраняет строковое значение в Redis с настраиваемым временем жизни TTL.
 
-    :param key: Ключ записи
-    :param value: Сохраняемая строка
-    :param ttl: Время жизни в секундах (None / 0 для бессрочного)
+    Автоматически очищает старые записи по истечении TTL во избежание утечки
+    оперативной памяти сервера при длительной непрерывной работе бота.
+
+    Не возвращает значений; логирует ошибки записи в логгер.
     """
     try:
         client = await init_redis()
@@ -66,13 +72,12 @@ async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECO
 
 async def cache_flush(pattern: str = "sched:*") -> int:
     """
-    Безопасно удаляет из Redis только ключи расписания.
+    Выполняет безопасную точечную очистку ключей по заданному шаблону.
 
-    Используем scan_iter вместо flushdb, чтобы не затереть хэши
-    решённых ДЗ и антиспам счётчики пользователей.
+    Использует неблокирующий scan_iter вместо опасного flushdb, сохраняя
+    пользовательские сессии, антиспам-счетчики и очереди задач.
 
-    :param pattern: Паттерн удаляемых ключей
-    :return: Количество удалённых ключей
+    Возвращает количество успешно удаленных ключей из пространства Redis.
     """
     deleted = 0
     try:
@@ -89,10 +94,12 @@ async def cache_flush(pattern: str = "sched:*") -> int:
 
 async def is_message_processed(message_id: int) -> bool:
     """
-    Проверяет, было ли сообщение с ДЗ уже решено и отправлено ранее.
+    Проверяет, было ли сообщение с домашним заданием уже решено ранее.
 
-    :param message_id: Telegram ID сообщения
-    :return: True если решено, иначе False
+    Защищает от повторного запуска тяжелого нейросетевого инференса DeepSeek
+    при дублирующих кликах или пересылках одного и того же сообщения.
+
+    Возвращает True, если отметка найдена в кэше, иначе False.
     """
     key = f"hw_processed:{message_id}"
     val = await cache_get(key)
@@ -101,9 +108,12 @@ async def is_message_processed(message_id: int) -> bool:
 
 async def mark_message_processed(message_id: int) -> None:
     """
-    Отмечает сообщение с ДЗ как обработанное на 30 дней в Redis.
+    Помечает Telegram-сообщение как обработанное в Redis на 30 дней.
 
-    :param message_id: Telegram ID сообщения
+    Хранит признак решения с TTL 30 дней для гарантированного предотвращения
+    повторных решений в рамках активного учебного месяца.
+
+    Не возвращает значений; сохраняет ключ hw_processed:{message_id}.
     """
     key = f"hw_processed:{message_id}"
     await cache_set(key, "1", ttl=2592000)
@@ -111,11 +121,12 @@ async def mark_message_processed(message_id: int) -> None:
 
 async def check_user_rate_limit(user_id: int) -> bool:
     """
-    Проверяет лимит запросов пользователя (максимум 3 запроса в минуту).
+    Проверяет лимит запросов пользователя на решение ДЗ (не более 3 в минуту).
 
-    Для администратора (ALLOWED_USER_ID) лимиты полностью отключены.
-    :param user_id: Telegram ID пользователя
-    :return: True если лимит не превышен или пользователь — админ
+    Защищает API DeepSeek от исчерпания токенов и перегрузки очереди задач,
+    делая исключение только для администратора системы.
+
+    Возвращает True, если запрос разрешен, иначе False (троттлинг).
     """
     if user_id == ALLOWED_USER_ID:
         return True
@@ -134,10 +145,12 @@ async def check_user_rate_limit(user_id: int) -> bool:
 
 async def is_hash_processed(content_hash: str) -> bool:
     """
-    Проверяет, отправлялось ли аналогичное задание (хэш текста/картинки) в последние 24 часа.
+    Проверяет, решалось ли идентичное задание за последние 24 часа по SHA256-хэшу.
 
-    :param content_hash: SHA256 хэш контента
-    :return: True если такой контент уже решен
+    Позволяет мгновенно отсекать дубли картинок и текстовых задач от разных
+    одногруппников без лишних сетевых затрат.
+
+    Возвращает True, если хэш присутствует в кэше, иначе False.
     """
     key = f"hw_hash:{content_hash}"
     val = await cache_get(key)
@@ -146,9 +159,12 @@ async def is_hash_processed(content_hash: str) -> bool:
 
 async def mark_hash_processed(content_hash: str) -> None:
     """
-    Сохраняет хэш выполненного задания на 24 часа.
+    Сохраняет SHA256-хэш решенного задания в Redis на 24 часа.
 
-    :param content_hash: SHA256 хэш
+    Кэширует признак выполнения контента на одни сутки для дедупликации
+    запросов между студентами одной академической группы.
+
+    Не возвращает значений; устанавливает ключ hw_hash:{hash} с TTL 24ч.
     """
     key = f"hw_hash:{content_hash}"
     await cache_set(key, "1", ttl=86400)
@@ -156,10 +172,12 @@ async def mark_hash_processed(content_hash: str) -> None:
 
 async def push_hw_task(task_data: dict) -> bool:
     """
-    Помещает задачу на решение ДЗ в конец очереди Redis.
+    Добавляет сериализованную задачу на решение ДЗ в конец очереди Redis.
 
-    :param task_data: Словарь с параметрами сообщения и задания
-    :return: True в случае успешной вставки
+    Обеспечивает надежную буферизацию задач для воркера-решателя с гарантией
+    сохранения порядка поступления (FIFO).
+
+    Возвращает True в случае успешной вставки, False при сетевой ошибке.
     """
     try:
         client = await init_redis()
@@ -175,14 +193,18 @@ async def push_hw_task(task_data: dict) -> bool:
 
 
 async def pop_hw_task(timeout: int = 2) -> dict | None:
-    """Атомарно перемещает задачу из очереди в processing и возвращает словарь."""
+    """
+    Атомарно извлекает задачу из очереди и переносит в буфер processing.
+
+    Использует BLMOVE для защиты от потери задач при внезапном падении воркера
+    в момент обработки (паттерн Reliable Queue).
+
+    Возвращает десериализованный словарь задачи или None по таймауту.
+    """
     try:
         client = await init_redis()
         if client:
-            raw = await client.blmove(
-                HW_QUEUE_KEY, HW_PROCESSING_KEY,
-                timeout, "LEFT", "RIGHT"
-            )
+            raw = await client.blmove(HW_QUEUE_KEY, HW_PROCESSING_KEY, timeout, "LEFT", "RIGHT")
             return json.loads(raw) if raw else None
     except Exception as e:
         log.error(f"Ошибка извлечения задачи ДЗ из Redis: {e}")
@@ -190,7 +212,14 @@ async def pop_hw_task(timeout: int = 2) -> dict | None:
 
 
 async def ack_hw_task(task_data: dict) -> None:
-    """Удаляет завершенную задачу из processing очереди после успешного решения."""
+    """
+    Подтверждает успешное завершение задачи ДЗ и удаляет её из processing очереди.
+
+    Завершает транзакционный цикл обработки задачи воркером, подтверждая
+    доставку решения в целевой топик Telegram.
+
+    Не возвращает значений; удаляет один элемент из списка HW_PROCESSING_KEY.
+    """
     try:
         client = await init_redis()
         if client:
@@ -202,7 +231,14 @@ async def ack_hw_task(task_data: dict) -> None:
 
 
 async def recover_stale_hw_tasks() -> int:
-    """Возвращает зависшие задачи из processing обратно в очередь при старте."""
+    """
+    Возвращает зависшие задачи из буфера processing обратно в основную очередь.
+
+    Вызывается супервизором при старте контейнера, устраняя последствия
+    аварийного завершения предыдущего процесса воркера.
+
+    Возвращает количество успешно восстановленных задач.
+    """
     recovered = 0
     try:
         client = await init_redis()
@@ -217,7 +253,14 @@ async def recover_stale_hw_tasks() -> int:
 
 
 async def clear_hw_queue() -> int:
-    """Очищает основную и processing очереди задач ДЗ в Redis."""
+    """
+    Атомарно очищает основную и processing очереди задач решения ДЗ.
+
+    Сбрасывает скопившиеся и зависшие задачи при проведении тестов
+    или ручном вмешательстве администратора.
+
+    Возвращает количество удаленных структур ключей очередей.
+    """
     try:
         client = await init_redis()
         if client:
@@ -230,7 +273,14 @@ async def clear_hw_queue() -> int:
 
 
 async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -> None:
-    """Сохраняет отфильтрованный срез расписания группы и метаданные в Redis."""
+    """
+    Транзакционно сохраняет срез расписания и его метаданные через Redis Pipeline.
+
+    Гарантирует консистентность данных между телом расписания и метаинформацией
+    о времени актуализации даже при параллельных чтениях.
+
+    Не возвращает значений; логирует результат сохранения снимка.
+    """
     try:
         client = await init_redis()
         if client:
@@ -246,7 +296,14 @@ async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -
 
 
 async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
-    """Загружает сохраненный срез расписания и метаданные из Redis."""
+    """
+    Считывает сохраненный срез расписания и метаданные из постоянного кэша Redis.
+
+    Предоставляет резервную копию расписания при недоступности внешнего сервиса КТМУ,
+    обеспечивая бесперебойную отдачу данных клиентам.
+
+    Возвращает кортеж (словарь_расписания, словарь_метаданных) или (None, None).
+    """
     try:
         client = await init_redis()
         if client:
@@ -261,29 +318,64 @@ async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
 
 
 async def is_reminder_sent(rem_key: str) -> bool:
-    """Проверяет, было ли уже отправлено напоминание с данным ключом сегодня."""
+    """
+    Проверяет, отправлялось ли уведомление с указанным ключом в течение суток.
+
+    Используется шедулером утренних и предпарных напоминаний для предотвращения
+    повторного спама студентам при перезапусках процессов.
+
+    Возвращает True, если напоминание уже отослано, иначе False.
+    """
     val = await cache_get(f"rem:sent:{rem_key}")
     return val == "1"
 
 
 async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None:
-    """Отмечает напоминание как отправленное в Redis с суточным TTL."""
+    """
+    Фиксирует факт отправки напоминания в Redis с суточным временем жизни.
+
+    Устанавливает флаг rem:sent:{key} с автоматическим удалением через 24 часа
+    для корректного срабатывания на следующий день.
+
+    Не возвращает значений; сохраняет ключ с TTL.
+    """
     await cache_set(f"rem:sent:{rem_key}", "1", ttl=ttl)
 
 
 async def get_topic_state_redis(key: str = "topic:main_msg_id") -> int | None:
-    """Извлекает сохраненный ID сообщения топика из Redis."""
+    """
+    Извлекает сохраненный Telegram ID главного сообщения топика из Redis.
+
+    Позволяет боту и фоновым демонам обновлять единое закрепленное сообщение
+    с расписанием через edit_message вместо засорения чата новыми сообщениями.
+
+    Возвращает целочисленный ID сообщения или None при отсутствии записи.
+    """
     val = await cache_get(key)
     return int(val) if val and val.isdigit() else None
 
 
 async def set_topic_state_redis(val: int, key: str = "topic:main_msg_id") -> None:
-    """Сохраняет ID главного сообщения топика в Redis без экспирации."""
+    """
+    Сохраняет Telegram ID главного сообщения топика без ограничения по сроку жизни.
+
+    Фиксирует идентификатор корневого сообщения расписания для персистентного
+    обновления между днями недели и перезапусками сервиса.
+
+    Не возвращает значений; записывает значение в Redis без экспирации.
+    """
     await cache_set(key, str(val), ttl=0)
 
 
 async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int = 900) -> None:
-    """Регистрирует сообщение в ZSET для гарантированного удаления через delay_sec."""
+    """
+    Регистрирует временное служебное сообщение в ZSET для отложенного удаления.
+
+    Использует Sorted Set с таймстемпом удаления в качестве score, гарантируя
+    чистку информационного шума из топиков без блокировки активного потока.
+
+    Не возвращает значений; сохраняет запись в ключ TOPIC_CLEANUP_KEY.
+    """
     try:
         client = await init_redis()
         if client:
@@ -295,7 +387,14 @@ async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int
 
 
 async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]:
-    """Извлекает и удаляет из ZSET сообщения, чей срок хранения истёк."""
+    """
+    Извлекает и атомарно удаляет из ZSET все сообщения с истекшим сроком жизни.
+
+    Вызывается фоновым сборщиком мусора, предотвращая накопление устаревших
+    служебных сообщений в базе данных и чатах Telegram.
+
+    Возвращает список кортежей (chat_id, message_id) для физического удаления.
+    """
     results: list[tuple[int, int]] = []
     try:
         client = await init_redis()
@@ -310,23 +409,16 @@ async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]:
     return results
 
 
-LUA_RELEASE_LOCK = """
-if redis.call("get", KEYS[1]) == ARGV[1] then
-    return redis.call("del", KEYS[1])
-else
-    return 0
-end
-"""
-
-
 @asynccontextmanager
 async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
     """
-    Атомарный распределенный лок Redis с валидацией токена владельца (Lua).
+    Асинхронный контекстный менеджер распределенного замка с Lua-освобождением.
 
-    Предотвращает ошибочное удаление чужого лока при превышении TTL.
+    Генерирует уникальный UUID-токен владельца и освобождает замок через атомарный
+    Lua-скрипт, исключая случайное снятие чужого замка при превышении TTL.
+
+    Генерирует булево значение: True если замок захвачен, иначе False.
     """
-    import uuid
     client = await init_redis()
     token = str(uuid.uuid4())
     acquired = False
@@ -346,7 +438,14 @@ async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
 
 
 async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool:
-    """Возвращает упавшую задачу в очередь или отправляет в DLQ."""
+    """
+    Обрабатывает ошибку выполнения задачи ДЗ, отправляя её на повтор или в DLQ.
+
+    Инкрементирует счетчик попыток и при превышении лимита переносит задачу в
+    Dead Letter Queue (HW_DLQ_KEY) для последующего ручного анализа инцидента.
+
+    Возвращает True, если задача возвращена в очередь на retry, иначе False (DLQ).
+    """
     client = await init_redis()
     if not client:
         return False
@@ -361,6 +460,3 @@ async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool:
     await client.rpush(HW_DLQ_KEY, raw)
     log.error(f"❌ Задача ДЗ {task_data.get('message_id')} превысила {max_retries} попыток -> DLQ")
     return False
-
-
-

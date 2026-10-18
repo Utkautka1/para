@@ -33,15 +33,15 @@ def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
     """
     Объединяет инструкцию из подписи/текста реплая и основное задание.
 
-    Если студент отправил фото задания, а затем ответил на него текстом
-    'реши 2 вариант', объединяем оба сообщения в единый контекст для нейросети.
+    Если студент ответил на фото заданием 'реши 2 вариант', объединяет тексты.
+    Позволяет модели видеть и условие задачи, и конкретные пожелания студента.
 
     Возвращает объединённую строку промпта или пустую строку.
     """
+
     u_text = msg.text or msg.caption or ""
     t_text = target.caption or target.text or ""
 
-    # === Слияние текста реплая и исходного сообщения ===
     if u_text and t_text and u_text != t_text:
         return f"Инструкция: {u_text}\nЗадание: {t_text}"
 
@@ -52,11 +52,12 @@ def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool:
     """
     Проверяет, содержит ли сообщение запрос на решение учебной задачи.
 
-    'Голые' медиафайлы без промпта не берутся в обработку, чтобы бот не трогал
-    учебные материалы и конспекты, загружаемые в топик.
+    Отсекает флуд и короткие приветствия, проверяет наличие ключевых слов ДЗ.
+    'Голые' медиафайлы без промпта не берутся, чтобы не решать случайные картинки.
 
     Возвращает True, если текст похож на учебное задание, иначе False.
     """
+
     if not text:
         return False
 
@@ -65,11 +66,11 @@ def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool:
     if t in flood_words or len(t) < 4:
         return False
 
-    # === Поиск ключевых маркеров учебных заданий ===
     kw_list = [
         "реши", "вычисли", "найди", "доказать", "дз", "вариант", "задача",
         "задание", "номер", "№", "=", "+", "-", "?", "ответ"
     ]
+
     return any(kw in t for kw in kw_list) or len(t) >= 25
 
 
@@ -78,18 +79,17 @@ def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str |
     Извлекает идентификаторы и метаданные медиафайла (фото или документа).
 
     Проверяет сначала текущее сообщение, затем целевое (при реплае).
-    Для фотографий берёт последнее изображение списка с максимальным разрешением.
+    Для фотографий берет последнее изображение списка с максимальным разрешением.
 
     Возвращает кортеж: (file_id, unique_id, file_name, mime_type, file_size).
     """
+
     m = msg if (msg.photo or msg.document) else target
 
-    # === Обработка сжатого фото (Telegram PhotoSize) ===
     if m.photo:
         p = m.photo[-1]
         return p.file_id, p.file_unique_id, "image.jpg", "image/jpeg", p.file_size or 0
 
-    # === Обработка документа (DOCX, PDF, исходный файл) ===
     if m.document:
         d = m.document
         return d.file_id, d.file_unique_id, d.file_name or "doc", d.mime_type, d.file_size or 0
@@ -106,10 +106,11 @@ def compute_content_hash(text: str | None, unique_id: str | None) -> str:
 
     Возвращает hex-строку 64-символьного SHA256 хэша.
     """
-    hasher = hashlib.sha256()
 
+    hasher = hashlib.sha256()
     if text:
         hasher.update(text.encode("utf-8"))
+
     if unique_id:
         hasher.update(unique_id.encode("utf-8"))
 
@@ -125,12 +126,11 @@ async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
 
     Возвращает True, если задачу разрешено принять в работу, иначе False.
     """
-    # === Проверка лимитов запросов (Rate Limiting) ===
+
     if user_id != config.ALLOWED_USER_ID and not await check_user_rate_limit(user_id):
         log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
         return False
 
-    # === Защита от повторной обработки сообщения ===
     if await is_message_processed(msg.message_id):
         log.debug(f"Сообщение {msg.message_id} уже обработано. Пропуск.")
         return False
@@ -146,16 +146,19 @@ async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
 
 async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
     """
-    Ставит реакцию 👀 на сообщение студента для мгновенной визуальной обратной связи.
+    Ставит реакцию 👀 на сообщение студента для мгновенной обратной связи.
 
     Информирует пользователя, что задача принята и поставлена в очередь.
     Ошибки установки реакции подавляются без прерывания пайплайна.
+
+    Ничего не возвращает.
     """
+
     try:
         await bot.set_message_reaction(
             chat_id=msg.chat.id,
             message_id=msg.message_id,
-            reaction=[ReactionTypeEmoji(emoji="👀")]
+            reaction=[ReactionTypeEmoji(emoji="👀")],
         )
     except Exception as e:
         log.debug(f"Не удалось поставить реакцию на msg_id={msg.message_id}: {e}")
@@ -170,11 +173,14 @@ async def dispatch_hw_task(
     c_hash: str,
 ) -> None:
     """
-    Формирует payload, ставит задачу в очередь Redis и подтверждает приём.
+    Формирует payload, ставит задачу в очередь Redis и подтверждает прием.
 
-    Помечает хэш и ID сообщения как обработанные только ПОСЛЕ успешного
-    добавления в очередь Redis (at-least-once доставка).
+    Помечает хэш и ID сообщения как обработанные после добавления в очередь.
+    Обеспечивает надежную доставку задач в solver без дублирования.
+
+    Ничего не возвращает.
     """
+
     f_id, f_name, mime, f_size = meta
     task = {
         "chat_id": msg.chat.id,
@@ -187,8 +193,6 @@ async def dispatch_hw_task(
         "mime_type": mime,
         "file_size": f_size,
     }
-
-    # === Постановка в очередь Redis и фиксация статуса ===
     await push_hw_task(task)
     await mark_hash_processed(c_hash)
     await mark_message_processed(msg.message_id)
@@ -197,36 +201,41 @@ async def dispatch_hw_task(
 
 async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str | None) -> bool:
     """
-    Проверяет размер медиафайла (не более 20 МБ) для предотвращения OOM.
+    Проверяет размер медиафайла для защиты сервиса от исчерпания памяти.
 
-    При превышении лимита ставит реакцию 🤷‍♂️ и возвращает False.
+    При превышении лимита ставит реакцию 🤷‍♂️ и возвращает отказ.
+    Защищает воркер от загрузки неподдерживаемых тяжелых файлов.
+
+    Возвращает True, если файл укладывается в лимит, иначе False.
     """
-    if f_size > MAX_HW_FILE_SIZE:
-        log.warning(f"⚠️ Файл '{f_name}' превышает лимит 20 МБ ({f_size} байт). Отклонено.")
-        try:
-            await bot.set_message_reaction(
-                chat_id=msg.chat.id,
-                message_id=msg.message_id,
-                reaction=[ReactionTypeEmoji(emoji="🤷‍♂️")]
-            )
-        except Exception as e:
-            log.debug(f"Не удалось выставить реакцию на тяжелый файл: {e}")
-        return False
 
-    return True
+    if f_size <= MAX_HW_FILE_SIZE:
+        return True
+
+    log.warning(f"⚠️ Файл '{f_name}' превышает лимит ({f_size} байт). Отклонено.")
+    try:
+        await bot.set_message_reaction(
+            chat_id=msg.chat.id,
+            message_id=msg.message_id,
+            reaction=[ReactionTypeEmoji(emoji="🤷‍♂️")],
+        )
+    except Exception as e:
+        log.debug(f"Не удалось выставить реакцию на тяжелый файл: {e}")
+
+    return False
 
 
-@router.message(
-    (F.chat.id == config.TOPIC_CHAT_ID) &
-    (F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID)
-)
+@router.message((F.chat.id == config.TOPIC_CHAT_ID) & (F.message_thread_id == config.HW_INPUT_TOPIC_THREAD_ID))
 async def handle_new_homework(msg: Message, bot: Bot) -> None:
     """
-    Перехватывает сообщение с ДЗ в целевом топике и передаёт в очередь solver.
+    Перехватывает сообщение с ДЗ в топике и передает в очередь solver.
 
-    Фильтрует чат/топик, валидирует размер файла, вычисляет дедупликационный хэш
-    и передаёт задачу диспетчеру очереди.
+    Фильтрует чат/топик, проверяет размер файла и дедуплицирует по SHA256.
+    Ставит задачу в фоновую очередь для нейросетевого решения.
+
+    Ничего не возвращает.
     """
+
     user_id = msg.from_user.id if msg.from_user else 0
     target = msg.reply_to_message if msg.reply_to_message else msg
     if not await is_hw_allowed(msg, target, user_id):
@@ -237,11 +246,9 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     if not await validate_hw_file_size(bot, msg, f_size, f_name):
         return
 
-    # === Дедупликация повторов по SHA256 ===
     c_hash = compute_content_hash(prompt, u_id)
     if await is_hash_processed(c_hash):
         log.warning(f"⚠️ Повтор ДЗ по SHA256 (msg_id={msg.message_id}). Пропуск.")
         return
 
-    meta = (f_id, f_name, mime, f_size)
-    await dispatch_hw_task(bot, msg, user_id, prompt, meta, c_hash)
+    await dispatch_hw_task(bot, msg, user_id, prompt, (f_id, f_name, mime, f_size), c_hash)

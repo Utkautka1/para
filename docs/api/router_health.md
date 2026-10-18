@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`healthcheck`](#healthcheck) | Function | L20–L22 | `HealthResponse` | Executes core domain logic for `healthcheck`. |
+| [`healthcheck`](#healthcheck) | Function | L21–L31 | `HealthResponse` | Executes core domain logic for `healthcheck`. |
 
 ---
 
@@ -36,7 +36,7 @@ Encapsulates domain entities and data transfer logic for `HealthResponse`.
 async def healthcheck() -> HealthResponse
 ```
 
-- **Source Reference**: [`api/router/health.py#L20-L22`](../../api/router/health.py#L20-L22)
+- **Source Reference**: [`api/router/health.py#L21-L31`](../../api/router/health.py#L21-L31)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `HealthResponse`
 

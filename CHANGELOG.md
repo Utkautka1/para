@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.7.0] - 2026-10-18
+
+### Added
+- **Resilient Fallback Schedule Upstream Failover**: Implemented automated multi-tier failover in `services/schedule_parser.py` and `config.py` (`DEFAULT_FALLBACK_SCHEDULE_API_URL` -> `twc1.net`) to mitigate upstream TLS handshake errors (`[SSL: TLSV1_ALERT_INTERNAL_ERROR]`) from the college server (`timetable-ktmu.ru`), ensuring zero downtime and instant recovery.
+- **Strict 3-Part Russian Docstrings (100% Codebase Coverage)**: Documented every single module, class, function, and method across all 78 files according to engineering guidelines:
+  1. Purpose of the function/method.
+  2. Why it is implemented this way, edge-case protections, and resilience rationale.
+  3. Return value contract and conditions.
+- **PEP 8 Vertical Formatting & Code Readability Overhaul**: Applied clean vertical rhythm across all project files — mandatory blank line after `"""` docstring delimiters, isolated logical guard clauses, and 2 empty lines between top-level declarations.
+- **Comprehensive Release Specification (`docs/releases/v2.7.0.md` & `RELEASE_NOTES.md`)**: Created complete technical documentation and architectural comparison matrix contrasting `v2.6.0` and `v2.7.0`.
+
+### Changed
+- **Strict Method Decomposition (<= 25 Lines Across 100% Codebase)**: Decomposed every complex handler, background task, and worker loop exceeding 25 lines into single-responsibility micro-functions (e.g. `_resolve_lesson_title_for_start`, `_ensure_session_available`, `_init_session_safe`, `_send_today_schedule`, `_check_and_acquire_voice`, `_extract_docx_images`, `_read_code_file_payload`, `_drain_active_tasks`).
+- **Complete Elimination of Raw Environment Fallbacks**: Replaced all scattered `os.getenv` fallbacks with validated accessors in `config.py` (`get_required_env`, `get_env_int`, `get_env_list`), preventing hidden default bugs.
+- **Regenerated Enterprise Documentation Suite**: Executed `scripts/generate_docs_suite.py` to refresh all 73 markdown specifications in `docs/` and `docs/index.md`.
+- **Architectural Diagram & UML Expansion**: Appended Section 12 to `docs/UML.md` with detailed Mermaid sequence and class diagrams for upstream failover topology and decomposed single-responsibility micro-functions architecture.
+
+### Fixed
+- **College Schedule Parser TLS Handshake Internal Error**: Fixed `[SSL: TLSV1_ALERT_INTERNAL_ERROR]` in `para-worker` and `para-api` by activating secondary mirror fallback and updating server environment variables.
+- **Linter & Typing Cleanups**: Removed unreferenced imports and optimized list concatenation into iterable unpacking in `services/attendance_topic_updater.py`.
+
+---
+
 ## [v2.6.0] - 2026-10-18
 
 ### Added

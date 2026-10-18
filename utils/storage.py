@@ -19,11 +19,12 @@ log = get_logger("storage")
 
 def sync_load_json(file_path: str, default: Any = None) -> Any:
     """
-    Синхронно считывает данные из JSON файла.
+    Синхронно считывает данные из локального JSON-файла.
 
-    :param file_path: Путь к файлу
-    :param default: Значение по умолчанию при отсутствии или ошибке
-    :return: Распарсенные данные или default
+    Проверяет физическое существование файла перед открытием, перехватывает
+    синтаксические ошибки JSON и повреждения файла, предотвращая падение сервиса.
+
+    Возвращает десериализованный объект (dict/list) или default при отсутствии файла/ошибке.
     """
     if not os.path.exists(file_path):
         return default
@@ -35,17 +36,36 @@ def sync_load_json(file_path: str, default: Any = None) -> Any:
         return default
 
 
+def _flush_json_to_file(temp_file, data: Any) -> None:
+    """
+    Сбрасывает сериализованный JSON на диск с принудительной синхронизацией.
+
+    Вызов os.fsync гарантирует запись буферов операционной системы на физический
+    носитель до того, как произойдет переименование файла.
+
+    Ничего не возвращает, генерирует исключения ввода-вывода при сбоях.
+    """
+    json.dump(data, temp_file, ensure_ascii=False, indent=2)
+    temp_file.flush()
+    os.fsync(temp_file.fileno())
+
+
 def _write_temp_and_replace(file_path: str, data: Any) -> bool:
-    """Записывает данные во временный файл и атомарно заменяет целевой файл."""
+    """
+    Записывает данные во временный файл и атомарно заменяет целевой файл.
+
+    Использует os.replace для POSIX-атомарной подмены, защищая файл от состояния
+    гонки и повреждения при аварийном завершении процесса или ОС во время записи.
+
+    Возвращает True в случае успешной фиксации на диске, иначе False.
+    """
     dir_name = os.path.dirname(os.path.abspath(file_path))
     os.makedirs(dir_name, exist_ok=True)
     temp_path = None
     try:
         with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as temp_file:
             temp_path = temp_file.name
-            json.dump(data, temp_file, ensure_ascii=False, indent=2)
-            temp_file.flush()
-            os.fsync(temp_file.fileno())
+            _flush_json_to_file(temp_file, data)
         os.replace(temp_path, file_path)
         return True
     except Exception as e:
@@ -57,11 +77,12 @@ def _write_temp_and_replace(file_path: str, data: Any) -> bool:
 
 def sync_atomic_save_json(file_path: str, data: Any) -> bool:
     """
-    Синхронно и атомарно сохраняет данные в JSON файл.
+    Синхронно сохраняет структуру данных в JSON-файл с гарантией целостности.
 
-    :param file_path: Путь к целевому файлу
-    :param data: Данные для сериализации
-    :return: True при успехе, иначе False
+    Выступает фасадом к _write_temp_and_replace для явного вызова в синхронном
+    контексте и скриптах инициализации.
+
+    Возвращает True при успешном сохранении, False при ошибках I/O.
     """
     return _write_temp_and_replace(file_path, data)
 
@@ -70,19 +91,22 @@ async def load_json(file_path: str, default: Any = None) -> Any:
     """
     Асинхронно считывает JSON в пуле потоков без блокировки цикла событий.
 
-    :param file_path: Путь к файлу
-    :param default: Значение по умолчанию
-    :return: Распарсенные данные
+    Делегирует синхронный дисковый ввод-вывод в asyncio.to_thread, предотвращая
+    задержки обработки асинхронных сетевых запросов и вебхуков Telegram.
+
+    Возвращает загруженные данные или значение default.
     """
     return await asyncio.to_thread(sync_load_json, file_path, default)
 
 
 async def save_json(file_path: str, data: Any) -> bool:
     """
-    Асинхронно и атомарно сохраняет JSON в пуле потоков.
+    Асинхронно и атомарно сохраняет JSON в отдельном пуле потоков.
 
-    :param file_path: Путь к файлу
-    :param data: Данные для сохранения
-    :return: True при успехе
+    Сочетает неблокирующее выполнение через asyncio.to_thread и безопасность
+    атомарной подмены файла при конкурентных обновлениях.
+
+    Возвращает True при успешной записи, False при сбое.
     """
     return await asyncio.to_thread(sync_atomic_save_json, file_path, data)
+

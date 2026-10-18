@@ -24,7 +24,14 @@ ADMIN_TESTERS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
 
 
 async def generate_or_get_tester_key(user_id: int) -> str | None:
-    """Генерирует или возвращает существующий персональный API-ключ тестера."""
+    """
+    Генерирует или возвращает существующий персональный API-ключ тестера.
+
+    Создает криптографически стойкий 32-байтный hex токен с префиксом и атомарно
+    сохраняет двунаправленный маппинг в Redis для быстрого поиска и аудита.
+
+    Возвращает строку API-ключа или None при недоступности Redis.
+    """
     r = await get_redis()
     if not r:
         return None
@@ -41,7 +48,14 @@ async def generate_or_get_tester_key(user_id: int) -> str | None:
 
 
 async def get_tester_by_key(api_key: str) -> int | None:
-    """Возвращает Telegram ID тестера по переданному персональному API-ключу."""
+    """
+    Определяет Telegram ID тестера по переданному значению API-ключа.
+
+    Быстро отсекает невалидные префиксы без сетевого обращения к хранилищу
+    и производит O(1) поиск в Redis.
+
+    Возвращает числовой Telegram user_id или None при невалидности/отсутствии ключа.
+    """
     if not api_key or not api_key.startswith(API_TESTER_KEY_PREFIX):
         return None
     r = await get_redis()
@@ -55,7 +69,14 @@ async def get_tester_by_key(api_key: str) -> int | None:
 
 
 async def add_tester(user_id: int) -> bool:
-    """Добавляет ID в белый список и сразу генерирует персональный API-ключ."""
+    """
+    Добавляет пользователя в белый список тестеров и генерирует ему API-ключ.
+
+    Регистрирует user_id в множестве REDIS_TESTERS_KEY и сразу инициирует создание
+    персонального токена для немедленной возможности тестирования.
+
+    Возвращает True в случае успешной записи, иначе False.
+    """
     r = await get_redis()
     if not r:
         return False
@@ -66,7 +87,14 @@ async def add_tester(user_id: int) -> bool:
 
 
 async def remove_tester(user_id: int) -> bool:
-    """Удаляет тестера и аннулирует его персональный API-ключ."""
+    """
+    Удаляет пользователя из белого списка тестеров и отзывает его API-ключ.
+
+    Защищает администраторов системы от случайного исключения и подчищает
+    двунаправленные индексы токена в Redis.
+
+    Возвращает True при успешном удалении, False при ошибке или попытке удалить админа.
+    """
     if user_id in ADMIN_TESTERS:
         log.warning(f"⚠️ Попытка удалить администратора {user_id} из тестеров")
         return False
@@ -83,7 +111,14 @@ async def remove_tester(user_id: int) -> bool:
 
 
 async def is_tester_allowed(user_id: int) -> bool:
-    """Проверяет доступ пользователя к тестированию Swagger UI."""
+    """
+    Проверяет наличие прав на тестирование API и использование Swagger UI.
+
+    Безусловно пропускает администраторов проекта (ALLOWED_USER_ID, DEPUTY_USER_ID)
+    и проверяет членство остальных пользователей в множестве Redis.
+
+    Возвращает True, если доступ разрешен, иначе False.
+    """
     if user_id in ADMIN_TESTERS:
         return True
     r = await get_redis()
@@ -93,7 +128,14 @@ async def is_tester_allowed(user_id: int) -> bool:
 
 
 async def get_all_testers() -> list[int]:
-    """Возвращает отсортированный список всех авторизованных тестеров."""
+    """
+    Возвращает отсортированный список всех авторизованных тестеров и администраторов.
+
+    Объединяет администраторов из конфигурации и динамический список пользователей
+    из Redis, фильтруя некорректные строковые значения.
+
+    Возвращает отсортированный по возрастанию список целочисленных Telegram ID.
+    """
     testers: set[int] = set(ADMIN_TESTERS)
     r = await get_redis()
     if r:
@@ -102,3 +144,4 @@ async def get_all_testers() -> list[int]:
             if s.isdigit():
                 testers.add(int(s))
     return sorted(testers)
+

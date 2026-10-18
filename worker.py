@@ -33,10 +33,19 @@ log = get_logger("worker_main")
 
 
 async def schedule_today_reminders() -> None:
-    """Планирует напоминания на остаток сегодняшнего дня при старте воркера."""
+    """
+    Планирует напоминания на остаток сегодняшнего дня при старте сервиса.
+
+    Загружает расписание на сегодня и регистрирует таймеры APScheduler для оставшихся пар.
+    Инициализирует опросы посещаемости старосты и личные уведомления подписчикам.
+
+    Ничего не возвращает.
+    """
+
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
     log.info(f"Проверка сегодняшних пар на момент запуска воркера: {now_dt.strftime('%H:%M:%S')}")
+
     lessons = await get_api_schedule_for_date(today)
     for lesson in lessons:
         schedule_lesson_reminder(today, lesson, now_dt)
@@ -44,10 +53,19 @@ async def schedule_today_reminders() -> None:
 
 
 async def shutdown_worker() -> None:
-    """Освобождает сетевые ресурсы и останавливает шедулер при выключении."""
+    """
+    Освобождает сетевые ресурсы и останавливает шедулер при выключении воркера.
+
+    Останавливает задачи APScheduler, закрывает клиент Redis, API-клиент и бота.
+    Предотвращает зависание фонового процесса при получении SIGINT/SIGTERM.
+
+    Ничего не возвращает.
+    """
+
     log.info("Остановка воркера: освобождение сетевых ресурсов...")
     if scheduler.running:
         scheduler.shutdown(wait=False)
+
     await close_redis()
     await close_api_client()
     await bot.session.close()
@@ -55,24 +73,41 @@ async def shutdown_worker() -> None:
 
 
 async def _start_worker_loops() -> None:
-    """Запускает все фоновые циклы синхронизации сервиса."""
+    """
+    Запускает параллельные фоновые циклы синхронизации сервиса воркера.
+
+    Объединяет бесконечные циклы топика расписания, экзаменов, посещаемости,
+    дней рождения и keep-alive сессии Яндекс Документов через asyncio.gather.
+
+    Ничего не возвращает.
+    """
+
     await asyncio.gather(
         topic_sync_loop(),
         exam_topic_sync_loop(),
         attendance_topic_sync_loop(),
         birthday_sync_loop(),
-        yandex_session_keepalive_loop()
+        yandex_session_keepalive_loop(),
     )
 
 
 async def main() -> None:
-    """Точка входа фонового сервиса-синхронизатора."""
+    """
+    Основная асинхронная точка входа фонового воркера-синхронизатора.
+
+    Инициализирует сетевые соединения, планировщик задач и запускает фоновые корутины.
+    В блоке finally гарантированно вызывает процедуру корректной остановки воркера.
+
+    Ничего не возвращает.
+    """
+
     log.info("=" * 60)
     log.info("ЗАПУСК Фонового Воркера Расписания (para-worker)")
     log.info("=" * 60)
     await init_redis()
     setup_scheduler()
     await schedule_today_reminders()
+
     try:
         await _start_worker_loops()
     except asyncio.CancelledError:

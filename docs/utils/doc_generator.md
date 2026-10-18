@@ -21,28 +21,31 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`setup_gost_margins`](#setup_gost_margins) | Function | L29–L35 | `None` | Executes core domain logic for `setup_gost_margins`. |
-| [`setup_page_numbering`](#setup_page_numbering) | Function | L38–L46 | `None` | Executes core domain logic for `setup_page_numbering`. |
-| [`setup_gost_styles`](#setup_gost_styles) | Function | L49–L55 | `None` | Executes core domain logic for `setup_gost_styles`. |
-| [`format_table_row_cells`](#format_table_row_cells) | Function | L58–L66 | `None` | Formats message payload and presentation markup for `fo... |
-| [`add_title_signature_table`](#add_title_signature_table) | Function | L69–L86 | `None` | Executes core domain logic for `add_title_signature_tab... |
-| [`add_title_header`](#add_title_header) | Function | L89–L97 | `None` | Executes core domain logic for `add_title_header`. |
-| [`create_title_page`](#create_title_page) | Function | L100–L118 | `None` | Initializes and constructs a new instance of `create_ti... |
-| [`clean_math_text`](#clean_math_text) | Function | L121–L127 | `str` | Executes core domain logic for `clean_math_text`. |
-| [`format_gost_paragraph`](#format_gost_paragraph) | Function | L130–L136 | `None` | Formats message payload and presentation markup for `fo... |
-| [`add_bookmark_to_paragraph`](#add_bookmark_to_paragraph) | Function | L139–L144 | `None` | Executes core domain logic for `add_bookmark_to_paragra... |
-| [`add_toc_hyperlink`](#add_toc_hyperlink) | Function | L147–L161 | `None` | Executes core domain logic for `add_toc_hyperlink`. |
-| [`extract_headings_from_text`](#extract_headings_from_text) | Function | L164–L177 | `list[tuple[str, str, int, int]]` | Executes core domain logic for `extract_headings_from_t... |
-| [`build_table_of_contents`](#build_table_of_contents) | Function | L180–L187 | `None` | Executes core domain logic for `build_table_of_contents... |
-| [`add_gost_heading`](#add_gost_heading) | Function | L190–L205 | `None` | Executes core domain logic for `add_gost_heading`. |
-| [`add_gost_heading_with_bookmark`](#add_gost_heading_with_bookmark) | Function | L208–L224 | `None` | Executes core domain logic for `add_gost_heading_with_b... |
-| [`parse_markdown_table_rows`](#parse_markdown_table_rows) | Function | L227–L236 | `list[list[str]]` | Parses and extracts structured entities from `parse_mar... |
-| [`fill_table_cell`](#fill_table_cell) | Function | L239–L256 | `None` | Executes core domain logic for `fill_table_cell`. |
-| [`add_docx_table_from_markdown`](#add_docx_table_from_markdown) | Function | L259–L270 | `None` | Executes core domain logic for `add_docx_table_from_mar... |
-| [`process_document_content_lines`](#process_document_content_lines) | Function | L273–L290 | `None` | Executes core domain logic for `process_document_conten... |
-| [`add_formatted_paragraph`](#add_formatted_paragraph) | Function | L293–L305 | `None` | Executes core domain logic for `add_formatted_paragraph... |
-| [`init_gost_document`](#init_gost_document) | Function | L308–L314 | `Document` | Executes core domain logic for `init_gost_document`. |
-| [`create_solution_docx`](#create_solution_docx) | Function | L317–L336 | `str` | Initializes and constructs a new instance of `create_so... |
+| [`setup_gost_margins`](#setup_gost_margins) | Function | L29–L42 | `None` | Executes core domain logic for `setup_gost_margins`. |
+| [`setup_page_numbering`](#setup_page_numbering) | Function | L45–L60 | `None` | Executes core domain logic for `setup_page_numbering`. |
+| [`setup_gost_styles`](#setup_gost_styles) | Function | L63–L76 | `None` | Executes core domain logic for `setup_gost_styles`. |
+| [`format_table_row_cells`](#format_table_row_cells) | Function | L79–L94 | `None` | Formats message payload and presentation markup for `fo... |
+| [`add_title_signature_table`](#add_title_signature_table) | Function | L97–L121 | `None` | Executes core domain logic for `add_title_signature_tab... |
+| [`add_title_header`](#add_title_header) | Function | L124–L139 | `None` | Executes core domain logic for `add_title_header`. |
+| [`create_title_page`](#create_title_page) | Function | L142–L167 | `None` | Initializes and constructs a new instance of `create_ti... |
+| [`clean_math_text`](#clean_math_text) | Function | L170–L183 | `str` | Executes core domain logic for `clean_math_text`. |
+| [`format_gost_paragraph`](#format_gost_paragraph) | Function | L186–L199 | `None` | Formats message payload and presentation markup for `fo... |
+| [`add_bookmark_to_paragraph`](#add_bookmark_to_paragraph) | Function | L202–L214 | `None` | Executes core domain logic for `add_bookmark_to_paragra... |
+| [`add_toc_hyperlink`](#add_toc_hyperlink) | Function | L217–L238 | `None` | Executes core domain logic for `add_toc_hyperlink`. |
+| [`extract_headings_from_text`](#extract_headings_from_text) | Function | L241–L261 | `list[tuple[str, str, int, int]]` | Executes core domain logic for `extract_headings_from_t... |
+| [`build_table_of_contents`](#build_table_of_contents) | Function | L264–L278 | `None` | Executes core domain logic for `build_table_of_contents... |
+| [`_apply_heading_formatting`](#_apply_heading_formatting) | Function | L282–L301 | `None` | Executes core domain logic for `_apply_heading_formatti... |
+| [`add_gost_heading`](#add_gost_heading) | Function | L304–L316 | `None` | Executes core domain logic for `add_gost_heading`. |
+| [`add_gost_heading_with_bookmark`](#add_gost_heading_with_bookmark) | Function | L319–L332 | `None` | Executes core domain logic for `add_gost_heading_with_b... |
+| [`parse_markdown_table_rows`](#parse_markdown_table_rows) | Function | L335–L351 | `list[list[str]]` | Parses and extracts structured entities from `parse_mar... |
+| [`_append_cell_run`](#_append_cell_run) | Function | L354–L367 | `None` | Executes core domain logic for `_append_cell_run`. |
+| [`fill_table_cell`](#fill_table_cell) | Function | L370–L388 | `None` | Executes core domain logic for `fill_table_cell`. |
+| [`add_docx_table_from_markdown`](#add_docx_table_from_markdown) | Function | L391–L409 | `None` | Executes core domain logic for `add_docx_table_from_mar... |
+| [`_consume_markdown_table`](#_consume_markdown_table) | Function | L412–L426 | `tuple[list[str], int]` | Executes core domain logic for `_consume_markdown_table... |
+| [`process_document_content_lines`](#process_document_content_lines) | Function | L429–L450 | `None` | Executes core domain logic for `process_document_conten... |
+| [`add_formatted_paragraph`](#add_formatted_paragraph) | Function | L453–L471 | `None` | Executes core domain logic for `add_formatted_paragraph... |
+| [`init_gost_document`](#init_gost_document) | Function | L474–L487 | `Document` | Executes core domain logic for `init_gost_document`. |
+| [`create_solution_docx`](#create_solution_docx) | Function | L490–L516 | `str` | Initializes and constructs a new instance of `create_so... |
 
 ---
 
@@ -53,7 +56,7 @@ graph LR
 def setup_gost_margins(doc: Document) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L29-L35`](../../utils/doc_generator.py#L29-L35)
+- **Source Reference**: [`utils/doc_generator.py#L29-L42`](../../utils/doc_generator.py#L29-L42)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -86,7 +89,7 @@ result = setup_gost_margins(doc=...)
 def setup_page_numbering(doc: Document) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L38-L46`](../../utils/doc_generator.py#L38-L46)
+- **Source Reference**: [`utils/doc_generator.py#L45-L60`](../../utils/doc_generator.py#L45-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -119,7 +122,7 @@ result = setup_page_numbering(doc=...)
 def setup_gost_styles(doc: Document) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L49-L55`](../../utils/doc_generator.py#L49-L55)
+- **Source Reference**: [`utils/doc_generator.py#L63-L76`](../../utils/doc_generator.py#L63-L76)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -152,7 +155,7 @@ result = setup_gost_styles(doc=...)
 def format_table_row_cells(row, left_txt: str, right_txt: str) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L58-L66`](../../utils/doc_generator.py#L58-L66)
+- **Source Reference**: [`utils/doc_generator.py#L79-L94`](../../utils/doc_generator.py#L79-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -187,7 +190,7 @@ result = format_table_row_cells(row=..., left_txt=..., right_txt=...)
 def add_title_signature_table( doc: Document, student_name: str = "Student", teacher_name: str = "Instructor", year: int | None = None, group_name: str | None = None, ) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L69-L86`](../../utils/doc_generator.py#L69-L86)
+- **Source Reference**: [`utils/doc_generator.py#L97-L121`](../../utils/doc_generator.py#L97-L121)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -224,7 +227,7 @@ result = add_title_signature_table(doc=..., student_name=..., teacher_name=...)
 def add_title_header(doc: Document) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L89-L97`](../../utils/doc_generator.py#L89-L97)
+- **Source Reference**: [`utils/doc_generator.py#L124-L139`](../../utils/doc_generator.py#L124-L139)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -257,7 +260,7 @@ result = add_title_header(doc=...)
 def create_title_page( doc: Document, student_name: str = "Student", teacher_name: str = "Instructor", year: int | None = None, group_name: str | None = None, ) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L100-L118`](../../utils/doc_generator.py#L100-L118)
+- **Source Reference**: [`utils/doc_generator.py#L142-L167`](../../utils/doc_generator.py#L142-L167)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -294,7 +297,7 @@ result = create_title_page(doc=..., student_name=..., teacher_name=...)
 def clean_math_text(text: str) -> str
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L121-L127`](../../utils/doc_generator.py#L121-L127)
+- **Source Reference**: [`utils/doc_generator.py#L170-L183`](../../utils/doc_generator.py#L170-L183)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -327,7 +330,7 @@ result = clean_math_text(text=...)
 def format_gost_paragraph(p) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L130-L136`](../../utils/doc_generator.py#L130-L136)
+- **Source Reference**: [`utils/doc_generator.py#L186-L199`](../../utils/doc_generator.py#L186-L199)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -360,7 +363,7 @@ result = format_gost_paragraph(p=...)
 def add_bookmark_to_paragraph(p, bookmark_name: str, bookmark_id: int) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L139-L144`](../../utils/doc_generator.py#L139-L144)
+- **Source Reference**: [`utils/doc_generator.py#L202-L214`](../../utils/doc_generator.py#L202-L214)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -395,7 +398,7 @@ result = add_bookmark_to_paragraph(p=..., bookmark_name=..., bookmark_id=...)
 def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L147-L161`](../../utils/doc_generator.py#L147-L161)
+- **Source Reference**: [`utils/doc_generator.py#L217-L238`](../../utils/doc_generator.py#L217-L238)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -430,7 +433,7 @@ result = add_toc_hyperlink(doc=..., text=..., bookmark_name=...)
 def extract_headings_from_text(solution_text: str) -> list[tuple[str, str, int, int]]
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L164-L177`](../../utils/doc_generator.py#L164-L177)
+- **Source Reference**: [`utils/doc_generator.py#L241-L261`](../../utils/doc_generator.py#L241-L261)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[str, str, int, int]]`
 
@@ -463,7 +466,7 @@ result = extract_headings_from_text(solution_text=...)
 def build_table_of_contents(doc: Document, headings: list[tuple[str, str, int, int]]) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L180-L187`](../../utils/doc_generator.py#L180-L187)
+- **Source Reference**: [`utils/doc_generator.py#L264-L278`](../../utils/doc_generator.py#L264-L278)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -492,12 +495,47 @@ result = build_table_of_contents(doc=..., headings=...)
 
 ---
 
+### `_apply_heading_formatting`
+```python
+def _apply_heading_formatting(p, title: str, level: int) -> None
+```
+
+- **Source Reference**: [`utils/doc_generator.py#L282-L301`](../../utils/doc_generator.py#L282-L301)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_apply_heading_formatting`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `p` | `Any` | Yes | Parameter `p` of type `Any`. |
+| `title` | `str` | Yes | Parameter `title` of type `str`. |
+| `level` | `int` | Yes | Parameter `level` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.doc_generator import _apply_heading_formatting
+
+# Execute call
+result = _apply_heading_formatting(p=..., title=..., level=...)
+```
+
+---
+
 ### `add_gost_heading`
 ```python
 def add_gost_heading(doc: Document, title: str, level: int, page_break: bool = False) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L190-L205`](../../utils/doc_generator.py#L190-L205)
+- **Source Reference**: [`utils/doc_generator.py#L304-L316`](../../utils/doc_generator.py#L304-L316)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -533,7 +571,7 @@ result = add_gost_heading(doc=..., title=..., level=...)
 def add_gost_heading_with_bookmark(doc: Document, title: str, level: int, bm_id: int) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L208-L224`](../../utils/doc_generator.py#L208-L224)
+- **Source Reference**: [`utils/doc_generator.py#L319-L332`](../../utils/doc_generator.py#L319-L332)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -569,7 +607,7 @@ result = add_gost_heading_with_bookmark(doc=..., title=..., level=...)
 def parse_markdown_table_rows(table_lines: list[str]) -> list[list[str]]
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L227-L236`](../../utils/doc_generator.py#L227-L236)
+- **Source Reference**: [`utils/doc_generator.py#L335-L351`](../../utils/doc_generator.py#L335-L351)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[list[str]]`
 
@@ -597,12 +635,48 @@ result = parse_markdown_table_rows(table_lines=...)
 
 ---
 
+### `_append_cell_run`
+```python
+def _append_cell_run(p, text_part: str, is_header: bool, is_bold: bool) -> None
+```
+
+- **Source Reference**: [`utils/doc_generator.py#L354-L367`](../../utils/doc_generator.py#L354-L367)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_append_cell_run`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `p` | `Any` | Yes | Parameter `p` of type `Any`. |
+| `text_part` | `str` | Yes | Parameter `text_part` of type `str`. |
+| `is_header` | `bool` | Yes | Parameter `is_header` of type `bool`. |
+| `is_bold` | `bool` | Yes | Parameter `is_bold` of type `bool`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.doc_generator import _append_cell_run
+
+# Execute call
+result = _append_cell_run(p=..., text_part=..., is_header=...)
+```
+
+---
+
 ### `fill_table_cell`
 ```python
 def fill_table_cell(cell, cell_text: str, is_header: bool) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L239-L256`](../../utils/doc_generator.py#L239-L256)
+- **Source Reference**: [`utils/doc_generator.py#L370-L388`](../../utils/doc_generator.py#L370-L388)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -637,7 +711,7 @@ result = fill_table_cell(cell=..., cell_text=..., is_header=...)
 def add_docx_table_from_markdown(doc: Document, table_lines: list[str]) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L259-L270`](../../utils/doc_generator.py#L259-L270)
+- **Source Reference**: [`utils/doc_generator.py#L391-L409`](../../utils/doc_generator.py#L391-L409)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -666,12 +740,46 @@ result = add_docx_table_from_markdown(doc=..., table_lines=...)
 
 ---
 
+### `_consume_markdown_table`
+```python
+def _consume_markdown_table(lines: list[str], start_idx: int) -> tuple[list[str], int]
+```
+
+- **Source Reference**: [`utils/doc_generator.py#L412-L426`](../../utils/doc_generator.py#L412-L426)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[list[str], int]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_consume_markdown_table`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lines` | `list[str]` | Yes | Parameter `lines` of type `list[str]`. |
+| `start_idx` | `int` | Yes | Parameter `start_idx` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from utils.doc_generator import _consume_markdown_table
+
+# Execute call
+result = _consume_markdown_table(lines=..., start_idx=...)
+```
+
+---
+
 ### `process_document_content_lines`
 ```python
 def process_document_content_lines(doc: Document, lines: list[str], heading_map: dict) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L273-L290`](../../utils/doc_generator.py#L273-L290)
+- **Source Reference**: [`utils/doc_generator.py#L429-L450`](../../utils/doc_generator.py#L429-L450)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -706,7 +814,7 @@ result = process_document_content_lines(doc=..., lines=..., heading_map=...)
 def add_formatted_paragraph(doc: Document, line: str) -> None
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L293-L305`](../../utils/doc_generator.py#L293-L305)
+- **Source Reference**: [`utils/doc_generator.py#L453-L471`](../../utils/doc_generator.py#L453-L471)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -740,7 +848,7 @@ result = add_formatted_paragraph(doc=..., line=...)
 def init_gost_document() -> Document
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L308-L314`](../../utils/doc_generator.py#L308-L314)
+- **Source Reference**: [`utils/doc_generator.py#L474-L487`](../../utils/doc_generator.py#L474-L487)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Document`
 
@@ -771,7 +879,7 @@ result = init_gost_document()
 def create_solution_docx( solution_text: str, output_path: str | None = None, student_name: str = "Student", teacher_name: str = "Instructor", year: int | None = None, group_name: str | None = None, ) -> str
 ```
 
-- **Source Reference**: [`utils/doc_generator.py#L317-L336`](../../utils/doc_generator.py#L317-L336)
+- **Source Reference**: [`utils/doc_generator.py#L490-L516`](../../utils/doc_generator.py#L490-L516)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 

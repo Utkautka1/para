@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_system_info`](#get_system_info) | Function | L23–L43 | `SystemInfoResponse` | Retrieves and resolves domain data for `get_system_info... |
-| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L46–L52 | `None` | Executes core domain logic for `_validate_flush_pattern... |
-| [`flush_cache`](#flush_cache) | Function | L56–L63 | `CacheFlushResponse` | Executes core domain logic for `flush_cache`. |
+| [`get_system_info`](#get_system_info) | Function | L23–L52 | `SystemInfoResponse` | Retrieves and resolves domain data for `get_system_info... |
+| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L55–L70 | `None` | Executes core domain logic for `_validate_flush_pattern... |
+| [`flush_cache`](#flush_cache) | Function | L74–L91 | `CacheFlushResponse` | Executes core domain logic for `flush_cache`. |
 
 ---
 
@@ -34,7 +34,7 @@ graph LR
 async def get_system_info() -> SystemInfoResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L23-L43`](../../api/router/system.py#L23-L43)
+- **Source Reference**: [`api/router/system.py#L23-L52`](../../api/router/system.py#L23-L52)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SystemInfoResponse`
 
@@ -65,7 +65,7 @@ result = await get_system_info()
 def _validate_flush_pattern(pattern: str) -> None
 ```
 
-- **Source Reference**: [`api/router/system.py#L46-L52`](../../api/router/system.py#L46-L52)
+- **Source Reference**: [`api/router/system.py#L55-L70`](../../api/router/system.py#L55-L70)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -98,7 +98,7 @@ result = _validate_flush_pattern(pattern=...)
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L56-L63`](../../api/router/system.py#L56-L63)
+- **Source Reference**: [`api/router/system.py#L74-L91`](../../api/router/system.py#L74-L91)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CacheFlushResponse`
 

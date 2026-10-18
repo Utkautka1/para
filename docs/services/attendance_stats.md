@@ -21,19 +21,21 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_init_student_stat`](#_init_student_stat) | Function | L38–L44 | `dict[str, Any]` | Executes core domain logic for `_init_student_stat`. |
-| [`_count_row_marks`](#_count_row_marks) | Function | L47–L57 | `dict[str, int]` | Executes core domain logic for `_count_row_marks`. |
-| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L60–L77 | `None` | Executes core domain logic for `_aggregate_sheet_stats`... |
-| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L80–L89 | `dict[str, dict[str, Any]]` | Parses and extracts structured entities from `parse_wor... |
-| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L92–L101 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_from_redis_cache`... |
-| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L104–L111 | `None` | Executes core domain logic for `_save_to_redis_cache`. |
-| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L114–L117 | `None` | Executes core domain logic for `invalidate_attendance_s... |
-| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L120–L133 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
-| [`find_student_attendance`](#find_student_attendance) | Function | L136–L151 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
-| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L154–L160 | `None` | Executes core domain logic for `_adjust_student_counts`... |
-| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L163–L171 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L174–L177 | `None` | Executes core domain logic for `_save_lesson_marks`. |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L180–L195 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
+| [`_init_student_stat`](#_init_student_stat) | Function | L38–L51 | `dict[str, Any]` | Executes core domain logic for `_init_student_stat`. |
+| [`_count_row_marks`](#_count_row_marks) | Function | L54–L71 | `dict[str, int]` | Executes core domain logic for `_count_row_marks`. |
+| [`_process_student_row`](#_process_student_row) | Function | L74–L96 | `None` | Executes core domain logic for `_process_student_row`. |
+| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L99–L112 | `None` | Executes core domain logic for `_aggregate_sheet_stats`... |
+| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L115–L131 | `dict[str, dict[str, Any]]` | Parses and extracts structured entities from `parse_wor... |
+| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L134–L150 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_from_redis_cache`... |
+| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L153–L167 | `None` | Executes core domain logic for `_save_to_redis_cache`. |
+| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L170–L180 | `None` | Executes core domain logic for `invalidate_attendance_s... |
+| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L183–L203 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
+| [`find_student_attendance`](#find_student_attendance) | Function | L206–L228 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
+| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L231–L244 | `None` | Executes core domain logic for `_adjust_student_counts`... |
+| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L247–L261 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L264–L273 | `None` | Executes core domain logic for `_save_lesson_marks`. |
+| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L276–L294 | `dict[str, str]` | Executes core domain logic for `_update_session_marks_i... |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L297–L312 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
 
 ---
 
@@ -44,7 +46,7 @@ graph LR
 def _init_student_stat(fio: str) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L38-L44`](../../services/attendance_stats.py#L38-L44)
+- **Source Reference**: [`services/attendance_stats.py#L38-L51`](../../services/attendance_stats.py#L38-L51)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -77,7 +79,7 @@ result = _init_student_stat(fio=...)
 def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L47-L57`](../../services/attendance_stats.py#L47-L57)
+- **Source Reference**: [`services/attendance_stats.py#L54-L71`](../../services/attendance_stats.py#L54-L71)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 
@@ -107,12 +109,49 @@ result = _count_row_marks(sheet=..., row=..., mc=...)
 
 ---
 
+### `_process_student_row`
+```python
+def _process_student_row( sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]] ) -> None
+```
+
+- **Source Reference**: [`services/attendance_stats.py#L74-L96`](../../services/attendance_stats.py#L74-L96)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_process_student_row`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet` | `Worksheet` | Yes | Parameter `sheet` of type `Worksheet`. |
+| `r` | `int` | Yes | Parameter `r` of type `int`. |
+| `mc` | `int` | Yes | Parameter `mc` of type `int`. |
+| `s_name` | `str` | Yes | Parameter `s_name` of type `str`. |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _process_student_row
+
+# Execute call
+result = _process_student_row(sheet=..., r=..., mc=...)
+```
+
+---
+
 ### `_aggregate_sheet_stats`
 ```python
 def _aggregate_sheet_stats( sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]] ) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L60-L77`](../../services/attendance_stats.py#L60-L77)
+- **Source Reference**: [`services/attendance_stats.py#L99-L112`](../../services/attendance_stats.py#L99-L112)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -147,7 +186,7 @@ result = _aggregate_sheet_stats(sheet=..., s_name=..., stats=...)
 def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L80-L89`](../../services/attendance_stats.py#L80-L89)
+- **Source Reference**: [`services/attendance_stats.py#L115-L131`](../../services/attendance_stats.py#L115-L131)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -180,7 +219,7 @@ result = parse_workbook_attendance(wb=...)
 async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L92-L101`](../../services/attendance_stats.py#L92-L101)
+- **Source Reference**: [`services/attendance_stats.py#L134-L150`](../../services/attendance_stats.py#L134-L150)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]] | None`
 
@@ -211,7 +250,7 @@ result = await _load_from_redis_cache()
 async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L104-L111`](../../services/attendance_stats.py#L104-L111)
+- **Source Reference**: [`services/attendance_stats.py#L153-L167`](../../services/attendance_stats.py#L153-L167)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -244,7 +283,7 @@ result = await _save_to_redis_cache(stats=...)
 async def invalidate_attendance_stats_cache() -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L114-L117`](../../services/attendance_stats.py#L114-L117)
+- **Source Reference**: [`services/attendance_stats.py#L170-L180`](../../services/attendance_stats.py#L170-L180)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -275,7 +314,7 @@ result = await invalidate_attendance_stats_cache()
 async def fetch_all_time_attendance( force_refresh: bool = False ) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L120-L133`](../../services/attendance_stats.py#L120-L133)
+- **Source Reference**: [`services/attendance_stats.py#L183-L203`](../../services/attendance_stats.py#L183-L203)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -308,7 +347,7 @@ result = await fetch_all_time_attendance(force_refresh=...)
 def find_student_attendance( stats: dict[str, dict[str, Any]], target_name: str ) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L136-L151`](../../services/attendance_stats.py#L136-L151)
+- **Source Reference**: [`services/attendance_stats.py#L206-L228`](../../services/attendance_stats.py#L206-L228)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -342,7 +381,7 @@ result = find_student_attendance(stats=..., target_name=...)
 def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L154-L160`](../../services/attendance_stats.py#L154-L160)
+- **Source Reference**: [`services/attendance_stats.py#L231-L244`](../../services/attendance_stats.py#L231-L244)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -377,7 +416,7 @@ result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
 async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L163-L171`](../../services/attendance_stats.py#L163-L171)
+- **Source Reference**: [`services/attendance_stats.py#L247-L261`](../../services/attendance_stats.py#L247-L261)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, str]`
 
@@ -411,7 +450,7 @@ result = await _get_saved_lesson_marks(t_date=..., l_num=...)
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L174-L177`](../../services/attendance_stats.py#L174-L177)
+- **Source Reference**: [`services/attendance_stats.py#L264-L273`](../../services/attendance_stats.py#L264-L273)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -441,12 +480,47 @@ result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
 
 ---
 
+### `_update_session_marks_in_stats`
+```python
+def _update_session_marks_in_stats( session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]] ) -> dict[str, str]
+```
+
+- **Source Reference**: [`services/attendance_stats.py#L276-L294`](../../services/attendance_stats.py#L276-L294)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, str]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_update_session_marks_in_stats`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `session` | `Any` | Yes | Active domain session instance containing current student index and marks. |
+| `saved_marks` | `dict[str, str]` | Yes | Parameter `saved_marks` of type `dict[str, str]`. |
+| `stats` | `dict[str, dict[str, Any]]` | Yes | Parameter `stats` of type `dict[str, dict[str, Any]]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _update_session_marks_in_stats
+
+# Execute call
+result = _update_session_marks_in_stats(session=..., saved_marks=..., stats=...)
+```
+
+---
+
 ### `apply_session_optimistic_update`
 ```python
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L180-L195`](../../services/attendance_stats.py#L180-L195)
+- **Source Reference**: [`services/attendance_stats.py#L297-L312`](../../services/attendance_stats.py#L297-L312)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 

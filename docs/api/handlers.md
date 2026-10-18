@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`http_exception_handler`](#http_exception_handler) | Function | L19–L22 | `JSONResponse` | Executes core domain logic for `http_exception_handler`... |
-| [`validation_exception_handler`](#validation_exception_handler) | Function | L25–L32 | `JSONResponse` | Executes core domain logic for `validation_exception_ha... |
-| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L35–L39 | `JSONResponse` | Executes core domain logic for `unhandled_exception_han... |
-| [`register_exception_handlers`](#register_exception_handlers) | Function | L42–L46 | `None` | Executes core domain logic for `register_exception_hand... |
+| [`http_exception_handler`](#http_exception_handler) | Function | L19–L29 | `JSONResponse` | Executes core domain logic for `http_exception_handler`... |
+| [`validation_exception_handler`](#validation_exception_handler) | Function | L32–L46 | `JSONResponse` | Executes core domain logic for `validation_exception_ha... |
+| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L49–L60 | `JSONResponse` | Executes core domain logic for `unhandled_exception_han... |
+| [`register_exception_handlers`](#register_exception_handlers) | Function | L63–L73 | `None` | Executes core domain logic for `register_exception_hand... |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse
 ```
 
-- **Source Reference**: [`api/handlers.py#L19-L22`](../../api/handlers.py#L19-L22)
+- **Source Reference**: [`api/handlers.py#L19-L29`](../../api/handlers.py#L19-L29)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `JSONResponse`
 
@@ -69,7 +69,7 @@ result = await http_exception_handler(request=..., exc=...)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse
 ```
 
-- **Source Reference**: [`api/handlers.py#L25-L32`](../../api/handlers.py#L25-L32)
+- **Source Reference**: [`api/handlers.py#L32-L46`](../../api/handlers.py#L32-L46)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `JSONResponse`
 
@@ -103,7 +103,7 @@ result = await validation_exception_handler(request=..., exc=...)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse
 ```
 
-- **Source Reference**: [`api/handlers.py#L35-L39`](../../api/handlers.py#L35-L39)
+- **Source Reference**: [`api/handlers.py#L49-L60`](../../api/handlers.py#L49-L60)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `JSONResponse`
 
@@ -137,7 +137,7 @@ result = await unhandled_exception_handler(request=..., exc=...)
 def register_exception_handlers(app: FastAPI) -> None
 ```
 
-- **Source Reference**: [`api/handlers.py#L42-L46`](../../api/handlers.py#L42-L46)
+- **Source Reference**: [`api/handlers.py#L63-L73`](../../api/handlers.py#L63-L73)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 

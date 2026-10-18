@@ -21,6 +21,7 @@ from config import (
     CONGRATS_STATE_FILE_PATH,
     HISTORY_FILE_PATH,
     IMPORTANT_TOPIC_THREAD_ID,
+    SEASONS_INFO,
     STAROSTA_HISTORY_FILE_PATH,
     STAROSTA_WISHES_FILE_PATH,
     TIMEZONE,
@@ -29,6 +30,8 @@ from config import (
 )
 from core.bot import bot
 from core.logger import get_logger
+from utils.storage import sync_atomic_save_json as save_json_file
+from utils.storage import sync_load_json as load_json_file
 
 log = get_logger("birthday_manager")
 
@@ -41,13 +44,15 @@ STAROSTA_HISTORY_FILE = STAROSTA_HISTORY_FILE_PATH
 CONGRATS_STATE_FILE = CONGRATS_STATE_FILE_PATH
 
 
-from utils.storage import sync_atomic_save_json as save_json_file
-from utils.storage import sync_load_json as load_json_file
+def _compute_next_birthday(today: date, b_day: int, b_month: int) -> tuple[int, bool, int]:
+    """
+    Рассчитывает количество дней до ближайшего дня рождения с учетом високосных лет.
 
+    Корректирует даты 29 февраля в невисокосные годы до 28 февраля и переносит
+    расчет на следующий календарный год, если праздник в текущем году уже прошел.
 
-def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]:
-    """Вычисляет оставшиеся дни до дня рождения и возраст именинника."""
-    b_day, b_month, b_year = item["day"], item["month"], item["year"]
+    Возвращает кортеж (days_until, is_today, target_year).
+    """
     try:
         bday_this_year = date(today.year, b_month, b_day)
     except ValueError:
@@ -57,27 +62,34 @@ def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]:
             next_bday = date(today.year + 1, b_month, b_day)
         except ValueError:
             next_bday = date(today.year + 1, b_month, 28)
-        days = (next_bday - today).days
-        age = (today.year + 1) - b_year
-        is_today = False
-    elif bday_this_year == today:
-        days, age, is_today = 0, today.year - b_year, True
-    else:
-        days, age, is_today = (bday_this_year - today).days, today.year - b_year, False
+        return (next_bday - today).days, False, today.year + 1
+    if bday_this_year == today:
+        return 0, True, today.year
+    return (bday_this_year - today).days, False, today.year
+
+
+def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]:
+    """
+    Вычисляет оставшиеся дни до дня рождения и возраст, исполняющийся в праздник.
+
+    Определяет статус 'is_today' для активации праздничных плашек и рассчитывает
+    точный возраст именинника относительно года рождения.
+
+    Возвращает обогащенную копию словаря item с полями days_until, turning_age, is_today.
+    """
+    days, is_today, target_year = _compute_next_birthday(today, item["day"], item["month"])
+    age = target_year - item["year"]
     return {**item, "days_until": days, "turning_age": age, "is_today": is_today}
-
-
-SEASONS_INFO = [
-    ("🍂 ОСЕНЬ", [9, 10, 11]),
-    ("❄️ ЗИМА", [12, 1, 2]),
-    ("🌸 ВЕСНА", [3, 4, 5]),
-    ("☀️ ЛЕТО", [6, 7, 8]),
-]
 
 
 def format_person_tag(item: dict[str, Any]) -> str:
     """
-    Формирует кликабельное имя человека (через username или tg://user?id).
+    Формирует кликабельное имя человека для реестра Telegram.
+
+    Использует публичный @username при наличии или постоянную HTML-ссылку
+    tg://user?id= для пользователей, зафиксировавших свой цифровой идентификатор.
+
+    Возвращает форматированную HTML-строку упоминания.
     """
     name = item["full_name"]
     username = item.get("username")
@@ -91,14 +103,18 @@ def format_person_tag(item: dict[str, Any]) -> str:
 
 def format_days_left_badge(days: int) -> str:
     """
-    Формирует человекочитаемый бейдж оставшихся дней.
+    Формирует понятный бейдж оставшихся дней с правильным русским склонением.
+
+    Обрабатывает особые случаи 'сегодня', 'завтра' и правила грамматики
+    (1 день, 2-4 дня, 5-20 дней).
+
+    Возвращает текстовую строку обратного отсчета.
     """
     if days == 0:
         return "сегодня"
     if days == 1:
         return "завтра"
-    last_two = days % 100
-    last_one = days % 10
+    last_two, last_one = days % 100, days % 10
     if 11 <= last_two <= 14:
         return f"через {days} дней"
     if last_one == 1:
@@ -110,7 +126,11 @@ def format_days_left_badge(days: int) -> str:
 
 def format_today_block(today_items: list[dict[str, Any]]) -> list[str]:
     """
-    Формирует праздничный блок для именинников сегодняшнего дня.
+    Формирует праздничный блок в HTML-цитате для именинников сегодняшнего дня.
+
+    Отображает поздравление вверху реестра с эмодзи и исполняющимся возрастом.
+
+    Возвращает список строк разметки или пустой список при отсутствии именинников сегодня.
     """
     if not today_items:
         return []
@@ -124,10 +144,13 @@ def format_today_block(today_items: list[dict[str, Any]]) -> list[str]:
 
 def format_age_badge(age: int) -> str:
     """
-    Формирует строку возраста с правильным склонением (лет/год/года).
+    Склоняет возраст человека по правилам русского языка (год / года / лет).
+
+    Применяется в списках именинников для корректной грамматики.
+
+    Возвращает строку вида '18 лет', '21 год', '22 года'.
     """
-    last_two = age % 100
-    last_one = age % 10
+    last_two, last_one = age % 100, age % 10
     if 11 <= last_two <= 14:
         return f"{age} лет"
     if last_one == 1:
@@ -139,7 +162,12 @@ def format_age_badge(age: int) -> str:
 
 def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]:
     """
-    Формирует блок ближайших именинников в цитате.
+    Формирует блок ближайших именинников в цитате Telegram.
+
+    Отбирает праздники в пределах 45 дней (или гарантированно минимум 3 ближайших),
+    исключая сегодняшних именинников.
+
+    Возвращает список форматированных строк блока или пустой список.
     """
     upcoming = [i for i in items if not i.get("is_today")]
     near = [i for i in upcoming if i["days_until"] <= 45]
@@ -147,7 +175,6 @@ def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]:
         near = upcoming[:3]
     if not near:
         return []
-
     lines = ["<blockquote>⏳ <b>БЛИЖАЙШИЕ ПРАЗДНИКИ:</b>"]
     for i in near:
         d_str = f"{i['day']:02d}.{i['month']:02d}"
@@ -161,20 +188,28 @@ def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]:
 
 def season_sort_key(item: dict[str, Any], months: list[int]) -> int:
     """
-    Вычисляет индекс сортировки даты внутри сезона.
+    Вычисляет целочисленный индекс сортировки даты внутри заданного сезона.
+
+    Обеспечивает естественный хронологический порядок отображения дней рождения
+    (например, декабрь -> январь -> февраль для зимы).
+
+    Возвращает числовой ключ сортировки.
     """
     return months.index(item["month"]) * 100 + item["day"]
 
 
 def format_season_block(title: str, months: list[int], all_items: list[dict[str, Any]]) -> list[str]:
     """
-    Форматирует список именинников для одного сезона с указанием возраста.
+    Форматирует сезонный блок именинников (осень, зима, весна, лето).
+
+    Сортирует участников по датам внутри сезона и генерирует аккуратные строки списка.
+
+    Возвращает список строк форматированного сезонного раздела.
     """
     s_items = [i for i in all_items if i["month"] in months]
     s_items.sort(key=lambda x: season_sort_key(x, months))
     if not s_items:
         return []
-
     lines = [f"<b>{title}</b>"]
     for i in s_items:
         d_str = f"{i['day']:02d}.{i['month']:02d}"
@@ -187,7 +222,12 @@ def format_season_block(title: str, months: list[int], all_items: list[dict[str,
 
 def format_birthday_registry_text(items: list[dict[str, Any]]) -> str:
     """
-    Формирует двухуровневый реестр дней рождения с сезонами и ближайшими.
+    Собирает полный итоговый текст закрепленного сообщения реестра дней рождения.
+
+    Включает шапку, блок сегодняшних именинников, ближайшие праздники и поквартальную
+    раскладку по временам года из SEASONS_INFO.
+
+    Возвращает готовую HTML-строку для отправки в топик.
     """
     lines = [
         "🎂 <b>ДНИ РОЖДЕНИЯ ГРУППЫ 1-КПД-3</b>",
@@ -195,17 +235,23 @@ def format_birthday_registry_text(items: list[dict[str, Any]]) -> str:
     ]
     lines.extend(format_today_block([i for i in items if i.get("is_today")]))
     lines.extend(format_upcoming_block(items))
-
     for title, months in SEASONS_INFO:
         lines.extend(format_season_block(title, months, items))
-
     lines.append("────────────────────────────")
     lines.append("<i>🔄 Бот ежедневно обновляет реестр и поздравляет в 07:00</i>")
     return "\n".join(lines).strip()
 
 
+
 def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HISTORY_FILE) -> str:
-    """Выбирает случайное неповторяющееся поздравление для участника."""
+    """
+    Выбирает случайное неповторяющееся поздравление для участника.
+
+    Ведет локальную историю использованных индексов, сбрасывая ее при полном
+    исчерпании доступных вариантов для предотвращения повторов поздравлений.
+
+    Возвращает строку с выбранным текстом пожелания.
+    """
     if not wishes:
         return "Желаем счастья, здоровья, успехов в учёбе и исполнения всех желаний!"
     history: dict[str, list[int]] = load_json_file(history_file, {})
@@ -223,7 +269,12 @@ def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HIS
 
 def get_person_mention(item: dict[str, Any]) -> str:
     """
-    Формирует кликабельное упоминание для персонального поздравления.
+    Формирует кликабельное упоминание именинника для персонального поздравления.
+
+    Использует @username для отправки уведомления или гиперссылку tg://user?id
+    по сохраненному аппаратному идентификатору Telegram.
+
+    Возвращает строку с тегом упоминания или именем студента.
     """
     username = item.get("username")
     tg_id = item.get("tg_id")
@@ -235,7 +286,14 @@ def get_person_mention(item: dict[str, Any]) -> str:
 
 
 def format_starosta_block(starosta_text: str | None) -> str:
-    """Формирует блок слова старосты, если он задан."""
+    """
+    Формирует цитату с напутственным словом старосты группы.
+
+    Оформляет отдельный блок пожелания от старосты в HTML-тег blockquote
+    для визуального выделения в ленте топика.
+
+    Возвращает форматированную строку или пустую строку при отсутствии текста.
+    """
     if not starosta_text:
         return ""
     return (
@@ -247,7 +305,14 @@ def format_starosta_block(starosta_text: str | None) -> str:
 def format_congrats_message(
     item: dict[str, Any], wish_text: str, starosta_text: str | None = None
 ) -> str:
-    """Формирует праздничное персональное поздравление от группы и старосты."""
+    """
+    Формирует праздничное персональное поздравление от имени группы и старосты.
+
+    Автоматически адаптирует текст, если именинником является сам староста,
+    и призывает одногруппников перейти в топик 'Флудилка' для поздравлений.
+
+    Возвращает готовый HTML-текст праздничной публикации.
+    """
     mention = get_person_mention(item)
     name = item["full_name"]
     age = item.get("turning_age", 18)
@@ -267,7 +332,14 @@ def format_congrats_message(
 async def _send_congrats_telegram(
     text: str, person_key: str, key: str, state: dict[str, bool]
 ) -> None:
-    """Отправляет поздравление в Telegram и фиксирует статус."""
+    """
+    Отправляет поздравление в топик 'Важное' и сохраняет флаг доставки.
+
+    Фиксирует факт отправки в файле состояния, гарантируя идемпотентность
+    и предотвращая повторный спам поздравлением в течение дня.
+
+    Ничего не возвращает.
+    """
     try:
         await bot.send_message(
             chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text
@@ -280,7 +352,14 @@ async def _send_congrats_telegram(
 
 
 async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None:
-    """Отправляет персональное поздравление в топик 'Важное' (ID: 2)."""
+    """
+    Оркестрирует отправку персонального поздравления для именинника.
+
+    Проверяет реестр отправленных поздравлений за текущий день, подбирает
+    уникальные пожелания и инициирует публикацию в Telegram.
+
+    Ничего не возвращает.
+    """
     congrats_state: dict[str, bool] = load_json_file(CONGRATS_STATE_FILE, {})
     person_key = item["full_name"]
     congrats_key = f"{today_str}_{person_key}"
@@ -295,12 +374,25 @@ async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None:
 
 
 def is_morning_congrats_time(now_dt: datetime) -> bool:
-    """Проверяет наступление утреннего времени поздравлений (07:00 МСК)."""
+    """
+    Проверяет наступление утреннего времени отправки поздравлений (07:00 МСК).
+
+    Предотвращает ночные уведомления участников группы о праздниках.
+
+    Возвращает True, если текущее время 07:00 или позже, иначе False.
+    """
     return now_dt.hour >= 7
 
 
 async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], today: date) -> None:
-    """Проверяет сегодняшних именинников и отправляет поздравления строго с 07:00."""
+    """
+    Проверяет сегодняшних именинников и отправляет поздравления строго с 07:00.
+
+    Сканирует подготовленный список студентов с флагом is_today и запускает
+    отправку сообщений при наступлении утреннего времени.
+
+    Ничего не возвращает.
+    """
     now_dt = datetime.now(TIMEZONE)
     if not is_morning_congrats_time(now_dt):
         log.debug(f"Поздравления с ДР ожидают наступления 07:00 (сейчас {now_dt.strftime('%H:%M')})")
@@ -312,7 +404,14 @@ async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], t
 
 
 async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool:
-    """Пытается отредактировать существующее сообщение реестра ДР."""
+    """
+    Редактирует существующее закрепленное сообщение реестра дней рождения.
+
+    Перехватывает ошибку 'message is not modified' без создания ложных предупреждений,
+    сообщая о необходимости пересоздания при удалении сообщения пользователем.
+
+    Возвращает True в случае успеха, False при необходимости пересоздать пост.
+    """
     try:
         await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=msg_id, text=text)
         log.debug(f"Реестр дней рождения обновлен: MSG_ID={msg_id}")
@@ -325,7 +424,14 @@ async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool:
 
 
 async def _create_new_birthday_message(text: str) -> bool:
-    """Создает новое сообщение реестра ДР и закрепляет его без звука."""
+    """
+    Публикует и закрепляет новое сообщение реестра дней рождения в топике.
+
+    Отправляет пост в целевой thread, сохраняет его ID в файл состояния
+    и закрепляет без звукового уведомления участников.
+
+    Возвращает True при успешной отправке, False при ошибке Telegram API.
+    """
     try:
         msg = await bot.send_message(
             chat_id=TOPIC_CHAT_ID, message_thread_id=BIRTHDAY_TOPIC_THREAD_ID, text=text
@@ -343,7 +449,14 @@ async def _create_new_birthday_message(text: str) -> bool:
 
 
 async def update_birthday_pinned_message(text: str) -> bool:
-    """Обновляет существующее или создает новое закрепленное сообщение реестра ДР."""
+    """
+    Оркестрирует обновление или повторное создание закрепленного сообщения реестра.
+
+    Сверяет ID из файла состояния: сначала пытается отредактировать старый пост,
+    а при невозможности создает новый и закрепляет его.
+
+    Возвращает True при успешной синхронизации сообщения.
+    """
     state = load_json_file(STATE_FILE, {})
     main_msg_id = state.get("main_msg_id")
     if main_msg_id and await _edit_existing_birthday_message(main_msg_id, text):
@@ -352,7 +465,14 @@ async def update_birthday_pinned_message(text: str) -> bool:
 
 
 async def sync_birthdays_topic() -> bool:
-    """Основной цикл синхронизации реестра ДР и проверки поздравлений."""
+    """
+    Выполняет полный цикл синхронизации реестра дней рождения и отправки поздравлений.
+
+    Считывает список студентов из birthdays.json, пересчитывает дни до праздника,
+    триггерит поздравления и обновляет закрепленное сообщение в топике.
+
+    Возвращает True в случае успешной публикации, иначе False.
+    """
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
     raw_birthdays: list[dict[str, Any]] = load_json_file(BIRTHDAYS_FILE, [])
@@ -367,7 +487,14 @@ async def sync_birthdays_topic() -> bool:
 
 
 async def birthday_sync_loop() -> None:
-    """Фоновый цикл проверки дней рождения (каждые 30 минут)."""
+    """
+    Запускает бесконечный цикл фоновой синхронизации дней рождения (каждые 30 минут).
+
+    Обеспечивает своевременную смену даты и утреннее поздравление в 07:00 МСК
+    с обработкой непредвиденных исключений без падения процесса.
+
+    Ничего не возвращает (работает до завершения приложения).
+    """
     log.info("Запущен фоновый сервис дней рождения КТМУ")
     await asyncio.sleep(5)
     while True:
@@ -376,3 +503,4 @@ async def birthday_sync_loop() -> None:
         except Exception as e:
             log.error(f"Ошибка в birthday_sync_loop: {e}")
         await asyncio.sleep(1800)
+

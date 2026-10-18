@@ -15,8 +15,16 @@ from core.logger import get_logger
 
 log = get_logger("bot_core")
 
+
 def create_bot_session() -> AiohttpSession:
-    """Создает сессию aiohttp с пулом соединений (limit=50) и SOCKS5 прокси."""
+    """
+    Создает сессию сетевого взаимодействия aiohttp для Telegram Bot API.
+
+    Ограничивает пул соединений до 50 сокетов и при наличии PROXY_URL настраивает
+    проксирование запросов через SOCKS5 для обхода блокировок.
+
+    Возвращает сконфигурированный экземпляр aiogram.client.session.aiohttp.AiohttpSession.
+    """
     if PROXY_URL:
         log.info("SOCKS5 Прокси успешно подключен для Telegram API (limit=50, timeout=30s)")
         return AiohttpSession(proxy=PROXY_URL, limit=50, timeout=30.0)
@@ -24,12 +32,20 @@ def create_bot_session() -> AiohttpSession:
 
 
 def create_fsm_storage():
-    """Создает персистентное Redis-хранилище FSM с fallback на MemoryStorage."""
+    """
+    Создает постоянное хранилище состояний FSM диалогов на базе Redis.
+
+    Обеспечивает сохранение пользовательского контекста между рестартами контейнера
+    с защитным fallback на локальный MemoryStorage при сетевой недоступности Redis.
+
+    Возвращает экземпляр BaseStorage (RedisStorage или fallback MemoryStorage).
+    """
     try:
         from aiogram.fsm.storage.redis import DefaultKeyBuilder, RedisStorage
         from redis.asyncio import Redis
 
         from core.redis import get_redis_pool
+
         pool = get_redis_pool()
         r = Redis(connection_pool=pool)
         key_builder = DefaultKeyBuilder(prefix="fsm")
@@ -38,6 +54,7 @@ def create_fsm_storage():
     except Exception as e:
         log.warning(f"⚠️ Не удалось подключить RedisStorage ({e}), используется MemoryStorage")
         from aiogram.fsm.storage.memory import MemoryStorage
+
         return MemoryStorage()
 
 
@@ -48,8 +65,8 @@ bot = Bot(
     session=session,
     default=DefaultBotProperties(
         parse_mode=ParseMode.HTML,
-        link_preview_is_disabled=True
-    )
+        link_preview_is_disabled=True,
+    ),
 )
 
 dp = Dispatcher(storage=create_fsm_storage())

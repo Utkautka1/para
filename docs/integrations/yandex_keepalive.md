@@ -21,8 +21,8 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`ping_yandex_session`](#ping_yandex_session) | Function | L21–L35 | `bool` | Executes core domain logic for `ping_yandex_session`. |
-| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L38–L55 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
+| [`ping_yandex_session`](#ping_yandex_session) | Function | L21–L38 | `bool` | Executes core domain logic for `ping_yandex_session`. |
+| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L41–L62 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
 
 ---
 
@@ -33,7 +33,7 @@ graph LR
 async def ping_yandex_session() -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_keepalive.py#L21-L35`](../../integrations/yandex_keepalive.py#L21-L35)
+- **Source Reference**: [`integrations/yandex_keepalive.py#L21-L38`](../../integrations/yandex_keepalive.py#L21-L38)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -61,10 +61,10 @@ result = await ping_yandex_session()
 
 ### `yandex_session_keepalive_loop`
 ```python
-async def yandex_session_keepalive_loop(interval: int = KEEPALIVE_INTERVAL_SECONDS) -> None
+async def yandex_session_keepalive_loop( interval: int = KEEPALIVE_INTERVAL_SECONDS, ) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_keepalive.py#L38-L55`](../../integrations/yandex_keepalive.py#L38-L55)
+- **Source Reference**: [`integrations/yandex_keepalive.py#L41-L62`](../../integrations/yandex_keepalive.py#L41-L62)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

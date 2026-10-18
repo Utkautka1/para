@@ -36,7 +36,14 @@ CACHE_TTL_SECONDS = ATTENDANCE_STATS_CACHE_TTL_SECONDS
 
 
 def _init_student_stat(fio: str) -> dict[str, Any]:
-    """Инициализирует структуру счетчиков посещаемости студента."""
+    """
+    Инициализирует базовую структуру счетчиков посещаемости для одного студента.
+
+    Формирует нулевые суммарные счетчики по типам отметок (П, О, У, Н) и пустую
+    карту распределения по учебным месяцам.
+
+    Возвращает словарь с начальными счетчиками посещаемости студента.
+    """
     return {
         "fio": fio,
         "total": {"П": 0, "О": 0, "У": 0, "Н": 0},
@@ -45,7 +52,14 @@ def _init_student_stat(fio: str) -> dict[str, Any]:
 
 
 def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]:
-    """Подсчитывает отметки посещаемости студента в строке конкретного месяца."""
+    """
+    Подсчитывает отметки посещаемости студента в строке конкретного месяца.
+
+    Сканирует диапазон ячеек от 3-й колонки до max_column, нормализует текстовые
+    значения к верхнему регистру и агрегирует типы отметок.
+
+    Возвращает словарь счетчиков {'П': int, 'О': int, 'У': int, 'Н': int}.
+    """
     row_counts = {"П": 0, "О": 0, "У": 0, "Н": 0}
     for col in range(3, mc + 1):
         val = sheet.cell(row, col).value
@@ -57,28 +71,56 @@ def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]:
     return row_counts
 
 
+def _process_student_row(
+    sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]]
+) -> None:
+    """
+    Извлекает и суммирует отметки одного студента из конкретной строки таблицы.
+
+    Проверяет валидность ФИО во 2-й колонке, нормализует его и инкрементирует
+    помесячные и суммарные счетчики в переданном аккумуляторе stats.
+
+    Ничего не возвращает.
+    """
+    raw_fio = sheet.cell(r, 2).value
+    if not raw_fio:
+        return
+    fio = normalize_fio(str(raw_fio))
+    if not fio:
+        return
+    if fio not in stats:
+        stats[fio] = _init_student_stat(fio)
+    row_counts = _count_row_marks(sheet, r, mc)
+    stats[fio]["months"][s_name] = row_counts
+    for mark, cnt in row_counts.items():
+        stats[fio]["total"][mark] += cnt
+
+
 def _aggregate_sheet_stats(
     sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]
 ) -> None:
-    """Обрабатывает один лист месяца и накапливает отметки в общий реестр."""
+    """
+    Обрабатывает один лист месяца и накапливает отметки в общий реестр.
+
+    Обходит строки студентов с 5 по 44 (соответствует списочному составу группы)
+    и делегирует парсинг каждой строки функции _process_student_row.
+
+    Ничего не возвращает.
+    """
     mc = sheet.max_column
     for r in range(5, 45):
-        raw_fio = sheet.cell(r, 2).value
-        if not raw_fio:
-            continue
-        fio = normalize_fio(str(raw_fio))
-        if not fio:
-            continue
-        if fio not in stats:
-            stats[fio] = _init_student_stat(fio)
-        row_counts = _count_row_marks(sheet, r, mc)
-        stats[fio]["months"][s_name] = row_counts
-        for mark, cnt in row_counts.items():
-            stats[fio]["total"][mark] += cnt
+        _process_student_row(sheet, r, mc, s_name, stats)
 
 
 def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]:
-    """Извлекает отметки всех студентов по всем месяцам из книги openpyxl."""
+    """
+    Извлекает отметки всех студентов по всем месяцам из книги openpyxl.
+
+    Фильтрует листы книги по валидному списку месяцев (СЕНТ, ОКТ, ...) и формирует
+    сквозную агрегированную аналитическую структуру.
+
+    Возвращает словарь {ФИО: данные_посещаемости}.
+    """
     stats: dict[str, dict[str, Any]] = {}
     valid_months = set(MONTH_SHEET_MAP.values())
     for s_name in wb.sheetnames:
@@ -90,7 +132,14 @@ def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]
 
 
 async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None:
-    """Считывает закэшированную статистику из Redis."""
+    """
+    Считывает закэшированную сквозную статистику посещаемости из Redis.
+
+    Обеспечивает мгновенный отклик команд и UI без необходимости повторной
+    тяжелой выгрузки и парсинга XLSX-файла из облака.
+
+    Возвращает десериализованную структуру статистики или None при промахе кэша/ошибке.
+    """
     cached = await cache_get(REDIS_STATS_KEY)
     if not cached:
         return None
@@ -102,7 +151,14 @@ async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None:
 
 
 async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None:
-    """Сохраняет структуру статистики в Redis с TTL 1 час."""
+    """
+    Сохраняет структуру статистики в Redis с настроенным временем жизни TTL.
+
+    Сериализует JSON с сохранением русских символов (ensure_ascii=False) и
+    логирует результат операции.
+
+    Ничего не возвращает.
+    """
     try:
         payload = json.dumps(stats, ensure_ascii=False)
         await cache_set(REDIS_STATS_KEY, payload, ttl=CACHE_TTL_SECONDS)
@@ -112,7 +168,14 @@ async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None:
 
 
 async def invalidate_attendance_stats_cache() -> None:
-    """Принудительно сбрасывает кэш сквозной статистики посещаемости."""
+    """
+    Принудительно инвалидирует кэш сквозной статистики посещаемости в Redis.
+
+    Вызывается после сохранения новых отметок старостой в Яндекс Документы
+    для гарантии актуальности последующих запросов аналитики.
+
+    Ничего не возвращает.
+    """
     await cache_flush(f"{REDIS_STATS_KEY}*")
     log.info("Кэш сквозной статистики посещаемости сброшен")
 
@@ -120,7 +183,14 @@ async def invalidate_attendance_stats_cache() -> None:
 async def fetch_all_time_attendance(
     force_refresh: bool = False
 ) -> dict[str, dict[str, Any]]:
-    """Возвращает сквозную статистику посещаемости с Redis-кэшированием."""
+    """
+    Возвращает сквозную статистику посещаемости с поддержкой Redis-кэширования.
+
+    При промахе кэша или флаге force_refresh выполняет загрузку XLSX через WOPI,
+    парсит документ в пуле потоков и сохраняет результат в кэш.
+
+    Возвращает полный словарь посещаемости по всем студентам.
+    """
     if not force_refresh:
         cached = await _load_from_redis_cache()
         if cached:
@@ -136,7 +206,14 @@ async def fetch_all_time_attendance(
 def find_student_attendance(
     stats: dict[str, dict[str, Any]], target_name: str
 ) -> dict[str, Any] | None:
-    """Находит статистику студента по точному или частичному совпадению ФИО."""
+    """
+    Находит статистику студента по точному или частичному совпадению ФИО.
+
+    Использует двухэтапный поиск (вхождение полного ФИО и поиск по фамилии)
+    с предварительной нормализацией строки поиска.
+
+    Возвращает словарь статистики студента или None при отсутствии совпадений.
+    """
     target_clean = normalize_fio(target_name).lower()
     for fio, data in stats.items():
         low = fio.lower()
@@ -152,7 +229,14 @@ def find_student_attendance(
 
 
 def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None:
-    """Корректирует счетчики студента с учетом замены старой отметки на новую."""
+    """
+    Корректирует счетчики студента с учетом замены старой отметки на новую.
+
+    Предотвращает задвоение при повторном нажатии кнопок в интерактивной сессии
+    отметки посещаемости старостой.
+
+    Ничего не возвращает.
+    """
     tot = stat.setdefault("total", {"П": 0, "О": 0, "У": 0, "Н": 0})
     if old_mark and old_mark in tot and tot[old_mark] > 0:
         tot[old_mark] -= 1
@@ -161,7 +245,13 @@ def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark:
 
 
 async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
-    """Считывает ранее сохраненный срез отметок пары из Redis."""
+    """
+    Считывает ранее сохраненный срез отметок пары из Redis.
+
+    Позволяет определить дельту изменений в рамках текущей сессии отметки.
+
+    Возвращает словарь {номер_строки: отметка}.
+    """
     raw = await cache_get(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}")
     if not raw:
         return {}
@@ -172,15 +262,27 @@ async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
 
 
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None:
-    """Сохраняет срез отметок пары в Redis с настроенным TTL для защиты от задвоений."""
+    """
+    Сохраняет срез отметок пары в Redis с настроенным TTL для защиты от задвоений.
+
+    Обеспечивает синхронизацию промежуточного состояния сессии между кликами кнопок.
+
+    Ничего не возвращает.
+    """
     payload = json.dumps(marks, ensure_ascii=False)
     await cache_set(f"{REDIS_MARKS_CACHE_PREFIX}:{t_date}:{l_num}", payload, ttl=MARKS_CACHE_TTL_SECONDS)
 
 
-async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]:
-    """Мгновенно обновляет кэш статистики в Redis на основе отметок сессии."""
-    stats = await fetch_all_time_attendance(force_refresh=False)
-    saved_marks = await _get_saved_lesson_marks(session.target_date, session.lesson_num)
+def _update_session_marks_in_stats(
+    session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]]
+) -> dict[str, str]:
+    """
+    Применяет новые отметки студентов из интерактивной сессии к агрегированной статистике.
+
+    Вычисляет изменившиеся значения и обновляет локальные счетчики каждого студента.
+
+    Возвращает обновленный словарь зафиксированных отметок пары.
+    """
     new_saved_marks = dict(saved_marks)
     for row_idx, fio in session.students:
         new_mark = session.marks.get(str(row_idx))
@@ -189,7 +291,23 @@ async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, A
         student_stat = stats.setdefault(fio, _init_student_stat(fio))
         _adjust_student_counts(student_stat, saved_marks.get(str(row_idx)), new_mark)
         new_saved_marks[str(row_idx)] = new_mark
+    return new_saved_marks
+
+
+async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]:
+    """
+    Мгновенно обновляет кэш статистики в Redis на основе отметок активной сессии.
+
+    Обеспечивает Zero-Latency отклик для интерфейса старосты, не дожидаясь
+    завершения фоновой синхронизации с Яндекс Документами.
+
+    Возвращает обновленный словарь статистики по всей группе.
+    """
+    stats = await fetch_all_time_attendance(force_refresh=False)
+    saved_marks = await _get_saved_lesson_marks(session.target_date, session.lesson_num)
+    new_saved_marks = _update_session_marks_in_stats(session, saved_marks, stats)
     await _save_lesson_marks(session.target_date, session.lesson_num, new_saved_marks)
     await _save_to_redis_cache(stats)
     log.info(f"✅ Оптимистичное обновление посещаемости пары {session.lesson_num} применено")
     return stats
+

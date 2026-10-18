@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_map_calculated_to_dto`](#_map_calculated_to_dto) | Function | L25–L35 | `BirthdayItem` | Executes core domain logic for `_map_calculated_to_dto`... |
-| [`get_birthdays_calendar`](#get_birthdays_calendar) | Function | L39–L46 | `BirthdaysCalendarResponse` | Retrieves and resolves domain data for `get_birthdays_c... |
-| [`get_upcoming_birthdays`](#get_upcoming_birthdays) | Function | L50–L60 | `UpcomingBirthdaysResponse` | Retrieves and resolves domain data for `get_upcoming_bi... |
-| [`get_today_birthdays`](#get_today_birthdays) | Function | L64–L71 | `TodayBirthdaysResponse` | Retrieves and resolves domain data for `get_today_birth... |
+| [`_map_calculated_to_dto`](#_map_calculated_to_dto) | Function | L25–L44 | `BirthdayItem` | Executes core domain logic for `_map_calculated_to_dto`... |
+| [`get_birthdays_calendar`](#get_birthdays_calendar) | Function | L48–L64 | `BirthdaysCalendarResponse` | Retrieves and resolves domain data for `get_birthdays_c... |
+| [`get_upcoming_birthdays`](#get_upcoming_birthdays) | Function | L68–L87 | `UpcomingBirthdaysResponse` | Retrieves and resolves domain data for `get_upcoming_bi... |
+| [`get_today_birthdays`](#get_today_birthdays) | Function | L91–L107 | `TodayBirthdaysResponse` | Retrieves and resolves domain data for `get_today_birth... |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 def _map_calculated_to_dto(c: dict) -> BirthdayItem
 ```
 
-- **Source Reference**: [`api/router/birthdays.py#L25-L35`](../../api/router/birthdays.py#L25-L35)
+- **Source Reference**: [`api/router/birthdays.py#L25-L44`](../../api/router/birthdays.py#L25-L44)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `BirthdayItem`
 
@@ -68,7 +68,7 @@ result = _map_calculated_to_dto(c=...)
 async def get_birthdays_calendar() -> BirthdaysCalendarResponse
 ```
 
-- **Source Reference**: [`api/router/birthdays.py#L39-L46`](../../api/router/birthdays.py#L39-L46)
+- **Source Reference**: [`api/router/birthdays.py#L48-L64`](../../api/router/birthdays.py#L48-L64)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `BirthdaysCalendarResponse`
 
@@ -99,7 +99,7 @@ result = await get_birthdays_calendar()
 async def get_upcoming_birthdays( days: int = Query(default=30, ge=1, le=365, description="Search horizon (days)"), ) -> UpcomingBirthdaysResponse
 ```
 
-- **Source Reference**: [`api/router/birthdays.py#L50-L60`](../../api/router/birthdays.py#L50-L60)
+- **Source Reference**: [`api/router/birthdays.py#L68-L87`](../../api/router/birthdays.py#L68-L87)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `UpcomingBirthdaysResponse`
 
@@ -132,7 +132,7 @@ result = await get_upcoming_birthdays(days=...)
 async def get_today_birthdays() -> TodayBirthdaysResponse
 ```
 
-- **Source Reference**: [`api/router/birthdays.py#L64-L71`](../../api/router/birthdays.py#L64-L71)
+- **Source Reference**: [`api/router/birthdays.py#L91-L107`](../../api/router/birthdays.py#L91-L107)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TodayBirthdaysResponse`
 

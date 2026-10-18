@@ -5,25 +5,22 @@
 для передачи в Bot.restrict_chat_member.
 """
 
-import re
+from config import DURATION_MULTIPLIERS, DURATION_REGEX
 
 
 def parse_duration_to_seconds(time_str: str) -> int | None:
     """
-    Парсит строку формата '5с', '10м', '2ч', '1д' в интервал в секундах.
+    Парсит текстовое выражение длительности ('5с', '10м', '2ч', '1д') в секунды.
 
-    :param time_str: Строка с периодом
-    :return: Секунды или None при неверном формате
+    Использует регулярное выражение для гибкого извлечения числа и единицы измерения,
+    по умолчанию применяя минуты при отсутствии суффикса.
+
+    Возвращает целочисленное количество секунд или None при невалидном формате строки.
     """
-    match = re.match(r"^(\d+)\s*([сsмmчhдd])?$", time_str.strip().lower())
+    match = DURATION_REGEX.match(time_str.strip().lower())
     if not match:
         return None
     amount = int(match.group(1))
     unit = match.group(2) or "м"
-    multipliers = {
-        "с": 1, "s": 1,
-        "м": 60, "m": 60,
-        "ч": 3600, "h": 3600,
-        "д": 86400, "d": 86400
-    }
-    return amount * multipliers.get(unit, 60)
+    return amount * DURATION_MULTIPLIERS.get(unit, 60)
+

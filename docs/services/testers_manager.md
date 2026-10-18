@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L40 | `str | None` | Executes core domain logic for `generate_or_get_tester_... |
-| [`get_tester_by_key`](#get_tester_by_key) | Function | L43–L54 | `int | None` | Retrieves and resolves domain data for `get_tester_by_k... |
-| [`add_tester`](#add_tester) | Function | L57–L65 | `bool` | Executes core domain logic for `add_tester`. |
-| [`remove_tester`](#remove_tester) | Function | L68–L82 | `bool` | Executes core domain logic for `remove_tester`. |
-| [`is_tester_allowed`](#is_tester_allowed) | Function | L85–L92 | `bool` | Executes core domain logic for `is_tester_allowed`. |
-| [`get_all_testers`](#get_all_testers) | Function | L95–L104 | `list[int]` | Retrieves and resolves domain data for `get_all_testers... |
+| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L47 | `str | None` | Executes core domain logic for `generate_or_get_tester_... |
+| [`get_tester_by_key`](#get_tester_by_key) | Function | L50–L68 | `int | None` | Retrieves and resolves domain data for `get_tester_by_k... |
+| [`add_tester`](#add_tester) | Function | L71–L86 | `bool` | Executes core domain logic for `add_tester`. |
+| [`remove_tester`](#remove_tester) | Function | L89–L110 | `bool` | Executes core domain logic for `remove_tester`. |
+| [`is_tester_allowed`](#is_tester_allowed) | Function | L113–L127 | `bool` | Executes core domain logic for `is_tester_allowed`. |
+| [`get_all_testers`](#get_all_testers) | Function | L130–L146 | `list[int]` | Retrieves and resolves domain data for `get_all_testers... |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 async def generate_or_get_tester_key(user_id: int) -> str | None
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L26-L40`](../../services/testers_manager.py#L26-L40)
+- **Source Reference**: [`services/testers_manager.py#L26-L47`](../../services/testers_manager.py#L26-L47)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str | None`
 
@@ -71,7 +71,7 @@ result = await generate_or_get_tester_key(user_id=...)
 async def get_tester_by_key(api_key: str) -> int | None
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L43-L54`](../../services/testers_manager.py#L43-L54)
+- **Source Reference**: [`services/testers_manager.py#L50-L68`](../../services/testers_manager.py#L50-L68)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int | None`
 
@@ -104,7 +104,7 @@ result = await get_tester_by_key(api_key=...)
 async def add_tester(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L57-L65`](../../services/testers_manager.py#L57-L65)
+- **Source Reference**: [`services/testers_manager.py#L71-L86`](../../services/testers_manager.py#L71-L86)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -138,7 +138,7 @@ result = await add_tester(user_id=...)
 async def remove_tester(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L68-L82`](../../services/testers_manager.py#L68-L82)
+- **Source Reference**: [`services/testers_manager.py#L89-L110`](../../services/testers_manager.py#L89-L110)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -172,7 +172,7 @@ result = await remove_tester(user_id=...)
 async def is_tester_allowed(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L85-L92`](../../services/testers_manager.py#L85-L92)
+- **Source Reference**: [`services/testers_manager.py#L113-L127`](../../services/testers_manager.py#L113-L127)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -205,7 +205,7 @@ result = await is_tester_allowed(user_id=...)
 async def get_all_testers() -> list[int]
 ```
 
-- **Source Reference**: [`services/testers_manager.py#L95-L104`](../../services/testers_manager.py#L95-L104)
+- **Source Reference**: [`services/testers_manager.py#L130-L146`](../../services/testers_manager.py#L130-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[int]`
 

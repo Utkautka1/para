@@ -21,17 +21,36 @@ log = get_logger("api_main")
 
 
 class _InvalidHttpFilter(logging.Filter):
-    """Подавляет спам от сетевых сканеров и SSL-хэндшейков на чистом HTTP-порту."""
+    """Фильтр сообщений логов для подавления шума сетевых сканеров."""
+
     def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Фильтрует мусорные записи логов о некорректных HTTP-запросах.
+
+        Подавляет спам от автоматических сетевых сканеров и попыток SSL-хэндшейка.
+        Предотвращает засорение производственных логов бессмысленными варнингами.
+
+        Возвращает False, если сообщение содержит мусорный паттерн, иначе True.
+        """
+
         return "Invalid HTTP request received" not in record.getMessage()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Управляет жизненным циклом gRPC-сервера параллельно с FastAPI."""
+    """
+    Управляет жизненным циклом gRPC-сервера параллельно с веб-приложением FastAPI.
+
+    Инициализирует и запускает gRPC-сервер перед приемом трафика.
+    В блоке finally корректно останавливает gRPC-сервер с graceful shutdown.
+
+    Ничего не возвращает (асинхронный генератор контекста).
+    """
+
     grpc_server = create_grpc_server()
     await start_grpc_server(grpc_server, GRPC_HOST, GRPC_PORT)
     log.info(f"⚡ gRPC сервер активен на {GRPC_HOST}:{GRPC_PORT}")
+
     try:
         yield
     finally:
@@ -55,4 +74,3 @@ if __name__ == "__main__":
         http="httptools",
         log_level="warning",
     )
-

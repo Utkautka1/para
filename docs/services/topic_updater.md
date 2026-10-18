@@ -21,24 +21,32 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_topic_state`](#load_topic_state) | Function | L33–L40 | `int | None` | Executes core domain logic for `load_topic_state`. |
-| [`save_topic_state`](#save_topic_state) | Function | L43–L49 | `None` | Saves serialized entity data to storage for `save_topic... |
-| [`cleanup_expired_messages`](#cleanup_expired_messages) | Function | L52–L66 | `None` | Executes core domain logic for `cleanup_expired_message... |
-| [`send_temp_topic_reminder`](#send_temp_topic_reminder) | Function | L69–L86 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`check_and_trigger_reminder`](#check_and_trigger_reminder) | Function | L89–L106 | `None` | Executes core domain logic for `check_and_trigger_remin... |
-| [`get_next_working_day`](#get_next_working_day) | Function | L109–L119 | `date` | Retrieves and resolves domain data for `get_next_workin... |
-| [`resolve_target_date`](#resolve_target_date) | Function | L122–L144 | `date | None` | Executes core domain logic for `resolve_target_date`. |
-| [`is_too_early_to_publish`](#is_too_early_to_publish) | Function | L147–L161 | `bool` | Executes core domain logic for `is_too_early_to_publish... |
-| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L164–L186 | `bool` | Synchronizes and updates domain state for `update_topic... |
-| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L189–L200 | `bool` | Executes core domain logic for `_send_new_topic_message... |
-| [`_pin_silently`](#_pin_silently) | Function | L203–L211 | `None` | Executes core domain logic for `_pin_silently`. |
-| [`recreate_topic_message`](#recreate_topic_message) | Function | L214–L238 | `bool` | Executes core domain logic for `recreate_topic_message`... |
-| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L241–L259 | `bool` | Executes core domain logic for `_handle_edit_failure`. |
-| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L262–L271 | `bool` | Executes core domain logic for `should_skip_topic_updat... |
-| [`process_today_reminders`](#process_today_reminders) | Function | L274–L278 | `None` | Executes core domain logic for `process_today_reminders... |
-| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L281–L301 | `bool` | Executes core domain logic for `sync_topic_main_message... |
-| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L308–L322 | `None` | Executes core domain logic for `notify_admin_about_api_... |
-| [`topic_sync_loop`](#topic_sync_loop) | Function | L325–L346 | `None` | Executes core domain logic for `topic_sync_loop`. |
+| [`load_topic_state`](#load_topic_state) | Function | L33–L43 | `int | None` | Executes core domain logic for `load_topic_state`. |
+| [`save_topic_state`](#save_topic_state) | Function | L46–L59 | `None` | Saves serialized entity data to storage for `save_topic... |
+| [`cleanup_expired_messages`](#cleanup_expired_messages) | Function | L62–L83 | `None` | Executes core domain logic for `cleanup_expired_message... |
+| [`send_temp_topic_reminder`](#send_temp_topic_reminder) | Function | L86–L110 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`check_and_trigger_reminder`](#check_and_trigger_reminder) | Function | L113–L137 | `None` | Executes core domain logic for `check_and_trigger_remin... |
+| [`get_next_working_day`](#get_next_working_day) | Function | L140–L152 | `date` | Retrieves and resolves domain data for `get_next_workin... |
+| [`_should_switch_to_next_day`](#_should_switch_to_next_day) | Function | L155–L170 | `bool` | Executes core domain logic for `_should_switch_to_next_... |
+| [`resolve_target_date`](#resolve_target_date) | Function | L173–L190 | `date | None` | Executes core domain logic for `resolve_target_date`. |
+| [`is_too_early_to_publish`](#is_too_early_to_publish) | Function | L193–L210 | `bool` | Executes core domain logic for `is_too_early_to_publish... |
+| [`_edit_topic_message`](#_edit_topic_message) | Function | L214–L227 | `bool` | Executes core domain logic for `_edit_topic_message`. |
+| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L230–L247 | `bool` | Synchronizes and updates domain state for `update_topic... |
+| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L250–L271 | `bool` | Executes core domain logic for `_send_new_topic_message... |
+| [`_pin_silently`](#_pin_silently) | Function | L274–L289 | `None` | Executes core domain logic for `_pin_silently`. |
+| [`_try_delete_old_topic_msg`](#_try_delete_old_topic_msg) | Function | L292–L307 | `None` | Executes core domain logic for `_try_delete_old_topic_m... |
+| [`recreate_topic_message`](#recreate_topic_message) | Function | L310–L327 | `bool` | Executes core domain logic for `recreate_topic_message`... |
+| [`_recreate_after_edit_failure`](#_recreate_after_edit_failure) | Function | L330–L341 | `bool` | Executes core domain logic for `_recreate_after_edit_fa... |
+| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L344–L366 | `bool` | Executes core domain logic for `_handle_edit_failure`. |
+| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L369–L386 | `bool` | Executes core domain logic for `should_skip_topic_updat... |
+| [`process_today_reminders`](#process_today_reminders) | Function | L389–L399 | `None` | Executes core domain logic for `process_today_reminders... |
+| [`_prepare_target_schedule`](#_prepare_target_schedule) | Function | L402–L421 | `tuple[date | None, list[Lesson] | None]` | Executes core domain logic for `_prepare_target_schedul... |
+| [`_ensure_topic_main_msg_id`](#_ensure_topic_main_msg_id) | Function | L424–L433 | `None` | Executes core domain logic for `_ensure_topic_main_msg_... |
+| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L436–L458 | `bool` | Executes core domain logic for `sync_topic_main_message... |
+| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L465–L486 | `None` | Executes core domain logic for `notify_admin_about_api_... |
+| [`_track_api_failure`](#_track_api_failure) | Function | L489–L500 | `None` | Executes core domain logic for `_track_api_failure`. |
+| [`_reset_api_failure_tracker`](#_reset_api_failure_tracker) | Function | L503–L514 | `None` | Executes core domain logic for `_reset_api_failure_trac... |
+| [`topic_sync_loop`](#topic_sync_loop) | Function | L517–L535 | `None` | Executes core domain logic for `topic_sync_loop`. |
 
 ---
 
@@ -49,7 +57,7 @@ graph LR
 def load_topic_state() -> int | None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L33-L40`](../../services/topic_updater.py#L33-L40)
+- **Source Reference**: [`services/topic_updater.py#L33-L43`](../../services/topic_updater.py#L33-L43)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -80,7 +88,7 @@ result = load_topic_state()
 def save_topic_state(msg_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L43-L49`](../../services/topic_updater.py#L43-L49)
+- **Source Reference**: [`services/topic_updater.py#L46-L59`](../../services/topic_updater.py#L46-L59)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -113,7 +121,7 @@ result = save_topic_state(msg_id=...)
 async def cleanup_expired_messages() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L52-L66`](../../services/topic_updater.py#L52-L66)
+- **Source Reference**: [`services/topic_updater.py#L62-L83`](../../services/topic_updater.py#L62-L83)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -144,7 +152,7 @@ result = await cleanup_expired_messages()
 async def send_temp_topic_reminder(lesson: Lesson) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L69-L86`](../../services/topic_updater.py#L69-L86)
+- **Source Reference**: [`services/topic_updater.py#L86-L110`](../../services/topic_updater.py#L86-L110)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -177,7 +185,7 @@ result = await send_temp_topic_reminder(lesson=...)
 async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: date) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L89-L106`](../../services/topic_updater.py#L89-L106)
+- **Source Reference**: [`services/topic_updater.py#L113-L137`](../../services/topic_updater.py#L113-L137)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -212,7 +220,7 @@ result = await check_and_trigger_reminder(lesson=..., now_dt=..., today=...)
 def get_next_working_day(target_date: date) -> date
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L109-L119`](../../services/topic_updater.py#L109-L119)
+- **Source Reference**: [`services/topic_updater.py#L140-L152`](../../services/topic_updater.py#L140-L152)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
@@ -240,12 +248,47 @@ result = get_next_working_day(target_date=...)
 
 ---
 
+### `_should_switch_to_next_day`
+```python
+def _should_switch_to_next_day(today_lessons: list[Lesson], today: date, now_dt: datetime) -> bool
+```
+
+- **Source Reference**: [`services/topic_updater.py#L155-L170`](../../services/topic_updater.py#L155-L170)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_should_switch_to_next_day`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `today_lessons` | `list[Lesson]` | Yes | Parameter `today_lessons` of type `list[Lesson]`. |
+| `today` | `date` | Yes | Parameter `today` of type `date`. |
+| `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _should_switch_to_next_day
+
+# Execute call
+result = _should_switch_to_next_day(today_lessons=..., today=..., now_dt=...)
+```
+
+---
+
 ### `resolve_target_date`
 ```python
 async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> date | None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L122-L144`](../../services/topic_updater.py#L122-L144)
+- **Source Reference**: [`services/topic_updater.py#L173-L190`](../../services/topic_updater.py#L173-L190)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `date | None`
 
@@ -279,7 +322,7 @@ result = await resolve_target_date(now_dt=..., ignore_restriction=...)
 def is_too_early_to_publish(lessons: list[Lesson], now_dt: datetime, today: date, ignore_restriction: bool) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L147-L161`](../../services/topic_updater.py#L147-L161)
+- **Source Reference**: [`services/topic_updater.py#L193-L210`](../../services/topic_updater.py#L193-L210)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -310,12 +353,46 @@ result = is_too_early_to_publish(lessons=..., now_dt=..., today=...)
 
 ---
 
+### `_edit_topic_message`
+```python
+async def _edit_topic_message(text: str, kb: Any) -> bool
+```
+
+- **Source Reference**: [`services/topic_updater.py#L214-L227`](../../services/topic_updater.py#L214-L227)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_edit_topic_message`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `kb` | `Any` | Yes | Parameter `kb` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _edit_topic_message
+
+# Execute call
+result = await _edit_topic_message(text=..., kb=...)
+```
+
+---
+
 ### `update_topic_message_payload`
 ```python
 async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L164-L186`](../../services/topic_updater.py#L164-L186)
+- **Source Reference**: [`services/topic_updater.py#L230-L247`](../../services/topic_updater.py#L230-L247)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -350,7 +427,7 @@ result = await update_topic_message_payload(text=..., kb=..., _retry=...)
 async def _send_new_topic_message(text: str, kb: Any) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L189-L200`](../../services/topic_updater.py#L189-L200)
+- **Source Reference**: [`services/topic_updater.py#L250-L271`](../../services/topic_updater.py#L250-L271)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -384,7 +461,7 @@ result = await _send_new_topic_message(text=..., kb=...)
 async def _pin_silently(chat_id: int, message_id: int) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L203-L211`](../../services/topic_updater.py#L203-L211)
+- **Source Reference**: [`services/topic_updater.py#L274-L289`](../../services/topic_updater.py#L274-L289)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -413,12 +490,45 @@ result = await _pin_silently(chat_id=..., message_id=...)
 
 ---
 
+### `_try_delete_old_topic_msg`
+```python
+async def _try_delete_old_topic_msg(old_id: int | None) -> None
+```
+
+- **Source Reference**: [`services/topic_updater.py#L292-L307`](../../services/topic_updater.py#L292-L307)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_try_delete_old_topic_msg`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `old_id` | `int | None` | Yes | Parameter `old_id` of type `int | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _try_delete_old_topic_msg
+
+# Execute call
+result = await _try_delete_old_topic_msg(old_id=...)
+```
+
+---
+
 ### `recreate_topic_message`
 ```python
 async def recreate_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L214-L238`](../../services/topic_updater.py#L214-L238)
+- **Source Reference**: [`services/topic_updater.py#L310-L327`](../../services/topic_updater.py#L310-L327)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -432,7 +542,7 @@ Executes core domain logic for `recreate_topic_message`.
 - Emits structured telemetry events to system logging subsystem.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -444,12 +554,46 @@ result = await recreate_topic_message()
 
 ---
 
-### `_handle_edit_failure`
+### `_recreate_after_edit_failure`
 ```python
-async def _handle_edit_failure( e: TelegramBadRequest, text: str, kb: Any, is_retry: bool ) -> bool
+async def _recreate_after_edit_failure(text: str, kb: Any) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L241-L259`](../../services/topic_updater.py#L241-L259)
+- **Source Reference**: [`services/topic_updater.py#L330-L341`](../../services/topic_updater.py#L330-L341)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_recreate_after_edit_failure`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `kb` | `Any` | Yes | Parameter `kb` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _recreate_after_edit_failure
+
+# Execute call
+result = await _recreate_after_edit_failure(text=..., kb=...)
+```
+
+---
+
+### `_handle_edit_failure`
+```python
+async def _handle_edit_failure( e: TelegramBadRequest, text: str, kb: Any, is_retry: bool, ) -> bool
+```
+
+- **Source Reference**: [`services/topic_updater.py#L344-L366`](../../services/topic_updater.py#L344-L366)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -482,10 +626,10 @@ result = await _handle_edit_failure(e=..., text=..., kb=...)
 
 ### `should_skip_topic_update`
 ```python
-def should_skip_topic_update( lessons: list, now_dt: datetime, target_date: date, ignore_time_restriction: bool ) -> bool
+def should_skip_topic_update( lessons: list[Lesson], now_dt: datetime, target_date: date, ignore_time_restriction: bool, ) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L262-L271`](../../services/topic_updater.py#L262-L271)
+- **Source Reference**: [`services/topic_updater.py#L369-L386`](../../services/topic_updater.py#L369-L386)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -495,7 +639,7 @@ Executes core domain logic for `should_skip_topic_update`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `lessons` | `list` | Yes | Parameter `lessons` of type `list`. |
+| `lessons` | `list[Lesson]` | Yes | Parameter `lessons` of type `list[Lesson]`. |
 | `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
 | `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
 | `ignore_time_restriction` | `bool` | Yes | Parameter `ignore_time_restriction` of type `bool`. |
@@ -518,10 +662,10 @@ result = should_skip_topic_update(lessons=..., now_dt=..., target_date=...)
 
 ### `process_today_reminders`
 ```python
-async def process_today_reminders(lessons: list, now_dt: datetime, target_date: date) -> None
+async def process_today_reminders(lessons: list[Lesson], now_dt: datetime, target_date: date) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L274-L278`](../../services/topic_updater.py#L274-L278)
+- **Source Reference**: [`services/topic_updater.py#L389-L399`](../../services/topic_updater.py#L389-L399)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -531,7 +675,7 @@ Executes core domain logic for `process_today_reminders`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `lessons` | `list` | Yes | Parameter `lessons` of type `list`. |
+| `lessons` | `list[Lesson]` | Yes | Parameter `lessons` of type `list[Lesson]`. |
 | `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
 | `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
 
@@ -551,12 +695,76 @@ result = await process_today_reminders(lessons=..., now_dt=..., target_date=...)
 
 ---
 
+### `_prepare_target_schedule`
+```python
+async def _prepare_target_schedule( ignore_restriction: bool, ) -> tuple[date | None, list[Lesson] | None]
+```
+
+- **Source Reference**: [`services/topic_updater.py#L402-L421`](../../services/topic_updater.py#L402-L421)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `tuple[date | None, list[Lesson] | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_prepare_target_schedule`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `ignore_restriction` | `bool` | Yes | Parameter `ignore_restriction` of type `bool`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _prepare_target_schedule
+
+# Execute call
+result = await _prepare_target_schedule(ignore_restriction=...)
+```
+
+---
+
+### `_ensure_topic_main_msg_id`
+```python
+def _ensure_topic_main_msg_id() -> None
+```
+
+- **Source Reference**: [`services/topic_updater.py#L424-L433`](../../services/topic_updater.py#L424-L433)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_ensure_topic_main_msg_id`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _ensure_topic_main_msg_id
+
+# Execute call
+result = _ensure_topic_main_msg_id()
+```
+
+---
+
 ### `sync_topic_main_message`
 ```python
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L281-L301`](../../services/topic_updater.py#L281-L301)
+- **Source Reference**: [`services/topic_updater.py#L436-L458`](../../services/topic_updater.py#L436-L458)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -569,7 +777,7 @@ Executes core domain logic for `sync_topic_main_message`.
 | `ignore_time_restriction` | `bool` | Yes | Parameter `ignore_time_restriction` of type `bool`. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
 Propagates unexpected runtime errors up the call stack to global exception handlers.
@@ -589,7 +797,7 @@ result = await sync_topic_main_message(ignore_time_restriction=...)
 async def notify_admin_about_api_down() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L308-L322`](../../services/topic_updater.py#L308-L322)
+- **Source Reference**: [`services/topic_updater.py#L465-L486`](../../services/topic_updater.py#L465-L486)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -615,12 +823,76 @@ result = await notify_admin_about_api_down()
 
 ---
 
+### `_track_api_failure`
+```python
+async def _track_api_failure(now: datetime) -> None
+```
+
+- **Source Reference**: [`services/topic_updater.py#L489-L500`](../../services/topic_updater.py#L489-L500)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_track_api_failure`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `now` | `datetime` | Yes | Parameter `now` of type `datetime`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _track_api_failure
+
+# Execute call
+result = await _track_api_failure(now=...)
+```
+
+---
+
+### `_reset_api_failure_tracker`
+```python
+def _reset_api_failure_tracker() -> None
+```
+
+- **Source Reference**: [`services/topic_updater.py#L503-L514`](../../services/topic_updater.py#L503-L514)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_reset_api_failure_tracker`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.topic_updater import _reset_api_failure_tracker
+
+# Execute call
+result = _reset_api_failure_tracker()
+```
+
+---
+
 ### `topic_sync_loop`
 ```python
 async def topic_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L325-L346`](../../services/topic_updater.py#L325-L346)
+- **Source Reference**: [`services/topic_updater.py#L517-L535`](../../services/topic_updater.py#L517-L535)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

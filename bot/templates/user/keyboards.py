@@ -16,40 +16,54 @@ def format_lesson_button_text(lesson: Lesson) -> str:
     """
     Формирует лаконичный текст кнопки подключения к дистанционной паре.
 
-    :param lesson: Объект занятия
-    :return: Текст для Inline-кнопки
+    Указывает порядковый номер пары и подгруппу (если применимо).
+    Используется в инлайн-кнопках со ссылками на видеоконференции.
+
+    Возвращает строку вида '🔗 1-я пара (П/Г 2)'.
     """
+
     sg = f" (П/Г {lesson.subgroup})" if lesson.subgroup > 0 else ""
+
     return f"🔗 {lesson.period + 1}-я пара{sg}"
 
 
 def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]]:
     """
-    Разбивает кнопки ссылок на дистанционные пары по 2 кнопки в ряд.
+    Разбивает кнопки ссылок на дистанционные занятия по 2 штуки в ряд.
 
-    :param lessons: Список предметов
-    :return: Двумерный список кнопок
+    Фильтрует только пары с признаком is_remote и валидным HTTP URL.
+    Защищает интерфейс от перегрузки широкими одноколоночными рядами.
+
+    Возвращает двумерный список InlineKeyboardButton.
     """
+
     btns = []
     for l in lessons:
         if l.is_remote and l.remote_link:
             url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
             if url:
-                btns.append(InlineKeyboardButton(
-                    text=format_lesson_button_text(l),
-                    url=url,
-                    style="success"
-                ))
+                btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
+
     return [btns[i:i + 2] for i in range(0, len(btns), 2)]
 
 
 def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[list[InlineKeyboardButton]]:
-    """Формирует кнопки администратора и старосты для навигации."""
+    """
+    Формирует дополнительные служебные кнопки старосты и администратора.
+
+    Добавляет быстрый переход в опрос посещаемости и общую панель управления.
+    Отображается только у пользователей с подтвержденными правами.
+
+    Возвращает список рядов кнопок для добавления в меню.
+    """
+
     rows = []
     if is_attendance_admin or is_admin:
         rows.append([InlineKeyboardButton(text="📝 Отметить посещаемость", callback_data="att:menu", style="success")])
+
     if is_admin:
         rows.append([InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")])
+
     return rows
 
 
@@ -57,7 +71,15 @@ def _build_nav_rows(
     week_offset: int, is_admin: bool = False, is_subscribed: bool = True,
     is_attendance_admin: bool = False, is_tester: bool = False,
 ) -> list[list[InlineKeyboardButton]]:
-    """Формирует основные кнопки навигации по календарю и неделям со стилями."""
+    """
+    Формирует основные кнопки навигации по календарю и переключатели настроек.
+
+    Включает кнопки перехода сегодня/завтра, недели, обновления и тумблер пушей.
+    Добавляет кнопку Swagger Mini App для авторизованных тестеров.
+
+    Возвращает скомпонованную матрицу рядов кнопок.
+    """
+
     w_text = "⏭ Неделя (След.)" if week_offset == 0 else "⏮ Неделя (Тек.)"
     w_data = "sched:week_next" if week_offset == 0 else "sched:week"
     n_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
@@ -70,7 +92,9 @@ def _build_nav_rows(
     ]
     if is_tester:
         rows.append([InlineKeyboardButton(text="🧪 Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
+
     rows.extend(_build_admin_nav_rows(is_admin, is_attendance_admin))
+
     return rows
 
 
@@ -82,19 +106,37 @@ def get_schedule_inline_kb(
     is_attendance_admin: bool = False,
     is_tester: bool = False,
 ) -> InlineKeyboardMarkup:
-    """Генерирует продвинутую инлайн-клавиатуру навигации с тумблером напоминаний."""
+    """
+    Генерирует полную навигационную клавиатуру для экрана расписания в ЛС.
+
+    Комбинирует ссылки на пары текущего дня и базовые кнопки навигации.
+    Динамически адаптирует кнопки под роль пользователя.
+
+    Возвращает готовый объект InlineKeyboardMarkup.
+    """
+
     rows = []
     if lessons:
         rows.extend(chunk_link_buttons(lessons))
+
     rows.extend(_build_nav_rows(
         week_offset, is_admin=is_admin, is_subscribed=is_subscribed,
         is_attendance_admin=is_attendance_admin, is_tester=is_tester
     ))
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
-    """Клавиатура персонального кабинета авторизованного тестировщика."""
+    """
+    Формирует инлайн-клавиатуру персонального кабинета тестера API.
+
+    Предоставляет ссылки на Swagger UI в формате Telegram Web App и в браузере.
+    Включает кнопку получения личного API-ключа.
+
+    Возвращает объект InlineKeyboardMarkup.
+    """
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="🚀 Запустить Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))],
@@ -106,31 +148,39 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
 
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None:
     """
-    Генерирует чистую инлайн-клавиатуру исключительно для топика группы.
+    Генерирует лаконичную клавиатуру со ссылками на пары для топика группы.
 
-    Содержит только ссылки на дистанционные пары без громоздких кнопок копирования.
+    Содержит только прямые кнопки видеоконференций без элементов навигации ЛС.
+    Возвращает None, если на сегодня нет дистанционных занятий со ссылками.
 
-    :param lessons: Список пар на день
-    :return: InlineKeyboardMarkup или None
+    Возвращает InlineKeyboardMarkup или None при отсутствии кнопок.
     """
+
     if not lessons:
         return None
+
     rows = chunk_link_buttons(lessons)
+
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 
 def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup:
     """
-    Генерирует инлайн-клавиатуру для меню управления уведомлениями /notice.
+    Генерирует интерактивную клавиатуру управления уведомлениями для /notice.
 
-    :param is_subscribed: Текущий статус подписки
-    :return: InlineKeyboardMarkup с динамическим тумблером
+    Содержит кнопку-переключатель статуса подписки и возврат к расписанию.
+    Цвет кнопки изменяется в зависимости от текущего состояния (зеленый/красный).
+
+    Возвращает объект InlineKeyboardMarkup.
     """
+
     toggle_text = "🔕 Отключить уведомления" if is_subscribed else "🔔 Включить уведомления"
     toggle_style = "danger" if is_subscribed else "success"
     rows = [
         [InlineKeyboardButton(text=toggle_text, callback_data="notice:toggle", style=toggle_style)],
         [InlineKeyboardButton(text="📅 К расписанию", callback_data="sched:today", style="primary")]
     ]
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
 

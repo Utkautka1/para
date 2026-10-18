@@ -40,6 +40,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 10.3. [Concurrent AI Solver Worker Pipeline with Semaphore Control](#103-concurrent-ai-solver-worker-pipeline-with-semaphore-control)
    - 10.4. [Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive](#104-multi-tier-high-performance-architecture-l1-in-memory-uvloop--grpc-keepalive)
 11. [Automated CI/CD Pipeline & Delivery Verification](#11-automated-cicd-pipeline--delivery-verification)
+12. [Resilient Fallback Upstream & Clean Micro-Functions Architecture](#12-resilient-fallback-upstream--clean-micro-functions-architecture)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -632,7 +633,7 @@ classDiagram
     AttendanceTopicUpdater --> AttendanceStatsService : requests aggregated metrics
     AttendanceTopicUpdater --> RedisCacheManager : caches snapshot and acquires redis_lock
     AttendanceStatsService --> YandexDiskClient : downloads workbook sheets
-    ZenCookieSyncUtility --> RedisCacheManager : updates yandex:session_cookie
+    ZenCookieSyncUtility --> RedisCacheManager : updates yandex session cookie
     ZenCookieSyncUtility --> YandexDiskClient : validates auth via client-config
     ZenCookieSyncUtility ..> WopiController : provisions YANDEX_COOKIE in .env
 ```
@@ -2357,4 +2358,119 @@ flowchart TD
     
     Stage3 --> Success(["✅ Deployment Verified (Production Ready)"])
 ```
+
+---
+
+## 12. Resilient Fallback Upstream & Clean Micro-Functions Architecture
+
+### 12.1. Dual-Endpoint Schedule Upstream Failover (TLS Alert Mitigation)
+
+When the primary college schedule endpoint (`timetable-ktmu.ru`) experiences TLS handshake failures (`[SSL: TLSV1_ALERT_INTERNAL_ERROR]`), the system dynamically switches to the configured `SCHEDULE_FALLBACK_API_URL` (`DEFAULT_FALLBACK_SCHEDULE_API_URL`), preserving cold-start capability and ensuring uninterrupted service.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Caller as Worker / API Client
+    participant Engine as ScheduleParser Engine
+    participant Redis as Redis L2 State Cache
+    participant Primary as Primary Endpoint (timetable-ktmu.ru)
+    participant Fallback as Fallback Endpoint (twc1.net)
+
+    Caller->>Engine: fetch_schedule_data(force=True)
+    activate Engine
+    Engine->>Primary: GET /api/storage/schedule-data-v2
+    alt Primary TLS Handshake Failure (internal_error 1016)
+        Primary-->>Engine: [SSL: TLSV1_ALERT_INTERNAL_ERROR]
+        Engine->>Engine: Log WARNING & record failure cooldown
+        Engine->>Fallback: GET fallback schedule endpoint
+        Fallback-->>Engine: HTTP 200 OK (Schedule JSON payload)
+        Engine->>Redis: SET sched:raw_cache (TTL=1800s)
+        Engine-->>Caller: Clean Parsed Group Schedule
+    else Primary Success
+        Primary-->>Engine: HTTP 200 OK (Schedule JSON payload)
+        Engine->>Redis: SET sched:raw_cache (TTL=1800s)
+        Engine-->>Caller: Clean Parsed Group Schedule
+    end
+    deactivate Engine
+```
+
+### 12.2. Decomposed Single-Responsibility Micro-Functions Architecture
+
+All system functions and bot handlers are refactored into focused units of $\le 25$ lines, adhering to PEP 8 vertical spacing, structured guard clauses, and three-part docstrings:
+
+```mermaid
+classDiagram
+    direction TB
+
+    class BotHandlerIngress {
+        <<Router Handler <= 25 Lines>>
+        +handle_entrypoint(message, bot) None
+        -_ensure_prerequisites(message) bool
+        -_dispatch_processing(message, task_id) None
+    }
+
+    class GuardClauseSubsystem {
+        <<Validation & Safety <= 25 Lines>>
+        +validate_input_limits(meta) str
+        +check_rate_limit(user_id) bool
+        +acquire_user_slot(user_id) bool
+        +release_user_slot(user_id) None
+    }
+
+    class ExecutionSubsystem {
+        <<Core Business Logic <= 25 Lines>>
+        +execute_atomic_operation(payload) Result
+        +safe_edit_or_reply(event, markup) None
+        +drain_active_tasks(task_set) None
+    }
+
+    BotHandlerIngress --> GuardClauseSubsystem: 1. Validate & Throttle
+    BotHandlerIngress --> ExecutionSubsystem: 2. Isolated Atomic Work
+```
+
+### 12.3. Typed Fail-Fast System Configuration & Zero-Hardcode Architecture
+
+All configuration variables, campus locations, upstream endpoints, and timeouts are loaded strictly through typed fail-fast validation accessors without unvalidated hardcoded strings:
+
+```mermaid
+classDiagram
+    direction TB
+
+    class ConfigValidator {
+        +get_required_env(key) str
+        +get_env(key, default) str
+        +get_env_int(key, default) int
+        +get_env_float(key, default) float
+        +get_env_list(key, default) tuple
+    }
+
+    class EnvironmentStore {
+        <<.env / Host OS Environment>>
+        +DEFAULT_FALLBACK_SCHEDULE_API_URL str
+        +SCHEDULE_FALLBACK_API_URL str
+        +CAMPUS_ADDRESS_VOZNESENSKY str
+        +CAMPUS_ADDRESS_TSVETOCHNAYA str
+        +CAMPUS_ADDRESS_REMOTE str
+    }
+
+    class TypedConfigDomain {
+        <<12 Clean Architectural Sections>>
+        +1. Telegram Bot & Access
+        +2. Forum Topics & Threads
+        +3. Schedule & Upstream Failover
+        +4. Campus Addresses & Locations
+        +5. Redis Caching & State
+        +6. Yandex & Attendance
+        +7. Dual-Protocol API Gateway
+        +8. DeepSeek AI Solver
+        +9. Whisper Voice STT
+        +10. Timers & Throttling
+        +11. Data File Paths
+        +12. Regexes & Dictionaries
+    }
+
+    EnvironmentStore --> ConfigValidator: 1. Raw Environment String Ingress
+    ConfigValidator --> TypedConfigDomain: 2. Typed & Fail-Fast Validated Ingress
+```
+
 

@@ -21,13 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L31 | `None` | Executes core domain logic for `_register_admin_routers... |
-| [`_register_user_routers`](#_register_user_routers) | Function | L34–L47 | `None` | Executes core domain logic for `_register_user_routers`... |
-| [`register_all_routers`](#register_all_routers) | Function | L50–L55 | `None` | Executes core domain logic for `register_all_routers`. |
-| [`shutdown_bot`](#shutdown_bot) | Function | L59–L67 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L71–L77 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_warmup_stt`](#_warmup_stt) | Function | L80–L87 | `None` | Executes core domain logic for `_warmup_stt`. |
-| [`main`](#main) | Function | L90–L106 | `None` | Executes core domain logic for `main`. |
+| [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L40 | `None` | Executes core domain logic for `_register_admin_routers... |
+| [`_register_user_routers`](#_register_user_routers) | Function | L43–L65 | `None` | Executes core domain logic for `_register_user_routers`... |
+| [`register_all_routers`](#register_all_routers) | Function | L68–L82 | `None` | Executes core domain logic for `register_all_routers`. |
+| [`shutdown_bot`](#shutdown_bot) | Function | L85–L102 | `None` | Executes core domain logic for `shutdown_bot`. |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L105–L120 | `None` | Executes core domain logic for `setup_all_middlewares`. |
+| [`_warmup_stt`](#_warmup_stt) | Function | L123–L139 | `None` | Executes core domain logic for `_warmup_stt`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L142–L158 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L161–L181 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -38,7 +39,7 @@ graph LR
 def _register_admin_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L20-L31`](../../bot.py#L20-L31)
+- **Source Reference**: [`bot.py#L20-L40`](../../bot.py#L20-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -69,7 +70,7 @@ result = _register_admin_routers()
 def _register_user_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L34-L47`](../../bot.py#L34-L47)
+- **Source Reference**: [`bot.py#L43-L65`](../../bot.py#L43-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -100,7 +101,7 @@ result = _register_user_routers()
 def register_all_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L50-L55`](../../bot.py#L50-L55)
+- **Source Reference**: [`bot.py#L68-L82`](../../bot.py#L68-L82)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -131,7 +132,7 @@ result = register_all_routers()
 async def shutdown_bot() -> None
 ```
 
-- **Source Reference**: [`bot.py#L59-L67`](../../bot.py#L59-L67)
+- **Source Reference**: [`bot.py#L85-L102`](../../bot.py#L85-L102)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -162,7 +163,7 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L71-L77`](../../bot.py#L71-L77)
+- **Source Reference**: [`bot.py#L105-L120`](../../bot.py#L105-L120)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -193,7 +194,7 @@ result = setup_all_middlewares()
 async def _warmup_stt() -> None
 ```
 
-- **Source Reference**: [`bot.py#L80-L87`](../../bot.py#L80-L87)
+- **Source Reference**: [`bot.py#L123-L139`](../../bot.py#L123-L139)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -219,12 +220,43 @@ result = await _warmup_stt()
 
 ---
 
+### `_init_bot_subsystems`
+```python
+async def _init_bot_subsystems() -> None
+```
+
+- **Source Reference**: [`bot.py#L142-L158`](../../bot.py#L142-L158)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_init_bot_subsystems`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot import _init_bot_subsystems
+
+# Execute call
+result = await _init_bot_subsystems()
+```
+
+---
+
 ### `main`
 ```python
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L90-L106`](../../bot.py#L90-L106)
+- **Source Reference**: [`bot.py#L161-L181`](../../bot.py#L161-L181)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

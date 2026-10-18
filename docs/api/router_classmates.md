@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L31 | `ClassmateItem` | Executes core domain logic for `_to_classmate_item`. |
-| [`list_classmates`](#list_classmates) | Function | L35–L39 | `ClassmatesListResponse` | Executes core domain logic for `list_classmates`. |
-| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L42–L47 | `dict | None` | Executes core domain logic for `_find_student_in_regist... |
-| [`get_classmate_detail`](#get_classmate_detail) | Function | L51–L65 | `ClassmateDetailResponse` | Retrieves and resolves domain data for `get_classmate_d... |
+| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L40 | `ClassmateItem` | Executes core domain logic for `_to_classmate_item`. |
+| [`list_classmates`](#list_classmates) | Function | L44–L57 | `ClassmatesListResponse` | Executes core domain logic for `list_classmates`. |
+| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L60–L74 | `dict | None` | Executes core domain logic for `_find_student_in_regist... |
+| [`get_classmate_detail`](#get_classmate_detail) | Function | L78–L102 | `ClassmateDetailResponse` | Retrieves and resolves domain data for `get_classmate_d... |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 def _to_classmate_item(raw: dict) -> ClassmateItem
 ```
 
-- **Source Reference**: [`api/router/classmates.py#L22-L31`](../../api/router/classmates.py#L22-L31)
+- **Source Reference**: [`api/router/classmates.py#L22-L40`](../../api/router/classmates.py#L22-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ClassmateItem`
 
@@ -68,7 +68,7 @@ result = _to_classmate_item(raw=...)
 async def list_classmates() -> ClassmatesListResponse
 ```
 
-- **Source Reference**: [`api/router/classmates.py#L35-L39`](../../api/router/classmates.py#L35-L39)
+- **Source Reference**: [`api/router/classmates.py#L44-L57`](../../api/router/classmates.py#L44-L57)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ClassmatesListResponse`
 
@@ -99,7 +99,7 @@ result = await list_classmates()
 def _find_student_in_registry(registry: list[dict], identifier: int) -> dict | None
 ```
 
-- **Source Reference**: [`api/router/classmates.py#L42-L47`](../../api/router/classmates.py#L42-L47)
+- **Source Reference**: [`api/router/classmates.py#L60-L74`](../../api/router/classmates.py#L60-L74)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict | None`
 
@@ -133,7 +133,7 @@ result = _find_student_in_registry(registry=..., identifier=...)
 async def get_classmate_detail(student_id: int) -> ClassmateDetailResponse
 ```
 
-- **Source Reference**: [`api/router/classmates.py#L51-L65`](../../api/router/classmates.py#L51-L65)
+- **Source Reference**: [`api/router/classmates.py#L78-L102`](../../api/router/classmates.py#L78-L102)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ClassmateDetailResponse`
 

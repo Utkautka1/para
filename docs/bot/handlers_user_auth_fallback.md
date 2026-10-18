@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`unauth_fallback`](#unauth_fallback) | Function | L20–L33 | `None` | Executes core domain logic for `unauth_fallback`. |
+| [`unauth_fallback`](#unauth_fallback) | Function | L21–L44 | `None` | Executes core domain logic for `unauth_fallback`. |
 
 ---
 
@@ -32,7 +32,7 @@ graph LR
 async def unauth_fallback(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/auth_fallback.py#L20-L33`](../../bot/handlers/user/auth_fallback.py#L20-L33)
+- **Source Reference**: [`bot/handlers/user/auth_fallback.py#L21-L44`](../../bot/handlers/user/auth_fallback.py#L21-L44)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

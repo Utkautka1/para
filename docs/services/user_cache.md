@@ -21,11 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L26 | `None` | Flushes and resets state for `clear_user_cache_memory`. |
-| [`load_user_cache`](#load_user_cache) | Function | L29–L41 | `dict[str, int]` | Executes core domain logic for `load_user_cache`. |
-| [`save_user_cache`](#save_user_cache) | Function | L44–L53 | `None` | Saves serialized entity data to storage for `save_user_... |
-| [`get_cached_user_id`](#get_cached_user_id) | Function | L56–L59 | `int | None` | Retrieves and resolves domain data for `get_cached_user... |
-| [`add_user_to_cache`](#add_user_to_cache) | Function | L62–L71 | `None` | Executes core domain logic for `add_user_to_cache`. |
+| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L33 | `None` | Flushes and resets state for `clear_user_cache_memory`. |
+| [`load_user_cache`](#load_user_cache) | Function | L36–L55 | `dict[str, int]` | Executes core domain logic for `load_user_cache`. |
+| [`save_user_cache`](#save_user_cache) | Function | L58–L74 | `None` | Saves serialized entity data to storage for `save_user_... |
+| [`get_cached_user_id`](#get_cached_user_id) | Function | L77–L87 | `int | None` | Retrieves and resolves domain data for `get_cached_user... |
+| [`add_user_to_cache`](#add_user_to_cache) | Function | L90–L106 | `None` | Executes core domain logic for `add_user_to_cache`. |
 
 ---
 
@@ -36,7 +36,7 @@ graph LR
 def clear_user_cache_memory() -> None
 ```
 
-- **Source Reference**: [`services/user_cache.py#L21-L26`](../../services/user_cache.py#L21-L26)
+- **Source Reference**: [`services/user_cache.py#L21-L33`](../../services/user_cache.py#L21-L33)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -67,7 +67,7 @@ result = clear_user_cache_memory()
 def load_user_cache() -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/user_cache.py#L29-L41`](../../services/user_cache.py#L29-L41)
+- **Source Reference**: [`services/user_cache.py#L36-L55`](../../services/user_cache.py#L36-L55)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 
@@ -98,7 +98,7 @@ result = load_user_cache()
 def save_user_cache(cache: dict[str, int]) -> None
 ```
 
-- **Source Reference**: [`services/user_cache.py#L44-L53`](../../services/user_cache.py#L44-L53)
+- **Source Reference**: [`services/user_cache.py#L58-L74`](../../services/user_cache.py#L58-L74)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -131,7 +131,7 @@ result = save_user_cache(cache=...)
 def get_cached_user_id(username: str) -> int | None
 ```
 
-- **Source Reference**: [`services/user_cache.py#L56-L59`](../../services/user_cache.py#L56-L59)
+- **Source Reference**: [`services/user_cache.py#L77-L87`](../../services/user_cache.py#L77-L87)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -164,7 +164,7 @@ result = get_cached_user_id(username=...)
 def add_user_to_cache(username: str, user_id: int) -> None
 ```
 
-- **Source Reference**: [`services/user_cache.py#L62-L71`](../../services/user_cache.py#L62-L71)
+- **Source Reference**: [`services/user_cache.py#L90-L106`](../../services/user_cache.py#L90-L106)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 

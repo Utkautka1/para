@@ -21,8 +21,8 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`create_bot_session`](#create_bot_session) | Function | L18–L23 | `AiohttpSession` | Initializes and constructs a new instance of `create_bo... |
-| [`create_fsm_storage`](#create_fsm_storage) | Function | L26–L41 | `Any` | Initializes and constructs a new instance of `create_fs... |
+| [`create_bot_session`](#create_bot_session) | Function | L19–L31 | `AiohttpSession` | Initializes and constructs a new instance of `create_bo... |
+| [`create_fsm_storage`](#create_fsm_storage) | Function | L34–L58 | `Any` | Initializes and constructs a new instance of `create_fs... |
 
 ---
 
@@ -33,7 +33,7 @@ graph LR
 def create_bot_session() -> AiohttpSession
 ```
 
-- **Source Reference**: [`core/bot.py#L18-L23`](../../core/bot.py#L18-L23)
+- **Source Reference**: [`core/bot.py#L19-L31`](../../core/bot.py#L19-L31)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AiohttpSession`
 
@@ -65,7 +65,7 @@ result = create_bot_session()
 def create_fsm_storage()
 ```
 
-- **Source Reference**: [`core/bot.py#L26-L41`](../../core/bot.py#L26-L41)
+- **Source Reference**: [`core/bot.py#L34-L58`](../../core/bot.py#L34-L58)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 

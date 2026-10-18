@@ -18,12 +18,21 @@ log = get_logger("bot_main")
 
 
 def _register_admin_routers() -> None:
-    """Регистрирует административные роутеры в диспетчере."""
+    """
+    Регистрирует административные роутеры в диспетчере aiogram.
+
+    Подключает хэндлеры посещаемости, мутов, пингов, тестеров и админ-панели.
+    Соблюдает строгую последовательность приоритета перехвата событий.
+
+    Ничего не возвращает.
+    """
+
     from bot.handlers.admin.attendance import router as attendance_router
     from bot.handlers.admin.mute import router as mute_router
     from bot.handlers.admin.panel import router as admin_router
     from bot.handlers.admin.ping_all import router as ping_all_router
     from bot.handlers.admin.testers import router as testers_router
+
     dp.include_router(attendance_router)
     dp.include_router(mute_router)
     dp.include_router(ping_all_router)
@@ -32,13 +41,22 @@ def _register_admin_routers() -> None:
 
 
 def _register_user_routers() -> None:
-    """Регистрирует пользовательские роутеры в диспетчере."""
+    """
+    Регистрирует пользовательские роутеры в диспетчере aiogram.
+
+    Подключает распознавание речи, решение ДЗ, публичное копирование и расписание.
+    В конце подключает fallback для информирования неавторизованных пользователей.
+
+    Ничего не возвращает.
+    """
+
     from bot.handlers.user.attendance import router as user_att_router
     from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.user.schedule import router as user_router
     from bot.handlers.user.voice_transcribe import router as voice_router
+
     dp.include_router(voice_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
@@ -48,38 +66,72 @@ def _register_user_routers() -> None:
 
 
 def register_all_routers() -> None:
-    """Регистрирует все группы роутеров в диспетчере aiogram."""
+    """
+    Регистрирует все группы роутеров и обработчик ошибок в диспетчере.
+
+    Обеспечивает агрегацию административных и пользовательских маршрутов.
+    Замыкает цепочку глобальным фильтром необработанных исключений.
+
+    Ничего не возвращает.
+    """
+
     from bot.handlers.errors import router as error_router
+
     _register_admin_routers()
     _register_user_routers()
     dp.include_router(error_router)
 
 
-
 async def shutdown_bot() -> None:
-    """Корректно закрывает сессию бота, HTTP-клиент API и подключение к Redis."""
+    """
+    Корректно закрывает сессию бота, HTTP-клиент API и подключение к Redis.
+
+    Освобождает дескрипторы соединений и хранилище FSM при завершении процесса.
+    Предотвращает появление предупреждений о незакрытых сокетах в логах.
+
+    Ничего не возвращает.
+    """
+
     log.info("Остановка бота: закрытие сессий...")
     await close_api_client()
     if dp.storage:
         await dp.storage.close()
+
     await close_redis()
     await bot.session.close()
     log.info("Сессии Telegram, API, Storage и Redis закрыты. Бот остановлен.")
 
 
-
 def setup_all_middlewares() -> None:
-    """Регистрирует глобальные middleware для отказоустойчивости бота."""
+    """
+    Регистрирует глобальные middleware для отказоустойчивости бота.
+
+    Подключает автоповтор запросов при лимитах Telegram (RetryAfterMiddleware)
+    и защиту от спама частыми нажатиями инлайн-кнопок (CallbackThrottleMiddleware).
+
+    Ничего не возвращает.
+    """
+
     from bot.middlewares.retry import RetryAfterMiddleware
     from bot.middlewares.throttling import CallbackThrottleMiddleware
+
     dp.message.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(CallbackThrottleMiddleware())
 
 
 async def _warmup_stt() -> None:
-    """Асинхронно прогревает STT-модель в фоне при старте бота."""
+    """
+    Асинхронно прогревает модель распознавания речи в фоновом режиме.
+
+    Инициализирует веса модели в памяти GPU до прихода первого аудиосообщения.
+    Изолирует ошибки прогрева, чтобы бот продолжал функционировать.
+
+    Ничего не возвращает.
+    """
+
     from services.transcriber import transcriber_service
+
     try:
         await transcriber_service.warmup()
         log.info("✅ STT модель (faster-whisper) прогрета и готова к работе")
@@ -87,17 +139,40 @@ async def _warmup_stt() -> None:
         log.warning(f"⚠️ Ошибка фонового прогрева STT модели: {e}")
 
 
-async def main() -> None:
-    """Основная асинхронная функция инициализации и запуска бота."""
+async def _init_bot_subsystems() -> None:
+    """
+    Инициализирует роутеры, middleware, соединения и фоновый прогрев моделей.
+
+    Выделяет фазу предварительной конфигурации перед стартом polling.
+    Упрощает сопровождение процедуры запуска бота.
+
+    Ничего не возвращает.
+    """
+
     from bot.commands import register_bot_commands
-    log.info("=" * 60)
-    log.info("ЗАПУСК Персонального Telegram Бота КТМУ (para-bot)")
-    log.info("=" * 60)
+
     register_all_routers()
     setup_all_middlewares()
     await init_redis()
     await register_bot_commands(bot)
     asyncio.create_task(_warmup_stt())
+
+
+async def main() -> None:
+    """
+    Основная асинхронная функция запуска long polling Telegram-бота.
+
+    Выполняет инициализацию сервисов и переходит к получению обновлений.
+    В блоке finally гарантированно закрывает все открытые сетевые сессии.
+
+    Ничего не возвращает.
+    """
+
+    log.info("=" * 60)
+    log.info("ЗАПУСК Персонального Telegram Бота КТМУ (para-bot)")
+    log.info("=" * 60)
+    await _init_bot_subsystems()
+
     try:
         await dp.start_polling(bot, drop_pending_updates=True)
     except Exception as e:

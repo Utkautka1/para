@@ -22,7 +22,10 @@ async def ping_yandex_session() -> bool:
     """
     Выполняет одиночный проверочный запрос для продления сессии и обновления Cookie.
 
-    Возвращает True, если сессия валидна и client-config извлечён.
+    Делает HTTP GET к документу посещаемости, парсит officeActionData и сохраняет
+    новые сессионные куки в Redis через общий транспорт yandex_docs.
+
+    Возвращает True при успешном подтверждении авторизации, иначе False.
     """
     try:
         html = await fetch_page_dom(ATTENDANCE_DOC_URL)
@@ -35,12 +38,16 @@ async def ping_yandex_session() -> bool:
     return False
 
 
-async def yandex_session_keepalive_loop(interval: int = KEEPALIVE_INTERVAL_SECONDS) -> None:
+async def yandex_session_keepalive_loop(
+    interval: int = KEEPALIVE_INTERVAL_SECONDS,
+) -> None:
     """
-    Бесконечный цикл периодического пинга сессии Яндекс Документов.
+    Запускает бесконечный цикл периодического пинга сессии Яндекс Документов.
 
-    Первый запуск происходит через 60 секунд после старта воркера,
-    затем повторяется каждые interval секунд.
+    Предотвращает истечение токенов доступа при отсутствии пользовательской активности,
+    выжидая 60 секунд перед первым запуском для стабилизации сети при старте контейнера.
+
+    Ничего не возвращает (работает до завершения приложения или отмены задачи).
     """
     log.info(f"Запущен фоновый мониторинг сессии Яндекс (интервал: {interval} сек)")
     await asyncio.sleep(60)
@@ -53,3 +60,4 @@ async def yandex_session_keepalive_loop(interval: int = KEEPALIVE_INTERVAL_SECON
         except Exception as e:
             log.error(f"Непредвиденная ошибка в keepalive цикле Яндекс: {e}")
         await asyncio.sleep(interval)
+

@@ -21,20 +21,23 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`build_missing_teacher_alert`](#build_missing_teacher_alert) | Function | L40–L55 | `tuple[str, InlineKeyboardMarkup]` | Executes core domain logic for `build_missing_teacher_a... |
-| [`notify_missing_teacher`](#notify_missing_teacher) | Function | L58–L68 | `None` | Executes core domain logic for `notify_missing_teacher`... |
-| [`send_to_user`](#send_to_user) | Function | L71–L82 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`parse_lesson_start_time`](#parse_lesson_start_time) | Function | L85–L100 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
-| [`parse_lesson_end_time`](#parse_lesson_end_time) | Function | L103–L118 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
-| [`_send_reminder_to_chat`](#_send_reminder_to_chat) | Function | L121–L130 | `None` | Executes core domain logic for `_send_reminder_to_chat`... |
-| [`send_single_reminder`](#send_single_reminder) | Function | L133–L143 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`schedule_lesson_reminder`](#schedule_lesson_reminder) | Function | L146–L165 | `None` | Executes core domain logic for `schedule_lesson_reminde... |
-| [`_send_attendance_to_admin`](#_send_attendance_to_admin) | Function | L168–L177 | `None` | Executes core domain logic for `_send_attendance_to_adm... |
-| [`send_attendance_prompt`](#send_attendance_prompt) | Function | L180–L186 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`auto_close_attendance_session`](#auto_close_attendance_session) | Function | L189–L198 | `None` | Executes core domain logic for `auto_close_attendance_s... |
-| [`schedule_attendance_poll`](#schedule_attendance_poll) | Function | L201–L215 | `None` | Executes core domain logic for `schedule_attendance_pol... |
-| [`daily_schedule_dispatch`](#daily_schedule_dispatch) | Function | L218–L231 | `None` | Executes core domain logic for `daily_schedule_dispatch... |
-| [`setup_scheduler`](#setup_scheduler) | Function | L234–L247 | `AsyncIOScheduler` | Executes core domain logic for `setup_scheduler`. |
+| [`build_missing_teacher_alert`](#build_missing_teacher_alert) | Function | L40–L60 | `tuple[str, InlineKeyboardMarkup]` | Executes core domain logic for `build_missing_teacher_a... |
+| [`notify_missing_teacher`](#notify_missing_teacher) | Function | L63–L78 | `None` | Executes core domain logic for `notify_missing_teacher`... |
+| [`send_to_user`](#send_to_user) | Function | L81–L93 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`parse_lesson_start_time`](#parse_lesson_start_time) | Function | L96–L112 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
+| [`parse_lesson_end_time`](#parse_lesson_end_time) | Function | L115–L131 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
+| [`_send_reminder_to_chat`](#_send_reminder_to_chat) | Function | L134–L153 | `None` | Executes core domain logic for `_send_reminder_to_chat`... |
+| [`send_single_reminder`](#send_single_reminder) | Function | L156–L175 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`_add_lesson_reminder_job`](#_add_lesson_reminder_job) | Function | L178–L193 | `None` | Executes core domain logic for `_add_lesson_reminder_jo... |
+| [`schedule_lesson_reminder`](#schedule_lesson_reminder) | Function | L196–L212 | `None` | Executes core domain logic for `schedule_lesson_reminde... |
+| [`_send_attendance_to_admin`](#_send_attendance_to_admin) | Function | L215–L231 | `None` | Executes core domain logic for `_send_attendance_to_adm... |
+| [`send_attendance_prompt`](#send_attendance_prompt) | Function | L234–L247 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`auto_close_attendance_session`](#auto_close_attendance_session) | Function | L250–L267 | `None` | Executes core domain logic for `auto_close_attendance_s... |
+| [`_schedule_attendance_poll_job`](#_schedule_attendance_poll_job) | Function | L270–L286 | `None` | Executes core domain logic for `_schedule_attendance_po... |
+| [`_schedule_attendance_close_job`](#_schedule_attendance_close_job) | Function | L289–L304 | `None` | Executes core domain logic for `_schedule_attendance_cl... |
+| [`schedule_attendance_poll`](#schedule_attendance_poll) | Function | L307–L325 | `None` | Executes core domain logic for `schedule_attendance_pol... |
+| [`daily_schedule_dispatch`](#daily_schedule_dispatch) | Function | L328–L348 | `None` | Executes core domain logic for `daily_schedule_dispatch... |
+| [`setup_scheduler`](#setup_scheduler) | Function | L351–L370 | `AsyncIOScheduler` | Executes core domain logic for `setup_scheduler`. |
 
 ---
 
@@ -45,7 +48,7 @@ graph LR
 def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, InlineKeyboardMarkup]
 ```
 
-- **Source Reference**: [`services/notifier.py#L40-L55`](../../services/notifier.py#L40-L55)
+- **Source Reference**: [`services/notifier.py#L40-L60`](../../services/notifier.py#L40-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, InlineKeyboardMarkup]`
 
@@ -79,7 +82,7 @@ result = build_missing_teacher_alert(raw_teacher=..., subj_name=...)
 async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L58-L68`](../../services/notifier.py#L58-L68)
+- **Source Reference**: [`services/notifier.py#L63-L78`](../../services/notifier.py#L63-L78)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -110,10 +113,10 @@ result = await notify_missing_teacher(raw_teacher=..., subj_name=...)
 
 ### `send_to_user`
 ```python
-async def send_to_user(text: str, reply_markup=None) -> None
+async def send_to_user(text: str, reply_markup: Any = None) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L71-L82`](../../services/notifier.py#L71-L82)
+- **Source Reference**: [`services/notifier.py#L81-L93`](../../services/notifier.py#L81-L93)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -147,7 +150,7 @@ result = await send_to_user(text=..., reply_markup=...)
 def parse_lesson_start_time(time_str: str) -> dtime | None
 ```
 
-- **Source Reference**: [`services/notifier.py#L85-L100`](../../services/notifier.py#L85-L100)
+- **Source Reference**: [`services/notifier.py#L96-L112`](../../services/notifier.py#L96-L112)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dtime | None`
 
@@ -180,7 +183,7 @@ result = parse_lesson_start_time(time_str=...)
 def parse_lesson_end_time(time_str: str) -> dtime | None
 ```
 
-- **Source Reference**: [`services/notifier.py#L103-L118`](../../services/notifier.py#L103-L118)
+- **Source Reference**: [`services/notifier.py#L115-L131`](../../services/notifier.py#L115-L131)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dtime | None`
 
@@ -210,10 +213,10 @@ result = parse_lesson_end_time(time_str=...)
 
 ### `_send_reminder_to_chat`
 ```python
-async def _send_reminder_to_chat( chat_id: int, text: str, lesson: Lesson, sem: asyncio.Semaphore ) -> None
+async def _send_reminder_to_chat( chat_id: int, text: str, lesson: Lesson, sem: asyncio.Semaphore, ) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L121-L130`](../../services/notifier.py#L121-L130)
+- **Source Reference**: [`services/notifier.py#L134-L153`](../../services/notifier.py#L134-L153)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -249,7 +252,7 @@ result = await _send_reminder_to_chat(chat_id=..., text=..., lesson=...)
 async def send_single_reminder(lesson: Lesson) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L133-L143`](../../services/notifier.py#L133-L143)
+- **Source Reference**: [`services/notifier.py#L156-L175`](../../services/notifier.py#L156-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -277,12 +280,47 @@ result = await send_single_reminder(lesson=...)
 
 ---
 
+### `_add_lesson_reminder_job`
+```python
+def _add_lesson_reminder_job(today: date, lesson: Lesson, remind_dt: datetime) -> None
+```
+
+- **Source Reference**: [`services/notifier.py#L178-L193`](../../services/notifier.py#L178-L193)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_add_lesson_reminder_job`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `today` | `date` | Yes | Parameter `today` of type `date`. |
+| `lesson` | `Lesson` | Yes | Parameter `lesson` of type `Lesson`. |
+| `remind_dt` | `datetime` | Yes | Parameter `remind_dt` of type `datetime`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.notifier import _add_lesson_reminder_job
+
+# Execute call
+result = _add_lesson_reminder_job(today=..., lesson=..., remind_dt=...)
+```
+
+---
+
 ### `schedule_lesson_reminder`
 ```python
 def schedule_lesson_reminder(today: date, lesson: Lesson, now_dt: datetime) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L146-L165`](../../services/notifier.py#L146-L165)
+- **Source Reference**: [`services/notifier.py#L196-L212`](../../services/notifier.py#L196-L212)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -297,7 +335,7 @@ Executes core domain logic for `schedule_lesson_reminder`.
 | `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
 Propagates unexpected runtime errors up the call stack to global exception handlers.
@@ -314,10 +352,10 @@ result = schedule_lesson_reminder(today=..., lesson=..., now_dt=...)
 
 ### `_send_attendance_to_admin`
 ```python
-async def _send_attendance_to_admin( user_id: int, text: str, kb: Any, sem: asyncio.Semaphore ) -> None
+async def _send_attendance_to_admin( user_id: int, text: str, kb: Any, sem: asyncio.Semaphore, ) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L168-L177`](../../services/notifier.py#L168-L177)
+- **Source Reference**: [`services/notifier.py#L215-L231`](../../services/notifier.py#L215-L231)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -353,7 +391,7 @@ result = await _send_attendance_to_admin(user_id=..., text=..., kb=...)
 async def send_attendance_prompt(lesson: Lesson) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L180-L186`](../../services/notifier.py#L180-L186)
+- **Source Reference**: [`services/notifier.py#L234-L247`](../../services/notifier.py#L234-L247)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -386,7 +424,7 @@ result = await send_attendance_prompt(lesson=...)
 async def auto_close_attendance_session(lesson_num: int) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L189-L198`](../../services/notifier.py#L189-L198)
+- **Source Reference**: [`services/notifier.py#L250-L267`](../../services/notifier.py#L250-L267)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -414,12 +452,84 @@ result = await auto_close_attendance_session(lesson_num=...)
 
 ---
 
+### `_schedule_attendance_poll_job`
+```python
+def _schedule_attendance_poll_job(today: date, lesson: Lesson, poll_dt: datetime, now_dt: datetime) -> None
+```
+
+- **Source Reference**: [`services/notifier.py#L270-L286`](../../services/notifier.py#L270-L286)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_schedule_attendance_poll_job`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `today` | `date` | Yes | Parameter `today` of type `date`. |
+| `lesson` | `Lesson` | Yes | Parameter `lesson` of type `Lesson`. |
+| `poll_dt` | `datetime` | Yes | Parameter `poll_dt` of type `datetime`. |
+| `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.notifier import _schedule_attendance_poll_job
+
+# Execute call
+result = _schedule_attendance_poll_job(today=..., lesson=..., poll_dt=...)
+```
+
+---
+
+### `_schedule_attendance_close_job`
+```python
+def _schedule_attendance_close_job(today: date, lesson: Lesson, end_dt: datetime, now_dt: datetime) -> None
+```
+
+- **Source Reference**: [`services/notifier.py#L289-L304`](../../services/notifier.py#L289-L304)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_schedule_attendance_close_job`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `today` | `date` | Yes | Parameter `today` of type `date`. |
+| `lesson` | `Lesson` | Yes | Parameter `lesson` of type `Lesson`. |
+| `end_dt` | `datetime` | Yes | Parameter `end_dt` of type `datetime`. |
+| `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.notifier import _schedule_attendance_close_job
+
+# Execute call
+result = _schedule_attendance_close_job(today=..., lesson=..., end_dt=...)
+```
+
+---
+
 ### `schedule_attendance_poll`
 ```python
 def schedule_attendance_poll(today: date, lesson: Lesson, now_dt: datetime) -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L201-L215`](../../services/notifier.py#L201-L215)
+- **Source Reference**: [`services/notifier.py#L307-L325`](../../services/notifier.py#L307-L325)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -434,7 +544,7 @@ Executes core domain logic for `schedule_attendance_poll`.
 | `now_dt` | `datetime` | Yes | Current reference datetime anchored to Europe/Moscow timezone. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
 Propagates unexpected runtime errors up the call stack to global exception handlers.
@@ -454,7 +564,7 @@ result = schedule_attendance_poll(today=..., lesson=..., now_dt=...)
 async def daily_schedule_dispatch() -> None
 ```
 
-- **Source Reference**: [`services/notifier.py#L218-L231`](../../services/notifier.py#L218-L231)
+- **Source Reference**: [`services/notifier.py#L328-L348`](../../services/notifier.py#L328-L348)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -485,7 +595,7 @@ result = await daily_schedule_dispatch()
 def setup_scheduler() -> AsyncIOScheduler
 ```
 
-- **Source Reference**: [`services/notifier.py#L234-L247`](../../services/notifier.py#L234-L247)
+- **Source Reference**: [`services/notifier.py#L351-L370`](../../services/notifier.py#L351-L370)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AsyncIOScheduler`
 

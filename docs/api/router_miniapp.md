@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L47–L57 | `None` | Executes core domain logic for `_set_tester_cookie`. |
-| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L61–L65 | `HTMLResponse` | Executes core domain logic for `serve_miniapp_page`. |
-| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L69–L79 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
-| [`check_tester_status`](#check_tester_status) | Function | L83–L91 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
-| [`list_api_testers`](#list_api_testers) | Function | L95–L99 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
-| [`api_add_tester`](#api_add_tester) | Function | L103–L108 | `dict` | Executes core domain logic for `api_add_tester`. |
-| [`api_remove_tester`](#api_remove_tester) | Function | L112–L117 | `dict` | Executes core domain logic for `api_remove_tester`. |
+| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L47–L65 | `None` | Executes core domain logic for `_set_tester_cookie`. |
+| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L69–L82 | `HTMLResponse` | Executes core domain logic for `serve_miniapp_page`. |
+| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L86–L107 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
+| [`check_tester_status`](#check_tester_status) | Function | L111–L130 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
+| [`list_api_testers`](#list_api_testers) | Function | L134–L147 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
+| [`api_add_tester`](#api_add_tester) | Function | L151–L165 | `dict` | Executes core domain logic for `api_add_tester`. |
+| [`api_remove_tester`](#api_remove_tester) | Function | L169–L183 | `dict` | Executes core domain logic for `api_remove_tester`. |
 
 ---
 
@@ -38,7 +38,7 @@ graph LR
 def _set_tester_cookie(response: Response, user_id: int) -> None
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L47-L57`](../../api/router/miniapp.py#L47-L57)
+- **Source Reference**: [`api/router/miniapp.py#L47-L65`](../../api/router/miniapp.py#L47-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -72,7 +72,7 @@ result = _set_tester_cookie(response=..., user_id=...)
 async def serve_miniapp_page() -> HTMLResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L61-L65`](../../api/router/miniapp.py#L61-L65)
+- **Source Reference**: [`api/router/miniapp.py#L69-L82`](../../api/router/miniapp.py#L69-L82)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `HTMLResponse`
 
@@ -103,7 +103,7 @@ result = await serve_miniapp_page()
 async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L69-L79`](../../api/router/miniapp.py#L69-L79)
+- **Source Reference**: [`api/router/miniapp.py#L86-L107`](../../api/router/miniapp.py#L86-L107)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappAuthResponse`
 
@@ -137,7 +137,7 @@ result = await authenticate_miniapp(payload=..., response=...)
 async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L83-L91`](../../api/router/miniapp.py#L83-L91)
+- **Source Reference**: [`api/router/miniapp.py#L111-L130`](../../api/router/miniapp.py#L111-L130)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappCheckResponse`
 
@@ -170,7 +170,7 @@ result = await check_tester_status(para_session=...)
 async def list_api_testers() -> TesterListResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L95-L99`](../../api/router/miniapp.py#L95-L99)
+- **Source Reference**: [`api/router/miniapp.py#L134-L147`](../../api/router/miniapp.py#L134-L147)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterListResponse`
 
@@ -201,7 +201,7 @@ result = await list_api_testers()
 async def api_add_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L103-L108`](../../api/router/miniapp.py#L103-L108)
+- **Source Reference**: [`api/router/miniapp.py#L151-L165`](../../api/router/miniapp.py#L151-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 
@@ -234,7 +234,7 @@ result = await api_add_tester(user_id=...)
 async def api_remove_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L112-L117`](../../api/router/miniapp.py#L112-L117)
+- **Source Reference**: [`api/router/miniapp.py#L169-L183`](../../api/router/miniapp.py#L169-L183)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 

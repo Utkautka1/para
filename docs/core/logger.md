@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_create_formatter`](#_create_formatter) | Function | L20–L25 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
-| [`_create_stream_handler`](#_create_stream_handler) | Function | L28–L33 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
-| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L36–L51 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
-| [`get_logger`](#get_logger) | Function | L54–L69 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
+| [`_create_formatter`](#_create_formatter) | Function | L20–L32 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
+| [`_create_stream_handler`](#_create_stream_handler) | Function | L35–L47 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
+| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L50–L68 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
+| [`get_logger`](#get_logger) | Function | L71–L88 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 def _create_formatter() -> logging.Formatter
 ```
 
-- **Source Reference**: [`core/logger.py#L20-L25`](../../core/logger.py#L20-L25)
+- **Source Reference**: [`core/logger.py#L20-L32`](../../core/logger.py#L20-L32)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.Formatter`
 
@@ -66,7 +66,7 @@ result = _create_formatter()
 def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandler
 ```
 
-- **Source Reference**: [`core/logger.py#L28-L33`](../../core/logger.py#L28-L33)
+- **Source Reference**: [`core/logger.py#L35-L47`](../../core/logger.py#L35-L47)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.StreamHandler`
 
@@ -99,7 +99,7 @@ result = _create_stream_handler(formatter=...)
 def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler
 ```
 
-- **Source Reference**: [`core/logger.py#L36-L51`](../../core/logger.py#L36-L51)
+- **Source Reference**: [`core/logger.py#L50-L68`](../../core/logger.py#L50-L68)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `RotatingFileHandler`
 
@@ -132,7 +132,7 @@ result = _create_rotating_file_handler(formatter=...)
 def get_logger(name: str) -> logging.Logger
 ```
 
-- **Source Reference**: [`core/logger.py#L54-L69`](../../core/logger.py#L54-L69)
+- **Source Reference**: [`core/logger.py#L71-L88`](../../core/logger.py#L71-L88)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.Logger`
 

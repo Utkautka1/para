@@ -30,17 +30,18 @@ graph TD
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AudioTranscriber.__init__`](#audiotranscriber__init__) | Method | L30–L53 | `Any` | Executes core domain logic for `__init__`. |
-| [`AudioTranscriber.queue_size`](#audiotranscriberqueue_size) | Method | L56–L58 | `int` | Executes core domain logic for `queue_size`. |
-| [`AudioTranscriber._init_whisper_engine`](#audiotranscriber_init_whisper_engine) | Method | L60–L81 | `Any` | Instantiates WhisperModel on GPU with automatic CPU fal... |
-| [`AudioTranscriber.get_model`](#audiotranscriberget_model) | Method | L83–L90 | `Any` | Lazily instantiates and caches the primary WhisperModel... |
-| [`AudioTranscriber._get_cpu_model`](#audiotranscriber_get_cpu_model) | Method | L92–L96 | `Any` | Executes core domain logic for `_get_cpu_model`. |
-| [`AudioTranscriber.warmup`](#audiotranscriberwarmup) | Method | L98–L100 | `None` | Pre-loads model weights into GPU VRAM to eliminate cold... |
-| [`AudioTranscriber._clean_hallucinations`](#audiotranscriber_clean_hallucinations) | Method | L103–L114 | `str` | Sanitizes silent and repetitive Whisper hallucination a... |
-| [`AudioTranscriber._sync_transcribe`](#audiotranscriber_sync_transcribe) | Method | L116–L127 | `str` | Executes synchronous whisper inference in non-blocking ... |
-| [`AudioTranscriber._infer_with_fallback`](#audiotranscriber_infer_with_fallback) | Method | L129–L138 | `str` | Executes speech recognition on GPU with automatic CPU i... |
-| [`AudioTranscriber.transcribe_file`](#audiotranscribertranscribe_file) | Method | L140–L156 | `str` | Transcribes audio file to text using faster-whisper und... |
-| [`split_text_to_chunks`](#split_text_to_chunks) | Function | L159–L173 | `list[str]` | Decomposes lengthy transcription text across paragraph ... |
+| [`AudioTranscriber.__init__`](#audiotranscriber__init__) | Method | L30–L54 | `Any` | Executes core domain logic for `__init__`. |
+| [`AudioTranscriber.queue_size`](#audiotranscriberqueue_size) | Method | L57–L66 | `int` | Executes core domain logic for `queue_size`. |
+| [`AudioTranscriber._init_whisper_engine`](#audiotranscriber_init_whisper_engine) | Method | L68–L98 | `Any` | Instantiates WhisperModel on GPU with automatic CPU fal... |
+| [`AudioTranscriber.get_model`](#audiotranscriberget_model) | Method | L100–L116 | `Any` | Lazily instantiates and caches the primary WhisperModel... |
+| [`AudioTranscriber._get_cpu_model`](#audiotranscriber_get_cpu_model) | Method | L118–L130 | `Any` | Executes core domain logic for `_get_cpu_model`. |
+| [`AudioTranscriber.warmup`](#audiotranscriberwarmup) | Method | L132–L141 | `None` | Pre-loads model weights into GPU VRAM to eliminate cold... |
+| [`AudioTranscriber._clean_hallucinations`](#audiotranscriber_clean_hallucinations) | Method | L144–L164 | `str` | Sanitizes silent and repetitive Whisper hallucination a... |
+| [`AudioTranscriber._sync_transcribe`](#audiotranscriber_sync_transcribe) | Method | L166–L185 | `str` | Executes synchronous whisper inference in non-blocking ... |
+| [`AudioTranscriber._infer_with_fallback`](#audiotranscriber_infer_with_fallback) | Method | L187–L204 | `str` | Executes speech recognition on GPU with automatic CPU i... |
+| [`AudioTranscriber._log_transcribe_stats`](#audiotranscriber_log_transcribe_stats) | Method | L206–L217 | `None` | Executes core domain logic for `_log_transcribe_stats`. |
+| [`AudioTranscriber.transcribe_file`](#audiotranscribertranscribe_file) | Method | L219–L243 | `str` | Transcribes audio file to text using faster-whisper und... |
+| [`split_text_to_chunks`](#split_text_to_chunks) | Function | L246–L270 | `list[str]` | Decomposes lengthy transcription text across paragraph ... |
 
 ---
 
@@ -55,7 +56,7 @@ Encapsulates domain entities and data transfer logic for `AudioTranscriber`.
 def __init__( self, model_name: str | None = None, device: str | None = None, compute_type: str | None = None, download_root: str | None = None, language: str | None = None, beam_size: int | None = None,
 ```
 
-- **Source Reference**: [`services/transcriber.py#L30-L53`](../../services/transcriber.py#L30-L53)
+- **Source Reference**: [`services/transcriber.py#L30-L54`](../../services/transcriber.py#L30-L54)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -93,7 +94,7 @@ result = __init__(model_name=..., device=..., compute_type=...)
 def queue_size(self) -> int
 ```
 
-- **Source Reference**: [`services/transcriber.py#L56-L58`](../../services/transcriber.py#L56-L58)
+- **Source Reference**: [`services/transcriber.py#L57-L66`](../../services/transcriber.py#L57-L66)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -124,7 +125,7 @@ result = queue_size()
 def _init_whisper_engine(self, device: str | None = None, compute_type: str | None = None)
 ```
 
-- **Source Reference**: [`services/transcriber.py#L60-L81`](../../services/transcriber.py#L60-L81)
+- **Source Reference**: [`services/transcriber.py#L68-L98`](../../services/transcriber.py#L68-L98)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -158,7 +159,7 @@ result = _init_whisper_engine(device=..., compute_type=...)
 async def get_model(self)
 ```
 
-- **Source Reference**: [`services/transcriber.py#L83-L90`](../../services/transcriber.py#L83-L90)
+- **Source Reference**: [`services/transcriber.py#L100-L116`](../../services/transcriber.py#L100-L116)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -189,7 +190,7 @@ result = await get_model()
 async def _get_cpu_model(self)
 ```
 
-- **Source Reference**: [`services/transcriber.py#L92-L96`](../../services/transcriber.py#L92-L96)
+- **Source Reference**: [`services/transcriber.py#L118-L130`](../../services/transcriber.py#L118-L130)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -220,7 +221,7 @@ result = await _get_cpu_model()
 async def warmup(self) -> None
 ```
 
-- **Source Reference**: [`services/transcriber.py#L98-L100`](../../services/transcriber.py#L98-L100)
+- **Source Reference**: [`services/transcriber.py#L132-L141`](../../services/transcriber.py#L132-L141)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -251,7 +252,7 @@ result = await warmup()
 def _clean_hallucinations(text: str) -> str
 ```
 
-- **Source Reference**: [`services/transcriber.py#L103-L114`](../../services/transcriber.py#L103-L114)
+- **Source Reference**: [`services/transcriber.py#L144-L164`](../../services/transcriber.py#L144-L164)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -284,7 +285,7 @@ result = _clean_hallucinations(text=...)
 def _sync_transcribe(self, model, audio_path: str, language: str | None = None) -> str
 ```
 
-- **Source Reference**: [`services/transcriber.py#L116-L127`](../../services/transcriber.py#L116-L127)
+- **Source Reference**: [`services/transcriber.py#L166-L185`](../../services/transcriber.py#L166-L185)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -319,7 +320,7 @@ result = _sync_transcribe(model=..., audio_path=..., language=...)
 async def _infer_with_fallback(self, audio_path: str, language: str | None) -> str
 ```
 
-- **Source Reference**: [`services/transcriber.py#L129-L138`](../../services/transcriber.py#L129-L138)
+- **Source Reference**: [`services/transcriber.py#L187-L204`](../../services/transcriber.py#L187-L204)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -348,12 +349,48 @@ result = await _infer_with_fallback(audio_path=..., language=...)
 
 ---
 
+### `AudioTranscriber._log_transcribe_stats`
+```python
+def _log_transcribe_stats(self, fname: str, infer_start: float, start_time: float, text: str) -> None
+```
+
+- **Source Reference**: [`services/transcriber.py#L206-L217`](../../services/transcriber.py#L206-L217)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_log_transcribe_stats`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fname` | `str` | Yes | Parameter `fname` of type `str`. |
+| `infer_start` | `float` | Yes | Parameter `infer_start` of type `float`. |
+| `start_time` | `float` | Yes | Parameter `start_time` of type `float`. |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.transcriber import _log_transcribe_stats
+
+# Execute call
+result = _log_transcribe_stats(fname=..., infer_start=..., start_time=...)
+```
+
+---
+
 ### `AudioTranscriber.transcribe_file`
 ```python
 async def transcribe_file(self, audio_path: str, language: str | None = None) -> str
 ```
 
-- **Source Reference**: [`services/transcriber.py#L140-L156`](../../services/transcriber.py#L140-L156)
+- **Source Reference**: [`services/transcriber.py#L219-L243`](../../services/transcriber.py#L219-L243)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -387,7 +424,7 @@ result = await transcribe_file(audio_path=..., language=...)
 def split_text_to_chunks(text: str, max_chunk_len: int = 4000) -> list[str]
 ```
 
-- **Source Reference**: [`services/transcriber.py#L159-L173`](../../services/transcriber.py#L159-L173)
+- **Source Reference**: [`services/transcriber.py#L246-L270`](../../services/transcriber.py#L246-L270)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 

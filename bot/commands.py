@@ -16,7 +16,15 @@ log = get_logger("bot_commands")
 
 
 def get_default_user_commands() -> list[BotCommand]:
-    """Возвращает список общедоступных команд для студентов группы."""
+    """
+    Возвращает список общедоступных команд бота для студентов группы.
+
+    Отображается в системном меню ввода команд Telegram у всех пользователей.
+    Содержит базовые функции просмотра пар, напоминаний и справки.
+
+    Возвращает список объектов BotCommand.
+    """
+
     return [
         BotCommand(command="start", description="🚀 Главное меню"),
         BotCommand(command="today", description="📅 Расписание на сегодня"),
@@ -27,7 +35,15 @@ def get_default_user_commands() -> list[BotCommand]:
 
 
 def get_admin_commands() -> list[BotCommand]:
-    """Возвращает расширенный список команд для старосты группы."""
+    """
+    Возвращает расширенный список команд управления для старосты группы.
+
+    Дополняет пользовательские команды функциями журнала, пинга и тестеров.
+    Регистрируется персонально в чате администратора через BotCommandScopeChat.
+
+    Возвращает расширенный список объектов BotCommand.
+    """
+
     return [
         *get_default_user_commands(),
         BotCommand(command="admin", description="⚙️ Панель управления старосты"),
@@ -39,10 +55,19 @@ def get_admin_commands() -> list[BotCommand]:
 
 
 async def register_bot_commands(bot: Bot) -> None:
-    """Регистрирует меню команд в Telegram API для пользователей и администратора."""
+    """
+    Регистрирует меню команд в Telegram API для пользователей и старосты.
+
+    Разделяет видимость команд по области видимости (Default и Chat scope).
+    Перехватывает сетевые исключения, не блокируя общий запуск бота.
+
+    Ничего не возвращает.
+    """
+
     try:
         await bot.set_my_commands(get_default_user_commands(), scope=BotCommandScopeDefault())
         await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=ALLOWED_USER_ID))
         log.info("✅ Системное меню команд бота успешно зарегистрировано в Telegram")
     except Exception as e:
         log.warning(f"⚠️ Не удалось зарегистрировать системное меню команд: {e}")
+

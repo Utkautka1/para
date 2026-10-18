@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_testers_text`](#format_testers_text) | Function | L20–L30 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L33–L40 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L43–L59 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`format_testers_text`](#format_testers_text) | Function | L21–L40 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L43–L60 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L63–L89 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -38,7 +38,7 @@ Encapsulates domain entities and data transfer logic for `AddTesterState`.
 def format_testers_text(testers: list[int]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L20-L30`](../../bot/templates/admin/testers.py#L20-L30)
+- **Source Reference**: [`bot/templates/admin/testers.py#L21-L40`](../../bot/templates/admin/testers.py#L21-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -71,7 +71,7 @@ result = format_testers_text(testers=...)
 def get_swagger_buttons() -> list[InlineKeyboardButton]
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L33-L40`](../../bot/templates/admin/testers.py#L33-L40)
+- **Source Reference**: [`bot/templates/admin/testers.py#L43-L60`](../../bot/templates/admin/testers.py#L43-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[InlineKeyboardButton]`
 
@@ -102,7 +102,7 @@ result = get_swagger_buttons()
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L43-L59`](../../bot/templates/admin/testers.py#L43-L59)
+- **Source Reference**: [`bot/templates/admin/testers.py#L63-L89`](../../bot/templates/admin/testers.py#L63-L89)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

@@ -35,7 +35,13 @@ from config import (
 
 
 def _register_routers(app: FastAPI) -> None:
-    """Регистрирует все подсистемные роутеры в приложении."""
+    """
+    Регистрирует все подсистемные роутеры в основном экземпляре приложения FastAPI.
+
+    Подключает эндпоинты расписания, экзаменов, посещаемости, одногруппников, дней рождения.
+
+    Ничего не возвращает.
+    """
     app.include_router(health_router)
     app.include_router(schedule_router)
     app.include_router(exams_router)
@@ -50,45 +56,76 @@ def _register_routers(app: FastAPI) -> None:
 
 
 def _configure_openapi_servers(schema: dict[str, Any]) -> None:
-    """Устанавливает относительный URL сервера без публичных IP и абсолютных хостов."""
-    schema["servers"] = [{"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}]
+    """
+    Устанавливает относительный URL сервера без публичных IP и абсолютных хостов.
+
+    Защищает от раскрытия внутреннего IP-адреса и обеспечивает работу за реверс-прокси.
+
+    Ничего не возвращает; мутирует переданный словарь схемы.
+    """
+    schema["servers"] = [
+        {"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}
+    ]
 
 
 def _configure_openapi_security(schema: dict[str, Any]) -> None:
-    """Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме."""
+    """
+    Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме.
+
+    Исключает публичные пути здоровья и авторизации из требований токенов.
+
+    Ничего не возвращает; мутирует переданный словарь схемы.
+    """
     schema.setdefault("components", {})["securitySchemes"] = {
         "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
         "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
     }
     public_paths = {"/health", "/miniapp", "/miniapp/auth", "/miniapp/status"}
+
     for path, methods in schema.get("paths", {}).items():
         for m, op in methods.items():
             if m.lower() in {"get", "post", "put", "delete", "patch"}:
                 op["security"] = [] if path in public_paths else [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+
     schema.pop("security", None)
 
 
 def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
-    """Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием."""
+    """
+    Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием.
+
+    Создает схему один раз и сохраняет в атрибут app.openapi_schema.
+
+    Возвращает словарь схемы OpenAPI.
+    """
     if app.openapi_schema:
         return app.openapi_schema
+
     schema = get_openapi(
         title="para-api",
         version="2.0.0",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         routes=app.routes,
     )
+
     _configure_openapi_security(schema)
     _configure_openapi_servers(schema)
     app.openapi_schema = schema
+
     return app.openapi_schema
 
 
 def _register_protected_docs(app: FastAPI) -> None:
-    """Регистрирует защищенную отдачу схемы спецификации и редирект на Mini App."""
+    """
+    Регистрирует защищенную отдачу спецификации и редирект на Mini App.
+
+    Закрывает доступ к схеме от неавторизованных пользователей через зависимость.
+
+    Ничего не возвращает.
+    """
     @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
     async def get_openapi_spec() -> JSONResponse:
-        """Отдаёт схему OpenAPI только авторизованным тестировщикам по сессии или ключу."""
+        """Отдает схему OpenAPI только авторизованным тестировщикам."""
         return JSONResponse(content=_custom_openapi_schema(app))
 
     @app.get("/docs", include_in_schema=False)
@@ -98,7 +135,13 @@ def _register_protected_docs(app: FastAPI) -> None:
 
 
 def create_app() -> FastAPI:
-    """Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами."""
+    """
+    Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами.
+
+    Настраивает сжатие GZip, маршрутизацию, обработчики ошибок и схему OpenAPI.
+
+    Возвращает сконфигурированный экземпляр FastAPI.
+    """
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
@@ -108,10 +151,11 @@ def create_app() -> FastAPI:
         openapi_url=None,
         responses=COMMON_API_RESPONSES,
     )
+
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
     _register_routers(app)
     _register_protected_docs(app)
     register_exception_handlers(app)
     app.openapi = lambda: _custom_openapi_schema(app)
-    return app
 
+    return app

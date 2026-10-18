@@ -21,7 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_required_env`](#get_required_env) | Function | L17–L27 | `str` | Retrieves and resolves domain data for `get_required_en... |
+| [`get_required_env`](#get_required_env) | Function | L24–L37 | `str` | Retrieves and resolves domain data for `get_required_en... |
+| [`get_env`](#get_env) | Function | L40–L49 | `str` | Retrieves and resolves domain data for `get_env`. |
+| [`get_env_int`](#get_env_int) | Function | L52–L67 | `int` | Retrieves and resolves domain data for `get_env_int`. |
+| [`get_env_float`](#get_env_float) | Function | L70–L84 | `float` | Retrieves and resolves domain data for `get_env_float`. |
+| [`get_env_list`](#get_env_list) | Function | L87–L99 | `tuple[str, ...]` | Retrieves and resolves domain data for `get_env_list`. |
 
 ---
 
@@ -32,7 +36,7 @@ graph LR
 def get_required_env(key: str) -> str
 ```
 
-- **Source Reference**: [`config.py#L17-L27`](../../config.py#L17-L27)
+- **Source Reference**: [`config.py#L24-L37`](../../config.py#L24-L37)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -56,6 +60,142 @@ from config import get_required_env
 
 # Execute call
 result = get_required_env(key=...)
+```
+
+---
+
+### `get_env`
+```python
+def get_env(key: str, default: str) -> str
+```
+
+- **Source Reference**: [`config.py#L40-L49`](../../config.py#L40-L49)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_env`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `default` | `str` | Yes | Parameter `default` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from config import get_env
+
+# Execute call
+result = get_env(key=..., default=...)
+```
+
+---
+
+### `get_env_int`
+```python
+def get_env_int(key: str, default: int | None = None) -> int
+```
+
+- **Source Reference**: [`config.py#L52-L67`](../../config.py#L52-L67)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_env_int`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `default` | `int | None` | Yes | Parameter `default` of type `int | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from config import get_env_int
+
+# Execute call
+result = get_env_int(key=..., default=...)
+```
+
+---
+
+### `get_env_float`
+```python
+def get_env_float(key: str, default: float | None = None) -> float
+```
+
+- **Source Reference**: [`config.py#L70-L84`](../../config.py#L70-L84)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `float`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_env_float`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `default` | `float | None` | Yes | Parameter `default` of type `float | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from config import get_env_float
+
+# Execute call
+result = get_env_float(key=..., default=...)
+```
+
+---
+
+### `get_env_list`
+```python
+def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]
+```
+
+- **Source Reference**: [`config.py#L87-L99`](../../config.py#L87-L99)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[str, ...]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_env_list`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `default` | `tuple[str, ...]` | Yes | Parameter `default` of type `tuple[str, ...]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from config import get_env_list
+
+# Execute call
+result = get_env_list(key=..., default=...)
 ```
 
 ---

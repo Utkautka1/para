@@ -21,14 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cmd_list_testers`](#cmd_list_testers) | Function | L35–L39 | `None` | Processes inbound Telegram slash command for `cmd_list_... |
-| [`cmd_add_tester`](#cmd_add_tester) | Function | L43–L55 | `None` | Processes inbound Telegram slash command for `cmd_add_t... |
-| [`cmd_del_tester`](#cmd_del_tester) | Function | L59–L68 | `None` | Processes inbound Telegram slash command for `cmd_del_t... |
-| [`cmd_open_swagger`](#cmd_open_swagger) | Function | L72–L75 | `None` | Processes inbound Telegram slash command for `cmd_open_... |
-| [`cb_admin_testers`](#cb_admin_testers) | Function | L79–L84 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_start_add_tester`](#cb_start_add_tester) | Function | L88–L92 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`process_tester_id_input`](#process_tester_id_input) | Function | L96–L108 | `None` | Executes core domain logic for `process_tester_id_input... |
-| [`cb_delete_tester`](#cb_delete_tester) | Function | L112–L120 | `None` | Handles Telegram inline callback query events for `cb_d... |
+| [`cmd_list_testers`](#cmd_list_testers) | Function | L35–L48 | `None` | Processes inbound Telegram slash command for `cmd_list_... |
+| [`cmd_add_tester`](#cmd_add_tester) | Function | L52–L74 | `None` | Processes inbound Telegram slash command for `cmd_add_t... |
+| [`cmd_del_tester`](#cmd_del_tester) | Function | L78–L97 | `None` | Processes inbound Telegram slash command for `cmd_del_t... |
+| [`cmd_open_swagger`](#cmd_open_swagger) | Function | L101–L113 | `None` | Processes inbound Telegram slash command for `cmd_open_... |
+| [`cb_admin_testers`](#cb_admin_testers) | Function | L117–L131 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_start_add_tester`](#cb_start_add_tester) | Function | L135–L147 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`process_tester_id_input`](#process_tester_id_input) | Function | L151–L173 | `None` | Executes core domain logic for `process_tester_id_input... |
+| [`cb_delete_tester`](#cb_delete_tester) | Function | L177–L195 | `None` | Handles Telegram inline callback query events for `cb_d... |
 
 ---
 
@@ -39,7 +39,7 @@ graph LR
 async def cmd_list_testers(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L35-L39`](../../bot/handlers/admin/testers.py#L35-L39)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L35-L48`](../../bot/handlers/admin/testers.py#L35-L48)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -72,7 +72,7 @@ result = await cmd_list_testers(message=...)
 async def cmd_add_tester(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L43-L55`](../../bot/handlers/admin/testers.py#L43-L55)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L52-L74`](../../bot/handlers/admin/testers.py#L52-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -105,7 +105,7 @@ result = await cmd_add_tester(message=...)
 async def cmd_del_tester(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L59-L68`](../../bot/handlers/admin/testers.py#L59-L68)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L78-L97`](../../bot/handlers/admin/testers.py#L78-L97)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -138,7 +138,7 @@ result = await cmd_del_tester(message=...)
 async def cmd_open_swagger(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L72-L75`](../../bot/handlers/admin/testers.py#L72-L75)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L101-L113`](../../bot/handlers/admin/testers.py#L101-L113)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -171,7 +171,7 @@ result = await cmd_open_swagger(message=...)
 async def cb_admin_testers(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L79-L84`](../../bot/handlers/admin/testers.py#L79-L84)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L117-L131`](../../bot/handlers/admin/testers.py#L117-L131)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -204,7 +204,7 @@ result = await cb_admin_testers(callback=...)
 async def cb_start_add_tester(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L88-L92`](../../bot/handlers/admin/testers.py#L88-L92)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L135-L147`](../../bot/handlers/admin/testers.py#L135-L147)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -238,7 +238,7 @@ result = await cb_start_add_tester(callback=..., state=...)
 async def process_tester_id_input(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L96-L108`](../../bot/handlers/admin/testers.py#L96-L108)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L151-L173`](../../bot/handlers/admin/testers.py#L151-L173)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -272,7 +272,7 @@ result = await process_tester_id_input(message=..., state=...)
 async def cb_delete_tester(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/testers.py#L112-L120`](../../bot/handlers/admin/testers.py#L112-L120)
+- **Source Reference**: [`bot/handlers/admin/testers.py#L177-L195`](../../bot/handlers/admin/testers.py#L177-L195)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

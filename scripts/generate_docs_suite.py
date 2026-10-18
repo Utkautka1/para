@@ -7,6 +7,13 @@ documentation in pure Technical English. Strictly <= 25 lines per method.
 
 import ast
 import os
+import sys
+from pathlib import Path
+
+# Обеспечиваем доступность корневого пакета при автономном вызове скрипта
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 PARAMETER_DESCRIPTIONS: dict[str, str] = {
     "session": "Active domain session instance containing current student index and marks.",
@@ -197,19 +204,40 @@ MERMAID_DIAGRAMS: dict[str, str] = {
 
 
 def get_source_lines(filepath: str) -> list[str]:
-    """Read all source lines from the target file."""
+    """
+    Считывает все строки исходного кода целевого файла в кодировке UTF-8.
+
+    Предоставляет прямой доступ к содержимому для извлечения сигнатур функций
+    и номеров строк без повторных дисковых обращений.
+
+    Возвращает список строк файла с сохранением символов переноса строки.
+    """
     with open(filepath, encoding="utf-8") as f:
         return f.readlines()
 
 
 def parse_module_ast(filepath: str) -> ast.Module:
-    """Parse python source file into AST module tree."""
+    """
+    Парсит исходный Python-файл в синтаксическое дерево модуля AST.
+
+    Используется для статического анализа объявлений классов, функций,
+    декораторов и аннотаций типов без исполнения самого кода.
+
+    Возвращает корневой узел ast.Module или выбрасывает SyntaxError.
+    """
     with open(filepath, encoding="utf-8") as f:
         return ast.parse(f.read(), filename=filepath)
 
 
 def sanitize_signature_english(sig: str) -> str:
-    """Sanitize any residual Cyrillic literals inside signatures into English."""
+    """
+    Нормализует строковую сигнатуру функции, заменяя остаточные русские литералы.
+
+    Обеспечивает соответствие международным стандартам документирования кода
+    в соответствии с Google Developer Style Guide.
+
+    Возвращает очищенную англоязычную строку сигнатуры функции.
+    """
     replacements = {
         '"Студент"': '"Student"',
         '"Преподаватель"': '"Instructor"',
@@ -225,7 +253,14 @@ def sanitize_signature_english(sig: str) -> str:
 
 
 def extract_func_signature(node: ast.AST, lines: list[str]) -> str:
-    """Extract full function signature from source lines."""
+    """
+    Извлекает полную сигнатуру функции из списка строк исходного кода.
+
+    Корректно обрабатывает многострочные заголовки def и async def с аннотациями,
+    объединяя их в единую компактную строку спецификации.
+
+    Возвращает очищенную строку объявления функции без двоеточия на конце.
+    """
     start = node.lineno - 1
     sig_lines = []
     for i in range(start, min(start + 8, len(lines))):
@@ -238,12 +273,26 @@ def extract_func_signature(node: ast.AST, lines: list[str]) -> str:
 
 
 def describe_parameter(name: str, type_hint: str) -> str:
-    """Generate professional English parameter description."""
+    """
+    Генерирует семантическое описание входного параметра функции.
+
+    Сопоставляет имя аргумента со словарем PARAMETER_DESCRIPTIONS или строит
+    универсальное описание на основе имени и аннотации типа.
+
+    Возвращает строковое описание параметра для документации.
+    """
     return PARAMETER_DESCRIPTIONS.get(name, f"Parameter `{name}` of type `{type_hint}`.")
 
 
 def describe_function_intent(name: str, is_async: bool) -> str:
-    """Generate active-voice English intent summary for a function."""
+    """
+    Формирует лаконичное описание архитектурного намерения функции.
+
+    Анализирует префикс имени функции по реестру FUNCTION_INTENT_PATTERNS
+    для определения типового действия в активном залоге.
+
+    Возвращает строку с описанием архитектурной задачи функции.
+    """
     for prefix, desc in FUNCTION_INTENT_PATTERNS:
         if name.startswith(prefix):
             return desc if desc.endswith(".") else f"{desc}`{name}`."
@@ -251,7 +300,14 @@ def describe_function_intent(name: str, is_async: bool) -> str:
 
 
 def analyze_side_effects(node: ast.AST) -> list[str]:
-    """Inspect AST node to discover concrete side effects and storage interactions."""
+    """
+    Статически анализирует вызовы в теле функции на наличие побочных эффектов.
+
+    Обнаруживает операции с Redis, сериализацию JSON, логирование, сетевые
+    запросы HTTP/gRPC и распределенные блокировки.
+
+    Возвращает список текстовых описаний обнаруженных внешних эффектов.
+    """
     effects = []
     calls = [ast.unparse(n.func) for n in ast.walk(node) if isinstance(n, ast.Call) and hasattr(n, "func")]
     call_str = " ".join(calls)
@@ -269,7 +325,14 @@ def analyze_side_effects(node: ast.AST) -> list[str]:
 
 
 def analyze_error_modes(node: ast.AST) -> str:
-    """Inspect AST node to determine potential exceptions and fault tolerance."""
+    """
+    Определяет стратегию обработки исключений и отказоустойчивость функции.
+
+    Проверяет синтаксическое дерево на наличие операторов raise и блоков try/except,
+    классифицируя модель обработки ошибок.
+
+    Возвращает строку с описанием механизма обработки сбоев.
+    """
     has_try = any(isinstance(n, ast.Try) for n in ast.walk(node))
     has_raise = any(isinstance(n, ast.Raise) for n in ast.walk(node))
     if has_raise:
@@ -280,7 +343,14 @@ def analyze_error_modes(node: ast.AST) -> str:
 
 
 def build_example_snippet(name: str, is_async: bool, args: list[ast.arg], filepath: str) -> str:
-    """Generate realistic Python code usage snippet."""
+    """
+    Конструирует реалистичный пример вызова функции на Python.
+
+    Учитывает асинхронность функции (await) и аргументы без параметров self и cls,
+    подставляя корректный путь импорта модуля.
+
+    Возвращает Markdown-блок с исходным кодом примера вызова.
+    """
     mod = filepath.replace(".py", "").replace("/", ".")
     arg_names = [a.arg for a in args if a.arg not in ("self", "cls")]
     call_args = ", ".join([f"{a}=..." for a in arg_names[:3]])
@@ -295,7 +365,14 @@ def build_example_snippet(name: str, is_async: bool, args: list[ast.arg], filepa
 
 
 def format_param_table(args: list[ast.arg]) -> str:
-    """Build markdown table documenting input arguments in English."""
+    """
+    Формирует таблицу аргументов функции в формате Markdown.
+
+    Исключает контекстные параметры self и cls, преобразуя аннотации типов
+    AST в человекочитаемые строковые представления.
+
+    Возвращает Markdown-таблицу параметров или уведомление об их отсутствии.
+    """
     filtered = [a for a in args if a.arg not in ("self", "cls")]
     if not filtered:
         return "*This method takes no input parameters.*\n"
@@ -308,7 +385,14 @@ def format_param_table(args: list[ast.arg]) -> str:
 
 
 def _format_spec_header(qual: str, sig: str, link: str, is_async: bool, ret: str) -> list[str]:
-    """Render signature and metadata header for a function."""
+    """
+    Генерирует заголовок спецификации символа с метаданными исполнения.
+
+    Включает имя функции, полный блок сигнатуры, относительную ссылку на исходник,
+    режим выполнения (Sync/Async) и тип возвращаемого значения.
+
+    Возвращает список Markdown-строк для сборки заголовка спецификации.
+    """
     return [
         f"### `{qual}`",
         f"```python\n{sig}\n```\n",
@@ -319,7 +403,14 @@ def _format_spec_header(qual: str, sig: str, link: str, is_async: bool, ret: str
 
 
 def _format_spec_body(node: ast.AST, filepath: str) -> list[str]:
-    """Render parameters, concurrency, errors, and example sections."""
+    """
+    Генерирует тело спецификации функции: параметры, эффекты, ошибки и пример.
+
+    Объединяет документацию параметров, результаты статического анализа побочных
+    эффектов и отказоустойчивости в единый структурированный раздел.
+
+    Возвращает список Markdown-строк спецификации поведения функции.
+    """
     args = getattr(node.args, "args", [])
     is_async = isinstance(node, ast.AsyncFunctionDef)
     name = getattr(node, "name", "unknown")
@@ -343,7 +434,14 @@ def _format_spec_body(node: ast.AST, filepath: str) -> list[str]:
 def format_function_spec(
     node: ast.AST, filepath: str, lines: list[str], doc_dir: str, class_name: str | None = None
 ) -> str:
-    """Render complete corporate function specification in pure English with relative links."""
+    """
+    Собирает полную документационную спецификацию функции или метода класса.
+
+    Координирует генерацию заголовка, извлечение сигнатуры, построение описания
+    архитектурного назначения и наполнение деталями контракта.
+
+    Возвращает готовую Markdown-секцию документации конкретного метода.
+    """
     name = getattr(node, "name", "unknown")
     qual = f"{class_name}.{name}" if class_name else name
     sig = extract_func_signature(node, lines)
@@ -360,7 +458,14 @@ def format_function_spec(
 
 
 def get_module_metadata(category: str) -> dict[str, str]:
-    """Retrieve enterprise metadata tokens for given subsystem category."""
+    """
+    Извлекает архитектурные метаданные подсистемы для формирования сводки.
+
+    Предоставляет сведения об архитектурном слое, модели параллелизма,
+    хранилище и целевом SLA подсистемы.
+
+    Возвращает словарь метаданных подсистемы с дефолтным fallback.
+    """
     fallback = {
         "layer": "Enterprise Microservice Subsystem",
         "concurrency": "AsyncIO Non-blocking Concurrency",
@@ -371,7 +476,14 @@ def get_module_metadata(category: str) -> dict[str, str]:
 
 
 def build_mermaid_diagram(category: str) -> str:
-    """Generate Mermaid architecture diagram tailored to subsystem."""
+    """
+    Предоставляет диаграмму архитектуры потока данных Mermaid для подсистемы.
+
+    Использует кэшированные схемы из словаря MERMAID_DIAGRAMS для визуализации
+    потока взаимодействия компонентов.
+
+    Возвращает строку с Mermaid диаграммой для включения в спецификацию.
+    """
     fallback = (
         "```mermaid\n"
         "graph LR\n"
@@ -384,7 +496,14 @@ def build_mermaid_diagram(category: str) -> str:
 
 
 def format_module_header(title: str, filepath: str, category: str, doc_dir: str) -> list[str]:
-    """Generate Enterprise specification header with metadata badges."""
+    """
+    Генерирует заголовок корпоративной спецификации с таблицей метаданных.
+
+    Оформляет путь к файлу, категорию, архитектурный слой и диаграмму потоков
+    в соответствии со стандартами Enterprise Engineering.
+
+    Возвращает список строк Markdown для открывающей секции документа.
+    """
     rel_mod_link = os.path.relpath(filepath, doc_dir)
     meta = get_module_metadata(category)
     return [
@@ -409,7 +528,14 @@ def format_module_header(title: str, filepath: str, category: str, doc_dir: str)
 
 
 def build_inventory_table(tree: ast.Module) -> list[str]:
-    """Build markdown inventory table for all functions in the module."""
+    """
+    Строит сводную таблицу публичного API и символов модуля.
+
+    Сканирует функции верхнего уровня и методы классов, связывая их
+    с якорными ссылками на детальные спецификации.
+
+    Возвращает список форматированных строк таблицы Markdown.
+    """
     rows = []
     for item in tree.body:
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -430,7 +556,13 @@ def build_inventory_table(tree: ast.Module) -> list[str]:
 
 
 def build_spec_sections(tree: ast.Module, filepath: str, lines: list[str], doc_dir: str) -> list[str]:
-    """Generate detailed specification blocks for all functions and classes."""
+    """
+    Генерирует разделы детальных спецификаций для всех функций и классов модуля.
+
+    Итерирует по AST-дереву, последовательно форматируя блоки функций и методы классов.
+
+    Возвращает список Markdown-строк с полными спецификациями символов.
+    """
     sections = ["\n---\n", "## 3. Comprehensive Function Specifications\n"]
     for item in tree.body:
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -445,7 +577,14 @@ def build_spec_sections(tree: ast.Module, filepath: str, lines: list[str], doc_d
 
 
 def format_module_document(filepath: str, title: str, category: str, doc_dir: str) -> str:
-    """Assemble complete enterprise documentation markdown content."""
+    """
+    Собирает целостный документ технической спецификации для модуля.
+
+    Координирует парсинг AST, генерацию шапки, таблицы символов и детальных
+    спецификаций всех функций файла.
+
+    Возвращает итоговую строку документа в формате Markdown.
+    """
     lines = get_source_lines(filepath)
     tree = parse_module_ast(filepath)
     doc = format_module_header(title, filepath, category, doc_dir)
@@ -532,12 +671,26 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
 
 
 def get_target_manifest() -> dict[str, dict[str, str]]:
-    """Return dictionary of all source files to their documentation destination."""
+    """
+    Возвращает реестр исходных модулей и путей к файлам документации.
+
+    Определяет маппинг каждого файла системы на его выходную спецификацию
+    и категорию подсистемы для сквозной генерации портала.
+
+    Возвращает словарь маппинга TARGET_MANIFEST.
+    """
     return TARGET_MANIFEST
 
 
 def generate_all_docs() -> int:
-    """Generate all markdown documentation files according to manifest."""
+    """
+    Генерирует полный набор спецификаций документации по всем модулям манифеста.
+
+    Итерирует по TARGET_MANIFEST, создает каталоги при необходимости и записывает
+    сформированные Markdown-файлы спецификаций.
+
+    Возвращает количество успешно созданных файлов документации.
+    """
     manifest = get_target_manifest()
     count = 0
     for src_path, meta in manifest.items():
@@ -554,7 +707,14 @@ def generate_all_docs() -> int:
 
 
 def build_master_portal(manifest: dict[str, dict[str, str]]) -> str:
-    """Construct Master Index docs/index.md linking to every documentation file."""
+    """
+    Формирует главный индексный файл инженерного портала docs/index.md.
+
+    Создает структурированное оглавление со ссылками на спецификации всех
+    подсистем и модулей распределенного комплекса.
+
+    Возвращает строку с Markdown-разметкой главной страницы портала.
+    """
     lines = [
         "# 🏛️ Enterprise Engineering Portal: API & Subsystems Reference",
         "\n> Comprehensive, unabridged API and architectural specification for all 625+ system symbols.\n",

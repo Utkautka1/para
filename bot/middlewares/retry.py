@@ -27,7 +27,15 @@ class RetryAfterMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        """Исполняет хэндлер с retry при временном flood control."""
+        """
+        Исполняет хэндлер с автоматическим повтором при TelegramRetryAfter.
+
+        Ожидает точное количество секунд из заголовка retry_after Telegram API.
+        Защищает от потери сообщений при временных всплесках сетевого трафика.
+
+        Возвращает результат успешного выполнения хэндлера или пробрасывает исключение.
+        """
+
         for attempt in range(2):
             try:
                 return await handler(event, data)
@@ -36,4 +44,6 @@ class RetryAfterMiddleware(BaseMiddleware):
                 await asyncio.sleep(e.retry_after)
             except Exception:
                 raise
+
         return await handler(event, data)
+

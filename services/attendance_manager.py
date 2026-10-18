@@ -40,12 +40,12 @@ log = get_logger("attendance_manager")
 REDIS_SESSION_KEY = ATTENDANCE_REDIS_SESSION_KEY
 SESSION_TTL_SECONDS = ATTENDANCE_SESSION_TTL_SECONDS
 MAX_COMMIT_RETRIES = ATTENDANCE_MAX_COMMIT_RETRIES
-# Пауза между retry — даёт WOPI серверу время сбросить кэш блокировок
 RETRY_DELAY_SECONDS = ATTENDANCE_COMMIT_RETRY_DELAY_SECONDS
 
 
 class AttendanceSession(BaseModel):
     """Модель активной сессии отметки посещаемости пары."""
+
     target_date: str
     lesson_num: int
     lesson_title: str
@@ -60,8 +60,7 @@ async def save_session_to_redis(session: AttendanceSession) -> None:
     """
     Сериализует и сохраняет состояние активной сессии опроса в Redis.
 
-    Устанавливает TTL (SESSION_TTL_SECONDS = 2 часа) для предотвращения
-    утечек памяти при брошенных старостой опросах.
+    Устанавливает TTL (SESSION_TTL_SECONDS) для предотвращения утечек памяти.
 
     Ничего не возвращает; при недоступности Redis логирует ошибку.
     """
@@ -72,7 +71,9 @@ async def save_session_to_redis(session: AttendanceSession) -> None:
 
     data = session.model_dump_json()
     await client.set(REDIS_SESSION_KEY, data, ex=SESSION_TTL_SECONDS)
-    log.info(f"Сессия посещаемости сохранена в Redis (пара {session.lesson_num}, студент {session.current_idx}/{len(session.students)})")
+    log.info(
+        f"Сессия посещаемости сохранена в Redis (пара {session.lesson_num}, студент {session.current_idx}/{len(session.students)})"
+    )
 
 
 async def get_active_session() -> AttendanceSession | None:
@@ -133,51 +134,69 @@ async def _fetch_students_from_wopi(target_date: date) -> list[tuple[int, str]]:
     return students
 
 
+async def _read_cached_students(client) -> list[tuple[int, str]] | None:
+    """
+    Считывает список студентов из кэша Redis.
+
+    Возвращает список кортежей (row_idx, fio) или None при промахе.
+    """
+    if not client:
+        return None
+
+    cached = await client.get(REDIS_STUDENTS_CACHE_KEY)
+    if cached:
+        try:
+            return [tuple(x) for x in json.loads(cached)]
+        except Exception as e:
+            log.debug(f"Сбой десериализации кэша студентов: {e}")
+
+    return None
+
+
 async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
     """
     Возвращает список студентов с кэшированием в Redis для мгновенного отклика.
 
-    Сначала опрашивает локальный кэш Redis (TTL 24 часа). При отсутствии данных
-    обращается к WOPI Яндекс Документов и атомарно кэширует результат.
+    Сначала опрашивает кэш Redis (24 ч), при промахе обращается к WOPI таблице.
 
     Возвращает список кортежей [(row_idx, fio)].
     """
     client = await get_redis()
+    cached_students = await _read_cached_students(client)
 
-    # === Быстрое чтение из кэша Redis ===
-    if client:
-        cached = await client.get(REDIS_STUDENTS_CACHE_KEY)
-        if cached:
-            try:
-                return [tuple(x) for x in json.loads(cached)]
-            except Exception as e:
-                log.debug(f"Сбой десериализации кэша студентов: {e}")
+    if cached_students:
+        return cached_students
 
-    # === Загрузка из Яндекс Документов и обновление кэша ===
     students = await _fetch_students_from_wopi(target_date)
     if client and students:
-        await client.set(REDIS_STUDENTS_CACHE_KEY, json.dumps(students, ensure_ascii=False), ex=STUDENTS_CACHE_TTL_SECONDS)
+        payload = json.dumps(students, ensure_ascii=False)
+        await client.set(REDIS_STUDENTS_CACHE_KEY, payload, ex=STUDENTS_CACHE_TTL_SECONDS)
 
     return students
 
 
-async def create_attendance_session(
-    target_date: date,
-    lesson_num: int,
-    lesson_title: str,
-    initiator_id: int
-) -> AttendanceSession:
+async def _assert_no_initiator_conflict(initiator_id: int) -> None:
     """
-    Инициализирует новую сессию опроса посещаемости и фиксирует её в Redis.
+    Проверяет отсутствие конфликта параллельных инициаторов опроса.
 
-    Проверяет отсутствие конфликта инициаторов (чтобы староста и замстаросты
-    не перезаписывали сессии друг друга одновременно).
-
-    Возвращает созданную модель AttendanceSession.
+    Возбуждает PermissionError при попытке перехватить чужую активную сессию.
     """
     active = await get_active_session()
     if active and active.initiator_id != initiator_id:
         raise PermissionError(f"Сессия уже занята пользователем {active.initiator_id}")
+
+
+async def create_attendance_session(
+    target_date: date, lesson_num: int, lesson_title: str, initiator_id: int
+) -> AttendanceSession:
+    """
+    Инициализирует новую сессию опроса посещаемости и фиксирует её в Redis.
+
+    Проверяет отсутствие конфликта параллельных инициаторов старостата.
+
+    Возвращает созданную модель AttendanceSession.
+    """
+    await _assert_no_initiator_conflict(initiator_id)
 
     students = await fetch_target_students(target_date)
     session = AttendanceSession(
@@ -185,11 +204,12 @@ async def create_attendance_session(
         lesson_num=lesson_num,
         lesson_title=lesson_title,
         students=students,
-        initiator_id=initiator_id
+        initiator_id=initiator_id,
     )
 
     await save_session_to_redis(session)
     log.info(f"Создана сессия для пары {lesson_num} ({len(students)} студентов)")
+
     return session
 
 
@@ -197,8 +217,7 @@ async def record_student_mark(mark: str) -> AttendanceSession | None:
     """
     Записывает отметку для текущего студента и сдвигает указатель на следующего.
 
-    Сохраняет выбор старосты ('П', 'О', 'У', 'Н') по индексу строки Excel
-    и обновляет сессию в Redis.
+    Сохраняет выбор старосты ('П', 'О', 'У', 'Н') и обновляет сессию в Redis.
 
     Возвращает обновленную модель AttendanceSession или None, если опрос завершён.
     """
@@ -206,7 +225,6 @@ async def record_student_mark(mark: str) -> AttendanceSession | None:
     if not session or session.current_idx >= len(session.students):
         return None
 
-    # === Фиксация отметки текущего студента ===
     row_idx, _ = session.students[session.current_idx]
     session.marks[str(row_idx)] = mark
     session.current_idx += 1
@@ -227,7 +245,6 @@ async def step_back() -> AttendanceSession | None:
     if not session or session.current_idx == 0:
         return session
 
-    # === Откат указателя и удаление последней отметки ===
     session.current_idx -= 1
     prev_row, _ = session.students[session.current_idx]
     session.marks.pop(str(prev_row), None)
@@ -240,8 +257,7 @@ async def mark_all_remaining_present() -> AttendanceSession | None:
     """
     Массово проставляет статус 'П' (присутствует) всем оставшимся студентам.
 
-    Ускоряет опрос в группах с высокой посещаемостью, избавляя старосту
-    от многократного нажатия одной кнопки.
+    Ускоряет опрос в группах с высокой явкой, избавляя от повторных кликов.
 
     Возвращает завершенную модель AttendanceSession или None при отсутствии сессии.
     """
@@ -249,7 +265,6 @@ async def mark_all_remaining_present() -> AttendanceSession | None:
     if not session:
         return None
 
-    # === Пакетная установка отметок присутствия ===
     for idx in range(session.current_idx, len(session.students)):
         row_idx, _ = session.students[idx]
         session.marks[str(row_idx)] = "П"
@@ -257,6 +272,7 @@ async def mark_all_remaining_present() -> AttendanceSession | None:
     session.current_idx = len(session.students)
     await save_session_to_redis(session)
     log.info(f"Оставшиеся студенты отмечены как 'П' (всего {len(session.marks)})")
+
     return session
 
 
@@ -264,11 +280,14 @@ def ensure_summary_headers(sheet) -> None:
     """
     Гарантирует сохранение текстовых заголовков и кодов в сводных колонках.
 
-    Предотвращает сброс формул кросс-листовых ссылок в пустые строки openpyxl.
+    Защищает от сброса формул и метаданных сводной ведомости в Excel.
+
+    Ничего не возвращает; модифицирует переданный лист openpyxl in-place.
     """
     mc = sheet.max_column
     if mc < 4:
         return
+
     sheet.cell(2, mc - 2, "Опоздавшие")
     sheet.cell(3, mc - 2, "О")
     sheet.cell(2, mc - 1, "отсутствие по уважительной причине")
@@ -290,42 +309,66 @@ def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None:
 
 
 async def _prepare_updated_workbook(
-    wopi, t_date: date, session: AttendanceSession
+    wopi,
+    t_date: date,
+    session: AttendanceSession,
 ):
-    """Скачивает книгу и проставляет отметки сессии в колонку пары."""
+    """
+    Скачивает книгу и проставляет отметки сессии в колонку пары.
+
+    Возвращает модифицированный объект openpyxl.Workbook.
+    """
     wb = await download_workbook(wopi)
     sheet = get_month_sheet(wb, t_date)
     col = find_lesson_column(sheet, t_date, session.lesson_num)
+
     if not col:
         raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
+
     apply_marks_to_sheet(sheet, session, col)
     ensure_summary_headers(sheet)
+
     return wb
 
 
 async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
-    """Одна попытка записи: скачать → применить отметки → загрузить → верифицировать."""
+    """
+    Выполняет одну итерацию сохранения: скачать -> применить -> залить -> проверить.
+
+    Возвращает True в случае успешной верификации сохранения, иначе False.
+    """
     wopi = await init_wopi_session()
     wb = await _prepare_updated_workbook(wopi, t_date, session)
     upload_ok = await upload_workbook(wopi, wb)
+
     del wb
     gc.collect()
+
     if not upload_ok:
         return False
+
     verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
     if verified:
         log.info(f"✅ Посещаемость пары {session.lesson_num} подтверждена верификацией")
     else:
         log.warning("⚠️  WOPI PUT успешен (200 OK), но верификация чтения не подтвердила отметки")
+
     return True
 
 
 async def _post_commit_sync() -> None:
-    """Контрольная сверка реестра с Яндекс Документами после сохранения."""
+    """
+    Выполняет контрольную сверку реестра с Яндекс Документами после сохранения.
+
+    Ожидает сброс буфера OnlyOffice на диск, сбрасывает кэш и обновляет топик.
+
+    Ничего не возвращает.
+    """
     try:
         from services.attendance_stats import invalidate_attendance_stats_cache
         from services.attendance_topic_updater import sync_attendance_topic_message
-        # 15 сек для сброса OnlyOffice буфера совместного редактирования на диск
+
+        # Пауза 15 сек для сброса OnlyOffice буфера совместного редактирования на диск
         await asyncio.sleep(15)
         await invalidate_attendance_stats_cache()
         await sync_attendance_topic_message(force_refresh=True)
@@ -333,35 +376,60 @@ async def _post_commit_sync() -> None:
         log.warning(f"Ошибка пост-коммит обновления топика посещаемости: {e}")
 
 
-async def commit_session_to_table(session: AttendanceSession) -> bool:
+async def _execute_commit_attempts(session: AttendanceSession, t_date: date) -> bool:
     """
-    Выгружает все зафиксированные отметки сессии в Яндекс Документы.
+    Выполняет цикл повторных попыток выгрузки журнала с экспоненциальной паузой.
 
-    До MAX_COMMIT_RETRIES попыток с пересозданием WOPI-сессии.
-    После подтвержденного сохранения сбрасывает сессию и обновляет топик.
+    Возвращает True в случае успеха любой из попыток, иначе False.
     """
-    t_date = date.fromisoformat(session.target_date)
     for attempt in range(1, MAX_COMMIT_RETRIES + 1):
         log.info(f"Запись посещаемости пары {session.lesson_num} (попытка {attempt}/{MAX_COMMIT_RETRIES})...")
         try:
             if await _try_commit_once(session, t_date):
-                log.info(f"✅ Посещаемость пары {session.lesson_num} зафиксирована")
-                await clear_session()
-                asyncio.create_task(_post_commit_sync())
                 return True
         except Exception as e:
             log.error(f"Попытка {attempt} провалилась: {type(e).__name__}: {e}")
+
         if attempt < MAX_COMMIT_RETRIES:
             log.info(f"Повтор через {RETRY_DELAY_SECONDS} сек...")
             await asyncio.sleep(RETRY_DELAY_SECONDS)
+
+    return False
+
+
+async def commit_session_to_table(session: AttendanceSession) -> bool:
+    """
+    Выгружает все зафиксированные отметки сессии в Яндекс Документы.
+
+    Выполняет до MAX_COMMIT_RETRIES попыток, очищает сессию и инициирует пост-синк.
+
+    Возвращает True при успешной фиксации данных, иначе False.
+    """
+    t_date = date.fromisoformat(session.target_date)
+    success = await _execute_commit_attempts(session, t_date)
+
+    if success:
+        log.info(f"✅ Посещаемость пары {session.lesson_num} зафиксирована")
+        await clear_session()
+        asyncio.create_task(_post_commit_sync())
+        return True
+
     log.error(f"❌ Все {MAX_COMMIT_RETRIES} попытки записи пары {session.lesson_num} провалились")
     return False
 
 
 def calculate_summary_stats(marks: dict[str, str]) -> dict[str, int]:
-    """Подсчитывает итоговые количества отметок по категориям (П, О, У, Н)."""
+    """
+    Подсчитывает итоговые количества отметок по категориям (П, О, У, Н).
+
+    Используется для итоговой сводки перед подтверждением старостой.
+
+    Возвращает словарь счетчиков {'П': int, 'О': int, 'У': int, 'Н': int}.
+    """
     stats = {"П": 0, "О": 0, "У": 0, "Н": 0}
+
     for m in marks.values():
         if m in stats:
             stats[m] += 1
+
     return stats

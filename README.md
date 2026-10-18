@@ -13,6 +13,9 @@
 </p>
 
 <p align="center">
+  <a href="RELEASE_NOTES.md">
+    <img src="https://img.shields.io/badge/RELEASE-v2.7.0-8A2BE2?style=for-the-badge&logo=git&logoColor=white" alt="Release v2.7.0">
+  </a>
   <a href="https://github.com/Utkautka1/para/actions">
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>

@@ -21,7 +21,14 @@ log = get_logger("miniapp_auth")
 
 
 def _build_data_check_string(parsed_data: dict[str, str]) -> str:
-    """Формирует каноническую строку для проверки подписи initData."""
+    """
+    Формирует каноническую строку для проверки цифровой подписи initData.
+
+    Сортирует ключи словаря по алфавиту без поля 'hash' согласно спецификации
+    Telegram WebApp Auth для детерминированного вычисления HMAC.
+
+    Возвращает строку пар key=value, разделенных символом перевода строки.
+    """
     sorted_items = sorted(
         (k, v) for k, v in parsed_data.items() if k != "hash"
     )
@@ -29,13 +36,27 @@ def _build_data_check_string(parsed_data: dict[str, str]) -> str:
 
 
 def _compute_init_data_hash(data_check_str: str) -> str:
-    """Вычисляет HMAC-SHA256 хеш данных initData с секретом бота."""
+    """
+    Вычисляет HMAC-SHA256 хеш данных initData с использованием токена бота.
+
+    Создает промежуточный ключ из строки 'WebAppData' и токена бота, после чего
+    подписывает проверочную строку по протоколу Telegram.
+
+    Возвращает шестнадцатеричную (hex) строку дайджеста хеша.
+    """
     secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
     return hmac.new(secret_key, data_check_str.encode(), hashlib.sha256).hexdigest()
 
 
 def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> bool:
-    """Проверяет актуальность auth_date для защиты от replay-атак."""
+    """
+    Проверяет актуальность метки времени auth_date.
+
+    Сравнивает разницу между текущим UTC временем и временем выдачи с лимитом max_age,
+    предотвращая replay-атаки с использованием устаревших или перехваченных токенов.
+
+    Возвращает True, если возраст подписи находится в допустимом окне, иначе False.
+    """
     try:
         auth_ts = int(auth_date_str)
         now_ts = int(datetime.now(UTC).timestamp())
@@ -44,12 +65,30 @@ def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECON
         return False
 
 
+def _extract_user_payload(raw_json: str) -> dict[str, Any] | None:
+    """
+    Безопасно парсит сериализованный профиль Telegram пользователя из JSON.
+
+    Изолирует десериализацию от основного потока валидации подписи, отсекая
+    невалидные типы данных и поврежденные полезные нагрузки.
+
+    Возвращает словарь данных пользователя или None при синтаксической ошибке.
+    """
+    try:
+        data = json.loads(raw_json)
+        return data if isinstance(data, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
 def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None:
     """
-    Валидирует строку initData от Telegram WebApp.
+    Валидирует строку initData от Telegram WebApp через криптографическую подпись.
 
-    Проверяет HMAC-подпись хеша и время генерации данных.
-    Возвращает словарь с данными пользователя или None при ошибке.
+    Защищает эндпоинты Mini App от спуфинга параметров и подделки личности пользователя,
+    используя constant-time сравнение hmac.compare_digest против timing-атак.
+
+    Возвращает словарь данных пользователя при валидной подписи или None.
     """
     if not init_data:
         return None
@@ -57,32 +96,36 @@ def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None:
     received_hash = parsed.get("hash")
     if not received_hash or not _is_auth_date_valid(parsed.get("auth_date", "")):
         return None
-    data_check_str = _build_data_check_string(parsed)
-    expected_hash = _compute_init_data_hash(data_check_str)
+    expected_hash = _compute_init_data_hash(_build_data_check_string(parsed))
     if not hmac.compare_digest(received_hash, expected_hash):
         log.warning("⚠️ Невалидная подпись Telegram initData")
         return None
-    try:
-        user_data = json.loads(parsed.get("user", "{}"))
-        return user_data if isinstance(user_data, dict) else None
-    except json.JSONDecodeError:
-        return None
+    return _extract_user_payload(parsed.get("user", "{}"))
 
 
 def generate_tester_session(user_id: int) -> str:
-    """Генерирует криптографически подписанный сессионный токен для тестера."""
+    """
+    Генерирует подписанный сессионный токен для авторизации тестера в Swagger UI.
+
+    Формирует полезную нагрузку вида user_id:timestamp и подписывает ее секретным
+    ключом API_SECRET_KEY для безопасного прохождения аутентификации.
+
+    Возвращает токен формата '<user_id>:<timestamp>:<signature>'.
+    """
     ts = int(datetime.now(UTC).timestamp())
     payload = f"{user_id}:{ts}"
-    signature = hmac.new(API_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
-    return f"{payload}:{signature}"
+    sig = hmac.new(API_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
 
 
 def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> int | None:
     """
-    Проверяет валидность сессионного токена тестера.
+    Проверяет валидность и срок жизни сессионного токена тестера.
 
-    Сверяет цифровую подпись токена и срок жизни сессии.
-    Возвращает Telegram user_id тестера или None при невалидности.
+    Использует криптографическую проверку подписи и контроль TTL токена
+    для предотвращения несанкционированного доступа к служебным роутерам.
+
+    Возвращает целочисленный Telegram ID тестера при успехе, иначе None.
     """
     if not token or token.count(":") != 2:
         return None
@@ -97,3 +140,4 @@ def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) ->
         return int(raw_uid)
     except ValueError:
         return None
+

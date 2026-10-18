@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_resolve_day`](#_resolve_day) | Function | L35–L39 | `date` | Executes core domain logic for `_resolve_day`. |
-| [`_resolve_monday`](#_resolve_monday) | Function | L42–L47 | `date` | Executes core domain logic for `_resolve_monday`. |
-| [`ScheduleServicer.GetDaySchedule`](#scheduleservicergetdayschedule) | Method | L53–L68 | `schedule_pb2.DayScheduleResponse` | Executes core domain logic for `GetDaySchedule`. |
-| [`ScheduleServicer.GetWeekSchedule`](#scheduleservicergetweekschedule) | Method | L70–L85 | `schedule_pb2.WeekScheduleResponse` | Executes core domain logic for `GetWeekSchedule`. |
-| [`ExamsServicer.GetExams`](#examsservicergetexams) | Method | L91–L105 | `exams_pb2.ExamsResponse` | Executes core domain logic for `GetExams`. |
-| [`TeachersServicer.GetTeachers`](#teachersservicergetteachers) | Method | L111–L124 | `teachers_pb2.TeachersResponse` | Executes core domain logic for `GetTeachers`. |
+| [`_resolve_day`](#_resolve_day) | Function | L35–L46 | `date` | Executes core domain logic for `_resolve_day`. |
+| [`_resolve_monday`](#_resolve_monday) | Function | L49–L61 | `date` | Executes core domain logic for `_resolve_monday`. |
+| [`ScheduleServicer.GetDaySchedule`](#scheduleservicergetdayschedule) | Method | L67–L85 | `schedule_pb2.DayScheduleResponse` | Executes core domain logic for `GetDaySchedule`. |
+| [`ScheduleServicer.GetWeekSchedule`](#scheduleservicergetweekschedule) | Method | L87–L105 | `schedule_pb2.WeekScheduleResponse` | Executes core domain logic for `GetWeekSchedule`. |
+| [`ExamsServicer.GetExams`](#examsservicergetexams) | Method | L111–L128 | `exams_pb2.ExamsResponse` | Executes core domain logic for `GetExams`. |
+| [`TeachersServicer.GetTeachers`](#teachersservicergetteachers) | Method | L134–L149 | `teachers_pb2.TeachersResponse` | Executes core domain logic for `GetTeachers`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 def _resolve_day(raw_date: str) -> date
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L35-L39`](../../api/grpc/servicers.py#L35-L39)
+- **Source Reference**: [`api/grpc/servicers.py#L35-L46`](../../api/grpc/servicers.py#L35-L46)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
@@ -70,7 +70,7 @@ result = _resolve_day(raw_date=...)
 def _resolve_monday(raw_monday: str) -> date
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L42-L47`](../../api/grpc/servicers.py#L42-L47)
+- **Source Reference**: [`api/grpc/servicers.py#L49-L61`](../../api/grpc/servicers.py#L49-L61)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
@@ -107,7 +107,7 @@ Encapsulates domain entities and data transfer logic for `ScheduleServicer`.
 async def GetDaySchedule( self, request: schedule_pb2.DayScheduleRequest, context: grpc.aio.ServicerContext, ) -> schedule_pb2.DayScheduleResponse
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L53-L68`](../../api/grpc/servicers.py#L53-L68)
+- **Source Reference**: [`api/grpc/servicers.py#L67-L85`](../../api/grpc/servicers.py#L67-L85)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `schedule_pb2.DayScheduleResponse`
 
@@ -141,7 +141,7 @@ result = await GetDaySchedule(request=..., context=...)
 async def GetWeekSchedule( self, request: schedule_pb2.WeekScheduleRequest, context: grpc.aio.ServicerContext, ) -> schedule_pb2.WeekScheduleResponse
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L70-L85`](../../api/grpc/servicers.py#L70-L85)
+- **Source Reference**: [`api/grpc/servicers.py#L87-L105`](../../api/grpc/servicers.py#L87-L105)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `schedule_pb2.WeekScheduleResponse`
 
@@ -179,7 +179,7 @@ Encapsulates domain entities and data transfer logic for `ExamsServicer`.
 async def GetExams( self, request: exams_pb2.ExamsRequest, context: grpc.aio.ServicerContext, ) -> exams_pb2.ExamsResponse
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L91-L105`](../../api/grpc/servicers.py#L91-L105)
+- **Source Reference**: [`api/grpc/servicers.py#L111-L128`](../../api/grpc/servicers.py#L111-L128)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `exams_pb2.ExamsResponse`
 
@@ -217,7 +217,7 @@ Encapsulates domain entities and data transfer logic for `TeachersServicer`.
 async def GetTeachers( self, request: teachers_pb2.TeachersRequest, context: grpc.aio.ServicerContext, ) -> teachers_pb2.TeachersResponse
 ```
 
-- **Source Reference**: [`api/grpc/servicers.py#L111-L124`](../../api/grpc/servicers.py#L111-L124)
+- **Source Reference**: [`api/grpc/servicers.py#L134-L149`](../../api/grpc/servicers.py#L134-L149)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `teachers_pb2.TeachersResponse`
 

@@ -21,11 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_subscribers`](#list_subscribers) | Function | L27–L30 | `SubscribersListResponse` | Executes core domain logic for `list_subscribers`. |
-| [`count_subscribers`](#count_subscribers) | Function | L34–L37 | `SubscriberCountResponse` | Executes core domain logic for `count_subscribers`. |
-| [`check_subscription`](#check_subscription) | Function | L41–L44 | `SubscriberStatusResponse` | Executes core domain logic for `check_subscription`. |
-| [`subscribe_user`](#subscribe_user) | Function | L48–L52 | `SubscriberActionResponse` | Executes core domain logic for `subscribe_user`. |
-| [`unsubscribe_user`](#unsubscribe_user) | Function | L56–L60 | `SubscriberActionResponse` | Executes core domain logic for `unsubscribe_user`. |
+| [`list_subscribers`](#list_subscribers) | Function | L27–L39 | `SubscribersListResponse` | Executes core domain logic for `list_subscribers`. |
+| [`count_subscribers`](#count_subscribers) | Function | L43–L55 | `SubscriberCountResponse` | Executes core domain logic for `count_subscribers`. |
+| [`check_subscription`](#check_subscription) | Function | L59–L71 | `SubscriberStatusResponse` | Executes core domain logic for `check_subscription`. |
+| [`subscribe_user`](#subscribe_user) | Function | L75–L88 | `SubscriberActionResponse` | Executes core domain logic for `subscribe_user`. |
+| [`unsubscribe_user`](#unsubscribe_user) | Function | L92–L105 | `SubscriberActionResponse` | Executes core domain logic for `unsubscribe_user`. |
 
 ---
 
@@ -36,7 +36,7 @@ graph LR
 async def list_subscribers() -> SubscribersListResponse
 ```
 
-- **Source Reference**: [`api/router/subscribers.py#L27-L30`](../../api/router/subscribers.py#L27-L30)
+- **Source Reference**: [`api/router/subscribers.py#L27-L39`](../../api/router/subscribers.py#L27-L39)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SubscribersListResponse`
 
@@ -67,7 +67,7 @@ result = await list_subscribers()
 async def count_subscribers() -> SubscriberCountResponse
 ```
 
-- **Source Reference**: [`api/router/subscribers.py#L34-L37`](../../api/router/subscribers.py#L34-L37)
+- **Source Reference**: [`api/router/subscribers.py#L43-L55`](../../api/router/subscribers.py#L43-L55)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SubscriberCountResponse`
 
@@ -98,7 +98,7 @@ result = await count_subscribers()
 async def check_subscription(chat_id: int) -> SubscriberStatusResponse
 ```
 
-- **Source Reference**: [`api/router/subscribers.py#L41-L44`](../../api/router/subscribers.py#L41-L44)
+- **Source Reference**: [`api/router/subscribers.py#L59-L71`](../../api/router/subscribers.py#L59-L71)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SubscriberStatusResponse`
 
@@ -131,7 +131,7 @@ result = await check_subscription(chat_id=...)
 async def subscribe_user(chat_id: int) -> SubscriberActionResponse
 ```
 
-- **Source Reference**: [`api/router/subscribers.py#L48-L52`](../../api/router/subscribers.py#L48-L52)
+- **Source Reference**: [`api/router/subscribers.py#L75-L88`](../../api/router/subscribers.py#L75-L88)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SubscriberActionResponse`
 
@@ -164,7 +164,7 @@ result = await subscribe_user(chat_id=...)
 async def unsubscribe_user(chat_id: int) -> SubscriberActionResponse
 ```
 
-- **Source Reference**: [`api/router/subscribers.py#L56-L60`](../../api/router/subscribers.py#L56-L60)
+- **Source Reference**: [`api/router/subscribers.py#L92-L105`](../../api/router/subscribers.py#L92-L105)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SubscriberActionResponse`
 

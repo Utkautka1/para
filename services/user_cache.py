@@ -19,7 +19,14 @@ _USER_CACHE_PATH: str | None = None
 
 
 def clear_user_cache_memory() -> None:
-    """Сбрасывает оперативный кэш пользователей."""
+    """
+    Сбрасывает оперативный in-memory буфер сопоставлений юзернеймов и ID.
+
+    Используется в unit-тестах и сценариях изоляции окружения для принудительного
+    перечитывания структуры кэша с файловой системы.
+
+    Ничего не возвращает.
+    """
     global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH
     _USER_CACHE = None
     _USER_CACHE_MTIME = 0.0
@@ -27,7 +34,14 @@ def clear_user_cache_memory() -> None:
 
 
 def load_user_cache() -> dict[str, int]:
-    """Загружает кэш пользователей с in-memory буферизацией по mtime."""
+    """
+    Загружает словарь сопоставлений username -> user_id с проверкой mtime файла.
+
+    Служит высокопроизводительным in-memory кэшем, инвалидируясь только при реальном
+    изменении файла на диске другим процессом или воркером.
+
+    Возвращает словарь {username: user_id}.
+    """
     global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH
     try:
         current_mtime = os.path.getmtime(CACHE_FILE_PATH)
@@ -42,7 +56,14 @@ def load_user_cache() -> dict[str, int]:
 
 
 def save_user_cache(cache: dict[str, int]) -> None:
-    """Атомарно сохраняет словарь кэша пользователей на диск и в память."""
+    """
+    Атомарно сохраняет словарь сопоставлений пользователей на диск и в память.
+
+    Использует sync_atomic_save_json для защиты от повреждения файла при рестарте
+    и сразу обновляет отметку mtime для синхронизации локального буфера.
+
+    Ничего не возвращает.
+    """
     global _USER_CACHE, _USER_CACHE_MTIME, _USER_CACHE_PATH
     _USER_CACHE = cache
     sync_atomic_save_json(CACHE_FILE_PATH, cache)
@@ -54,13 +75,27 @@ def save_user_cache(cache: dict[str, int]) -> None:
 
 
 def get_cached_user_id(username: str) -> int | None:
-    """Возвращает Telegram ID из постоянного кэша по юзернейму."""
+    """
+    Возвращает цифровой Telegram user_id по текстовому юзернейму.
+
+    Нормализует имя пользователя (удаляет префикс '@' и приводит к нижнему регистру),
+    предоставляя быстрый O(1) поиск без обращений к API Telegram.
+
+    Возвращает int user_id или None, если пользователь ранее не взаимодействовал с ботом.
+    """
     clean = username.lstrip("@").lower()
     return load_user_cache().get(clean)
 
 
 def add_user_to_cache(username: str, user_id: int) -> None:
-    """Добавляет пользователя в постоянный кэш и сохраняет на диск."""
+    """
+    Добавляет связку юзернейма и ID пользователя в персистентный кэш.
+
+    Проверяет наличие изменений перед записью, предотвращая лишние дисковые операции
+    ввода-вывода при повторных входящих сообщениях одного пользователя.
+
+    Ничего не возвращает.
+    """
     if not username:
         return
     clean = username.lstrip("@").lower()
@@ -69,4 +104,5 @@ def add_user_to_cache(username: str, user_id: int) -> None:
         cache[clean] = user_id
         save_user_cache(cache)
         log.debug(f"Кэширован пользователь: @{clean} -> {user_id}")
+
 

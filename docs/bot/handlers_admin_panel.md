@@ -21,42 +21,50 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L24–L32 | `None` | Executes core domain logic for `_ack_admin_callback`. |
-| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L35–L47 | `None` | Executes core domain logic for `_safe_edit_admin_messag... |
-| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L50–L65 | `str` | Formats message payload and presentation markup for `fo... |
-| [`cb_admin_menu`](#cb_admin_menu) | Function | L70–L84 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_sync`](#cb_admin_sync) | Function | L88–L98 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L101–L111 | `str` | Executes core domain logic for `_get_redis_memory_stat`... |
-| [`_collect_health_summary`](#_collect_health_summary) | Function | L114–L136 | `str` | Executes core domain logic for `_collect_health_summary... |
-| [`cb_admin_status`](#cb_admin_status) | Function | L140–L145 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L149–L155 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L159–L166 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L170–L177 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L181–L188 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L192–L199 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L203–L210 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L225–L237 | `tuple[str, list]` | Executes core domain logic for `_build_custom_teachers_... |
-| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L241–L253 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L257–L268 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L272–L293 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L297–L313 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L317–L332 | `None` | Executes core domain logic for `msg_admin_got_teacher_n... |
-| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L336–L358 | `None` | Executes core domain logic for `msg_admin_got_teacher_l... |
-| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L365–L377 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_unbound_students... |
-| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L381–L403 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L407–L425 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L429–L449 | `None` | Executes core domain logic for `msg_admin_got_student_i... |
+| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L39–L55 | `None` | Executes core domain logic for `_ack_admin_callback`. |
+| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L58–L80 | `None` | Executes core domain logic for `_safe_edit_admin_messag... |
+| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L83–L102 | `str` | Formats message payload and presentation markup for `fo... |
+| [`cb_admin_menu`](#cb_admin_menu) | Function | L107–L125 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_sync`](#cb_admin_sync) | Function | L129–L148 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L151–L171 | `str` | Executes core domain logic for `_get_redis_memory_stat`... |
+| [`_collect_health_summary`](#_collect_health_summary) | Function | L174–L206 | `str` | Executes core domain logic for `_collect_health_summary... |
+| [`cb_admin_status`](#cb_admin_status) | Function | L210–L222 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L226–L240 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L244–L260 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L264–L280 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L284–L300 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L304–L320 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L324–L340 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L343–L365 | `tuple[str, list]` | Executes core domain logic for `_build_custom_teachers_... |
+| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L369–L385 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L389–L406 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L410–L435 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L439–L459 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L463–L482 | `None` | Executes core domain logic for `msg_admin_got_teacher_n... |
+| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L486–L511 | `None` | Executes core domain logic for `msg_admin_got_teacher_l... |
+| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L514–L536 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_unbound_students... |
+| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L540–L569 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L573–L597 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L601–L627 | `None` | Executes core domain logic for `msg_admin_got_student_i... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+## Class Model: `AddTeacherState`
+
+Encapsulates domain entities and data transfer logic for `AddTeacherState`.
+
+## Class Model: `BindStudentState`
+
+Encapsulates domain entities and data transfer logic for `BindStudentState`.
 
 ### `_ack_admin_callback`
 ```python
 async def _ack_admin_callback(callback: CallbackQuery, text: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L24-L32`](../../bot/handlers/admin/panel.py#L24-L32)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L39-L55`](../../bot/handlers/admin/panel.py#L39-L55)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -90,7 +98,7 @@ result = await _ack_admin_callback(callback=..., text=...)
 async def _safe_edit_admin_message( message: Message | None, text: str, reply_markup: InlineKeyboardMarkup | None = None ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L35-L47`](../../bot/handlers/admin/panel.py#L35-L47)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L58-L80`](../../bot/handlers/admin/panel.py#L58-L80)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -125,7 +133,7 @@ result = await _safe_edit_admin_message(message=..., text=..., reply_markup=...)
 def format_admin_panel_text(status_note: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L50-L65`](../../bot/handlers/admin/panel.py#L50-L65)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L83-L102`](../../bot/handlers/admin/panel.py#L83-L102)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -158,7 +166,7 @@ result = format_admin_panel_text(status_note=...)
 async def cb_admin_menu(event: Message | CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L70-L84`](../../bot/handlers/admin/panel.py#L70-L84)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L107-L125`](../../bot/handlers/admin/panel.py#L107-L125)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -191,7 +199,7 @@ result = await cb_admin_menu(event=...)
 async def cb_admin_sync(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L88-L98`](../../bot/handlers/admin/panel.py#L88-L98)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L129-L148`](../../bot/handlers/admin/panel.py#L129-L148)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -224,7 +232,7 @@ result = await cb_admin_sync(callback=...)
 async def _get_redis_memory_stat() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L101-L111`](../../bot/handlers/admin/panel.py#L101-L111)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L151-L171`](../../bot/handlers/admin/panel.py#L151-L171)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -255,7 +263,7 @@ result = await _get_redis_memory_stat()
 async def _collect_health_summary() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L114-L136`](../../bot/handlers/admin/panel.py#L114-L136)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L174-L206`](../../bot/handlers/admin/panel.py#L174-L206)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -286,7 +294,7 @@ result = await _collect_health_summary()
 async def cb_admin_status(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L140-L145`](../../bot/handlers/admin/panel.py#L140-L145)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L210-L222`](../../bot/handlers/admin/panel.py#L210-L222)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -319,7 +327,7 @@ result = await cb_admin_status(callback=...)
 async def cb_admin_force_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L149-L155`](../../bot/handlers/admin/panel.py#L149-L155)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L226-L240`](../../bot/handlers/admin/panel.py#L226-L240)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -352,7 +360,7 @@ result = await cb_admin_force_topic(callback=...)
 async def cb_admin_recreate_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L159-L166`](../../bot/handlers/admin/panel.py#L159-L166)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L244-L260`](../../bot/handlers/admin/panel.py#L244-L260)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -385,7 +393,7 @@ result = await cb_admin_recreate_topic(callback=...)
 async def cb_admin_force_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L170-L177`](../../bot/handlers/admin/panel.py#L170-L177)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L264-L280`](../../bot/handlers/admin/panel.py#L264-L280)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -418,7 +426,7 @@ result = await cb_admin_force_exam(callback=...)
 async def cb_admin_recreate_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L181-L188`](../../bot/handlers/admin/panel.py#L181-L188)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L284-L300`](../../bot/handlers/admin/panel.py#L284-L300)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -451,7 +459,7 @@ result = await cb_admin_recreate_exam(callback=...)
 async def cb_admin_force_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L192-L199`](../../bot/handlers/admin/panel.py#L192-L199)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L304-L320`](../../bot/handlers/admin/panel.py#L304-L320)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -484,7 +492,7 @@ result = await cb_admin_force_att_topic(callback=...)
 async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L203-L210`](../../bot/handlers/admin/panel.py#L203-L210)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L324-L340`](../../bot/handlers/admin/panel.py#L324-L340)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -512,16 +520,12 @@ result = await cb_admin_recreate_att_topic(callback=...)
 
 ---
 
-## Class Model: `AddTeacherState`
-
-Encapsulates domain entities and data transfer logic for `AddTeacherState`.
-
 ### `_build_custom_teachers_view`
 ```python
 def _build_custom_teachers_view(custom: dict) -> tuple[str, list]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L225-L237`](../../bot/handlers/admin/panel.py#L225-L237)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L343-L365`](../../bot/handlers/admin/panel.py#L343-L365)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, list]`
 
@@ -554,7 +558,7 @@ result = _build_custom_teachers_view(custom=...)
 async def cb_admin_list_custom(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L241-L253`](../../bot/handlers/admin/panel.py#L241-L253)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L369-L385`](../../bot/handlers/admin/panel.py#L369-L385)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -587,7 +591,7 @@ result = await cb_admin_list_custom(callback=...)
 async def cb_admin_delete_teacher(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L257-L268`](../../bot/handlers/admin/panel.py#L257-L268)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L389-L406`](../../bot/handlers/admin/panel.py#L389-L406)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -620,7 +624,7 @@ result = await cb_admin_delete_teacher(callback=...)
 async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L272-L293`](../../bot/handlers/admin/panel.py#L272-L293)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L410-L435`](../../bot/handlers/admin/panel.py#L410-L435)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -654,7 +658,7 @@ result = await cb_admin_edit_teacher(callback=..., state=...)
 async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L297-L313`](../../bot/handlers/admin/panel.py#L297-L313)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L439-L459`](../../bot/handlers/admin/panel.py#L439-L459)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -688,7 +692,7 @@ result = await cb_admin_start_add_teacher(callback=..., state=...)
 async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L317-L332`](../../bot/handlers/admin/panel.py#L317-L332)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L463-L482`](../../bot/handlers/admin/panel.py#L463-L482)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -722,7 +726,7 @@ result = await msg_admin_got_teacher_name(message=..., state=...)
 async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L336-L358`](../../bot/handlers/admin/panel.py#L336-L358)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L486-L511`](../../bot/handlers/admin/panel.py#L486-L511)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -751,16 +755,12 @@ result = await msg_admin_got_teacher_link(message=..., state=...)
 
 ---
 
-## Class Model: `BindStudentState`
-
-Encapsulates domain entities and data transfer logic for `BindStudentState`.
-
 ### `_build_unbound_students_kb`
 ```python
 def _build_unbound_students_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L365-L377`](../../bot/handlers/admin/panel.py#L365-L377)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L514-L536`](../../bot/handlers/admin/panel.py#L514-L536)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -791,7 +791,7 @@ result = _build_unbound_students_kb()
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L381-L403`](../../bot/handlers/admin/panel.py#L381-L403)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L540-L569`](../../bot/handlers/admin/panel.py#L540-L569)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -824,7 +824,7 @@ result = await cb_admin_list_students_for_binding(callback=...)
 async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L407-L425`](../../bot/handlers/admin/panel.py#L407-L425)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L573-L597`](../../bot/handlers/admin/panel.py#L573-L597)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -858,7 +858,7 @@ result = await cb_admin_select_student(callback=..., state=...)
 async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L429-L449`](../../bot/handlers/admin/panel.py#L429-L449)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L601-L627`](../../bot/handlers/admin/panel.py#L601-L627)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

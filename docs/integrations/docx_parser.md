@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L39–L60 | `bytes | None` | Executes core domain logic for `fetch_docx_bytes`. |
-| [`extract_row_texts`](#extract_row_texts) | Function | L63–L77 | `tuple[str, str]` | Executes core domain logic for `extract_row_texts`. |
-| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L80–L95 | `dict[str, TeacherData]` | Parses and extracts structured entities from `parse_doc... |
-| [`_get_docx_lock`](#_get_docx_lock) | Function | L102–L107 | `asyncio.Lock` | Executes core domain logic for `_get_docx_lock`. |
-| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L110–L117 | `bool` | Executes core domain logic for `_is_cache_fresh`. |
-| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L120–L130 | `dict[str, TeacherData]` | Executes core domain logic for `_fetch_and_cache_teache... |
-| [`get_teacher_links`](#get_teacher_links) | Function | L133–L142 | `dict[str, TeacherData]` | Retrieves and resolves domain data for `get_teacher_lin... |
+| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L46–L70 | `bytes | None` | Executes core domain logic for `fetch_docx_bytes`. |
+| [`extract_row_texts`](#extract_row_texts) | Function | L73–L89 | `tuple[str, str]` | Executes core domain logic for `extract_row_texts`. |
+| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L92–L113 | `dict[str, TeacherData]` | Parses and extracts structured entities from `parse_doc... |
+| [`_get_docx_lock`](#_get_docx_lock) | Function | L116–L127 | `asyncio.Lock` | Executes core domain logic for `_get_docx_lock`. |
+| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L130–L144 | `bool` | Executes core domain logic for `_is_cache_fresh`. |
+| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L147–L165 | `dict[str, TeacherData]` | Executes core domain logic for `_fetch_and_cache_teache... |
+| [`get_teacher_links`](#get_teacher_links) | Function | L168–L184 | `dict[str, TeacherData]` | Retrieves and resolves domain data for `get_teacher_lin... |
 
 ---
 
@@ -42,7 +42,7 @@ Encapsulates domain entities and data transfer logic for `TeacherData`.
 async def fetch_docx_bytes() -> bytes | None
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L39-L60`](../../integrations/docx_parser.py#L39-L60)
+- **Source Reference**: [`integrations/docx_parser.py#L46-L70`](../../integrations/docx_parser.py#L46-L70)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bytes | None`
 
@@ -74,7 +74,7 @@ result = await fetch_docx_bytes()
 def extract_row_texts(row_elem: Any) -> tuple[str, str]
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L63-L77`](../../integrations/docx_parser.py#L63-L77)
+- **Source Reference**: [`integrations/docx_parser.py#L73-L89`](../../integrations/docx_parser.py#L73-L89)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str]`
 
@@ -107,7 +107,7 @@ result = extract_row_texts(row_elem=...)
 def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L80-L95`](../../integrations/docx_parser.py#L80-L95)
+- **Source Reference**: [`integrations/docx_parser.py#L92-L113`](../../integrations/docx_parser.py#L92-L113)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, TeacherData]`
 
@@ -140,7 +140,7 @@ result = parse_docx_teachers(content=...)
 def _get_docx_lock() -> asyncio.Lock
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L102-L107`](../../integrations/docx_parser.py#L102-L107)
+- **Source Reference**: [`integrations/docx_parser.py#L116-L127`](../../integrations/docx_parser.py#L116-L127)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `asyncio.Lock`
 
@@ -171,7 +171,7 @@ result = _get_docx_lock()
 def _is_cache_fresh(now: float, force_refresh: bool) -> bool
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L110-L117`](../../integrations/docx_parser.py#L110-L117)
+- **Source Reference**: [`integrations/docx_parser.py#L130-L144`](../../integrations/docx_parser.py#L130-L144)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -205,7 +205,7 @@ result = _is_cache_fresh(now=..., force_refresh=...)
 async def _fetch_and_cache_teachers(now: float) -> dict[str, TeacherData]
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L120-L130`](../../integrations/docx_parser.py#L120-L130)
+- **Source Reference**: [`integrations/docx_parser.py#L147-L165`](../../integrations/docx_parser.py#L147-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, TeacherData]`
 
@@ -238,7 +238,7 @@ result = await _fetch_and_cache_teachers(now=...)
 async def get_teacher_links(force_refresh: bool = False) -> dict[str, TeacherData]
 ```
 
-- **Source Reference**: [`integrations/docx_parser.py#L133-L142`](../../integrations/docx_parser.py#L133-L142)
+- **Source Reference**: [`integrations/docx_parser.py#L168-L184`](../../integrations/docx_parser.py#L168-L184)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, TeacherData]`
 

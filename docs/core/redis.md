@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_redis_pool`](#get_redis_pool) | Function | L18–L32 | `ConnectionPool` | Retrieves and resolves domain data for `get_redis_pool`... |
-| [`init_redis`](#init_redis) | Function | L35–L51 | `Redis | None` | Executes core domain logic for `init_redis`. |
-| [`get_redis`](#get_redis) | Function | L54–L63 | `Redis | None` | Retrieves and resolves domain data for `get_redis`. |
-| [`close_redis`](#close_redis) | Function | L66–L75 | `None` | Executes core domain logic for `close_redis`. |
+| [`get_redis_pool`](#get_redis_pool) | Function | L18–L39 | `ConnectionPool` | Retrieves and resolves domain data for `get_redis_pool`... |
+| [`init_redis`](#init_redis) | Function | L42–L61 | `Redis | None` | Executes core domain logic for `init_redis`. |
+| [`get_redis`](#get_redis) | Function | L64–L75 | `Redis | None` | Retrieves and resolves domain data for `get_redis`. |
+| [`close_redis`](#close_redis) | Function | L78–L94 | `None` | Executes core domain logic for `close_redis`. |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 def get_redis_pool() -> ConnectionPool
 ```
 
-- **Source Reference**: [`core/redis.py#L18-L32`](../../core/redis.py#L18-L32)
+- **Source Reference**: [`core/redis.py#L18-L39`](../../core/redis.py#L18-L39)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ConnectionPool`
 
@@ -66,7 +66,7 @@ result = get_redis_pool()
 async def init_redis() -> Redis | None
 ```
 
-- **Source Reference**: [`core/redis.py#L35-L51`](../../core/redis.py#L35-L51)
+- **Source Reference**: [`core/redis.py#L42-L61`](../../core/redis.py#L42-L61)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Redis | None`
 
@@ -98,7 +98,7 @@ result = await init_redis()
 async def get_redis() -> Redis | None
 ```
 
-- **Source Reference**: [`core/redis.py#L54-L63`](../../core/redis.py#L54-L63)
+- **Source Reference**: [`core/redis.py#L64-L75`](../../core/redis.py#L64-L75)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Redis | None`
 
@@ -129,7 +129,7 @@ result = await get_redis()
 async def close_redis() -> None
 ```
 
-- **Source Reference**: [`core/redis.py#L66-L75`](../../core/redis.py#L66-L75)
+- **Source Reference**: [`core/redis.py#L78-L94`](../../core/redis.py#L78-L94)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

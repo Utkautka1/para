@@ -21,25 +21,25 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cache_user_from_message`](#cache_user_from_message) | Function | L21–L32 | `None` | Executes core domain logic for `cache_user_from_message... |
-| [`_find_in_admins`](#_find_in_admins) | Function | L35–L47 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_admins`. |
-| [`_find_in_registry`](#_find_in_registry) | Function | L50–L60 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_registry`. |
-| [`resolve_user_id_by_username`](#resolve_user_id_by_username) | Function | L63–L72 | `tuple[int, str] | None` | Executes core domain logic for `resolve_user_id_by_user... |
-| [`_resolve_from_entities`](#_resolve_from_entities) | Function | L76–L83 | `tuple[int, str] | None` | Executes core domain logic for `_resolve_from_entities`... |
-| [`resolve_target_identity`](#resolve_target_identity) | Function | L86–L98 | `tuple[int | None, str]` | Executes core domain logic for `resolve_target_identity... |
-| [`_strip_mute_prefix`](#_strip_mute_prefix) | Function | L101–L107 | `str` | Executes core domain logic for `_strip_mute_prefix`. |
-| [`parse_reply_mute_args`](#parse_reply_mute_args) | Function | L110–L119 | `tuple[str, str]` | Parses and extracts structured entities from `parse_rep... |
-| [`parse_standalone_mute_args`](#parse_standalone_mute_args) | Function | L122–L136 | `tuple[int | None, str, str, str]` | Parses and extracts structured entities from `parse_sta... |
-| [`extract_target_id_and_args`](#extract_target_id_and_args) | Function | L139–L145 | `tuple[int | None, str, str, str]` | Executes core domain logic for `extract_target_id_and_a... |
-| [`apply_user_restriction`](#apply_user_restriction) | Function | L148–L156 | `None` | Executes core domain logic for `apply_user_restriction`... |
-| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L159–L166 | `None` | Executes core domain logic for `_apply_unmute_permissio... |
-| [`send_mute_notification`](#send_mute_notification) | Function | L169–L175 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`_safe_delete_message`](#_safe_delete_message) | Function | L178–L189 | `None` | Executes core domain logic for `_safe_delete_message`. |
-| [`_build_mute_report`](#_build_mute_report) | Function | L192–L199 | `str` | Executes core domain logic for `_build_mute_report`. |
-| [`is_mute_command`](#is_mute_command) | Function | L202–L207 | `bool` | Executes core domain logic for `is_mute_command`. |
-| [`is_unmute_command`](#is_unmute_command) | Function | L210–L215 | `bool` | Executes core domain logic for `is_unmute_command`. |
-| [`cmd_mute_user`](#cmd_mute_user) | Function | L219–L236 | `None` | Processes inbound Telegram slash command for `cmd_mute_... |
-| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L240–L256 | `None` | Processes inbound Telegram slash command for `cmd_unmut... |
+| [`cache_user_from_message`](#cache_user_from_message) | Function | L21–L42 | `None` | Executes core domain logic for `cache_user_from_message... |
+| [`_find_in_admins`](#_find_in_admins) | Function | L45–L64 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_admins`. |
+| [`_find_in_registry`](#_find_in_registry) | Function | L67–L87 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_registry`. |
+| [`resolve_user_id_by_username`](#resolve_user_id_by_username) | Function | L90–L109 | `tuple[int, str] | None` | Executes core domain logic for `resolve_user_id_by_user... |
+| [`_resolve_from_entities`](#_resolve_from_entities) | Function | L112–L129 | `tuple[int, str] | None` | Executes core domain logic for `_resolve_from_entities`... |
+| [`resolve_target_identity`](#resolve_target_identity) | Function | L132–L155 | `tuple[int | None, str]` | Executes core domain logic for `resolve_target_identity... |
+| [`_strip_mute_prefix`](#_strip_mute_prefix) | Function | L158–L173 | `str` | Executes core domain logic for `_strip_mute_prefix`. |
+| [`parse_reply_mute_args`](#parse_reply_mute_args) | Function | L176–L196 | `tuple[str, str]` | Parses and extracts structured entities from `parse_rep... |
+| [`parse_standalone_mute_args`](#parse_standalone_mute_args) | Function | L199–L220 | `tuple[int | None, str, str, str]` | Parses and extracts structured entities from `parse_sta... |
+| [`extract_target_id_and_args`](#extract_target_id_and_args) | Function | L223–L238 | `tuple[int | None, str, str, str]` | Executes core domain logic for `extract_target_id_and_a... |
+| [`apply_user_restriction`](#apply_user_restriction) | Function | L242–L259 | `None` | Executes core domain logic for `apply_user_restriction`... |
+| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L262–L278 | `None` | Executes core domain logic for `_apply_unmute_permissio... |
+| [`send_mute_notification`](#send_mute_notification) | Function | L281–L295 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`_safe_delete_message`](#_safe_delete_message) | Function | L298–L317 | `None` | Executes core domain logic for `_safe_delete_message`. |
+| [`_build_mute_report`](#_build_mute_report) | Function | L320–L335 | `str` | Executes core domain logic for `_build_mute_report`. |
+| [`is_mute_command`](#is_mute_command) | Function | L338–L353 | `bool` | Executes core domain logic for `is_mute_command`. |
+| [`is_unmute_command`](#is_unmute_command) | Function | L356–L371 | `bool` | Executes core domain logic for `is_unmute_command`. |
+| [`cmd_mute_user`](#cmd_mute_user) | Function | L375–L402 | `None` | Processes inbound Telegram slash command for `cmd_mute_... |
+| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L406–L432 | `None` | Processes inbound Telegram slash command for `cmd_unmut... |
 
 ---
 
@@ -50,7 +50,7 @@ graph LR
 def cache_user_from_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L21-L32`](../../bot/handlers/admin/mute.py#L21-L32)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L21-L42`](../../bot/handlers/admin/mute.py#L21-L42)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -83,7 +83,7 @@ result = cache_user_from_message(message=...)
 async def _find_in_admins(bot, chat_id: int, clean: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L35-L47`](../../bot/handlers/admin/mute.py#L35-L47)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L45-L64`](../../bot/handlers/admin/mute.py#L45-L64)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, str] | None`
 
@@ -118,7 +118,7 @@ result = await _find_in_admins(bot=..., chat_id=..., clean=...)
 def _find_in_registry(clean: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L50-L60`](../../bot/handlers/admin/mute.py#L50-L60)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L67-L87`](../../bot/handlers/admin/mute.py#L67-L87)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, str] | None`
 
@@ -151,7 +151,7 @@ result = _find_in_registry(clean=...)
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L63-L72`](../../bot/handlers/admin/mute.py#L63-L72)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L90-L109`](../../bot/handlers/admin/mute.py#L90-L109)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, str] | None`
 
@@ -186,7 +186,7 @@ result = await resolve_user_id_by_username(bot=..., chat_id=..., username=...)
 def _resolve_from_entities(message: Message) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L76-L83`](../../bot/handlers/admin/mute.py#L76-L83)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L112-L129`](../../bot/handlers/admin/mute.py#L112-L129)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, str] | None`
 
@@ -219,7 +219,7 @@ result = _resolve_from_entities(message=...)
 async def resolve_target_identity(message: Message, target_raw: str) -> tuple[int | None, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L86-L98`](../../bot/handlers/admin/mute.py#L86-L98)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L132-L155`](../../bot/handlers/admin/mute.py#L132-L155)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str]`
 
@@ -253,7 +253,7 @@ result = await resolve_target_identity(message=..., target_raw=...)
 def _strip_mute_prefix(text: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L101-L107`](../../bot/handlers/admin/mute.py#L101-L107)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L158-L173`](../../bot/handlers/admin/mute.py#L158-L173)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -286,7 +286,7 @@ result = _strip_mute_prefix(text=...)
 def parse_reply_mute_args(text: str) -> tuple[str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L110-L119`](../../bot/handlers/admin/mute.py#L110-L119)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L176-L196`](../../bot/handlers/admin/mute.py#L176-L196)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str]`
 
@@ -319,7 +319,7 @@ result = parse_reply_mute_args(text=...)
 async def parse_standalone_mute_args(message: Message) -> tuple[int | None, str, str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L122-L136`](../../bot/handlers/admin/mute.py#L122-L136)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L199-L220`](../../bot/handlers/admin/mute.py#L199-L220)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str, str, str]`
 
@@ -352,7 +352,7 @@ result = await parse_standalone_mute_args(message=...)
 async def extract_target_id_and_args(message: Message) -> tuple[int | None, str, str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L139-L145`](../../bot/handlers/admin/mute.py#L139-L145)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L223-L238`](../../bot/handlers/admin/mute.py#L223-L238)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str, str, str]`
 
@@ -385,7 +385,7 @@ result = await extract_target_id_and_args(message=...)
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L148-L156`](../../bot/handlers/admin/mute.py#L148-L156)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L242-L259`](../../bot/handlers/admin/mute.py#L242-L259)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -421,7 +421,7 @@ result = await apply_user_restriction(bot=..., chat_id=..., user_id=...)
 async def _apply_unmute_permissions(bot, chat_id: int, user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L159-L166`](../../bot/handlers/admin/mute.py#L159-L166)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L262-L278`](../../bot/handlers/admin/mute.py#L262-L278)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -456,7 +456,7 @@ result = await _apply_unmute_permissions(bot=..., chat_id=..., user_id=...)
 async def send_mute_notification(message: Message, res_text: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L169-L175`](../../bot/handlers/admin/mute.py#L169-L175)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L281-L295`](../../bot/handlers/admin/mute.py#L281-L295)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -490,7 +490,7 @@ result = await send_mute_notification(message=..., res_text=...)
 async def _safe_delete_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L178-L189`](../../bot/handlers/admin/mute.py#L178-L189)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L298-L317`](../../bot/handlers/admin/mute.py#L298-L317)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -523,7 +523,7 @@ result = await _safe_delete_message(message=...)
 def _build_mute_report(target_name: str, time_raw: str, reason: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L192-L199`](../../bot/handlers/admin/mute.py#L192-L199)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L320-L335`](../../bot/handlers/admin/mute.py#L320-L335)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -558,7 +558,7 @@ result = _build_mute_report(target_name=..., time_raw=..., reason=...)
 def is_mute_command(text: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L202-L207`](../../bot/handlers/admin/mute.py#L202-L207)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L338-L353`](../../bot/handlers/admin/mute.py#L338-L353)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -591,7 +591,7 @@ result = is_mute_command(text=...)
 def is_unmute_command(text: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L210-L215`](../../bot/handlers/admin/mute.py#L210-L215)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L356-L371`](../../bot/handlers/admin/mute.py#L356-L371)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -624,7 +624,7 @@ result = is_unmute_command(text=...)
 async def cmd_mute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L219-L236`](../../bot/handlers/admin/mute.py#L219-L236)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L375-L402`](../../bot/handlers/admin/mute.py#L375-L402)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -657,7 +657,7 @@ result = await cmd_mute_user(message=...)
 async def cmd_unmute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L240-L256`](../../bot/handlers/admin/mute.py#L240-L256)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L406-L432`](../../bot/handlers/admin/mute.py#L406-L432)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

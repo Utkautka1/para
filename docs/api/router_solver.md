@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L41 | `SolverQueueStatusResponse` | Retrieves and resolves domain data for `get_solver_queu... |
-| [`_decode_image_payload`](#_decode_image_payload) | Function | L44–L52 | `bytes | None` | Executes core domain logic for `_decode_image_payload`. |
-| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L55–L67 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
-| [`solve_task_direct`](#solve_task_direct) | Function | L71–L81 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
-| [`check_task_status`](#check_task_status) | Function | L86–L90 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
-| [`clear_solver_queue`](#clear_solver_queue) | Function | L94–L97 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
+| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L55 | `SolverQueueStatusResponse` | Retrieves and resolves domain data for `get_solver_queu... |
+| [`_decode_image_payload`](#_decode_image_payload) | Function | L58–L75 | `bytes | None` | Executes core domain logic for `_decode_image_payload`. |
+| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L78–L102 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
+| [`solve_task_direct`](#solve_task_direct) | Function | L106–L125 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
+| [`check_task_status`](#check_task_status) | Function | L129–L142 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
+| [`clear_solver_queue`](#clear_solver_queue) | Function | L146–L158 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 async def get_solver_queue_status() -> SolverQueueStatusResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L35-L41`](../../api/router/solver.py#L35-L41)
+- **Source Reference**: [`api/router/solver.py#L35-L55`](../../api/router/solver.py#L35-L55)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SolverQueueStatusResponse`
 
@@ -68,7 +68,7 @@ result = await get_solver_queue_status()
 def _decode_image_payload(b64: str | None) -> bytes | None
 ```
 
-- **Source Reference**: [`api/router/solver.py#L44-L52`](../../api/router/solver.py#L44-L52)
+- **Source Reference**: [`api/router/solver.py#L58-L75`](../../api/router/solver.py#L58-L75)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bytes | None`
 
@@ -101,7 +101,7 @@ result = _decode_image_payload(b64=...)
 async def _check_solver_rate_limit(identity: str) -> None
 ```
 
-- **Source Reference**: [`api/router/solver.py#L55-L67`](../../api/router/solver.py#L55-L67)
+- **Source Reference**: [`api/router/solver.py#L78-L102`](../../api/router/solver.py#L78-L102)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -131,10 +131,10 @@ result = await _check_solver_rate_limit(identity=...)
 
 ### `solve_task_direct`
 ```python
-async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester) ) -> DirectSolveResponse
+async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester), ) -> DirectSolveResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L71-L81`](../../api/router/solver.py#L71-L81)
+- **Source Reference**: [`api/router/solver.py#L106-L125`](../../api/router/solver.py#L106-L125)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `DirectSolveResponse`
 
@@ -168,7 +168,7 @@ result = await solve_task_direct(payload=..., identity=...)
 async def check_task_status(message_id: int) -> TaskStatusResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L86-L90`](../../api/router/solver.py#L86-L90)
+- **Source Reference**: [`api/router/solver.py#L129-L142`](../../api/router/solver.py#L129-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TaskStatusResponse`
 
@@ -201,7 +201,7 @@ result = await check_task_status(message_id=...)
 async def clear_solver_queue() -> ClearQueueResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L94-L97`](../../api/router/solver.py#L94-L97)
+- **Source Reference**: [`api/router/solver.py#L146-L158`](../../api/router/solver.py#L146-L158)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ClearQueueResponse`
 

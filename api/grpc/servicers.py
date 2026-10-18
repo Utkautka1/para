@@ -33,16 +33,30 @@ log = get_logger("grpc_servicers")
 
 
 def _resolve_day(raw_date: str) -> date:
-    """Парсит ISO дату или возвращает сегодняшнюю дату по МСК."""
+    """
+    Парсит ISO дату или возвращает сегодняшнюю дату по часовому поясу МСК.
+
+    Обеспечивает дефолтное значение для запросов без указания целевой даты.
+
+    Возвращает объект datetime.date.
+    """
     if raw_date:
         return date.fromisoformat(raw_date)
+
     return datetime.now(TIMEZONE).date()
 
 
 def _resolve_monday(raw_monday: str) -> date:
-    """Парсит дату понедельника или вычисляет текущий понедельник."""
+    """
+    Парсит дату понедельника или вычисляет дату понедельника текущей недели.
+
+    Нормализует начальную дату недели для выгрузки недельного расписания.
+
+    Возвращает объект datetime.date понедельника.
+    """
     if raw_monday:
         return date.fromisoformat(raw_monday)
+
     today = datetime.now(TIMEZONE).date()
     return today - timedelta(days=today.weekday())
 
@@ -56,15 +70,18 @@ class ScheduleServicer(schedule_pb2_grpc.ScheduleServiceServicer):
         context: grpc.aio.ServicerContext,
     ) -> schedule_pb2.DayScheduleResponse:
         """
-        Возвращает расписание занятий на день.
+        Возвращает расписание занятий группы на целевой день в формате Protobuf.
 
-        Использует кэш L1/L2 расписания и отдает типизированный Protobuf-ответ.
-        Возвращает DayScheduleResponse со списком уроков.
+        Использует кэш L1/L2 расписания и транслирует модели в Protobuf-сообщение.
+
+        Возвращает типизированный объект DayScheduleResponse со списком уроков.
         """
         log.debug(f"gRPC GetDaySchedule: date='{request.target_date}', refresh={request.force_refresh}")
         target = _resolve_day(request.target_date)
+
         lessons = await get_schedule_for_date(target, force_refresh=request.force_refresh)
         proto_lessons = [lesson_to_proto(item) for item in lessons]
+
         return schedule_pb2.DayScheduleResponse(date=target.isoformat(), lessons=proto_lessons)
 
     async def GetWeekSchedule(
@@ -73,15 +90,18 @@ class ScheduleServicer(schedule_pb2_grpc.ScheduleServiceServicer):
         context: grpc.aio.ServicerContext,
     ) -> schedule_pb2.WeekScheduleResponse:
         """
-        Возвращает недельное расписание занятий.
+        Возвращает недельное расписание занятий академической группы.
 
-        Парсит неделю и возвращает список дней от понедельника до субботы.
-        Возвращает WeekScheduleResponse с вложенными днями и парами.
+        Последовательно собирает расписание пн-сб и упаковывает в WeekScheduleResponse.
+
+        Возвращает объект WeekScheduleResponse с вложенными днями и парами.
         """
         log.debug(f"gRPC GetWeekSchedule: monday='{request.monday}', refresh={request.force_refresh}")
         mon = _resolve_monday(request.monday)
+
         raw_days = await get_week_schedule(mon, force_refresh=request.force_refresh)
         days_proto = week_days_to_proto(raw_days)
+
         return schedule_pb2.WeekScheduleResponse(monday=mon.isoformat(), days=days_proto)
 
 
@@ -94,14 +114,17 @@ class ExamsServicer(exams_pb2_grpc.ExamsServiceServicer):
         context: grpc.aio.ServicerContext,
     ) -> exams_pb2.ExamsResponse:
         """
-        Возвращает список контрольных мероприятий и экзаменов.
+        Возвращает список контрольных мероприятий и экзаменов сессии.
 
-        Вызывает парсер экзаменов с поддержкой принудительного обновления.
-        Возвращает ExamsResponse с массивом ExamItemProto.
+        Опрашивает парсер экзаменов с преобразованием в ExamItemProto.
+
+        Возвращает объект ExamsResponse с массивом экзаменационных нагрузок.
         """
         log.debug(f"gRPC GetExams: refresh={request.force_refresh}")
+
         exams = await get_group_exams()
         proto_exams = [exam_item_to_proto(item) for item in exams]
+
         return exams_pb2.ExamsResponse(count=len(proto_exams), exams=proto_exams)
 
 
@@ -114,11 +137,13 @@ class TeachersServicer(teachers_pb2_grpc.TeachersServiceServicer):
         context: grpc.aio.ServicerContext,
     ) -> teachers_pb2.TeachersResponse:
         """
-        Возвращает контакты преподавателей из справочника.
+        Возвращает справочник контактов и видеоконференций преподавателей.
 
         Загружает файл преподавателей из Яндекс Диска через docx_parser.
-        Возвращает TeachersResponse с отображением фамилий на ссылки.
+
+        Возвращает объект TeachersResponse с картой преподавателей.
         """
         log.debug(f"gRPC GetTeachers: refresh={request.force_refresh}")
+
         raw_map = await get_teacher_links(force_refresh=request.force_refresh)
         return teachers_dict_to_proto(raw_map)

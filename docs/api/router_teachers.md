@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_teachers`](#list_teachers) | Function | L28–L32 | `TeachersResponse` | Executes core domain logic for `list_teachers`. |
-| [`search_teachers`](#search_teachers) | Function | L36–L45 | `TeacherSearchResponse` | Executes core domain logic for `search_teachers`. |
-| [`get_teacher`](#get_teacher) | Function | L49–L56 | `TeacherSingleResponse` | Retrieves and resolves domain data for `get_teacher`. |
-| [`add_custom_teacher`](#add_custom_teacher) | Function | L60–L65 | `TeacherSingleResponse` | Executes core domain logic for `add_custom_teacher`. |
-| [`remove_custom_teacher`](#remove_custom_teacher) | Function | L70–L73 | `dict[str, str]` | Executes core domain logic for `remove_custom_teacher`. |
-| [`refresh_teachers`](#refresh_teachers) | Function | L77–L80 | `TeachersRefreshResponse` | Executes core domain logic for `refresh_teachers`. |
+| [`list_teachers`](#list_teachers) | Function | L28–L41 | `TeachersResponse` | Executes core domain logic for `list_teachers`. |
+| [`search_teachers`](#search_teachers) | Function | L45–L65 | `TeacherSearchResponse` | Executes core domain logic for `search_teachers`. |
+| [`get_teacher`](#get_teacher) | Function | L69–L86 | `TeacherSingleResponse` | Retrieves and resolves domain data for `get_teacher`. |
+| [`add_custom_teacher`](#add_custom_teacher) | Function | L90–L104 | `TeacherSingleResponse` | Executes core domain logic for `add_custom_teacher`. |
+| [`remove_custom_teacher`](#remove_custom_teacher) | Function | L108–L120 | `dict[str, str]` | Executes core domain logic for `remove_custom_teacher`. |
+| [`refresh_teachers`](#refresh_teachers) | Function | L124–L136 | `TeachersRefreshResponse` | Executes core domain logic for `refresh_teachers`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 async def list_teachers(force_refresh: bool = Query(default=False)) -> TeachersResponse
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L28-L32`](../../api/router/teachers.py#L28-L32)
+- **Source Reference**: [`api/router/teachers.py#L28-L41`](../../api/router/teachers.py#L28-L41)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TeachersResponse`
 
@@ -67,10 +67,10 @@ result = await list_teachers(force_refresh=...)
 
 ### `search_teachers`
 ```python
-async def search_teachers(q: str = Query(..., min_length=2, description="Search query substring")) -> TeacherSearchResponse
+async def search_teachers( q: str = Query(..., min_length=2, description="Search query substring"), ) -> TeacherSearchResponse
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L36-L45`](../../api/router/teachers.py#L36-L45)
+- **Source Reference**: [`api/router/teachers.py#L45-L65`](../../api/router/teachers.py#L45-L65)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TeacherSearchResponse`
 
@@ -103,7 +103,7 @@ result = await search_teachers(q=...)
 async def get_teacher(last_name: str) -> TeacherSingleResponse
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L49-L56`](../../api/router/teachers.py#L49-L56)
+- **Source Reference**: [`api/router/teachers.py#L69-L86`](../../api/router/teachers.py#L69-L86)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TeacherSingleResponse`
 
@@ -136,7 +136,7 @@ result = await get_teacher(last_name=...)
 async def add_custom_teacher(payload: CustomTeacherCreateRequest) -> TeacherSingleResponse
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L60-L65`](../../api/router/teachers.py#L60-L65)
+- **Source Reference**: [`api/router/teachers.py#L90-L104`](../../api/router/teachers.py#L90-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TeacherSingleResponse`
 
@@ -169,7 +169,7 @@ result = await add_custom_teacher(payload=...)
 async def remove_custom_teacher(last_name: str) -> dict[str, str]
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L70-L73`](../../api/router/teachers.py#L70-L73)
+- **Source Reference**: [`api/router/teachers.py#L108-L120`](../../api/router/teachers.py#L108-L120)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, str]`
 
@@ -202,7 +202,7 @@ result = await remove_custom_teacher(last_name=...)
 async def refresh_teachers() -> TeachersRefreshResponse
 ```
 
-- **Source Reference**: [`api/router/teachers.py#L77-L80`](../../api/router/teachers.py#L77-L80)
+- **Source Reference**: [`api/router/teachers.py#L124-L136`](../../api/router/teachers.py#L124-L136)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TeachersRefreshResponse`
 

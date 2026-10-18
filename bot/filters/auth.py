@@ -17,14 +17,18 @@ class AuthFilter(Filter):
 
     async def __call__(self, event: Message | CallbackQuery) -> bool:
         """
-        Проверяет ID пользователя на соответствие ALLOWED_USER_ID.
+        Проверяет ID пользователя на соответствие главному администратору проекта.
 
-        :param event: Входящее сообщение или callback Telegram
-        :return: True, если доступ разрешен
+        Используется в защищенных роутерах панели управления старосты.
+        Защищает от выполнения административных команд посторонними лицами.
+
+        Возвращает True, если user.id совпадает с ALLOWED_USER_ID, иначе False.
         """
+
         user = getattr(event, "from_user", None)
         if not user:
             return False
+
         return user.id == ALLOWED_USER_ID
 
 
@@ -33,13 +37,18 @@ class ClassmateAuthFilter(Filter):
 
     async def __call__(self, event: Message | CallbackQuery) -> bool:
         """
-        Проверяет, авторизован ли пользователь для доступа к расписанию.
+        Проверяет, авторизован ли пользователь как студент группы 1-КПД-3.
 
-        :param event: Сообщение или callback Telegram
-        :return: True, если пользователь админ или подтвержденный одногруппник
+        Сверяет Telegram ID и username с реестром одногруппников и списком админов.
+        Обеспечивает приватность расписания и материалов группы.
+
+        Возвращает True, если пользователь подтверждён в реестре, иначе False.
         """
+
         from services.classmates_auth import is_authorized_user
+
         user = getattr(event, "from_user", None)
+
         return is_authorized_user(user)
 
 
@@ -47,10 +56,21 @@ class AttendanceAuthFilter(Filter):
     """Фильтр доступа для старосты и замстаросты к отметке посещаемости."""
 
     async def __call__(self, event: Message | CallbackQuery) -> bool:
-        """Проверяет принадлежность ID пользователя к списку старост."""
+        """
+        Проверяет права пользователя на управление журналом посещаемости.
+
+        Сверяет ID отправителя со множеством ALLOWED_ATTENDANCE_USER_IDS.
+        Предотвращает несанкционированное редактирование отметок пар.
+
+        Возвращает True, если пользователь староста или замстаросты, иначе False.
+        """
+
         from config import ALLOWED_ATTENDANCE_USER_IDS
+
         user = getattr(event, "from_user", None)
         if not user:
             return False
+
         return user.id in ALLOWED_ATTENDANCE_USER_IDS
+
 

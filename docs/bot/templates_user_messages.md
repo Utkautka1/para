@@ -21,29 +21,63 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_lesson_card`](#format_lesson_card) | Function | L19–L43 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_minutes`](#format_minutes) | Function | L47–L60 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_parse_time_interval_minutes`](#_parse_time_interval_minutes) | Function | L63–L71 | `tuple[int, int] | None` | Executes core domain logic for `_parse_time_interval_mi... |
-| [`_check_single_lesson_status`](#_check_single_lesson_status) | Function | L74–L92 | `tuple[bool, str]` | Executes core domain logic for `_check_single_lesson_st... |
-| [`get_lesson_status_banner`](#get_lesson_status_banner) | Function | L95–L115 | `str` | Retrieves and resolves domain data for `get_lesson_stat... |
-| [`format_day_schedule`](#format_day_schedule) | Function | L118–L136 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_lesson_loc`](#format_week_lesson_loc) | Function | L139–L144 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_lesson_card`](#format_week_lesson_card) | Function | L147–L159 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_day_block`](#format_week_day_block) | Function | L163–L171 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_schedule`](#format_week_schedule) | Function | L174–L178 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_reminder_text`](#format_reminder_text) | Function | L181–L189 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_notice_settings_text`](#format_notice_settings_text) | Function | L192–L212 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_format_remote_credentials`](#_format_remote_credentials) | Function | L19–L41 | `str` | Executes core domain logic for `_format_remote_credenti... |
+| [`format_lesson_card`](#format_lesson_card) | Function | L44–L69 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_minutes`](#format_minutes) | Function | L74–L92 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_parse_time_interval_minutes`](#_parse_time_interval_minutes) | Function | L95–L114 | `tuple[int, int] | None` | Executes core domain logic for `_parse_time_interval_mi... |
+| [`_check_single_lesson_status`](#_check_single_lesson_status) | Function | L117–L140 | `tuple[bool, str]` | Executes core domain logic for `_check_single_lesson_st... |
+| [`get_lesson_status_banner`](#get_lesson_status_banner) | Function | L143–L167 | `str` | Retrieves and resolves domain data for `get_lesson_stat... |
+| [`format_day_schedule`](#format_day_schedule) | Function | L170–L190 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_week_lesson_loc`](#format_week_lesson_loc) | Function | L193–L208 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_week_lesson_card`](#format_week_lesson_card) | Function | L211–L232 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_week_day_block`](#format_week_day_block) | Function | L235–L254 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_week_schedule`](#format_week_schedule) | Function | L257–L270 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_reminder_text`](#format_reminder_text) | Function | L273–L285 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_notice_settings_text`](#format_notice_settings_text) | Function | L288–L312 | `str` | Formats message payload and presentation markup for `fo... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_format_remote_credentials`
+```python
+def _format_remote_credentials(lesson: Lesson) -> str
+```
+
+- **Source Reference**: [`bot/templates/user/messages.py#L19-L41`](../../bot/templates/user/messages.py#L19-L41)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_remote_credentials`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `lesson` | `Lesson` | Yes | Parameter `lesson` of type `Lesson`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.user.messages import _format_remote_credentials
+
+# Execute call
+result = _format_remote_credentials(lesson=...)
+```
+
+---
 
 ### `format_lesson_card`
 ```python
 def format_lesson_card(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L19-L43`](../../bot/templates/user/messages.py#L19-L43)
+- **Source Reference**: [`bot/templates/user/messages.py#L44-L69`](../../bot/templates/user/messages.py#L44-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -76,7 +110,7 @@ result = format_lesson_card(lesson=...)
 def format_minutes(total_minutes: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L47-L60`](../../bot/templates/user/messages.py#L47-L60)
+- **Source Reference**: [`bot/templates/user/messages.py#L74-L92`](../../bot/templates/user/messages.py#L74-L92)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -109,7 +143,7 @@ result = format_minutes(total_minutes=...)
 def _parse_time_interval_minutes(time_str: str) -> tuple[int, int] | None
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L63-L71`](../../bot/templates/user/messages.py#L63-L71)
+- **Source Reference**: [`bot/templates/user/messages.py#L95-L114`](../../bot/templates/user/messages.py#L95-L114)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, int] | None`
 
@@ -142,7 +176,7 @@ result = _parse_time_interval_minutes(time_str=...)
 def _check_single_lesson_status(lesson: Lesson, n_min: int) -> tuple[bool, str]
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L74-L92`](../../bot/templates/user/messages.py#L74-L92)
+- **Source Reference**: [`bot/templates/user/messages.py#L117-L140`](../../bot/templates/user/messages.py#L117-L140)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[bool, str]`
 
@@ -176,7 +210,7 @@ result = _check_single_lesson_status(lesson=..., n_min=...)
 def get_lesson_status_banner(lessons: list[Lesson], target_date: date) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L95-L115`](../../bot/templates/user/messages.py#L95-L115)
+- **Source Reference**: [`bot/templates/user/messages.py#L143-L167`](../../bot/templates/user/messages.py#L143-L167)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -210,7 +244,7 @@ result = get_lesson_status_banner(lessons=..., target_date=...)
 def format_day_schedule(target_date: date, lessons: list[Lesson]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L118-L136`](../../bot/templates/user/messages.py#L118-L136)
+- **Source Reference**: [`bot/templates/user/messages.py#L170-L190`](../../bot/templates/user/messages.py#L170-L190)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -244,7 +278,7 @@ result = format_day_schedule(target_date=..., lessons=...)
 def format_week_lesson_loc(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L139-L144`](../../bot/templates/user/messages.py#L139-L144)
+- **Source Reference**: [`bot/templates/user/messages.py#L193-L208`](../../bot/templates/user/messages.py#L193-L208)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -277,7 +311,7 @@ result = format_week_lesson_loc(lesson=...)
 def format_week_lesson_card(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L147-L159`](../../bot/templates/user/messages.py#L147-L159)
+- **Source Reference**: [`bot/templates/user/messages.py#L211-L232`](../../bot/templates/user/messages.py#L211-L232)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -310,7 +344,7 @@ result = format_week_lesson_card(lesson=...)
 def format_week_day_block(day_date: date, lessons: list[Lesson]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L163-L171`](../../bot/templates/user/messages.py#L163-L171)
+- **Source Reference**: [`bot/templates/user/messages.py#L235-L254`](../../bot/templates/user/messages.py#L235-L254)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -344,7 +378,7 @@ result = format_week_day_block(day_date=..., lessons=...)
 def format_week_schedule(days_data: list[tuple[date, list[Lesson]]]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L174-L178`](../../bot/templates/user/messages.py#L174-L178)
+- **Source Reference**: [`bot/templates/user/messages.py#L257-L270`](../../bot/templates/user/messages.py#L257-L270)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -377,7 +411,7 @@ result = format_week_schedule(days_data=...)
 def format_reminder_text(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L181-L189`](../../bot/templates/user/messages.py#L181-L189)
+- **Source Reference**: [`bot/templates/user/messages.py#L273-L285`](../../bot/templates/user/messages.py#L273-L285)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -410,7 +444,7 @@ result = format_reminder_text(lesson=...)
 def format_notice_settings_text(is_subscribed: bool) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L192-L212`](../../bot/templates/user/messages.py#L192-L212)
+- **Source Reference**: [`bot/templates/user/messages.py#L288-L312`](../../bot/templates/user/messages.py#L288-L312)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 

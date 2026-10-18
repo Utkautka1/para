@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`RetryAfterMiddleware.__call__`](#retryaftermiddleware__call__) | Method | L24–L39 | `Any` | Executes core domain logic for `__call__`. |
+| [`RetryAfterMiddleware.__call__`](#retryaftermiddleware__call__) | Method | L24–L48 | `Any` | Executes core domain logic for `__call__`. |
 
 ---
 
@@ -36,7 +36,7 @@ Encapsulates domain entities and data transfer logic for `RetryAfterMiddleware`.
 async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any], ) -> Any
 ```
 
-- **Source Reference**: [`bot/middlewares/retry.py#L24-L39`](../../bot/middlewares/retry.py#L24-L39)
+- **Source Reference**: [`bot/middlewares/retry.py#L24-L48`](../../bot/middlewares/retry.py#L24-L48)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 

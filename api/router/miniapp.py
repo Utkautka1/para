@@ -45,7 +45,15 @@ _HTML_PATH = Path(MINIAPP_HTML_FILE_PATH)
 
 
 def _set_tester_cookie(response: Response, user_id: int) -> None:
-    """Устанавливает подписанную защищенную сессионную куку тестера."""
+    """
+    Устанавливает подписанную защищенную сессионную куку тестера.
+
+    Использует флаги HttpOnly, Secure и SameSite=None для работы внутри iframe Telegram.
+    Защищает от XSS атак и обеспечивает сохранение сессии в Swagger UI.
+
+    Ничего не возвращает (модифицирует заголовок Set-Cookie ответа).
+    """
+
     token = generate_tester_session(user_id)
     response.set_cookie(
         key="para_session",
@@ -59,59 +67,118 @@ def _set_tester_cookie(response: Response, user_id: int) -> None:
 
 @router.get("", response_class=HTMLResponse)
 async def serve_miniapp_page() -> HTMLResponse:
-    """Отдаёт интерфейс Telegram Mini App портала со встроенным Swagger UI."""
+    """
+    Отдаёт одностраничный интерфейс Telegram Mini App портала со встроенным Swagger UI.
+
+    Считывает скомпилированный HTML-шаблон с диска сервера.
+    В случае отсутствия файла отдает базовую разметку со статусом 200.
+
+    Возвращает HTMLResponse с содержимым страницы портала.
+    """
+
     if _HTML_PATH.exists():
         return HTMLResponse(content=_HTML_PATH.read_text(encoding="utf-8"))
+
     return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)
 
 
 @router.post("/auth", response_model=MiniappAuthResponse)
 async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse:
-    """Аутентифицирует пользователя по Telegram initData и выдает сессию."""
+    """
+    Аутентифицирует пользователя по Telegram initData и устанавливает сессионную куку.
+
+    Проверяет валидность HMAC-SHA256 подписи данных веб-приложения и права тестера.
+    Выбрасывает HTTP 401 при неверной подписи и HTTP 403 при отсутствии доступа.
+
+    Возвращает MiniappAuthResponse с базовым профилем пользователя.
+    """
+
     info = validate_telegram_init_data(payload.init_data)
     if not info or "id" not in info:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram signature")
+
     user_id = int(info["id"])
     if not await is_tester_allowed(user_id):
         log.warning(f"🚫 Пользователь {user_id} не в списке тестеров API")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
+
     _set_tester_cookie(response, user_id)
+
     return MiniappAuthResponse(user_id=user_id, first_name=info.get("first_name"), username=info.get("username"))
 
 
 @router.get("/status", response_model=MiniappCheckResponse)
 async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse:
-    """Возвращает статус авторизации текущего пользователя."""
+    """
+    Проверяет статус авторизации и наличие прав тестера по сессионной куке.
+
+    Декодирует криптографическую подпись куки и сверяет пользователя со списком в Redis.
+    Не выбрасывает ошибок при отсутствии сессии, а возвращает authenticated=False.
+
+    Возвращает MiniappCheckResponse с флагами аутентификации и правами.
+    """
+
     if not para_session:
         return MiniappCheckResponse(authenticated=False, is_tester=False)
+
     uid = verify_tester_session(para_session)
     if uid is None:
         return MiniappCheckResponse(authenticated=False, is_tester=False)
+
     allowed = await is_tester_allowed(uid)
+
     return MiniappCheckResponse(authenticated=True, user_id=uid, is_tester=allowed)
 
 
 @router.get("/testers", response_model=TesterListResponse, dependencies=[Depends(verify_api_or_tester)])
 async def list_api_testers() -> TesterListResponse:
-    """Возвращает список всех зарегистрированных тестеров API."""
+    """
+    Возвращает список всех зарегистрированных тестеров Swagger UI.
+
+    Помечает главных администраторов бота флагом is_admin=True.
+    Используется для управления доступом к закрытой документации.
+
+    Возвращает TesterListResponse со списком тестеров и их количеством.
+    """
+
     uids = await get_all_testers()
     items = [TesterItemResponse(user_id=u, is_admin=(u in {ALLOWED_USER_ID, DEPUTY_USER_ID})) for u in uids]
+
     return TesterListResponse(count=len(items), testers=items)
 
 
 @router.post("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
 async def api_add_tester(user_id: int) -> dict:
-    """Добавляет пользователя в белый список тестеров API (Admin only)."""
+    """
+    Добавляет пользователя в постоянный список тестеров API (Admin only).
+
+    Сохраняет Telegram ID в Redis-множество тестеров.
+    Выбрасывает HTTP 400 при невозможности добавления.
+
+    Возвращает подтверждающий словарь со статусом 'ok' и ID тестера.
+    """
+
     success = await add_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to add tester")
+
     return {"status": "ok", "user_id": user_id}
 
 
 @router.delete("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
 async def api_remove_tester(user_id: int) -> dict:
-    """Удаляет пользователя из белого списка тестеров API (Admin only)."""
+    """
+    Удаляет пользователя из списка авторизованных тестеров API (Admin only).
+
+    Запрещает удаление главных администраторов проекта из белого списка.
+    Выбрасывает HTTP 400 при попытке удаления админа или сбое хранилища.
+
+    Возвращает словарь со статусом 'ok' и ID удаленного тестера.
+    """
+
     success = await remove_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Cannot remove admin or error")
+
     return {"status": "ok", "user_id": user_id}
+

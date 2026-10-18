@@ -12,20 +12,24 @@ CUSTOM_TEACHERS_FILE = CUSTOM_TEACHERS_FILE_PATH
 
 def load_custom_teachers() -> dict[str, TeacherData]:
     """
-    Загружает кастомные контакты преподавателей из JSON.
+    Загружает переопределенные контакты и ссылки преподавателей из локального JSON.
 
-    :return: Словарь преподавателей
+    Позволяет старосте и администраторам оперативно вносить Zoom-ссылки и контакты,
+    если они отсутствуют или некорректны в общем вузовском DOCX файле.
+
+    Возвращает словарь {фамилия_в_нижнем_регистре: TeacherData}.
     """
     return sync_load_json(CUSTOM_TEACHERS_FILE, default={})
 
 
 def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
     """
-    Сохраняет или обновляет кастомного преподавателя.
+    Атомарно сохраняет или обновляет контакты преподавателя в файле.
 
-    :param last_name: Фамилия ключа
-    :param full_name: Полное имя
-    :param link_info: Данные ссылки
+    Приводит фамилию-ключ к нижнему регистру для регистронезависимого поиска
+    и использует sync_atomic_save_json для защиты от повреждения при сбоях.
+
+    Ничего не возвращает.
     """
     data = load_custom_teachers()
     data[last_name.lower()] = {
@@ -37,11 +41,15 @@ def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
 
 def delete_custom_teacher(last_name: str) -> None:
     """
-    Удаляет преподавателя по его ключу-фамилии из JSON.
+    Удаляет переопределенные данные преподавателя по его фамилии.
 
-    :param last_name: Фамилия (ключ)
+    Возвращает приоритет исходным вузовским данным из DOCX при удалении
+    кастомного переопределения администратором.
+
+    Ничего не возвращает.
     """
     data = load_custom_teachers()
     if last_name.lower() in data:
         data.pop(last_name.lower())
         sync_atomic_save_json(CUSTOM_TEACHERS_FILE, data)
+

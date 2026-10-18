@@ -21,19 +21,19 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_classmates_list`](#load_classmates_list) | Function | L39–L46 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_list`. |
-| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L49–L56 | `int | None` | Executes core domain logic for `resolve_person_tg_id`. |
-| [`format_mention_tag`](#format_mention_tag) | Function | L59–L74 | `str | None` | Formats message payload and presentation markup for `fo... |
-| [`is_sender`](#is_sender) | Function | L77–L85 | `bool` | Executes core domain logic for `is_sender`. |
-| [`build_mentions_block`](#build_mentions_block) | Function | L88–L100 | `str` | Executes core domain logic for `build_mentions_block`. |
-| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L103–L116 | `str` | Executes core domain logic for `extract_broadcast_text`... |
-| [`build_broadcast_message`](#build_broadcast_message) | Function | L119–L127 | `str` | Executes core domain logic for `build_broadcast_message... |
-| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L130–L144 | `None` | Executes core domain logic for `safe_delete_command_mes... |
-| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L147–L168 | `Message` | Dispatches notification message via Telegram API for `s... |
-| [`validate_group_chat`](#validate_group_chat) | Function | L171–L180 | `bool` | Validates architectural invariants and constraints for ... |
-| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L183–L195 | `tuple[str, int | None]` | Executes core domain logic for `compose_broadcast_conte... |
-| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L198–L210 | `None` | Executes core domain logic for `dispatch_broadcast`. |
-| [`cmd_ping_all`](#cmd_ping_all) | Function | L214–L224 | `None` | Processes inbound Telegram slash command for `cmd_ping_... |
+| [`load_classmates_list`](#load_classmates_list) | Function | L39–L49 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_list`. |
+| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L52–L67 | `int | None` | Executes core domain logic for `resolve_person_tg_id`. |
+| [`format_mention_tag`](#format_mention_tag) | Function | L70–L91 | `str | None` | Formats message payload and presentation markup for `fo... |
+| [`is_sender`](#is_sender) | Function | L94–L107 | `bool` | Executes core domain logic for `is_sender`. |
+| [`build_mentions_block`](#build_mentions_block) | Function | L110–L129 | `str` | Executes core domain logic for `build_mentions_block`. |
+| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L132–L148 | `str` | Executes core domain logic for `extract_broadcast_text`... |
+| [`build_broadcast_message`](#build_broadcast_message) | Function | L151–L167 | `str` | Executes core domain logic for `build_broadcast_message... |
+| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L170–L188 | `None` | Executes core domain logic for `safe_delete_command_mes... |
+| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L192–L218 | `Message` | Dispatches notification message via Telegram API for `s... |
+| [`validate_group_chat`](#validate_group_chat) | Function | L221–L235 | `bool` | Validates architectural invariants and constraints for ... |
+| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L238–L255 | `tuple[str, int | None]` | Executes core domain logic for `compose_broadcast_conte... |
+| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L258–L274 | `None` | Executes core domain logic for `dispatch_broadcast`. |
+| [`cmd_ping_all`](#cmd_ping_all) | Function | L278–L293 | `None` | Processes inbound Telegram slash command for `cmd_ping_... |
 
 ---
 
@@ -44,7 +44,7 @@ graph LR
 async def load_classmates_list() -> list[dict[str, Any]]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L39-L46`](../../bot/handlers/admin/ping_all.py#L39-L46)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L39-L49`](../../bot/handlers/admin/ping_all.py#L39-L49)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[dict[str, Any]]`
 
@@ -75,7 +75,7 @@ result = await load_classmates_list()
 def resolve_person_tg_id(person: dict[str, Any]) -> int | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L49-L56`](../../bot/handlers/admin/ping_all.py#L49-L56)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L52-L67`](../../bot/handlers/admin/ping_all.py#L52-L67)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -108,7 +108,7 @@ result = resolve_person_tg_id(person=...)
 def format_mention_tag(person: dict[str, Any]) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L59-L74`](../../bot/handlers/admin/ping_all.py#L59-L74)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L70-L91`](../../bot/handlers/admin/ping_all.py#L70-L91)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -141,7 +141,7 @@ result = format_mention_tag(person=...)
 def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L77-L85`](../../bot/handlers/admin/ping_all.py#L77-L85)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L94-L107`](../../bot/handlers/admin/ping_all.py#L94-L107)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -176,7 +176,7 @@ result = is_sender(person=..., sender_id=..., sender_username=...)
 def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L88-L100`](../../bot/handlers/admin/ping_all.py#L88-L100)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L110-L129`](../../bot/handlers/admin/ping_all.py#L110-L129)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -210,7 +210,7 @@ result = build_mentions_block(classmates=..., sender=...)
 def extract_broadcast_text(html_text: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L103-L116`](../../bot/handlers/admin/ping_all.py#L103-L116)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L132-L148`](../../bot/handlers/admin/ping_all.py#L132-L148)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -243,7 +243,7 @@ result = extract_broadcast_text(html_text=...)
 def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L119-L127`](../../bot/handlers/admin/ping_all.py#L119-L127)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L151-L167`](../../bot/handlers/admin/ping_all.py#L151-L167)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -278,7 +278,7 @@ result = build_broadcast_message(user_html=..., mentions=..., has_reply=...)
 async def safe_delete_command_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L130-L144`](../../bot/handlers/admin/ping_all.py#L130-L144)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L170-L188`](../../bot/handlers/admin/ping_all.py#L170-L188)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -311,7 +311,7 @@ result = await safe_delete_command_message(message=...)
 async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L147-L168`](../../bot/handlers/admin/ping_all.py#L147-L168)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L192-L218`](../../bot/handlers/admin/ping_all.py#L192-L218)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Message`
 
@@ -346,7 +346,7 @@ result = await send_broadcast_payload(message=..., final_html=..., reply_to_id=.
 async def validate_group_chat(message: Message) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L171-L180`](../../bot/handlers/admin/ping_all.py#L171-L180)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L221-L235`](../../bot/handlers/admin/ping_all.py#L221-L235)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -379,7 +379,7 @@ result = await validate_group_chat(message=...)
 def compose_broadcast_content( classmates: list[dict[str, Any]], message: Message ) -> tuple[str, int | None]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L183-L195`](../../bot/handlers/admin/ping_all.py#L183-L195)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L238-L255`](../../bot/handlers/admin/ping_all.py#L238-L255)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, int | None]`
 
@@ -413,7 +413,7 @@ result = compose_broadcast_content(classmates=..., message=...)
 async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L198-L210`](../../bot/handlers/admin/ping_all.py#L198-L210)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L258-L274`](../../bot/handlers/admin/ping_all.py#L258-L274)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -448,7 +448,7 @@ result = await dispatch_broadcast(message=..., final_text=..., reply_id=...)
 async def cmd_ping_all(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L214-L224`](../../bot/handlers/admin/ping_all.py#L214-L224)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L278-L293`](../../bot/handlers/admin/ping_all.py#L278-L293)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

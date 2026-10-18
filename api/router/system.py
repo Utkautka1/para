@@ -21,7 +21,15 @@ router = APIRouter(tags=["System"], prefix="/system", dependencies=[Depends(veri
 
 @router.get("/info", response_model=SystemInfoResponse)
 async def get_system_info() -> SystemInfoResponse:
-    """Сводная информация о состоянии сервиса и вспомогательных подсистем."""
+    """
+    Возвращает диагностическую сводку о состоянии сервиса и подсистем.
+
+    Опрашивает статус соединения с Redis и формирует список активных модулей.
+    Используется в панели администратора для оперативного мониторинга.
+
+    Возвращает SystemInfoResponse с версией, таймзоной и фичами.
+    """
+
     client = await init_redis()
     redis_alive = client is not None
     now_str = datetime.now(TIMEZONE).isoformat()
@@ -33,6 +41,7 @@ async def get_system_info() -> SystemInfoResponse:
         "yandex_docs": True,
         "deepseek_solver": True,
     }
+
     return SystemInfoResponse(
         service="para-api",
         version="2.0.0",
@@ -44,21 +53,41 @@ async def get_system_info() -> SystemInfoResponse:
 
 
 def _validate_flush_pattern(pattern: str) -> None:
-    """Проверяет безопасность маски для предотвращения сброса служебных ключей Redis."""
+    """
+    Проверяет безопасность маски для предотвращения сброса служебных ключей Redis.
+
+    Блокирует попытки сбросить ключи очередей 'hw:tasks:*' или сессий тестеров.
+    Разрешает только безопасные префиксы из SAFE_CACHE_FLUSH_PREFIXES.
+
+    Ничего не возвращает (выбрасывает HTTP 400 при небезопасном шаблоне).
+    """
+
     clean = pattern.strip()
     if clean in ("*", "", "*:*") or any(clean.startswith(d) for d in ("api:", "hw:tasks:", "user:")):
         raise HTTPException(status_code=400, detail="Unsafe pattern: flushing critical system keys is forbidden")
+
     if not any(clean.startswith(p) for p in SAFE_CACHE_FLUSH_PREFIXES):
         raise HTTPException(status_code=400, detail="Pattern must start with safe prefix (sched, att, teachers, exams)")
 
 
 @router.post("/cache/flush", response_model=CacheFlushResponse, dependencies=[Depends(verify_admin_access)])
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
-    """Принудительная очистка ключей Redis по безопасной маске (Admin only)."""
+    """
+    Выполняет принудительную очистку ключей Redis по безопасной маске (Admin only).
+
+    Инвалидирует указанный срез кэша и синхронизирует кэш в оперативной памяти.
+    Защищён verify_admin_access.
+
+    Возвращает CacheFlushResponse с маской и числом удаленных ключей.
+    """
+
     _validate_flush_pattern(payload.pattern)
     if payload.pattern.startswith("sched:"):
         from services.schedule_parser import clear_resolved_day_cache
         clear_resolved_day_cache()
+
     count = await cache_flush(pattern=payload.pattern)
+
     return CacheFlushResponse(status="ok", pattern=payload.pattern, deleted_keys=count)
+
 

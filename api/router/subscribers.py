@@ -25,36 +25,82 @@ router = APIRouter(tags=["Subscribers"], prefix="/subscribers", dependencies=[De
 
 @router.get("", response_model=SubscribersListResponse)
 async def list_subscribers() -> SubscribersListResponse:
-    """Список всех активных подписчиков персональных напоминаний."""
+    """
+    Возвращает список всех активных подписчиков утренних дайджестов расписания.
+
+    Считывает список Telegram chat_id из файла базы данных подписчиков.
+    Сортирует идентификаторы по возрастанию для стабильности ответа API.
+
+    Возвращает SubscribersListResponse со списком chat_id и их количеством.
+    """
+
     subs = sorted(load_subscribers())
+
     return SubscribersListResponse(count=len(subs), subscribers=subs)
 
 
 @router.get("/count", response_model=SubscriberCountResponse)
 async def count_subscribers() -> SubscriberCountResponse:
-    """Общее количество пользователей с включёнными напоминаниями."""
+    """
+    Возвращает суммарное число активных подписчиков расписания.
+
+    Позволяет быстро получить размер аудитории без загрузки полного списка ID.
+    Используется в сводках статистики и дашбордах мониторинга.
+
+    Возвращает SubscriberCountResponse с числом подписчиков.
+    """
+
     count = len(load_subscribers())
+
     return SubscriberCountResponse(count=count)
 
 
 @router.get("/{chat_id}", response_model=SubscriberStatusResponse)
 async def check_subscription(chat_id: int) -> SubscriberStatusResponse:
-    """Проверка активности подписки для конкретного Telegram Chat ID."""
+    """
+    Проверяет активность подписки для указанного Telegram Chat ID.
+
+    Быстро сверяет chat_id с множеством в кэше/файле подписчиков.
+    Используется клиентами для отрисовки переключателя уведомлений.
+
+    Возвращает SubscriberStatusResponse с булевым статусом is_subscribed.
+    """
+
     active = is_subscribed(chat_id)
+
     return SubscriberStatusResponse(chat_id=chat_id, is_subscribed=active)
 
 
 @router.post("/{chat_id}", response_model=SubscriberActionResponse, dependencies=[Depends(verify_admin_access)])
 async def subscribe_user(chat_id: int) -> SubscriberActionResponse:
-    """Включение подписки пользователя на уведомления (Admin only)."""
+    """
+    Принудительно подписывает чат или пользователя на расписание (Admin only).
+
+    Добавляет chat_id в файл базы данных подписчиков с защитой от дублей.
+    Защищён verify_admin_access от несанкционированного изменения настроек.
+
+    Возвращает SubscriberActionResponse со статусом операции.
+    """
+
     added = add_subscriber(chat_id)
     msg = "Подписка успешно активирована" if added else "Пользователь уже подписан"
+
     return SubscriberActionResponse(chat_id=chat_id, is_subscribed=True, message=msg)
 
 
 @router.delete("/{chat_id}", response_model=SubscriberActionResponse, dependencies=[Depends(verify_admin_access)])
 async def unsubscribe_user(chat_id: int) -> SubscriberActionResponse:
-    """Отключение подписки пользователя на уведомления (Admin only)."""
+    """
+    Отключает автоматическую рассылку уведомлений для чата (Admin only).
+
+    Удаляет идентификатор из базы данных подписчиков и сохраняет изменения на диск.
+    Защищён verify_admin_access.
+
+    Возвращает SubscriberActionResponse с подтверждением отключения.
+    """
+
     removed = remove_subscriber(chat_id)
     msg = "Подписка отключена" if removed else "Пользователь не был подписан"
+
     return SubscriberActionResponse(chat_id=chat_id, is_subscribed=False, message=msg)
+

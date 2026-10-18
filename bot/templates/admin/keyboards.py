@@ -12,7 +12,15 @@ from config import MINIAPP_URL
 
 
 def _build_topic_action_rows() -> list:
-    """Формирует кнопки принудительного обновления и пересоздания топиков."""
+    """
+    Формирует ряды кнопок принудительного обновления и пересоздания топиков супергруппы.
+
+    Предоставляет старосте кнопки для топика расписания, экзаменов и посещаемости.
+    Кнопки пересоздания помечены стилем 'danger' для предупреждения о сбросе ID.
+
+    Возвращает список рядов InlineKeyboardButton.
+    """
+
     return [
         [
             InlineKeyboardButton(text="📢 Обновить топик", callback_data="admin:force_topic", style="success"),
@@ -31,7 +39,15 @@ def _build_topic_action_rows() -> list:
 
 
 def _build_action_rows() -> list:
-    """Формирует основные кнопки управления топиками и синхронизацией со стилями."""
+    """
+    Формирует основную матрицу кнопок панели управления администратора.
+
+    Включает быстрый вход в посещаемость, полную синхронизацию, тестеров и топики.
+    Служит структурным шаблоном для главного меню команды /admin.
+
+    Возвращает полный список рядов кнопок админки.
+    """
+
     rows = [
         [InlineKeyboardButton(text="📝 Отметить посещаемость", callback_data="att:menu", style="success")],
         [
@@ -43,23 +59,49 @@ def _build_action_rows() -> list:
         [InlineKeyboardButton(text="👥 Привязать студента по ID", callback_data="admin:bind_student", style="primary")],
     ]
     rows.extend(_build_topic_action_rows())
+
     return rows
 
 
 def get_admin_main_kb() -> InlineKeyboardMarkup:
-    """Генерирует инлайн-клавиатуру главного экрана админки со стилями кнопок."""
+    """
+    Генерирует главную инлайн-клавиатуру панели управления старосты.
+
+    Оборачивает список рядов действий в объект разметки Telegram.
+    Применяется в хэндлере /admin и колбэке 'admin:menu'.
+
+    Возвращает готовый объект InlineKeyboardMarkup.
+    """
+
     return InlineKeyboardMarkup(inline_keyboard=_build_action_rows())
 
 
 def get_swagger_launch_btn() -> InlineKeyboardButton:
-    """Формирует кнопку запуска Mini App или информационную ссылку."""
+    """
+    Формирует кнопку запуска Telegram Mini App с порталом Swagger UI.
+
+    Использует WebAppInfo при наличии валидного HTTPS URL в конфигурации.
+    При локальном HTTP окружении возвращает колбэк-ссылку.
+
+    Возвращает объект InlineKeyboardButton.
+    """
+
     if MINIAPP_URL.startswith("https://"):
         return InlineKeyboardButton(text="🚀 Открыть Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))
+
     return InlineKeyboardButton(text="🚀 Ссылка на Swagger UI", callback_data="admin:show_swagger_link")
 
 
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
-    """Генерирует клавиатуру управления списком тестеров Swagger UI."""
+    """
+    Генерирует клавиатуру управления списком разрешенных тестеров API.
+
+    Отображает до 6 тестеров с кнопками быстрого удаления и кнопку добавления.
+    Включает кнопку возврата в главное меню панели администратора.
+
+    Возвращает InlineKeyboardMarkup управления тестерами.
+    """
+
     rows: list = [[get_swagger_launch_btn()]]
     rows.append([
         InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
@@ -71,4 +113,6 @@ def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
         ])
     rows.append([InlineKeyboardButton(text="◀️ Назад в админку", callback_data="admin:menu", style="primary")])
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
