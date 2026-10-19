@@ -78,25 +78,30 @@ def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandle
     return handler
 
 
-def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler:
+def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler | None:
     """
     Создает ротируемый файловый обработчик журналов с ограничением размера.
 
     Защищает дисковое пространство сервера от переполнения при активной отладке.
+    При ошибках доступа безопасно возвращает None с предупреждением в stderr.
 
-    Возвращает экземпляр RotatingFileHandler для файла logs/bot.log.
+    Возвращает экземпляр RotatingFileHandler для файла logs/bot.log или None.
     """
-    os.makedirs("logs", exist_ok=True)
-    handler = RotatingFileHandler(
-        "logs/bot.log",
-        maxBytes=MAX_LOG_BYTES,
-        backupCount=BACKUP_LOG_COUNT,
-        encoding="utf-8",
-    )
-    handler.setFormatter(formatter)
-    handler.addFilter(_TraceIdFilter())
-    handler.setLevel(logging.DEBUG)
-    return handler
+    try:
+        os.makedirs("logs", exist_ok=True)
+        handler = RotatingFileHandler(
+            "logs/bot.log",
+            maxBytes=MAX_LOG_BYTES,
+            backupCount=BACKUP_LOG_COUNT,
+            encoding="utf-8",
+        )
+        handler.setFormatter(formatter)
+        handler.addFilter(_TraceIdFilter())
+        handler.setLevel(logging.DEBUG)
+        return handler
+    except (PermissionError, OSError) as e:
+        sys.stderr.write(f"WARNING: Не удалось открыть logs/bot.log ({e}), логи идут в stdout\n")
+        return None
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -114,5 +119,7 @@ def get_logger(name: str) -> logging.Logger:
     logger.setLevel(logging.DEBUG)
     formatter = _create_formatter()
     logger.addHandler(_create_stream_handler(formatter))
-    logger.addHandler(_create_rotating_file_handler(formatter))
+    file_handler = _create_rotating_file_handler(formatter)
+    if file_handler:
+        logger.addHandler(file_handler)
     return logger

@@ -26,8 +26,8 @@ graph LR
 | [`_TraceIdFilter.filter`](#_traceidfilterfilter) | Method | L45–L49 | `bool` | Executes core domain logic for `filter`. |
 | [`_create_formatter`](#_create_formatter) | Function | L52–L63 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
 | [`_create_stream_handler`](#_create_stream_handler) | Function | L66–L78 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
-| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L81–L99 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
-| [`get_logger`](#get_logger) | Function | L102–L118 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
+| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L81–L104 | `RotatingFileHandler | None` | Executes core domain logic for `_create_rotating_file_h... |
+| [`get_logger`](#get_logger) | Function | L107–L125 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
 
 ---
 
@@ -200,12 +200,12 @@ result = _create_stream_handler(formatter=...)
 
 ### `_create_rotating_file_handler`
 ```python
-def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler
+def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler | None
 ```
 
-- **Source Reference**: [`core/logger.py#L81-L99`](../../core/logger.py#L81-L99)
+- **Source Reference**: [`core/logger.py#L81-L104`](../../core/logger.py#L81-L104)
 - **Execution Mode**: `Synchronous`
-- **Return Contract**: `RotatingFileHandler`
+- **Return Contract**: `RotatingFileHandler | None`
 
 #### Overview & Architectural Purpose
 Executes core domain logic for `_create_rotating_file_handler`.
@@ -219,7 +219,7 @@ Executes core domain logic for `_create_rotating_file_handler`.
 - Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
 
 #### Production Usage Example
 ```python
@@ -236,7 +236,7 @@ result = _create_rotating_file_handler(formatter=...)
 def get_logger(name: str) -> logging.Logger
 ```
 
-- **Source Reference**: [`core/logger.py#L102-L118`](../../core/logger.py#L102-L118)
+- **Source Reference**: [`core/logger.py#L107-L125`](../../core/logger.py#L107-L125)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.Logger`
 
