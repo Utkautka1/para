@@ -510,11 +510,11 @@ def format_module_header(title: str, filepath: str, category: str, doc_dir: str)
     meta = get_module_metadata(category)
     return [
         f"# Component Reference: `{title}`",
-        f"> **File Path**: [`{filepath}`]({rel_mod_link})  ",
-        f"> **Subsystem**: `{category}`  ",
-        f"> **Architecture Layer**: `{meta['layer']}`  ",
-        f"> **Concurrency Model**: `{meta['concurrency']}`  ",
-        f"> **Persistence Backend**: `{meta['persistence']}`  ",
+        f"> **File Path**: [`{filepath}`]({rel_mod_link})",
+        f"> **Subsystem**: `{category}`",
+        f"> **Architecture Layer**: `{meta['layer']}`",
+        f"> **Concurrency Model**: `{meta['concurrency']}`",
+        f"> **Persistence Backend**: `{meta['persistence']}`",
         f"> **Service Level Objective**: `{meta['sla']}`\n",
         "## 1. Architectural Role & Responsibilities",
         f"The `{title}` module implements core operational logic for the `{category}` domain. "
@@ -623,9 +623,22 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "services/topic_updater.py": {"out": "docs/services/topic_updater.md", "cat": "Live Schedule Topic"},
     "services/transcriber.py": {"out": "docs/services/transcriber.md", "cat": "Speech-to-Text Whisper Engine"},
     "services/user_cache.py": {"out": "docs/services/user_cache.md", "cat": "Student Identity Cache"},
+    "services/solver/payload_extractor.py": {
+        "out": "docs/services/solver_payload_extractor.md",
+        "cat": "Solver Payload Ingestion",
+    },
+    "services/solver/telegram_reporter.py": {
+        "out": "docs/services/solver_telegram_reporter.md",
+        "cat": "Solver Delivery & Reporting",
+    },
+    "services/solver/task_processor.py": {
+        "out": "docs/services/solver_task_processor.md",
+        "cat": "Solver Queue Processing",
+    },
     "core/api_client.py": {"out": "docs/core/api_client.md", "cat": "Internal RPC Client"},
     "core/bot.py": {"out": "docs/core/bot.md", "cat": "Bot Instance Singleton"},
     "core/logger.py": {"out": "docs/core/logger.md", "cat": "Telemetry Logging"},
+    "core/metrics.py": {"out": "docs/core/metrics.md", "cat": "Prometheus Metrics Engine"},
     "core/redis.py": {"out": "docs/core/redis.md", "cat": "Redis Engine"},
     "core/redis_cache.py": {"out": "docs/core/redis_cache.md", "cat": "Distributed L2 Cache"},
     "integrations/deepseek.py": {"out": "docs/integrations/deepseek.md", "cat": "DeepSeek LLM Integration"},
@@ -644,6 +657,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "api/router/classmates.py": {"out": "docs/api/router_classmates.md", "cat": "Classmates API"},
     "api/router/exams.py": {"out": "docs/api/router_exams.md", "cat": "Exams API"},
     "api/router/health.py": {"out": "docs/api/router_health.md", "cat": "Healthcheck API"},
+    "api/router/metrics.py": {"out": "docs/api/router_metrics.md", "cat": "Prometheus Metrics API"},
     "api/router/miniapp.py": {"out": "docs/api/router_miniapp.md", "cat": "MiniApp API"},
     "api/router/schedule.py": {"out": "docs/api/router_schedule.md", "cat": "Schedule API"},
     "api/router/solver.py": {"out": "docs/api/router_solver.md", "cat": "HW Solver API"},
@@ -769,5 +783,5 @@ if __name__ == "__main__":
     manifest_data = get_target_manifest()
     index_content = build_master_portal(manifest_data)
     with open("docs/index.md", "w", encoding="utf-8") as f:
-        f.write(index_content)
+        f.write(index_content if index_content.endswith("\n") else index_content + "\n")
     print(f"Successfully generated {generated} enterprise documentation files and docs/index.md!")

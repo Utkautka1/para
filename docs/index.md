@@ -45,6 +45,8 @@
 | `Moderation Ban Engine` | [`bot/handlers/admin/mute.py`](../bot/handlers/admin/mute.py) | [📖 View Specification](bot/handlers_admin_mute.md) | Enterprise Service Component |
 | `Network Retry Middleware` | [`bot/middlewares/retry.py`](../bot/middlewares/retry.py) | [📖 View Specification](bot/middlewares_retry.md) | Enterprise Service Component |
 | `Notification Dispatcher` | [`services/notifier.py`](../services/notifier.py) | [📖 View Specification](services/notifier.md) | Enterprise Service Component |
+| `Prometheus Metrics API` | [`api/router/metrics.py`](../api/router/metrics.py) | [📖 View Specification](api/router_metrics.md) | Enterprise Service Component |
+| `Prometheus Metrics Engine` | [`core/metrics.py`](../core/metrics.py) | [📖 View Specification](core/metrics.md) | Enterprise Service Component |
 | `Protobuf Converters` | [`api/grpc/converters.py`](../api/grpc/converters.py) | [📖 View Specification](api/grpc_converters.md) | Enterprise Service Component |
 | `Public Sharing Flow` | [`bot/handlers/user/public_copy.py`](../bot/handlers/user/public_copy.py) | [📖 View Specification](bot/handlers_user_public_copy.md) | Enterprise Service Component |
 | `RBAC Security` | [`services/classmates_auth.py`](../services/classmates_auth.py) | [📖 View Specification](services/classmates_auth.md) | Enterprise Service Component |
@@ -53,6 +55,9 @@
 | `Schedule API` | [`api/router/schedule.py`](../api/router/schedule.py) | [📖 View Specification](api/router_schedule.md) | Enterprise Service Component |
 | `Security Dependencies` | [`api/deps.py`](../api/deps.py) | [📖 View Specification](api/deps.md) | Enterprise Service Component |
 | `Session Keepalive` | [`integrations/yandex_keepalive.py`](../integrations/yandex_keepalive.py) | [📖 View Specification](integrations/yandex_keepalive.md) | Enterprise Service Component |
+| `Solver Delivery & Reporting` | [`services/solver/telegram_reporter.py`](../services/solver/telegram_reporter.py) | [📖 View Specification](services/solver_telegram_reporter.md) | Enterprise Service Component |
+| `Solver Payload Ingestion` | [`services/solver/payload_extractor.py`](../services/solver/payload_extractor.py) | [📖 View Specification](services/solver_payload_extractor.md) | Enterprise Service Component |
+| `Solver Queue Processing` | [`services/solver/task_processor.py`](../services/solver/task_processor.py) | [📖 View Specification](services/solver_task_processor.md) | Enterprise Service Component |
 | `Speech-to-Text Whisper Engine` | [`services/transcriber.py`](../services/transcriber.py) | [📖 View Specification](services/transcriber.md) | Enterprise Service Component |
 | `Spreadsheet Analytics` | [`services/attendance_stats.py`](../services/attendance_stats.py) | [📖 View Specification](services/attendance_stats.md) | Enterprise Service Component |
 | `Student Identity Cache` | [`services/user_cache.py`](../services/user_cache.py) | [📖 View Specification](services/user_cache.md) | Enterprise Service Component |

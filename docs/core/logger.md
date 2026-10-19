@@ -21,21 +21,125 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_create_formatter`](#_create_formatter) | Function | L20–L32 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
-| [`_create_stream_handler`](#_create_stream_handler) | Function | L35–L47 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
-| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L50–L68 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
-| [`get_logger`](#get_logger) | Function | L71–L88 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
+| [`set_trace_id`](#set_trace_id) | Function | L22–L30 | `None` | Persists state updates for `set_trace_id`. |
+| [`get_trace_id`](#get_trace_id) | Function | L33–L39 | `str` | Retrieves and resolves domain data for `get_trace_id`. |
+| [`_TraceIdFilter.filter`](#_traceidfilterfilter) | Method | L45–L49 | `bool` | Executes core domain logic for `filter`. |
+| [`_create_formatter`](#_create_formatter) | Function | L52–L63 | `logging.Formatter` | Executes core domain logic for `_create_formatter`. |
+| [`_create_stream_handler`](#_create_stream_handler) | Function | L66–L78 | `logging.StreamHandler` | Executes core domain logic for `_create_stream_handler`... |
+| [`_create_rotating_file_handler`](#_create_rotating_file_handler) | Function | L81–L99 | `RotatingFileHandler` | Executes core domain logic for `_create_rotating_file_h... |
+| [`get_logger`](#get_logger) | Function | L102–L118 | `logging.Logger` | Retrieves and resolves domain data for `get_logger`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `set_trace_id`
+```python
+def set_trace_id(trace_id: str) -> None
+```
+
+- **Source Reference**: [`core/logger.py#L22-L30`](../../core/logger.py#L22-L30)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Persists state updates for `set_trace_id`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `trace_id` | `str` | Yes | Parameter `trace_id` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import set_trace_id
+
+# Execute call
+result = set_trace_id(trace_id=...)
+```
+
+---
+
+### `get_trace_id`
+```python
+def get_trace_id() -> str
+```
+
+- **Source Reference**: [`core/logger.py#L33-L39`](../../core/logger.py#L33-L39)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_trace_id`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import get_trace_id
+
+# Execute call
+result = get_trace_id()
+```
+
+---
+
+## Class Model: `_TraceIdFilter`
+
+Encapsulates domain entities and data transfer logic for `_TraceIdFilter`.
+
+### `_TraceIdFilter.filter`
+```python
+def filter(self, record: logging.LogRecord) -> bool
+```
+
+- **Source Reference**: [`core/logger.py#L45-L49`](../../core/logger.py#L45-L49)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `filter`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `record` | `logging.LogRecord` | Yes | Parameter `record` of type `logging.LogRecord`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.logger import filter
+
+# Execute call
+result = filter(record=...)
+```
+
+---
 
 ### `_create_formatter`
 ```python
 def _create_formatter() -> logging.Formatter
 ```
 
-- **Source Reference**: [`core/logger.py#L20-L32`](../../core/logger.py#L20-L32)
+- **Source Reference**: [`core/logger.py#L52-L63`](../../core/logger.py#L52-L63)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.Formatter`
 
@@ -66,7 +170,7 @@ result = _create_formatter()
 def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandler
 ```
 
-- **Source Reference**: [`core/logger.py#L35-L47`](../../core/logger.py#L35-L47)
+- **Source Reference**: [`core/logger.py#L66-L78`](../../core/logger.py#L66-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.StreamHandler`
 
@@ -99,7 +203,7 @@ result = _create_stream_handler(formatter=...)
 def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler
 ```
 
-- **Source Reference**: [`core/logger.py#L50-L68`](../../core/logger.py#L50-L68)
+- **Source Reference**: [`core/logger.py#L81-L99`](../../core/logger.py#L81-L99)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `RotatingFileHandler`
 
@@ -132,7 +236,7 @@ result = _create_rotating_file_handler(formatter=...)
 def get_logger(name: str) -> logging.Logger
 ```
 
-- **Source Reference**: [`core/logger.py#L71-L88`](../../core/logger.py#L71-L88)
+- **Source Reference**: [`core/logger.py#L102-L118`](../../core/logger.py#L102-L118)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `logging.Logger`
 

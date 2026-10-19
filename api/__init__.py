@@ -6,9 +6,11 @@ FastAPI-приложение para-api — фабрика приложения с
 всех кодов ошибок и схемы аутентификации ApiKeyAuth / BearerAuth.
 """
 
+import time
+import uuid
 from typing import Any
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -20,6 +22,7 @@ from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
 from api.router.exams import router as exams_router
 from api.router.health import router as health_router
+from api.router.metrics import router as metrics_router
 from api.router.miniapp import router as miniapp_router
 from api.router.schedule import router as schedule_router
 from api.router.solver import router as solver_router
@@ -32,6 +35,8 @@ from config import (
     SWAGGER_SERVERS_DESCRIPTION,
     SWAGGER_SERVERS_URL,
 )
+from core.logger import set_trace_id
+from core.metrics import record_http_request
 
 
 def _register_routers(app: FastAPI) -> None:
@@ -43,6 +48,7 @@ def _register_routers(app: FastAPI) -> None:
     Ничего не возвращает.
     """
     app.include_router(health_router)
+    app.include_router(metrics_router)
     app.include_router(schedule_router)
     app.include_router(exams_router)
     app.include_router(teachers_router)
@@ -78,7 +84,7 @@ def _configure_openapi_security(schema: dict[str, Any]) -> None:
         "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
         "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
     }
-    public_paths = {"/health", "/miniapp", "/miniapp/auth", "/miniapp/status"}
+    public_paths = {"/health", "/metrics", "/miniapp", "/miniapp/auth", "/miniapp/status"}
 
     for path, methods in schema.get("paths", {}).items():
         for m, op in methods.items():
@@ -133,6 +139,30 @@ def _register_protected_docs(app: FastAPI) -> None:
         return RedirectResponse(url="/miniapp")
 
 
+def _register_observability_middleware(app: FastAPI) -> None:
+    """
+    Регистрирует HTTP middleware для замера времени ответа и внедрения trace_id.
+
+    Генерирует или пробрасывает заголовок X-Request-ID и обновляет метрики Prometheus.
+
+    Ничего не возвращает.
+    """
+
+    @app.middleware("http")
+    async def observability_middleware(request: Request, call_next):
+        req_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        set_trace_id(req_id)
+        request.state.trace_id = req_id
+
+        start_time = time.perf_counter()
+        response = await call_next(request)
+        duration = time.perf_counter() - start_time
+
+        record_http_request(request.method, request.url.path, response.status_code, duration)
+        response.headers["X-Request-ID"] = req_id
+        return response
+
+
 def create_app() -> FastAPI:
     """
     Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами.
@@ -151,6 +181,7 @@ def create_app() -> FastAPI:
         responses=COMMON_API_RESPONSES,
     )
 
+    _register_observability_middleware(app)
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
     _register_routers(app)
     _register_protected_docs(app)

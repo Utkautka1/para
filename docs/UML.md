@@ -39,6 +39,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 10.2. [High-Performance Attendance Caching & Thread-Offloading Flow](#102-high-performance-attendance-caching--thread-offloading-flow)
    - 10.3. [Concurrent AI Solver Worker Pipeline with Semaphore Control](#103-concurrent-ai-solver-worker-pipeline-with-semaphore-control)
    - 10.4. [Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive](#104-multi-tier-high-performance-architecture-l1-in-memory-uvloop--grpc-keepalive)
+   - 10.5. [Enterprise Observability & Prometheus Metrics Architecture](#105-enterprise-observability--prometheus-metrics-architecture)
 11. [Automated CI/CD Pipeline & Delivery Verification](#11-automated-cicd-pipeline--delivery-verification)
 12. [Resilient Fallback Upstream & Clean Micro-Functions Architecture](#12-resilient-fallback-upstream--clean-micro-functions-architecture)
 13. [Hardened Security Governance & Secrets Lifecycle Management](#13-hardened-security-governance--secrets-lifecycle-management)
@@ -2336,6 +2337,44 @@ sequenceDiagram
         Uvicorn->>Gzip: Serialize directly to JSON bytes
         Gzip-->>Client: HTTP 200 OK (Gzip Compressed, <1 ms)
     end
+```
+
+---
+
+### 10.5. Enterprise Observability & Prometheus Metrics Architecture
+
+Comprehensive observability pipeline unifying distributed request tracing, contextual logging, and standardized Prometheus metrics:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as External Client / Mini App
+    participant Middleware as Observability Middleware
+    participant Logger as Core Logger (trace_id context)
+    participant Router as API Endpoint Router
+    participant Metrics as Prometheus Registry
+    actor Scraper as Prometheus / VictoriaMetrics
+
+    Client->>Middleware: HTTP GET /api/storage/... (X-Request-ID: optional)
+    activate Middleware
+    Middleware->>Middleware: Generate / Extract trace_id (X-Request-ID)
+    Middleware->>Logger: set_trace_id(trace_id)
+    Logger-->>Logger: Auto-inject [trace_id=...] in all subsequent log entries
+    Middleware->>Router: Forward request to route handler
+    activate Router
+    Router->>Logger: log.info("Processing business logic...")
+    Router-->>Middleware: HTTP Response (Status 200)
+    deactivate Router
+    Middleware->>Metrics: record_http_request(method, endpoint, 200, duration)
+    Middleware-->>Client: HTTP 200 OK (Header: X-Request-ID: {trace_id})
+    deactivate Middleware
+
+    Scraper->>Router: GET /metrics
+    activate Router
+    Router->>Metrics: generate_metrics_payload()
+    Metrics-->>Router: Prometheus text/plain exposition payload
+    Router-->>Scraper: HTTP 200 OK (text/plain; version=0.0.4)
+    deactivate Router
 ```
 
 ---
