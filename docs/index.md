@@ -43,6 +43,7 @@
 | `Incident Alerting` | [`services/alerting.py`](../services/alerting.py) | [📖 View Specification](services/alerting.md) | Enterprise Service Component |
 | `Ingress Gateway` | [`api.py`](../api.py) | [📖 View Specification](entrypoints/api.md) | Enterprise Service Component |
 | `Internal RPC Client` | [`core/api_client.py`](../core/api_client.py) | [📖 View Specification](core/api_client.md) | Enterprise Service Component |
+| `Jaeger Tracing Proxy API` | [`api/router/jaeger.py`](../api/router/jaeger.py) | [📖 View Specification](api/router_jaeger.md) | Enterprise Service Component |
 | `KTMU Timetable Engine` | [`services/schedule_parser.py`](../services/schedule_parser.py) | [📖 View Specification](services/schedule_parser.md) | Enterprise Service Component |
 | `Live Schedule Topic` | [`services/topic_updater.py`](../services/topic_updater.py) | [📖 View Specification](services/topic_updater.md) | Enterprise Service Component |
 | `MiniApp API` | [`api/router/miniapp.py`](../api/router/miniapp.py) | [📖 View Specification](api/router_miniapp.md) | Enterprise Service Component |

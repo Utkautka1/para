@@ -23,6 +23,7 @@ from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
 from api.router.exams import router as exams_router
 from api.router.health import router as health_router
+from api.router.jaeger import router as jaeger_router
 from api.router.metrics import router as metrics_router
 from api.router.miniapp import router as miniapp_router
 from api.router.schedule import router as schedule_router
@@ -45,7 +46,7 @@ def _register_routers(app: FastAPI) -> None:
     """
     Регистрирует все подсистемные роутеры в основном экземпляре приложения FastAPI.
 
-    Подключает эндпоинты расписания, экзаменов, посещаемости, одногруппников, дней рождения.
+    Подключает эндпоинты расписания, экзаменов, посещаемости, трейсинга, документации.
 
     Ничего не возвращает.
     """
@@ -61,6 +62,8 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(subscribers_router)
     app.include_router(system_router)
     app.include_router(miniapp_router)
+    app.include_router(jaeger_router)
+
 
 
 def _configure_openapi_servers(schema: dict[str, Any]) -> None:

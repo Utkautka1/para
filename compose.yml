@@ -45,6 +45,7 @@ services:
       - ALL
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+    command: ["--query.base-path=/jaeger"]
     ports:
       - "127.0.0.1:16686:16686"
       - "127.0.0.1:4317:4317"

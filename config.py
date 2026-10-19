@@ -570,8 +570,11 @@ tracing_config = TracingConfig(
     enabled=get_env_bool("OTEL_ENABLED", True),
     otlp_endpoint=get_env("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317"),
     service_name=get_env("OTEL_SERVICE_NAME", "para"),
+    jaeger_ui_url=get_env("JAEGER_UI_URL", "http://jaeger:16686"),
 )
 
 OTEL_ENABLED: bool = tracing_config.enabled
 OTEL_EXPORTER_OTLP_ENDPOINT: str = tracing_config.otlp_endpoint
 OTEL_SERVICE_NAME: str = tracing_config.service_name
+JAEGER_UI_URL: str = tracing_config.jaeger_ui_url
+

@@ -48,6 +48,7 @@ Technical specification of the distributed system architecture, end-to-end data 
 16. [OpenTelemetry End-to-End Tracing & Locust 500+ RPS Stress Testing Architecture](#16-opentelemetry-end-to-end-tracing--locust-500-rps-stress-testing-architecture)
    - 16.1. [Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)](#161-distributed-tracing-span-topology-telegram---grpc---redis---sqlite)
    - 16.2. [Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation](#162-locust-dual-protocol-load-testing-architecture--morning-peak-simulation)
+   - 16.3. [Dual-Tab Mini App & Jaeger Reverse Proxy Architecture](#163-dual-tab-mini-app--jaeger-reverse-proxy-architecture)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -2129,6 +2130,11 @@ classDiagram
         +DELETE /miniapp/testers/:uid
     }
 
+    class JaegerProxyRouter {
+        +GET /jaeger
+        +ANY /jaeger/{path}
+    }
+
     class HealthRouter {
         +GET /health
     }
@@ -2144,6 +2150,7 @@ classDiagram
     FastApiApplication --> SubscribersRouter : mounts
     FastApiApplication --> SystemRouter : mounts
     FastApiApplication --> MiniappRouter : mounts
+    FastApiApplication --> JaegerProxyRouter : mounts
     FastApiApplication --> HealthRouter : mounts
 
     ScheduleRouter ..> SecurityDependencies : verify_api_or_tester
@@ -2156,6 +2163,8 @@ classDiagram
     SubscribersRouter ..> SecurityDependencies : verify_api_or_tester
     SystemRouter ..> SecurityDependencies : verify_api_or_tester
     MiniappRouter ..> SecurityDependencies : verify_api_or_tester
+    JaegerProxyRouter ..> SecurityDependencies : verify_api_or_tester
+
 ```
 
 ---
@@ -2941,4 +2950,44 @@ flowchart TD
         Aggregator --> CSVExport
     end
 ```
+
+### 16.3. Dual-Tab Mini App & Jaeger Reverse Proxy Architecture
+
+The unified developer and tester portal embeds both Swagger UI and Jaeger Tracing UI inside a single Telegram Mini App interface. Authorization is verified via Telegram HMAC-SHA256 signature and encrypted `para_session` cookie; requests to `/jaeger/*` are reverse-proxied over the internal Docker network with zero public port exposure.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Tester as 🧑‍💻 Authorized Tester
+    participant WebApp as 📱 Telegram Mini App (/miniapp)
+    participant Caddy as 🌐 Caddy Gateway (45.81.154.175)
+    participant ApiRouter as 🛡️ para-api (FastAPI :8000)
+    participant AuthDep as 🔑 verify_api_or_tester (api/deps.py)
+    participant JaegerProxy as 🔀 JaegerProxyRouter (api/router/jaeger.py)
+    participant JaegerUI as 🔭 Jaeger all-in-one (:16686)
+
+    Tester->>WebApp: Open Mini App via Telegram Button
+    WebApp->>ApiRouter: POST /miniapp/auth (init_data)
+    ApiRouter->>ApiRouter: Validate HMAC-SHA256 & Whitelist
+    ApiRouter-->>WebApp: Set-Cookie: para_session=... (HttpOnly, Secure)
+
+    Note over WebApp: Display 2-Tab Navigation Bar<br/>[⚡ Swagger UI] | [🔍 Jaeger Traces]
+
+    alt Tab 1: Swagger UI Selected
+        WebApp->>ApiRouter: GET /openapi.json (Cookie: para_session)
+        ApiRouter->>AuthDep: Validate session
+        AuthDep-->>ApiRouter: Authorized (tester:id)
+        ApiRouter-->>WebApp: OpenAPI 3.1 Spec JSON
+        Note over WebApp: Render Swagger UI in Native DOM
+    else Tab 2: Jaeger Traces Selected
+        WebApp->>JaegerProxy: GET /jaeger/ (Cookie: para_session in iframe)
+        JaegerProxy->>AuthDep: Validate session
+        AuthDep-->>JaegerProxy: Authorized (tester:id)
+        JaegerProxy->>JaegerUI: HTTPX GET http://jaeger:16686/jaeger/
+        JaegerUI-->>JaegerProxy: HTTP 200 (HTML + base href="/jaeger/")
+        JaegerProxy-->>WebApp: Stream Response to <iframe>
+        Note over WebApp: Seamless Distributed Tracing View
+    end
+```
+
 

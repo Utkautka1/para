@@ -191,3 +191,5 @@ class TracingConfig:
     enabled: bool = True
     otlp_endpoint: str = "http://jaeger:4317"
     service_name: str = "para"
+    jaeger_ui_url: str = "http://jaeger:16686"
+

@@ -664,6 +664,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "api/router/classmates.py": {"out": "docs/api/router_classmates.md", "cat": "Classmates API"},
     "api/router/exams.py": {"out": "docs/api/router_exams.md", "cat": "Exams API"},
     "api/router/health.py": {"out": "docs/api/router_health.md", "cat": "Healthcheck API"},
+    "api/router/jaeger.py": {"out": "docs/api/router_jaeger.md", "cat": "Jaeger Tracing Proxy API"},
     "api/router/metrics.py": {"out": "docs/api/router_metrics.md", "cat": "Prometheus Metrics API"},
     "api/router/miniapp.py": {"out": "docs/api/router_miniapp.md", "cat": "MiniApp API"},
     "api/router/schedule.py": {"out": "docs/api/router_schedule.md", "cat": "Schedule API"},
