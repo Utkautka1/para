@@ -13,6 +13,7 @@ from core.bot import bot
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
 from core.redis_cache import recover_stale_hw_tasks
+from core.telemetry import setup_telemetry
 from integrations.deepseek import close_deepseek_client
 from services.solver import run_solver_loop
 
@@ -47,8 +48,10 @@ async def main() -> None:
     log.info("ЗАПУСК Сервиса AI-Решения ДЗ (para-solver)")
     log.info(f"  Модель DeepSeek: {config.DEEPSEEK_MODEL_NAME}")
     log.info("=" * 60)
+    setup_telemetry("para-solver")
     await init_redis()
     await recover_stale_hw_tasks()
+
 
     try:
         await run_solver_loop(bot, _SOLVER_SEMAPHORE)

@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_temp_doc_path`](#_build_temp_doc_path) | Function | L27–L36 | `str` | Executes core domain logic for `_build_temp_doc_path`. |
-| [`_cleanup_temp_file`](#_cleanup_temp_file) | Function | L39–L48 | `None` | Executes core domain logic for `_cleanup_temp_file`. |
-| [`_handle_task_failure`](#_handle_task_failure) | Function | L51–L62 | `None` | Executes core domain logic for `_handle_task_failure`. |
-| [`execute_single_task`](#execute_single_task) | Function | L65–L86 | `None` | Executes core domain logic for `execute_single_task`. |
-| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L89–L98 | `None` | Executes core domain logic for `_guarded_execute_task`. |
-| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L101–L111 | `None` | Executes core domain logic for `_drain_active_tasks`. |
-| [`run_solver_loop`](#run_solver_loop) | Function | L114–L140 | `None` | Executes core domain logic for `run_solver_loop`. |
+| [`_build_temp_doc_path`](#_build_temp_doc_path) | Function | L28–L37 | `str` | Executes core domain logic for `_build_temp_doc_path`. |
+| [`_cleanup_temp_file`](#_cleanup_temp_file) | Function | L40–L49 | `None` | Executes core domain logic for `_cleanup_temp_file`. |
+| [`_handle_task_failure`](#_handle_task_failure) | Function | L52–L63 | `None` | Executes core domain logic for `_handle_task_failure`. |
+| [`execute_single_task`](#execute_single_task) | Function | L66–L89 | `None` | Executes core domain logic for `execute_single_task`. |
+| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L93–L102 | `None` | Executes core domain logic for `_guarded_execute_task`. |
+| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L105–L115 | `None` | Executes core domain logic for `_drain_active_tasks`. |
+| [`run_solver_loop`](#run_solver_loop) | Function | L118–L144 | `None` | Executes core domain logic for `run_solver_loop`. |
 
 ---
 
@@ -38,7 +38,7 @@ graph LR
 def _build_temp_doc_path(msg_id: int) -> str
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L27-L36`](../../services/solver/task_processor.py#L27-L36)
+- **Source Reference**: [`services/solver/task_processor.py#L28-L37`](../../services/solver/task_processor.py#L28-L37)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -71,7 +71,7 @@ result = _build_temp_doc_path(msg_id=...)
 def _cleanup_temp_file(path: str) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L39-L48`](../../services/solver/task_processor.py#L39-L48)
+- **Source Reference**: [`services/solver/task_processor.py#L40-L49`](../../services/solver/task_processor.py#L40-L49)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -104,7 +104,7 @@ result = _cleanup_temp_file(path=...)
 async def _handle_task_failure(tg_bot: Bot, task: dict, msg_id: int, error: Exception) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L51-L62`](../../services/solver/task_processor.py#L51-L62)
+- **Source Reference**: [`services/solver/task_processor.py#L52-L63`](../../services/solver/task_processor.py#L52-L63)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -140,7 +140,7 @@ result = await _handle_task_failure(tg_bot=..., task=..., msg_id=...)
 async def execute_single_task(tg_bot: Bot, task: dict) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L65-L86`](../../services/solver/task_processor.py#L65-L86)
+- **Source Reference**: [`services/solver/task_processor.py#L66-L89`](../../services/solver/task_processor.py#L66-L89)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -174,7 +174,7 @@ result = await execute_single_task(tg_bot=..., task=...)
 async def _guarded_execute_task(tg_bot: Bot, task: dict, semaphore: asyncio.Semaphore) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L89-L98`](../../services/solver/task_processor.py#L89-L98)
+- **Source Reference**: [`services/solver/task_processor.py#L93-L102`](../../services/solver/task_processor.py#L93-L102)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -209,7 +209,7 @@ result = await _guarded_execute_task(tg_bot=..., task=..., semaphore=...)
 async def _drain_active_tasks(active_tasks: set[asyncio.Task]) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L101-L111`](../../services/solver/task_processor.py#L101-L111)
+- **Source Reference**: [`services/solver/task_processor.py#L105-L115`](../../services/solver/task_processor.py#L105-L115)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -242,7 +242,7 @@ result = await _drain_active_tasks(active_tasks=...)
 async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L114-L140`](../../services/solver/task_processor.py#L114-L140)
+- **Source Reference**: [`services/solver/task_processor.py#L118-L144`](../../services/solver/task_processor.py#L118-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

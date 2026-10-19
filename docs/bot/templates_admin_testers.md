@@ -22,8 +22,8 @@ graph LR
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
 | [`format_testers_text`](#format_testers_text) | Function | L20–L39 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L42–L59 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L62–L92 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L42–L53 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L57–L87 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -71,7 +71,7 @@ result = format_testers_text(testers=...)
 def get_swagger_buttons() -> list[InlineKeyboardButton]
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L42-L59`](../../bot/templates/admin/testers.py#L42-L59)
+- **Source Reference**: [`bot/templates/admin/testers.py#L42-L53`](../../bot/templates/admin/testers.py#L42-L53)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[InlineKeyboardButton]`
 
@@ -102,7 +102,7 @@ result = get_swagger_buttons()
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L62-L92`](../../bot/templates/admin/testers.py#L62-L92)
+- **Source Reference**: [`bot/templates/admin/testers.py#L57-L87`](../../bot/templates/admin/testers.py#L57-L87)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

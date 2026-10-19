@@ -41,22 +41,17 @@ def format_testers_text(testers: list[int]) -> str:
 
 def get_swagger_buttons() -> list[InlineKeyboardButton]:
     """
-    Формирует инлайн-кнопки для перехода в Swagger UI в браузере и Mini App.
+    Формирует инлайн-кнопку для перехода в защищенный веб-портал Mini App.
 
-    Проверяет наличие сконфигурированных адресов перед добавлением кнопок.
-    Защищает от отправки кнопок с пустыми недействительными ссылками.
+    Проверяет наличие сконфигурированного HTTPS-адреса веб-приложения.
 
-    Возвращает список объектов InlineKeyboardButton.
+    Возвращает список с кнопкой перехода в веб-портал.
     """
-
-    btns = []
-    if SWAGGER_URL:
-        btns.append(InlineKeyboardButton(text="🚀 Открыть Swagger UI", url=SWAGGER_URL))
-
     if MINIAPP_URL.startswith("https://"):
-        btns.append(InlineKeyboardButton(text="📱 Mini App", web_app=WebAppInfo(url=MINIAPP_URL)))
+        return [InlineKeyboardButton(text="📱 Открыть веб-портал", web_app=WebAppInfo(url=MINIAPP_URL))]
 
-    return btns
+    return []
+
 
 
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:

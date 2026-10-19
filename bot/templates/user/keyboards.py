@@ -103,7 +103,7 @@ def _build_nav_rows(
         ],
     ]
     if is_tester:
-        rows.append([InlineKeyboardButton(text="🧪 Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
+        rows.append([InlineKeyboardButton(text="🧪 Веб-портал API (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
 
     rows.extend(_build_admin_nav_rows(is_admin, is_attendance_admin))
 
@@ -148,7 +148,7 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
     """
     Формирует инлайн-клавиатуру персонального кабинета тестера API.
 
-    Предоставляет ссылки на Swagger UI в формате Telegram Web App и в браузере.
+    Предоставляет ссылки на веб-портал в формате Telegram Web App и в браузере.
     Включает кнопку получения личного API-ключа.
 
     Возвращает объект InlineKeyboardMarkup.
@@ -156,11 +156,12 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Запустить Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))],
-            [InlineKeyboardButton(text="🌐 Открыть Swagger в браузере", url=SWAGGER_URL)],
+            [InlineKeyboardButton(text="🚀 Запустить веб-портал (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))],
+            [InlineKeyboardButton(text="🌐 Открыть веб-портал в браузере", url=SWAGGER_URL)],
             [InlineKeyboardButton(text="🔑 Показать мой API-ключ", callback_data="tester:my_key", style="primary")],
         ]
     )
+
 
 
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None:

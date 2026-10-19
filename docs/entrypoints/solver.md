@@ -21,8 +21,8 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_shutdown_resources`](#_shutdown_resources) | Function | L23–L34 | `None` | Executes core domain logic for `_shutdown_resources`. |
-| [`main`](#main) | Function | L37–L56 | `None` | Executes core domain logic for `main`. |
+| [`_shutdown_resources`](#_shutdown_resources) | Function | L24–L35 | `None` | Executes core domain logic for `_shutdown_resources`. |
+| [`main`](#main) | Function | L38–L59 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -33,7 +33,7 @@ graph LR
 async def _shutdown_resources() -> None
 ```
 
-- **Source Reference**: [`solver.py#L23-L34`](../../solver.py#L23-L34)
+- **Source Reference**: [`solver.py#L24-L35`](../../solver.py#L24-L35)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -64,7 +64,7 @@ result = await _shutdown_resources()
 async def main() -> None
 ```
 
-- **Source Reference**: [`solver.py#L37-L56`](../../solver.py#L37-L56)
+- **Source Reference**: [`solver.py#L38-L59`](../../solver.py#L38-L59)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

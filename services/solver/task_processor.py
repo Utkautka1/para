@@ -16,6 +16,7 @@ from aiogram import Bot
 import config
 from core.logger import get_logger
 from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task
+from core.telemetry import trace_span
 from integrations.deepseek import solve_homework
 from services.solver.payload_extractor import resolve_task_payload
 from services.solver.telegram_reporter import notify_task_error, send_solution_to_telegram
@@ -67,23 +68,26 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
     Обрабатывает одну задачу: решает ДЗ в DeepSeek и отправляет документ.
 
     Генерирует .docx документ, отправляет в топик решений и подтверждает задачу (ACK).
-    При сбое инициирует повторную постановку в очередь (NACK) или шлет ошибку.
+    Создает span OpenTelemetry solver.execute_task для трассировки.
 
     Ничего не возвращает.
     """
     msg_id = task.get("message_id", 0)
     doc_path = _build_temp_doc_path(msg_id)
-    try:
-        img_bytes, prompt = await resolve_task_payload(tg_bot, task)
-        solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
-        await asyncio.to_thread(create_solution_docx, solution, output_path=doc_path)
-        await send_solution_to_telegram(tg_bot, task, doc_path)
-        await ack_hw_task(task)
-        log.info(f"✅ Решение ДЗ msg_id={msg_id} успешно доставлено в топик решений!")
-    except Exception as e:
-        await _handle_task_failure(tg_bot, task, msg_id, e)
-    finally:
-        _cleanup_temp_file(doc_path)
+    attrs = {"hw.message_id": msg_id, "hw.file_unique_id": task.get("file_unique_id", "")}
+    async with trace_span("solver.execute_task", attributes=attrs):
+        try:
+            img_bytes, prompt = await resolve_task_payload(tg_bot, task)
+            solution = await solve_homework(image_bytes=img_bytes, text_prompt=prompt)
+            await asyncio.to_thread(create_solution_docx, solution, output_path=doc_path)
+            await send_solution_to_telegram(tg_bot, task, doc_path)
+            await ack_hw_task(task)
+            log.info(f"✅ Решение ДЗ msg_id={msg_id} успешно доставлено в топик решений!")
+        except Exception as e:
+            await _handle_task_failure(tg_bot, task, msg_id, e)
+        finally:
+            _cleanup_temp_file(doc_path)
+
 
 
 async def _guarded_execute_task(tg_bot: Bot, task: dict, semaphore: asyncio.Semaphore) -> None:

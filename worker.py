@@ -17,6 +17,7 @@ from core.api_client import close_api_client, get_api_schedule_for_date
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
+from core.telemetry import setup_telemetry
 from integrations.yandex_keepalive import yandex_session_keepalive_loop
 from services.attendance_topic_updater import attendance_topic_sync_loop
 from services.birthday_manager import birthday_sync_loop
@@ -104,12 +105,14 @@ async def main() -> None:
     log.info("=" * 60)
     log.info("ЗАПУСК Фонового Воркера Расписания (para-worker)")
     log.info("=" * 60)
+    setup_telemetry("para-worker")
     await init_redis()
     from core.database import init_db
 
     await init_db()
     setup_scheduler()
     await schedule_today_reminders()
+
 
     try:
         await _start_worker_loops()

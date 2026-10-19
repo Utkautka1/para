@@ -90,9 +90,10 @@ def get_swagger_launch_btn() -> InlineKeyboardButton:
     """
 
     if MINIAPP_URL.startswith("https://"):
-        return InlineKeyboardButton(text="🚀 Открыть Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))
+        return InlineKeyboardButton(text="🚀 Открыть веб-портал (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))
 
-    return InlineKeyboardButton(text="🚀 Ссылка на Swagger UI", callback_data="admin:show_swagger_link")
+    return InlineKeyboardButton(text="🚀 Ссылка на веб-портал", callback_data="admin:show_swagger_link")
+
 
 
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
