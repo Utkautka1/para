@@ -57,11 +57,7 @@ def test_resolve_room_address(room: str, is_remote: bool, expected_addr: str) ->
 
 def test_extract_zoom_creds_complete() -> None:
     """Проверяет извлечение полного набора данных Zoom (URL, ID, пароль)."""
-    text = (
-        "Ссылка: https://zoom.us/j/1234567890 \n"
-        "Идентификатор конференции: 123 456 7890 \n"
-        "Код доступа: SecretPass123"
-    )
+    text = "Ссылка: https://zoom.us/j/1234567890 \nИдентификатор конференции: 123 456 7890 \nКод доступа: SecretPass123"
     url, mid, code = extract_zoom_creds(text)
     assert url == "https://zoom.us/j/1234567890"
     assert mid == "123 456 7890"

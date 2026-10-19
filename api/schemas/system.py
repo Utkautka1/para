@@ -55,4 +55,3 @@ class BackupTriggerResponse(BaseModel):
 
     status: str = Field(..., description="Статус запуска")
     message: str = Field(..., description="Детальное сообщение")
-

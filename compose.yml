@@ -35,6 +35,32 @@ services:
       retries: 3
       start_period: 5s
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: para-jaeger
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "127.0.0.1:16686:16686"
+      - "127.0.0.1:4317:4317"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.50'
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
   api:
     image: para-api:latest
     build:

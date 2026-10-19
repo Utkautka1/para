@@ -24,6 +24,7 @@ from config import (
 )
 from core.logger import get_logger
 from core.redis import init_redis
+from core.telemetry import trace_span
 
 log = get_logger("redis_cache")
 
@@ -32,42 +33,40 @@ async def cache_get(key: str) -> str | None:
     """
     Извлекает строковое значение из кэша Redis по ключу.
 
-    Предотвращает падение приложения при недоступности Redis, возвращая безопасный None
+    Предотвращает падение приложения при недоступности Redis, возвращая None
     и логируя сбои с минимальным оверхедом на дебаг-уровне.
 
     Возвращает строку со значением из кэша или None при промахе или ошибке.
     """
-    try:
-        client = await init_redis()
-        if client:
-            val = await client.get(key)
-            if val:
-                log.debug(f"Redis hit [key={key}]")
-                return val
-    except Exception as e:
-        log.error(f"Ошибка чтения из Redis ({key}): {e}")
-    return None
+    async with trace_span("redis.cache_get", attributes={"redis.key": key}):
+        try:
+            client = await init_redis()
+            if client:
+                val = await client.get(key)
+                if val:
+                    log.debug(f"Redis hit [key={key}]")
+                    return val
+        except Exception as e:
+            log.error(f"Ошибка чтения из Redis ({key}): {e}")
+        return None
 
 
 async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None:
     """
     Сохраняет строковое значение в Redis с настраиваемым временем жизни TTL.
 
-    Автоматически очищает старые записи по истечении TTL во избежание утечки
-    оперативной памяти сервера при длительной непрерывной работе бота.
+    Автоматически очищает старые записи по истечении TTL во избежание утечки памяти.
 
     Не возвращает значений; логирует ошибки записи в логгер.
     """
-    try:
-        client = await init_redis()
-        if client:
-            if ttl and ttl > 0:
-                await client.set(key, value, ex=ttl)
-            else:
-                await client.set(key, value)
-            log.debug(f"Сохранено в Redis [key={key}, ttl={ttl}s]")
-    except Exception as e:
-        log.error(f"Ошибка записи в Redis ({key}): {e}")
+    async with trace_span("redis.cache_set", attributes={"redis.key": key, "redis.ttl": ttl or 0}):
+        try:
+            client = await init_redis()
+            if client:
+                await (client.set(key, value, ex=ttl) if ttl and ttl > 0 else client.set(key, value))
+                log.debug(f"Сохранено в Redis [key={key}, ttl={ttl}s]")
+        except Exception as e:
+            log.error(f"Ошибка записи в Redis ({key}): {e}")
 
 
 async def cache_flush(pattern: str = "sched:*") -> int:

@@ -49,6 +49,7 @@
 | `Moderation Ban Engine` | [`bot/handlers/admin/mute.py`](../bot/handlers/admin/mute.py) | [📖 View Specification](bot/handlers_admin_mute.md) | Enterprise Service Component |
 | `Network Retry Middleware` | [`bot/middlewares/retry.py`](../bot/middlewares/retry.py) | [📖 View Specification](bot/middlewares_retry.md) | Enterprise Service Component |
 | `Notification Dispatcher` | [`services/notifier.py`](../services/notifier.py) | [📖 View Specification](services/notifier.md) | Enterprise Service Component |
+| `OpenTelemetry Tracing` | [`core/telemetry.py`](../core/telemetry.py) | [📖 View Specification](core/telemetry.md) | Enterprise Service Component |
 | `Prometheus Metrics API` | [`api/router/metrics.py`](../api/router/metrics.py) | [📖 View Specification](api/router_metrics.md) | Enterprise Service Component |
 | `Prometheus Metrics Engine` | [`core/metrics.py`](../core/metrics.py) | [📖 View Specification](core/metrics.md) | Enterprise Service Component |
 | `Protobuf Converters` | [`api/grpc/converters.py`](../api/grpc/converters.py) | [📖 View Specification](api/grpc_converters.md) | Enterprise Service Component |
@@ -80,6 +81,7 @@
 | `Telegram Gateway` | [`bot.py`](../bot.py) | [📖 View Specification](entrypoints/bot.md) | Enterprise Service Component |
 | `Telemetry Logging` | [`core/logger.py`](../core/logger.py) | [📖 View Specification](core/logger.md) | Enterprise Service Component |
 | `Telemetry Topic` | [`services/attendance_topic_updater.py`](../services/attendance_topic_updater.py) | [📖 View Specification](services/attendance_topic_updater.md) | Enterprise Service Component |
+| `Telemetry Tracing Middleware` | [`bot/middlewares/tracing.py`](../bot/middlewares/tracing.py) | [📖 View Specification](bot/middlewares_tracing.md) | Enterprise Service Component |
 | `Tester Keyboards & States` | [`bot/templates/admin/testers.py`](../bot/templates/admin/testers.py) | [📖 View Specification](bot/templates_admin_testers.md) | Enterprise Service Component |
 | `Tester Management Flow` | [`bot/handlers/admin/testers.py`](../bot/handlers/admin/testers.py) | [📖 View Specification](bot/handlers_admin_testers.md) | Enterprise Service Component |
 | `Testing Whitelist` | [`services/testers_manager.py`](../services/testers_manager.py) | [📖 View Specification](services/testers_manager.md) | Enterprise Service Component |

@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from api.deps import verify_api_or_tester
 from api.handlers import register_exception_handlers
@@ -37,6 +38,7 @@ from config import (
 )
 from core.logger import set_trace_id
 from core.metrics import record_http_request
+from core.telemetry import format_trace_id, setup_telemetry
 
 
 def _register_routers(app: FastAPI) -> None:
@@ -150,7 +152,7 @@ def _register_observability_middleware(app: FastAPI) -> None:
 
     @app.middleware("http")
     async def observability_middleware(request: Request, call_next):
-        req_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        req_id = request.headers.get("X-Request-ID") or format_trace_id() or uuid.uuid4().hex[:12]
         set_trace_id(req_id)
         request.state.trace_id = req_id
 
@@ -160,6 +162,7 @@ def _register_observability_middleware(app: FastAPI) -> None:
 
         record_http_request(request.method, request.url.path, response.status_code, duration)
         response.headers["X-Request-ID"] = req_id
+        response.headers["X-Trace-ID"] = format_trace_id() or req_id
         return response
 
 
@@ -167,10 +170,11 @@ def create_app() -> FastAPI:
     """
     Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами.
 
-    Настраивает сжатие GZip, маршрутизацию, обработчики ошибок и схему OpenAPI.
+    Настраивает OpenTelemetry, сжатие GZip, маршрутизацию, обработчики ошибок.
 
     Возвращает сконфигурированный экземпляр FastAPI.
     """
+    setup_telemetry("para-api")
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
@@ -180,7 +184,7 @@ def create_app() -> FastAPI:
         openapi_url=None,
         responses=COMMON_API_RESPONSES,
     )
-
+    FastAPIInstrumentor.instrument_app(app)
     _register_observability_middleware(app)
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
     _register_routers(app)

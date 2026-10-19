@@ -25,10 +25,10 @@ graph LR
 | [`_register_user_routers`](#_register_user_routers) | Function | L43–L65 | `None` | Executes core domain logic for `_register_user_routers`... |
 | [`register_all_routers`](#register_all_routers) | Function | L68–L82 | `None` | Executes core domain logic for `register_all_routers`. |
 | [`shutdown_bot`](#shutdown_bot) | Function | L85–L102 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L105–L120 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_warmup_stt`](#_warmup_stt) | Function | L123–L139 | `None` | Executes core domain logic for `_warmup_stt`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L142–L160 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L163–L183 | `None` | Executes core domain logic for `main`. |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L105–L123 | `None` | Executes core domain logic for `setup_all_middlewares`. |
+| [`_warmup_stt`](#_warmup_stt) | Function | L126–L142 | `None` | Executes core domain logic for `_warmup_stt`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L145–L165 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L168–L188 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -163,7 +163,7 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L105-L120`](../../bot.py#L105-L120)
+- **Source Reference**: [`bot.py#L105-L123`](../../bot.py#L105-L123)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -194,7 +194,7 @@ result = setup_all_middlewares()
 async def _warmup_stt() -> None
 ```
 
-- **Source Reference**: [`bot.py#L123-L139`](../../bot.py#L123-L139)
+- **Source Reference**: [`bot.py#L126-L142`](../../bot.py#L126-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -225,7 +225,7 @@ result = await _warmup_stt()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L142-L160`](../../bot.py#L142-L160)
+- **Source Reference**: [`bot.py#L145-L165`](../../bot.py#L145-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -256,7 +256,7 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L163-L183`](../../bot.py#L163-L183)
+- **Source Reference**: [`bot.py#L168-L188`](../../bot.py#L168-L188)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

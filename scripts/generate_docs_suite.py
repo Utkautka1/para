@@ -355,13 +355,7 @@ def build_example_snippet(name: str, is_async: bool, args: list[ast.arg], filepa
     arg_names = [a.arg for a in args if a.arg not in ("self", "cls")]
     call_args = ", ".join([f"{a}=..." for a in arg_names[:3]])
     call_prefix = "await " if is_async else ""
-    return (
-        f"```python\n"
-        f"from {mod} import {name}\n\n"
-        f"# Execute call\n"
-        f"result = {call_prefix}{name}({call_args})\n"
-        f"```"
-    )
+    return f"```python\nfrom {mod} import {name}\n\n# Execute call\nresult = {call_prefix}{name}({call_args})\n```"
 
 
 def format_param_table(args: list[ast.arg]) -> str:
@@ -649,6 +643,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "core/prompt_sanitizer.py": {"out": "docs/core/prompt_sanitizer.md", "cat": "AI Prompt Sanitization"},
     "core/redis.py": {"out": "docs/core/redis.md", "cat": "Redis Engine"},
     "core/redis_cache.py": {"out": "docs/core/redis_cache.md", "cat": "Distributed L2 Cache"},
+    "core/telemetry.py": {"out": "docs/core/telemetry.md", "cat": "OpenTelemetry Tracing"},
     "db/sqlite/models.py": {"out": "docs/db/sqlite_models.md", "cat": "SQLite Domain Models"},
     "db/sqlite/repositories.py": {"out": "docs/db/sqlite_repositories.md", "cat": "SQLite Repositories"},
     "services/alerting.py": {"out": "docs/services/alerting.md", "cat": "Incident Alerting"},
@@ -683,6 +678,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "bot/filters/auth.py": {"out": "docs/bot/filters_auth.md", "cat": "Bot Auth Filters"},
     "bot/middlewares/throttling.py": {"out": "docs/bot/middlewares_throttling.md", "cat": "Throttling Middleware"},
     "bot/middlewares/retry.py": {"out": "docs/bot/middlewares_retry.md", "cat": "Network Retry Middleware"},
+    "bot/middlewares/tracing.py": {"out": "docs/bot/middlewares_tracing.md", "cat": "Telemetry Tracing Middleware"},
     "bot/handlers/errors.py": {"out": "docs/bot/handlers_errors.md", "cat": "Global Error Trapper"},
     "bot/handlers/user/schedule.py": {"out": "docs/bot/handlers_user_schedule.md", "cat": "User Schedule Flow"},
     "bot/handlers/user/attendance.py": {"out": "docs/bot/handlers_user_attendance.md", "cat": "User Attendance Flow"},

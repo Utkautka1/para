@@ -32,7 +32,11 @@ from services.user_cache import (
 def test_subscribers_lifecycle(tmp_path) -> None:
     """Проверяет добавление, удаление и повторное добавление подписчиков."""
     file_path = str(tmp_path / "subs.json")
-    with patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path):
+    with (
+        patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path),
+        patch("db.subscribers._query_sqlite_subscribers", return_value=None),
+        patch("db.subscribers._update_sqlite_subscriber"),
+    ):
         assert load_subscribers() == set()
         assert add_subscriber(111) is True
         assert add_subscriber(111) is False  # Повторное добавление
@@ -49,7 +53,11 @@ def test_subscribers_is_and_toggle(tmp_path) -> None:
     from db.subscribers import is_subscribed, toggle_subscriber
 
     file_path = str(tmp_path / "subs_toggle.json")
-    with patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path):
+    with (
+        patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path),
+        patch("db.subscribers._query_sqlite_subscribers", return_value=None),
+        patch("db.subscribers._update_sqlite_subscriber"),
+    ):
         assert is_subscribed(123) is False
         assert toggle_subscriber(123) is True
         assert is_subscribed(123) is True
@@ -60,7 +68,11 @@ def test_subscribers_is_and_toggle(tmp_path) -> None:
 def test_subscribers_deduplication(tmp_path) -> None:
     """Проверяет сохранение уникального множества подписчиков."""
     file_path = str(tmp_path / "subs_dedup.json")
-    with patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path):
+    with (
+        patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path),
+        patch("db.subscribers._query_sqlite_subscribers", return_value=None),
+        patch("db.subscribers._update_sqlite_subscriber"),
+    ):
         save_subscribers({10, 20, 30})
         loaded = load_subscribers()
         assert len(loaded) == 3

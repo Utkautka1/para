@@ -23,8 +23,50 @@ from config import (
     GRPC_MAX_MESSAGE_LENGTH,
 )
 from core.logger import get_logger
+from core.telemetry import (
+    carrier_from_grpc_metadata,
+    extract_trace_context,
+    trace_span,
+)
 
 log = get_logger("grpc_server")
+
+
+def _wrap_unary_handler(fn: Any, method: str, parent_ctx: Any) -> Any:
+    """Оборачивает унарный RPC обработчик в спан OpenTelemetry."""
+
+    async def _traced_unary(req: Any, context: grpc.aio.ServicerContext) -> Any:
+        attrs = {"rpc.system": "grpc", "rpc.method": method}
+        async with trace_span(f"grpc.server{method}", attributes=attrs, parent_context=parent_ctx):
+            return await fn(req, context)
+
+    return _traced_unary
+
+
+class GrpcTracingInterceptor(grpc.aio.ServerInterceptor):
+    """Интерцептор распределенного трейсинга OpenTelemetry для входящих gRPC вызовов."""
+
+    async def intercept_service(
+        self,
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
+        handler_call_details: grpc.HandlerCallDetails,
+    ) -> grpc.RpcMethodHandler:
+        """Извлекает W3C TraceContext из метаданных и связывает дочерние спаны сервисеров."""
+        handler = await continuation(handler_call_details)
+        if handler is None:
+            return None
+
+        carrier = carrier_from_grpc_metadata(handler_call_details.invocation_metadata)
+        parent_ctx = extract_trace_context(carrier)
+        method = handler_call_details.method
+
+        if handler.unary_unary:
+            return grpc.unary_unary_rpc_method_handler(
+                _wrap_unary_handler(handler.unary_unary, method, parent_ctx),
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer,
+            )
+        return handler
 
 
 class ApiKeyAuthInterceptor(grpc.aio.ServerInterceptor):
@@ -91,7 +133,10 @@ def create_grpc_server() -> grpc.aio.Server:
         ("grpc.http2.min_ping_interval_without_data_ms", GRPC_HTTP2_MIN_PING_INTERVAL_MS),
     ]
 
-    server = grpc.aio.server(options=options, interceptors=[ApiKeyAuthInterceptor()])
+    server = grpc.aio.server(
+        options=options,
+        interceptors=[GrpcTracingInterceptor(), ApiKeyAuthInterceptor()],
+    )
     _register_servicers(server)
 
     return server

@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_sqlite_pragmas`](#_set_sqlite_pragmas) | Function | L27–L34 | `None` | Executes core domain logic for `_set_sqlite_pragmas`. |
-| [`get_database_engine`](#get_database_engine) | Function | L37–L50 | `AsyncEngine` | Retrieves and resolves domain data for `get_database_en... |
-| [`get_session_factory`](#get_session_factory) | Function | L53–L64 | `async_sessionmaker[AsyncSession]` | Retrieves and resolves domain data for `get_session_fac... |
-| [`get_async_session`](#get_async_session) | Function | L68–L77 | `AsyncGenerator[AsyncSession, None]` | Retrieves and resolves domain data for `get_async_sessi... |
-| [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L80–L93 | `None` | Executes core domain logic for `_migrate_subscribers_fr... |
-| [`init_db`](#init_db) | Function | L96–L106 | `None` | Executes core domain logic for `init_db`. |
+| [`_set_sqlite_pragmas`](#_set_sqlite_pragmas) | Function | L28–L35 | `None` | Executes core domain logic for `_set_sqlite_pragmas`. |
+| [`get_database_engine`](#get_database_engine) | Function | L38–L51 | `AsyncEngine` | Retrieves and resolves domain data for `get_database_en... |
+| [`get_session_factory`](#get_session_factory) | Function | L54–L65 | `async_sessionmaker[AsyncSession]` | Retrieves and resolves domain data for `get_session_fac... |
+| [`get_async_session`](#get_async_session) | Function | L69–L78 | `AsyncGenerator[AsyncSession, None]` | Retrieves and resolves domain data for `get_async_sessi... |
+| [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L81–L94 | `None` | Executes core domain logic for `_migrate_subscribers_fr... |
+| [`init_db`](#init_db) | Function | L97–L107 | `None` | Executes core domain logic for `init_db`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 def _set_sqlite_pragmas(dbapi_connection: Any, _connection_record: Any) -> None
 ```
 
-- **Source Reference**: [`core/database.py#L27-L34`](../../core/database.py#L27-L34)
+- **Source Reference**: [`core/database.py#L28-L35`](../../core/database.py#L28-L35)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -71,7 +71,7 @@ result = _set_sqlite_pragmas(dbapi_connection=..., _connection_record=...)
 def get_database_engine() -> AsyncEngine
 ```
 
-- **Source Reference**: [`core/database.py#L37-L50`](../../core/database.py#L37-L50)
+- **Source Reference**: [`core/database.py#L38-L51`](../../core/database.py#L38-L51)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AsyncEngine`
 
@@ -102,7 +102,7 @@ result = get_database_engine()
 def get_session_factory() -> async_sessionmaker[AsyncSession]
 ```
 
-- **Source Reference**: [`core/database.py#L53-L64`](../../core/database.py#L53-L64)
+- **Source Reference**: [`core/database.py#L54-L65`](../../core/database.py#L54-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `async_sessionmaker[AsyncSession]`
 
@@ -133,7 +133,7 @@ result = get_session_factory()
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]
 ```
 
-- **Source Reference**: [`core/database.py#L68-L77`](../../core/database.py#L68-L77)
+- **Source Reference**: [`core/database.py#L69-L78`](../../core/database.py#L69-L78)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AsyncGenerator[AsyncSession, None]`
 
@@ -164,7 +164,7 @@ result = await get_async_session()
 async def _migrate_subscribers_from_json(session: AsyncSession) -> None
 ```
 
-- **Source Reference**: [`core/database.py#L80-L93`](../../core/database.py#L80-L93)
+- **Source Reference**: [`core/database.py#L81-L94`](../../core/database.py#L81-L94)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -197,7 +197,7 @@ result = await _migrate_subscribers_from_json(session=...)
 async def init_db() -> None
 ```
 
-- **Source Reference**: [`core/database.py#L96-L106`](../../core/database.py#L96-L106)
+- **Source Reference**: [`core/database.py#L97-L107`](../../core/database.py#L97-L107)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

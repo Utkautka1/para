@@ -129,3 +129,7 @@ Encapsulates domain entities and data transfer logic for `NotificationConfig`.
 ## Class Model: `DatabaseConfig`
 
 Encapsulates domain entities and data transfer logic for `DatabaseConfig`.
+
+## Class Model: `TracingConfig`
+
+Encapsulates domain entities and data transfer logic for `TracingConfig`.

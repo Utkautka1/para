@@ -292,7 +292,7 @@ def format_starosta_block(starosta_text: str | None) -> str:
     """
     if not starosta_text:
         return ""
-    return "👑 <b>Слово старосты:</b>\n" f"<blockquote>«{starosta_text}»</blockquote>"
+    return f"👑 <b>Слово старосты:</b>\n<blockquote>«{starosta_text}»</blockquote>"
 
 
 def format_congrats_message(item: dict[str, Any], wish_text: str, starosta_text: str | None = None) -> str:

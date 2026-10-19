@@ -154,7 +154,7 @@ def format_exams_schedule_message(exams: list[ExamItem], semester_start: date | 
 
     Возвращает готовый для отправки в Telegram HTML-текст.
     """
-    header = "📑 <b>АТТЕСТАЦИИ И ЭКЗАМЕНЫ ГРУППЫ 1-КПД-3</b>\n" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    header = "📑 <b>АТТЕСТАЦИИ И ЭКЗАМЕНЫ ГРУППЫ 1-КПД-3</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     if not exams:
         return header + "<i>Информация о зачётах и экзаменах формируется...</i> ☕️"
 

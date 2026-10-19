@@ -236,7 +236,7 @@ def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None:
     r_xml = parse_xml(
         f'<w:r {nsdecls("w")}><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
         f'<w:sz w:val="28"/><w:color w:val="000000"/><w:u w:val="none"/></w:rPr>'
-        f'<w:t>{text}</w:t></w:r>'
+        f"<w:t>{text}</w:t></w:r>"
     )
     h_xml.append(r_xml)
     p._p.append(h_xml)

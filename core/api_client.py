@@ -33,13 +33,20 @@ from config import (
     GRPC_SERVER_ADDRESS,
 )
 from core.logger import get_logger
+from core.telemetry import inject_trace_carrier, trace_span
 from services.models import ExamItem, Lesson
 
 log = get_logger("api_client")
 
 _CLIENT: httpx.AsyncClient | None = None
 _CHANNEL: grpc.aio.Channel | None = None
-GRPC_AUTH_METADATA = ((GRPC_AUTH_HEADER_NAME, API_SECRET_KEY),)
+
+
+def _build_grpc_metadata() -> tuple[tuple[str, str], ...]:
+    """Формирует метаданные вызова gRPC с ключом API и W3C TraceContext."""
+    carrier = {GRPC_AUTH_HEADER_NAME: API_SECRET_KEY}
+    inject_trace_carrier(carrier)
+    return tuple((k, str(v)) for k, v in carrier.items())
 
 
 def _get_client() -> httpx.AsyncClient:
@@ -113,11 +120,14 @@ async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str,
 
     Возвращает десериализованный JSON-ответ или выбрасывает HTTPStatusError.
     """
+    headers = {"X-API-Key": API_SECRET_KEY}
+    inject_trace_carrier(headers)
     for attempt in range(2):
         try:
-            res = await _get_client().get(path, params=params)
-            res.raise_for_status()
-            return res.json()
+            async with trace_span(f"http.client.get:{path}", attributes={"http.target": path}):
+                res = await _get_client().get(path, params=params, headers=headers)
+                res.raise_for_status()
+                return res.json()
         except (httpx.TransportError, httpx.HTTPStatusError) as e:
             if attempt == 0:
                 log.warning(f"⚠️ Сбой запроса к {path} ({e}), повтор через 1 сек...")
@@ -125,6 +135,7 @@ async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str,
             else:
                 log.error(f"❌ Ошибка запроса к {path} после повтора: {e}")
                 raise
+    return {}
 
 
 async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool) -> dict[str, Any]:
@@ -141,7 +152,9 @@ async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool
         target_date=target_date.isoformat() if target_date else "",
         force_refresh=force_refresh,
     )
-    resp = await stub.GetDaySchedule(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
+    metadata = _build_grpc_metadata()
+    async with trace_span("grpc.client.GetDaySchedule", attributes={"rpc.service": "ScheduleService"}):
+        resp = await stub.GetDaySchedule(req, timeout=30.0, metadata=metadata)
     lessons = [proto_to_lesson(item).model_dump() for item in resp.lessons]
     return {"date": resp.date, "lessons": lessons}
 
@@ -179,7 +192,9 @@ async def _fetch_week_schedule_grpc(monday: date | None, force_refresh: bool) ->
         monday=monday.isoformat() if monday else "",
         force_refresh=force_refresh,
     )
-    resp = await stub.GetWeekSchedule(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
+    metadata = _build_grpc_metadata()
+    async with trace_span("grpc.client.GetWeekSchedule", attributes={"rpc.service": "ScheduleService"}):
+        resp = await stub.GetWeekSchedule(req, timeout=30.0, metadata=metadata)
     days = [{"date": d.date, "lessons": [proto_to_lesson(item).model_dump() for item in d.lessons]} for d in resp.days]
     return {"monday": resp.monday, "days": days}
 
@@ -214,7 +229,9 @@ async def _fetch_exams_grpc(force_refresh: bool) -> dict[str, Any]:
     """
     stub = exams_pb2_grpc.ExamsServiceStub(_get_grpc_channel())
     req = exams_pb2.ExamsRequest(force_refresh=force_refresh)
-    resp = await stub.GetExams(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
+    metadata = _build_grpc_metadata()
+    async with trace_span("grpc.client.GetExams", attributes={"rpc.service": "ExamsService"}):
+        resp = await stub.GetExams(req, timeout=30.0, metadata=metadata)
     exams = [proto_to_exam_item(item).model_dump() for item in resp.exams]
     return {"count": resp.count, "exams": exams}
 
@@ -246,7 +263,9 @@ async def _fetch_teachers_grpc(force_refresh: bool) -> dict[str, Any]:
     """
     stub = teachers_pb2_grpc.TeachersServiceStub(_get_grpc_channel())
     req = teachers_pb2.TeachersRequest(force_refresh=force_refresh)
-    resp = await stub.GetTeachers(req, timeout=30.0, metadata=GRPC_AUTH_METADATA)
+    metadata = _build_grpc_metadata()
+    async with trace_span("grpc.client.GetTeachers", attributes={"rpc.service": "TeachersService"}):
+        resp = await stub.GetTeachers(req, timeout=30.0, metadata=metadata)
     teachers = {k: {"full_name": v.full_name, "link_info": v.link_info} for k, v in resp.teachers.items()}
     return {"count": resp.count, "teachers": teachers}
 

@@ -55,7 +55,7 @@ def format_transcription_result(sender_name: str, duration_sec: int, transcripti
     safe_text = html.escape(transcription_text.strip())
     dur_str = format_duration_str(duration_sec)
 
-    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n" f"«{safe_text}»"
+    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n«{safe_text}»"
 
 
 def format_transcription_empty(sender_name: str, duration_sec: int) -> str:
@@ -71,7 +71,7 @@ def format_transcription_empty(sender_name: str, duration_sec: int) -> str:
     safe_name = html.escape(sender_name)
     dur_str = format_duration_str(duration_sec)
 
-    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n" f"<i>(В аудиозаписи не удалось разобрать речь)</i>"
+    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n<i>(В аудиозаписи не удалось разобрать речь)</i>"
 
 
 def format_transcription_error() -> str:

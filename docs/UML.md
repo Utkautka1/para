@@ -45,6 +45,9 @@ Technical specification of the distributed system architecture, end-to-end data 
 13. [Hardened Security Governance & Secrets Lifecycle Management](#13-hardened-security-governance--secrets-lifecycle-management)
 14. [AI Resilience, Circuit Breaker & Prompt Sanitization Architecture](#14-ai-resilience-circuit-breaker--prompt-sanitization-architecture)
 15. [Persistent Relational SQLite Architecture, Incident Alerting & Automated Backups](#15-persistent-relational-sqlite-architecture-incident-alerting--automated-backups)
+16. [OpenTelemetry End-to-End Tracing & Locust 500+ RPS Stress Testing Architecture](#16-opentelemetry-end-to-end-tracing--locust-500-rps-stress-testing-architecture)
+   - 16.1. [Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)](#161-distributed-tracing-span-topology-telegram---grpc---redis---sqlite)
+   - 16.2. [Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation](#162-locust-dual-protocol-load-testing-architecture--morning-peak-simulation)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -2817,5 +2820,125 @@ flowchart TD
 
     RotateBackups --> SendTg
     SendTg --> AdminInbox
+```
+
+---
+
+## 16. OpenTelemetry End-to-End Tracing & Locust 500+ RPS Stress Testing Architecture
+
+### 16.1. Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)
+
+The distributed tracing lifecycle captures the complete span hierarchy across asynchronous boundaries, W3C TraceContext propagation over gRPC HTTP/2 metadata, L2 cache lookups, and SQLite WAL database operations with zero-overhead fallback.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 Telegram Student
+    participant BotMW as 🛡️ TracingMiddleware<br/>(bot/middlewares/tracing.py)
+    participant BotHandler as 🤖 ScheduleHandler<br/>(bot/handlers/user/schedule.py)
+    participant RPCClient as ⚡ gRPC Client<br/>(core/api_client.py)
+    participant RPCServer as 🌐 GrpcTracingInterceptor<br/>(api/grpc/server.py)
+    participant Servicer as ⚙️ ScheduleServicer<br/>(api/grpc/servicers.py)
+    participant RedisL2 as 📦 Redis Cache<br/>(core/redis_cache.py)
+    participant SQLiteDB as 🗄️ SQLite WAL<br/>(core/database.py)
+    participant Jaeger as 🔭 Jaeger Collector<br/>(OTLP gRPC :4317)
+
+    Note over User,BotMW: 1. Ingress Trigger
+    User->>BotMW: Click Inline Button "📅 Сегодня" (sched:today)
+    activate BotMW
+    Note over BotMW: Open Root Span:<br/>telegram.callback:sched<br/>[trace_id: 35a8c8...]
+
+    BotMW->>BotHandler: Dispatch CallbackQuery
+    activate BotHandler
+    BotHandler->>RPCClient: fetch_day_schedule(target_date)
+    activate RPCClient
+
+    Note over RPCClient: Open Child Span:<br/>grpc.client.GetDaySchedule<br/>Inject W3C traceparent into gRPC metadata
+
+    RPCClient->>RPCServer: gRPC Unary Call: GetDaySchedule(req, metadata)
+    activate RPCServer
+
+    Note over RPCServer: Open Child Span:<br/>grpc.server/ScheduleService/GetDaySchedule<br/>Extract W3C traceparent
+
+    RPCServer->>Servicer: Invoke Servicer Implementation
+    activate Servicer
+
+    Servicer->>RedisL2: cache_get("sched:today:2026-10-19")
+    activate RedisL2
+    Note over RedisL2: Open Span: redis.cache_get
+    RedisL2-->>Servicer: Cache Hit / Miss
+    deactivate RedisL2
+
+    opt Cache Miss / Fresh Sync
+        Servicer->>SQLiteDB: get_async_session()
+        activate SQLiteDB
+        Note over SQLiteDB: Open Span: sqlite.session
+        SQLiteDB-->>Servicer: Return Session & Query Records
+        deactivate SQLiteDB
+    end
+
+    Servicer-->>RPCServer: Return DayScheduleResponseProto
+    deactivate Servicer
+
+    RPCServer-->>RPCClient: Return gRPC Binary Response
+    deactivate RPCServer
+
+    RPCClient-->>BotHandler: Return Lesson DTOs
+    deactivate RPCClient
+
+    BotHandler-->>BotMW: Render Reply Markup & Text
+    deactivate BotHandler
+
+    BotMW-->>User: Update Telegram UI via edit_message_text
+    deactivate BotMW
+
+    par Asynchronous Batch Export
+        BotMW--)Jaeger: BatchSpanProcessor -> Export Spans
+        RPCServer--)Jaeger: BatchSpanProcessor -> Export Spans
+    end
+```
+
+### 16.2. Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation
+
+The stress testing harness generates high-throughput concurrent load (500+ RPS) across dual protocols (HTTP REST and binary gRPC) with sub-10ms p99 latency guarantees.
+
+```mermaid
+flowchart TD
+    subgraph LocustRunner["🚀 Locust 2.46+ Headless Engine"]
+        Config["Configuration & Pacing\n(--users 100 --spawn-rate 25 -t 20s)"]
+        UserSpawner{"User Spawner Pool"}
+
+        HttpWorker["HttpScheduleUser (50% Load)\n- GET /schedule/day (pacing 1-4ms)\n- GET /schedule/week\n- GET /health & /metrics"]
+        GrpcWorker["GrpcScheduleUser (50% Load)\n- ScheduleService.GetDaySchedule\n- ScheduleService.GetWeekSchedule\n(Persistent HTTP/2 Channel)"]
+
+        Config --> UserSpawner
+        UserSpawner --> HttpWorker
+        UserSpawner --> GrpcWorker
+    end
+
+    subgraph TargetPlatform["🎓 Para Platform SUT (System Under Test)"]
+        HttpListener["HTTP REST API (:8000)\nFastAPI + uvloop + GZip"]
+        GrpcListener["Binary gRPC Server (:50051)\nHTTP/2 Multiplexing + Keepalive"]
+        RedisPool["Redis 7 L2 In-Memory Cache\n(Sub-millisecond read hit rate)"]
+
+        HttpWorker -->|500+ HTTP RPS| HttpListener
+        GrpcWorker -->|500+ gRPC RPS| GrpcListener
+
+        HttpListener --> RedisPool
+        GrpcListener --> RedisPool
+    end
+
+    subgraph MetricsCollector["📊 Percentile Latency & Telemetry Analysis"]
+        EventFire["events.request.fire()\n(request_type, response_time_ms)"]
+        Aggregator["p50 / p95 / p99 Percentile Calculator"]
+        HTMLReport["HTML Benchmark Report\n(docs/reports/load_test/benchmark.html)"]
+        CSVExport["CSV Benchmark Timeseries\n(docs/reports/load_test/benchmark_stats.csv)"]
+
+        HttpWorker -.-> EventFire
+        GrpcWorker -.-> EventFire
+        EventFire --> Aggregator
+        Aggregator --> HTMLReport
+        Aggregator --> CSVExport
+    end
 ```
 

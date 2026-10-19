@@ -73,9 +73,9 @@ def test_routers_have_no_sync_handlers() -> None:
     for r in routers:
         for observer in [r.message, r.callback_query]:
             for h in observer.handlers:
-                assert inspect.iscoroutinefunction(
-                    h.callback
-                ), f"Синхронный хэндлер {h.callback.__name__} не должен быть в {r}"
+                assert inspect.iscoroutinefunction(h.callback), (
+                    f"Синхронный хэндлер {h.callback.__name__} не должен быть в {r}"
+                )
 
 
 def test_extract_client_config_auth_redirect() -> None:

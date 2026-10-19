@@ -5,7 +5,11 @@
 для изолированного unit-тестирования без обращения к Telegram API.
 """
 
+import os
 from unittest.mock import AsyncMock
+
+# Отключаем отправку трейсов по сети во время выполнения unit-тестов
+os.environ.setdefault("OTEL_ENABLED", "false")
 
 import pytest
 from aiogram import Bot

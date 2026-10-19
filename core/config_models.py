@@ -183,3 +183,11 @@ class DatabaseConfig:
     backup_dir: str = "data/backups"
     backup_retention_days: int = 7
 
+
+@dataclass(frozen=True, slots=True)
+class TracingConfig:
+    """Конфигурация распределенного трейсинга OpenTelemetry и Jaeger OTLP."""
+
+    enabled: bool = True
+    otlp_endpoint: str = "http://jaeger:4317"
+    service_name: str = "para"

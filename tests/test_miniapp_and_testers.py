@@ -76,7 +76,7 @@ def test_tester_session_lifecycle() -> None:
     assert verify_tester_session(token) == 777888
     # Подделка токена
     parts = token.split(":")
-    fake_token = f"{parts[0]}:{parts[1]}:{'f'*64}"
+    fake_token = f"{parts[0]}:{parts[1]}:{'f' * 64}"
     assert verify_tester_session(fake_token) is None
 
 

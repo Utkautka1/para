@@ -32,6 +32,8 @@ anyio==4.15.1
     #   starlette
 apscheduler==3.11.3
     # via -r requirements.txt
+asgiref==3.12.1
+    # via opentelemetry-instrumentation-asgi
 attrs==26.1.0
     # via aiohttp
 certifi==2026.10.18
@@ -51,12 +53,15 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
+googleapis-common-protos==1.75.5
+    # via opentelemetry-exporter-otlp-proto-grpc
 greenlet==3.5.6
     # via -r requirements.txt
 grpcio==1.84.0
     # via
     #   -r requirements.txt
     #   grpcio-tools
+    #   opentelemetry-exporter-otlp-proto-grpc
 grpcio-tools==1.84.0
     # via -r requirements.txt
 h11==0.16.0
@@ -96,9 +101,52 @@ openai==3.35.1
 openpyxl==3.1.5
     # via -r requirements.txt
 opentelemetry-api==1.45.1
-    # via fastapi
+    # via
+    #   -r requirements.txt
+    #   fastapi
+    #   opentelemetry-exporter-otlp-proto-grpc
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-asgi
+    #   opentelemetry-instrumentation-fastapi
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
+opentelemetry-exporter-otlp-common==0.66b1
+    # via opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-common==1.45.1
+    # via opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-otlp-proto-grpc==1.45.1
+    # via -r requirements.txt
+opentelemetry-instrumentation==0.66b1
+    # via
+    #   opentelemetry-instrumentation-asgi
+    #   opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-asgi==0.66b1
+    # via opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-fastapi==0.66b1
+    # via -r requirements.txt
+opentelemetry-proto==1.45.1
+    # via
+    #   opentelemetry-exporter-otlp-proto-common
+    #   opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-sdk==1.45.1
+    # via
+    #   -r requirements.txt
+    #   opentelemetry-exporter-otlp-common
+    #   opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-semantic-conventions==0.66b1
+    # via
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-asgi
+    #   opentelemetry-instrumentation-fastapi
+    #   opentelemetry-sdk
+opentelemetry-util-http==0.66b1
+    # via
+    #   opentelemetry-instrumentation-asgi
+    #   opentelemetry-instrumentation-fastapi
 orjson==3.13.0
     # via -r requirements.txt
+packaging==26.3
+    # via opentelemetry-instrumentation
 prometheus-client==0.26.0
     # via -r requirements.txt
 propcache==0.5.4
@@ -106,7 +154,10 @@ propcache==0.5.4
     #   aiohttp
     #   yarl
 protobuf==7.36.2
-    # via grpcio-tools
+    # via
+    #   googleapis-common-protos
+    #   grpcio-tools
+    #   opentelemetry-proto
 pydantic==2.13.5
     # via
     #   -r requirements.txt
@@ -145,6 +196,9 @@ typing-extensions==4.16.0
     #   grpcio
     #   openai
     #   opentelemetry-api
+    #   opentelemetry-exporter-otlp-proto-grpc
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
     #   python-docx
@@ -160,6 +214,8 @@ uvicorn==0.54.0
     # via -r requirements.txt
 uvloop==0.23.0
     # via -r requirements.txt
+wrapt==2.5.1
+    # via opentelemetry-instrumentation
 yarl==1.25.1
     # via aiohttp
 

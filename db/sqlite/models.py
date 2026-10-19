@@ -18,7 +18,6 @@ class Base(DeclarativeBase):
     """Базовый класс для всех реляционных моделей проекта."""
 
 
-
 class IncidentSeverity(StrEnum):
     """Уровни критичности инцидентов системы."""
 
@@ -68,4 +67,3 @@ class SystemIncident(Base):
     trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     resolved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-

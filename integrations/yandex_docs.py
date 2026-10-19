@@ -389,7 +389,7 @@ def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes:
 
     Возвращает обновленные бинарные байты xlsx-файла.
     """
-    sheet_map = {f"xl/worksheets/sheet{i+1}.xml": name for i, name in enumerate(wb.sheetnames)}
+    sheet_map = {f"xl/worksheets/sheet{i + 1}.xml": name for i, name in enumerate(wb.sheetnames)}
     in_zip = zipfile.ZipFile(io.BytesIO(raw_bytes))
     out_buf = io.BytesIO()
     with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as out_zip:

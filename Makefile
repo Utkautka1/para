@@ -27,6 +27,9 @@ test-fast: ## Execute test suite in quiet summary mode
 test-cov: ## Execute test suite with terminal and XML coverage report
 	PYTHONPATH=. $(PYTEST) tests/ --cov=. --cov-report=term:skip-covered --cov-report=xml:coverage.xml -q
 
+load-test: ## Execute 500+ RPS load benchmark suite via Locust
+	./scripts/run_load_test.sh
+
 compile-deps: ## Compile deterministic requirements.lock from requirements.txt via pip-compile
 	$(VENV)/bin/pip-compile --output-file=requirements.lock --strip-extras requirements.txt
 

@@ -21,6 +21,7 @@ from core.config_models import (
     RedisConfig,
     ScheduleConfig,
     TelegramConfig,
+    TracingConfig,
     WhisperConfig,
     YandexConfig,
 )
@@ -110,6 +111,21 @@ def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]:
         return default
 
     return tuple(item.strip() for item in raw_val.split(",") if item.strip())
+
+
+def get_env_bool(key: str, default: bool = False) -> bool:
+    """
+    Парсит булево значение из переменной окружения.
+
+    Поддерживает строковые представления truthy ('true', '1', 'yes', 'on')
+    и falsy ('false', '0', 'no', 'off').
+
+    Возвращает логическое значение флага.
+    """
+    raw_val = os.getenv(key)
+    if raw_val is None:
+        return default
+    return raw_val.strip().lower() in ("true", "1", "yes", "on")
 
 
 # ==============================================================================
@@ -544,3 +560,18 @@ DURATION_MULTIPLIERS: dict[str, int] = {
     "д": 86400,
     "d": 86400,
 }
+
+
+# ==============================================================================
+# 13. DISTRIBUTED TRACING CONFIGURATION (OPENTELEMETRY / JAEGER)
+# ==============================================================================
+
+tracing_config = TracingConfig(
+    enabled=get_env_bool("OTEL_ENABLED", True),
+    otlp_endpoint=get_env("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317"),
+    service_name=get_env("OTEL_SERVICE_NAME", "para"),
+)
+
+OTEL_ENABLED: bool = tracing_config.enabled
+OTEL_EXPORTER_OTLP_ENDPOINT: str = tracing_config.otlp_endpoint
+OTEL_SERVICE_NAME: str = tracing_config.service_name

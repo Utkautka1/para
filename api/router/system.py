@@ -113,4 +113,3 @@ async def trigger_system_backup() -> BackupTriggerResponse:
     if not ok:
         raise HTTPException(status_code=500, detail="Backup execution failed")
     return BackupTriggerResponse(status="ok", message="Automated backup completed and dispatched to admin")
-

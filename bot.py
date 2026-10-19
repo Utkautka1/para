@@ -106,15 +106,18 @@ def setup_all_middlewares() -> None:
     """
     Регистрирует глобальные middleware для отказоустойчивости бота.
 
-    Подключает автоповтор запросов при лимитах Telegram (RetryAfterMiddleware)
-    и защиту от спама частыми нажатиями инлайн-кнопок (CallbackThrottleMiddleware).
+    Подключает трейсинг (TracingMiddleware), автоповтор запросов
+    (RetryAfterMiddleware) и защиту от спама (CallbackThrottleMiddleware).
 
     Ничего не возвращает.
     """
 
     from bot.middlewares.retry import RetryAfterMiddleware
     from bot.middlewares.throttling import CallbackThrottleMiddleware
+    from bot.middlewares.tracing import TracingMiddleware
 
+    dp.message.middleware(TracingMiddleware())
+    dp.callback_query.middleware(TracingMiddleware())
     dp.message.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(CallbackThrottleMiddleware())
@@ -151,7 +154,9 @@ async def _init_bot_subsystems() -> None:
 
     from bot.commands import register_bot_commands
     from core.database import init_db
+    from core.telemetry import setup_telemetry
 
+    setup_telemetry("para-bot")
     register_all_routers()
     setup_all_middlewares()
     await init_redis()

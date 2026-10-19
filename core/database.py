@@ -16,6 +16,7 @@ from sqlalchemy.pool import NullPool
 
 from config import DATABASE_URL, SQLITE_DB_PATH, SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
+from core.telemetry import trace_span
 from utils.storage import sync_load_json
 
 log = get_logger("database")
@@ -68,7 +69,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """Контекстный менеджер для безопасной работы с асинхронной сессией БД."""
     factory = get_session_factory()
-    async with factory() as session:
+    async with trace_span("sqlite.session", attributes={"db.system": "sqlite"}), factory() as session:
         try:
             yield session
             await session.commit()
