@@ -1,9 +1,9 @@
 # Component Reference: `bot.py`
-> **File Path**: [`bot.py`](../../bot.py)  
-> **Subsystem**: `Telegram Gateway`  
-> **Architecture Layer**: `Event Gateway & Bot Dispatcher`  
-> **Concurrency Model**: `Long-Polling Aiogram 3.4 Worker Mesh`  
-> **Persistence Backend**: `RedisStorage FSM State Engine`  
+> **File Path**: [`bot.py`](../../bot.py)
+> **Subsystem**: `Telegram Gateway`
+> **Architecture Layer**: `Event Gateway & Bot Dispatcher`
+> **Concurrency Model**: `Long-Polling Aiogram 3.4 Worker Mesh`
+> **Persistence Backend**: `RedisStorage FSM State Engine`
 > **Service Level Objective**: `Sub-100ms Telegram Message Ingress`
 
 ## 1. Architectural Role & Responsibilities

@@ -1,9 +1,9 @@
 # Component Reference: `utils/doc_generator.py`
-> **File Path**: [`utils/doc_generator.py`](../../utils/doc_generator.py)  
-> **Subsystem**: `GOST Document Generator`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`utils/doc_generator.py`](../../utils/doc_generator.py)
+> **Subsystem**: `GOST Document Generator`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

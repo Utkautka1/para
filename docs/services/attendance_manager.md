@@ -1,9 +1,9 @@
 # Component Reference: `services/attendance_manager.py`
-> **File Path**: [`services/attendance_manager.py`](../../services/attendance_manager.py)  
-> **Subsystem**: `Attendance Operations`  
-> **Architecture Layer**: `Domain Business Service`  
-> **Concurrency Model**: `AsyncIO Event Loop + Redis Distributed Locks`  
-> **Persistence Backend**: `Redis L2 Append-Only + WOPI Cloud Spreadsheets`  
+> **File Path**: [`services/attendance_manager.py`](../../services/attendance_manager.py)
+> **Subsystem**: `Attendance Operations`
+> **Architecture Layer**: `Domain Business Service`
+> **Concurrency Model**: `AsyncIO Event Loop + Redis Distributed Locks`
+> **Persistence Backend**: `Redis L2 Append-Only + WOPI Cloud Spreadsheets`
 > **Service Level Objective**: `Sub-10ms Cache Writes / 3s WOPI Roundtrip`
 
 ## 1. Architectural Role & Responsibilities

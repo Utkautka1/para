@@ -1,9 +1,9 @@
 # Component Reference: `config.py`
-> **File Path**: [`config.py`](../../config.py)  
-> **Subsystem**: `System Configuration`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`config.py`](../../config.py)
+> **Subsystem**: `System Configuration`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

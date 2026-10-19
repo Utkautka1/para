@@ -1,9 +1,9 @@
 # Component Reference: `bot/templates/user/messages.py`
-> **File Path**: [`bot/templates/user/messages.py`](../../bot/templates/user/messages.py)  
-> **Subsystem**: `User Message Formatter`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/templates/user/messages.py`](../../bot/templates/user/messages.py)
+> **Subsystem**: `User Message Formatter`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

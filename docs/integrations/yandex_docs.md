@@ -1,9 +1,9 @@
 # Component Reference: `integrations/yandex_docs.py`
-> **File Path**: [`integrations/yandex_docs.py`](../../integrations/yandex_docs.py)  
-> **Subsystem**: `WOPI Cloud Service`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`integrations/yandex_docs.py`](../../integrations/yandex_docs.py)
+> **Subsystem**: `WOPI Cloud Service`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

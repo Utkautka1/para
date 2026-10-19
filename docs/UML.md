@@ -523,26 +523,49 @@ classDiagram
         +recover_stale_hw_tasks() int
     }
 
-    class SolverWorker {
-        +run() void
-        +solve_single(task) void
-        +send_result(user_id, docx) void
+    class SolverEntrypoint {
+        +main() void
+        -_shutdown_resources() void
+    }
+
+    class TaskProcessor {
+        +run_solver_loop(tg_bot, semaphore) void
+        +execute_single_task(tg_bot, task) void
+        -_guarded_execute_task(tg_bot, task, semaphore) void
+        -_drain_active_tasks(active_tasks) void
+    }
+
+    class PayloadExtractor {
+        +download_file_bytes(tg_bot, file_id, file_size) bytes
+        +parse_file_payload(doc_bytes, file_name, mime, prompt) tuple
+        +resolve_task_payload(tg_bot, task) tuple
+        +extract_docx_data(doc_bytes) tuple
+        +extract_pdf_data(doc_bytes) str
+    }
+
+    class TelegramReporter {
+        +send_solution_to_telegram(tg_bot, task, doc_path) void
+        +notify_task_error(tg_bot, task) void
+        +build_post_link(chat_id, message_id) str
     }
 
     class DocxParser {
-        +create_docx_from_solution(solution_md) bytes
+        +create_solution_docx(solution_text, output_path) str
         -apply_gost_formatting(doc) void
         -add_formatted_formulas(doc, text) void
     }
 
     class DeepSeekClient {
-        +solve_task_prompt(task_text, image_b64) str
+        +solve_homework(image_bytes, text_prompt) str
     }
 
-    SolverWorker --> RedisCacheManager : BLMOVE and LREM queue operations
-    SolverWorker ..> HomeworkTask : deserializes JSON
-    SolverWorker --> DeepSeekClient : requests step reasoning
-    SolverWorker --> DocxParser : compiles GOST Word document
+    SolverEntrypoint --> TaskProcessor : orchestrates worker loop
+    TaskProcessor --> RedisCacheManager : BLMOVE / LREM / ACK / NACK queue operations
+    TaskProcessor ..> HomeworkTask : deserializes JSON
+    TaskProcessor --> PayloadExtractor : downloads & extracts task attachments
+    TaskProcessor --> DeepSeekClient : requests step reasoning
+    TaskProcessor --> DocxParser : compiles GOST Word document
+    TaskProcessor --> TelegramReporter : dispatches solution document to Telegram
 ```
 
 ### Reliable Task Processing

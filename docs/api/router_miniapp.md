@@ -1,9 +1,9 @@
 # Component Reference: `api/router/miniapp.py`
-> **File Path**: [`api/router/miniapp.py`](../../api/router/miniapp.py)  
-> **Subsystem**: `MiniApp API`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`api/router/miniapp.py`](../../api/router/miniapp.py)
+> **Subsystem**: `MiniApp API`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

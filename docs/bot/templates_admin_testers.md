@@ -1,9 +1,9 @@
 # Component Reference: `bot/templates/admin/testers.py`
-> **File Path**: [`bot/templates/admin/testers.py`](../../bot/templates/admin/testers.py)  
-> **Subsystem**: `Tester Keyboards & States`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/templates/admin/testers.py`](../../bot/templates/admin/testers.py)
+> **Subsystem**: `Tester Keyboards & States`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

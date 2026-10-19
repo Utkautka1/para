@@ -1,9 +1,9 @@
 # Component Reference: `bot/handlers/user/voice_transcribe.py`
-> **File Path**: [`bot/handlers/user/voice_transcribe.py`](../../bot/handlers/user/voice_transcribe.py)  
-> **Subsystem**: `Voice Transcription Handler`  
-> **Architecture Layer**: `Telegram User Media Ingress`  
-> **Concurrency Model**: `Aiogram 3 Async Inbound Event Loop + Per-User Rate Limiting`  
-> **Persistence Backend**: `Stateless Telegram Ingress & Memory In-Flight State`  
+> **File Path**: [`bot/handlers/user/voice_transcribe.py`](../../bot/handlers/user/voice_transcribe.py)
+> **Subsystem**: `Voice Transcription Handler`
+> **Architecture Layer**: `Telegram User Media Ingress`
+> **Concurrency Model**: `Aiogram 3 Async Inbound Event Loop + Per-User Rate Limiting`
+> **Persistence Backend**: `Stateless Telegram Ingress & Memory In-Flight State`
 > **Service Level Objective**: `Sub-100ms Telegram Message Ingress & Auto-Splitting`
 
 ## 1. Architectural Role & Responsibilities

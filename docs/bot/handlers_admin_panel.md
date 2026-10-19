@@ -1,9 +1,9 @@
 # Component Reference: `bot/handlers/admin/panel.py`
-> **File Path**: [`bot/handlers/admin/panel.py`](../../bot/handlers/admin/panel.py)  
-> **Subsystem**: `Admin Control Panel`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/handlers/admin/panel.py`](../../bot/handlers/admin/panel.py)
+> **Subsystem**: `Admin Control Panel`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

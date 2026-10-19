@@ -1,9 +1,9 @@
 # Component Reference: `bot/handlers/user/attendance.py`
-> **File Path**: [`bot/handlers/user/attendance.py`](../../bot/handlers/user/attendance.py)  
-> **Subsystem**: `User Attendance Flow`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/handlers/user/attendance.py`](../../bot/handlers/user/attendance.py)
+> **Subsystem**: `User Attendance Flow`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

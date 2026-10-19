@@ -1,9 +1,9 @@
 # Component Reference: `integrations/yandex_keepalive.py`
-> **File Path**: [`integrations/yandex_keepalive.py`](../../integrations/yandex_keepalive.py)  
-> **Subsystem**: `Session Keepalive`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`integrations/yandex_keepalive.py`](../../integrations/yandex_keepalive.py)
+> **Subsystem**: `Session Keepalive`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

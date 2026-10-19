@@ -1,9 +1,9 @@
 # Component Reference: `services/testers_manager.py`
-> **File Path**: [`services/testers_manager.py`](../../services/testers_manager.py)  
-> **Subsystem**: `Testing Whitelist`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`services/testers_manager.py`](../../services/testers_manager.py)
+> **Subsystem**: `Testing Whitelist`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

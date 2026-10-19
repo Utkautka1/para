@@ -1,9 +1,9 @@
 # Component Reference: `bot/templates/admin/keyboards.py`
-> **File Path**: [`bot/templates/admin/keyboards.py`](../../bot/templates/admin/keyboards.py)  
-> **Subsystem**: `Admin Panel Keyboards`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/templates/admin/keyboards.py`](../../bot/templates/admin/keyboards.py)
+> **Subsystem**: `Admin Panel Keyboards`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

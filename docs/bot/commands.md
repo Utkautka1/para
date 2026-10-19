@@ -1,9 +1,9 @@
 # Component Reference: `bot/commands.py`
-> **File Path**: [`bot/commands.py`](../../bot/commands.py)  
-> **Subsystem**: `Bot Menu Registry`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/commands.py`](../../bot/commands.py)
+> **Subsystem**: `Bot Menu Registry`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

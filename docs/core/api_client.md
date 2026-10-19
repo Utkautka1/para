@@ -1,9 +1,9 @@
 # Component Reference: `core/api_client.py`
-> **File Path**: [`core/api_client.py`](../../core/api_client.py)  
-> **Subsystem**: `Internal RPC Client`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`core/api_client.py`](../../core/api_client.py)
+> **Subsystem**: `Internal RPC Client`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

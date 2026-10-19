@@ -1,9 +1,9 @@
 # Component Reference: `utils/storage.py`
-> **File Path**: [`utils/storage.py`](../../utils/storage.py)  
-> **Subsystem**: `Atomic Storage Engine`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`utils/storage.py`](../../utils/storage.py)
+> **Subsystem**: `Atomic Storage Engine`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

@@ -1,9 +1,9 @@
 # Component Reference: `utils/miniapp_auth.py`
-> **File Path**: [`utils/miniapp_auth.py`](../../utils/miniapp_auth.py)  
-> **Subsystem**: `HMAC-SHA256 Auth`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`utils/miniapp_auth.py`](../../utils/miniapp_auth.py)
+> **Subsystem**: `HMAC-SHA256 Auth`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

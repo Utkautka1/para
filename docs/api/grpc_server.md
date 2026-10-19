@@ -1,9 +1,9 @@
 # Component Reference: `api/grpc/server.py`
-> **File Path**: [`api/grpc/server.py`](../../api/grpc/server.py)  
-> **Subsystem**: `gRPC HTTP/2 Server`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`api/grpc/server.py`](../../api/grpc/server.py)
+> **Subsystem**: `gRPC HTTP/2 Server`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

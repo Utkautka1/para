@@ -1,9 +1,9 @@
 # Component Reference: `services/attendance_topic_updater.py`
-> **File Path**: [`services/attendance_topic_updater.py`](../../services/attendance_topic_updater.py)  
-> **Subsystem**: `Telemetry Topic`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`services/attendance_topic_updater.py`](../../services/attendance_topic_updater.py)
+> **Subsystem**: `Telemetry Topic`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

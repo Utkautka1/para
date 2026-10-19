@@ -1,9 +1,9 @@
 # Component Reference: `integrations/docx_parser.py`
-> **File Path**: [`integrations/docx_parser.py`](../../integrations/docx_parser.py)  
-> **Subsystem**: `Cloud DOCX Parser`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`integrations/docx_parser.py`](../../integrations/docx_parser.py)
+> **Subsystem**: `Cloud DOCX Parser`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

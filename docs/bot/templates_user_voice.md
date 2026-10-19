@@ -1,9 +1,9 @@
 # Component Reference: `bot/templates/user/voice.py`
-> **File Path**: [`bot/templates/user/voice.py`](../../bot/templates/user/voice.py)  
-> **Subsystem**: `Voice Message Templates`  
-> **Architecture Layer**: `Presentation Markup & Sanitization`  
-> **Concurrency Model**: `Synchronous Pure Function Rendering`  
-> **Persistence Backend**: `Stateless HTML Escape & Telegram Formatter`  
+> **File Path**: [`bot/templates/user/voice.py`](../../bot/templates/user/voice.py)
+> **Subsystem**: `Voice Message Templates`
+> **Architecture Layer**: `Presentation Markup & Sanitization`
+> **Concurrency Model**: `Synchronous Pure Function Rendering`
+> **Persistence Backend**: `Stateless HTML Escape & Telegram Formatter`
 > **Service Level Objective**: `Sub-1µs Render Latency`
 
 ## 1. Architectural Role & Responsibilities

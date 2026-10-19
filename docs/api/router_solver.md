@@ -1,9 +1,9 @@
 # Component Reference: `api/router/solver.py`
-> **File Path**: [`api/router/solver.py`](../../api/router/solver.py)  
-> **Subsystem**: `HW Solver API`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`api/router/solver.py`](../../api/router/solver.py)
+> **Subsystem**: `HW Solver API`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

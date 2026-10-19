@@ -1,9 +1,9 @@
 # Component Reference: `bot/filters/auth.py`
-> **File Path**: [`bot/filters/auth.py`](../../bot/filters/auth.py)  
-> **Subsystem**: `Bot Auth Filters`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/filters/auth.py`](../../bot/filters/auth.py)
+> **Subsystem**: `Bot Auth Filters`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

@@ -1,9 +1,9 @@
 # Component Reference: `api/handlers.py`
-> **File Path**: [`api/handlers.py`](../../api/handlers.py)  
-> **Subsystem**: `REST Request Handlers`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`api/handlers.py`](../../api/handlers.py)
+> **Subsystem**: `REST Request Handlers`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

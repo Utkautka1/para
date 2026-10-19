@@ -1,9 +1,9 @@
 # Component Reference: `bot/middlewares/retry.py`
-> **File Path**: [`bot/middlewares/retry.py`](../../bot/middlewares/retry.py)  
-> **Subsystem**: `Network Retry Middleware`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`bot/middlewares/retry.py`](../../bot/middlewares/retry.py)
+> **Subsystem**: `Network Retry Middleware`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

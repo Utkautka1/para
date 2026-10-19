@@ -1,9 +1,9 @@
 # Component Reference: `services/schedule_parser.py`
-> **File Path**: [`services/schedule_parser.py`](../../services/schedule_parser.py)  
-> **Subsystem**: `KTMU Timetable Engine`  
-> **Architecture Layer**: `Upstream Ingress & Harvester`  
-> **Concurrency Model**: `AsyncIO Non-blocking Scraper`  
-> **Persistence Backend**: `L1 RAM In-Memory (<10µs) + L2 Redis Snapshots`  
+> **File Path**: [`services/schedule_parser.py`](../../services/schedule_parser.py)
+> **Subsystem**: `KTMU Timetable Engine`
+> **Architecture Layer**: `Upstream Ingress & Harvester`
+> **Concurrency Model**: `AsyncIO Non-blocking Scraper`
+> **Persistence Backend**: `L1 RAM In-Memory (<10µs) + L2 Redis Snapshots`
 > **Service Level Objective**: `< 5ms Cached Response / 500ms Upstream Harvest`
 
 ## 1. Architectural Role & Responsibilities

@@ -1,9 +1,9 @@
 # Component Reference: `services/transcriber.py`
-> **File Path**: [`services/transcriber.py`](../../services/transcriber.py)  
-> **Subsystem**: `Speech-to-Text Whisper Engine`  
-> **Architecture Layer**: `Deep Learning Audio Ingress Service`  
-> **Concurrency Model**: `AsyncIO Event Loop + Non-blocking Thread Pool + GPU Semaphore(1)`  
-> **Persistence Backend**: `RAM-Disk (/dev/shm) Ephemeral Audio Buffer + Local Model Weights`  
+> **File Path**: [`services/transcriber.py`](../../services/transcriber.py)
+> **Subsystem**: `Speech-to-Text Whisper Engine`
+> **Architecture Layer**: `Deep Learning Audio Ingress Service`
+> **Concurrency Model**: `AsyncIO Event Loop + Non-blocking Thread Pool + GPU Semaphore(1)`
+> **Persistence Backend**: `RAM-Disk (/dev/shm) Ephemeral Audio Buffer + Local Model Weights`
 > **Service Level Objective**: `Sub-0.5s Large-v3-Turbo Inference / Zero-Disk Wear`
 
 ## 1. Architectural Role & Responsibilities

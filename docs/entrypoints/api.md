@@ -1,9 +1,9 @@
 # Component Reference: `api.py`
-> **File Path**: [`api.py`](../../api.py)  
-> **Subsystem**: `Ingress Gateway`  
-> **Architecture Layer**: `Dual-Protocol Microservice Ingress`  
-> **Concurrency Model**: `uvloop + httptools + gRPC HTTP/2`  
-> **Persistence Backend**: `Stateless High-Throughput Proxy`  
+> **File Path**: [`api.py`](../../api.py)
+> **Subsystem**: `Ingress Gateway`
+> **Architecture Layer**: `Dual-Protocol Microservice Ingress`
+> **Concurrency Model**: `uvloop + httptools + gRPC HTTP/2`
+> **Persistence Backend**: `Stateless High-Throughput Proxy`
 > **Service Level Objective**: `< 0.3ms gRPC RPC / < 2ms REST Endpoint`
 
 ## 1. Architectural Role & Responsibilities

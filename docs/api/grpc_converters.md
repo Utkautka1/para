@@ -1,9 +1,9 @@
 # Component Reference: `api/grpc/converters.py`
-> **File Path**: [`api/grpc/converters.py`](../../api/grpc/converters.py)  
-> **Subsystem**: `Protobuf Converters`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`api/grpc/converters.py`](../../api/grpc/converters.py)
+> **Subsystem**: `Protobuf Converters`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

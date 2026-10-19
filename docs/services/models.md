@@ -1,9 +1,9 @@
 # Component Reference: `services/models.py`
-> **File Path**: [`services/models.py`](../../services/models.py)  
-> **Subsystem**: `Domain Models`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`services/models.py`](../../services/models.py)
+> **Subsystem**: `Domain Models`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

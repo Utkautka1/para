@@ -1,9 +1,9 @@
 # Component Reference: `worker.py`
-> **File Path**: [`worker.py`](../../worker.py)  
-> **Subsystem**: `Background Daemon`  
-> **Architecture Layer**: `Enterprise Microservice Subsystem`  
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`  
-> **Persistence Backend**: `Redis 7 Persistent Store`  
+> **File Path**: [`worker.py`](../../worker.py)
+> **Subsystem**: `Background Daemon`
+> **Architecture Layer**: `Enterprise Microservice Subsystem`
+> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
+> **Persistence Backend**: `Redis 7 Persistent Store`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities
