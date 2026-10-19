@@ -12,6 +12,7 @@ from typing import Any
 
 from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from config import DATABASE_URL, SQLITE_DB_PATH, SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
@@ -40,6 +41,7 @@ def get_database_engine() -> AsyncEngine:
         os.makedirs(os.path.dirname(SQLITE_DB_PATH) or ".", exist_ok=True)
         _engine = create_async_engine(
             DATABASE_URL,
+            poolclass=NullPool,
             echo=False,
             future=True,
         )

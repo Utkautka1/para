@@ -32,7 +32,10 @@ class IncidentType(StrEnum):
 def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) -> bool:
     """Проверяет необходимость троттлинга уведомления для предотвращения спама."""
     now = time.monotonic()
-    last_sent = _last_alert_timestamps.get(incident_type, 0.0)
+    if incident_type not in _last_alert_timestamps:
+        _last_alert_timestamps[incident_type] = now
+        return False
+    last_sent = _last_alert_timestamps[incident_type]
     if (now - last_sent) < cooldown_seconds:
         return True
     _last_alert_timestamps[incident_type] = now

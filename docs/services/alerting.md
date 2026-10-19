@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L32–L39 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
-| [`_format_alert_text`](#_format_alert_text) | Function | L42–L54 | `str` | Executes core domain logic for `_format_alert_text`. |
-| [`send_admin_alert`](#send_admin_alert) | Function | L57–L87 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L32–L42 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
+| [`_format_alert_text`](#_format_alert_text) | Function | L45–L57 | `str` | Executes core domain logic for `_format_alert_text`. |
+| [`send_admin_alert`](#send_admin_alert) | Function | L60–L90 | `bool` | Dispatches notification message via Telegram API for `s... |
 
 ---
 
@@ -38,7 +38,7 @@ Encapsulates domain entities and data transfer logic for `IncidentType`.
 def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L32-L39`](../../services/alerting.py#L32-L39)
+- **Source Reference**: [`services/alerting.py#L32-L42`](../../services/alerting.py#L32-L42)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -72,7 +72,7 @@ result = _should_throttle_alert(incident_type=..., cooldown_seconds=...)
 def _format_alert_text( incident_type: str, severity: str, title: str, description: str, trace_id: str | None = None ) -> str
 ```
 
-- **Source Reference**: [`services/alerting.py#L42-L54`](../../services/alerting.py#L42-L54)
+- **Source Reference**: [`services/alerting.py#L45-L57`](../../services/alerting.py#L45-L57)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -109,7 +109,7 @@ result = _format_alert_text(incident_type=..., severity=..., title=...)
 async def send_admin_alert( incident_type: str, title: str, description: str, severity: str = IncidentSeverity.WARNING, trace_id: str | None = None, ) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L57-L87`](../../services/alerting.py#L57-L87)
+- **Source Reference**: [`services/alerting.py#L60-L90`](../../services/alerting.py#L60-L90)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
