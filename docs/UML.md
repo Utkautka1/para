@@ -2396,7 +2396,7 @@ flowchart TD
 
     subgraph Stage2["2. Isolated Test Matrix (Strict AsyncIO)"]
         Py311["Pytest Suite\n(Python 3.11 Runtime)"]
-        Py312["Pytest Suite\n(Python 3.12 Runtime)"]
+        Py312["Pytest Suite + Coverage\n(Python 3.12 + XML Artifact)"]
         EnvCI["Mock Env Loader\n(.env.ci -> .env)"]
     end
 

@@ -40,6 +40,9 @@ data/*.json
 *.swp
 .DS_Store
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 .agents/
 skills-lock.json
 skills-logs.json

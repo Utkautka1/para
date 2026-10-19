@@ -23,6 +23,12 @@ test: ## Execute complete test suite (588 tests)
 test-fast: ## Execute test suite in quiet summary mode
 	PYTHONPATH=. $(PYTEST) tests/ -q
 
+test-cov: ## Execute test suite with terminal and XML coverage report
+	PYTHONPATH=. $(PYTEST) tests/ --cov=. --cov-report=term:skip-covered --cov-report=xml:coverage.xml -q
+
+compile-deps: ## Compile deterministic requirements.lock from requirements.txt via pip-compile
+	$(VENV)/bin/pip-compile --output-file=requirements.lock --strip-extras requirements.txt
+
 lint: ## Execute strict Ruff linter and Bandit security AST analysis
 	$(RUFF) check .
 	$(BANDIT) -r services/ bot/ core/ api/ -c pyproject.toml

@@ -19,3 +19,19 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["api", "bot", "core", "db", "integrations", "services", "utils", "config"]
+
+[tool.coverage.run]
+source = ["api", "bot", "core", "db", "integrations", "services", "utils", "config"]
+omit = [
+    "tests/*",
+    "*/site-packages/*",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

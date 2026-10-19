@@ -22,8 +22,8 @@ graph TD
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_InvalidHttpFilter.filter`](#_invalidhttpfilterfilter) | Method | L26–L36 | `bool` | Executes core domain logic for `filter`. |
-| [`lifespan`](#lifespan) | Function | L40–L57 | `AsyncGenerator[None, None]` | Executes core domain logic for `lifespan`. |
+| [`_InvalidHttpFilter.filter`](#_invalidhttpfilterfilter) | Method | L28–L38 | `bool` | Executes core domain logic for `filter`. |
+| [`lifespan`](#lifespan) | Function | L42–L62 | `AsyncGenerator[None, None]` | Executes core domain logic for `lifespan`. |
 
 ---
 
@@ -38,7 +38,7 @@ Encapsulates domain entities and data transfer logic for `_InvalidHttpFilter`.
 def filter(self, record: logging.LogRecord) -> bool
 ```
 
-- **Source Reference**: [`api.py#L26-L36`](../../api.py#L26-L36)
+- **Source Reference**: [`api.py#L28-L38`](../../api.py#L28-L38)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -71,7 +71,7 @@ result = filter(record=...)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]
 ```
 
-- **Source Reference**: [`api.py#L40-L57`](../../api.py#L40-L57)
+- **Source Reference**: [`api.py#L42-L62`](../../api.py#L42-L62)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AsyncGenerator[None, None]`
 

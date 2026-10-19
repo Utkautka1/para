@@ -15,7 +15,9 @@ from fastapi import FastAPI
 from api import create_app
 from api.grpc.server import create_grpc_server, start_grpc_server, stop_grpc_server
 from config import API_HOST, API_PORT, GRPC_HOST, GRPC_PORT
+from core.api_client import close_api_client
 from core.logger import get_logger
+from core.redis import close_redis, init_redis
 
 log = get_logger("api_main")
 
@@ -39,10 +41,10 @@ class _InvalidHttpFilter(logging.Filter):
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
-    Управляет жизненным циклом gRPC-сервера параллельно с веб-приложением FastAPI.
+    Управляет жизненным циклом gRPC-сервера и соединений FastAPI.
 
-    Инициализирует и запускает gRPC-сервер перед приемом трафика.
-    В блоке finally корректно останавливает gRPC-сервер с graceful shutdown.
+    Инициализирует gRPC-сервер и Redis перед приемом трафика.
+    При завершении приложения корректно закрывает gRPC, Redis и API-клиенты.
 
     Ничего не возвращает (асинхронный генератор контекста).
     """
@@ -50,11 +52,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     grpc_server = create_grpc_server()
     await start_grpc_server(grpc_server, GRPC_HOST, GRPC_PORT)
     log.info(f"⚡ gRPC сервер активен на {GRPC_HOST}:{GRPC_PORT}")
+    await init_redis()
 
     try:
         yield
     finally:
         await stop_grpc_server(grpc_server)
+        await close_redis()
+        await close_api_client()
 
 
 app = create_app()

@@ -11,7 +11,7 @@ import asyncio
 import config
 from core.bot import bot
 from core.logger import get_logger
-from core.redis import init_redis, redis_client
+from core.redis import close_redis, init_redis
 from core.redis_cache import recover_stale_hw_tasks
 from integrations.deepseek import close_deepseek_client
 from services.solver import run_solver_loop
@@ -29,9 +29,7 @@ async def _shutdown_resources() -> None:
     Ничего не возвращает.
     """
     await close_deepseek_client()
-    if redis_client:
-        await redis_client.aclose()
-
+    await close_redis()
     await bot.session.close()
     log.info("Воркер para-solver корректно остановлен.")
 

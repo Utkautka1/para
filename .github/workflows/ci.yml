@@ -88,8 +88,15 @@ jobs:
       - name: Prepare Test Environment
         run: cp .env.ci .env
 
-      - name: Run Pytest Suite
-        run: PYTHONPATH=. pytest tests/ -v
+      - name: Run Pytest Suite with Coverage
+        run: PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=xml:coverage.xml --cov-report=term:skip-covered
+
+      - name: Upload Test Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: coverage-report
+          path: coverage.xml
 
   docker-build:
     name: Verify Docker Images Build
