@@ -20,9 +20,21 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import (
+    ALWAYS_OFF,
+    ALWAYS_ON,
+    ParentBased,
+    Sampler,
+    TraceIdRatioBased,
+)
 from opentelemetry.trace import Status, StatusCode
 
-from config import OTEL_ENABLED, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME
+from config import (
+    OTEL_ENABLED,
+    OTEL_EXPORTER_OTLP_ENDPOINT,
+    OTEL_SAMPLING_RATIO,
+    OTEL_SERVICE_NAME,
+)
 from core.logger import get_logger, set_trace_id
 
 log = get_logger("telemetry")
@@ -30,12 +42,28 @@ log = get_logger("telemetry")
 _IS_INITIALIZED: bool = False
 
 
-def setup_telemetry(service_name: str | None = None) -> None:
+def get_telemetry_sampler(ratio: float = 1.0) -> Sampler:
+    """
+    Формирует иерархический семплер для ограничения объема собираемых трейсов.
+
+    Используем ParentBased, чтобы дочерние вызовы наследовали статус родителя.
+    Возвращает экземпляр Sampler для конфигурации TracerProvider.
+    """
+    if ratio >= 1.0:
+        return ParentBased(ALWAYS_ON)
+    if ratio <= 0.0:
+        return ParentBased(ALWAYS_OFF)
+    return ParentBased(TraceIdRatioBased(ratio))
+
+
+def setup_telemetry(
+    service_name: str | None = None,
+    sampling_ratio: float | None = None,
+) -> None:
     """
     Инициализирует глобальный TracerProvider с экспортером OTLP gRPC.
 
-    Если OTEL_ENABLED=False, оставляет no-op провайдер по умолчанию,
-    гарантируя нулевые сетевые издержки и отсутствие блокировок.
+    Настраивает сэмплирование для контроля накладных расходов сети.
     """
     global _IS_INITIALIZED
     if _IS_INITIALIZED or not OTEL_ENABLED:
@@ -43,13 +71,15 @@ def setup_telemetry(service_name: str | None = None) -> None:
         return
 
     name = service_name or OTEL_SERVICE_NAME
+    ratio = OTEL_SAMPLING_RATIO if sampling_ratio is None else sampling_ratio
+    sampler = get_telemetry_sampler(ratio)
     resource = Resource.create({"service.name": name})
-    provider = TracerProvider(resource=resource)
+    provider = TracerProvider(resource=resource, sampler=sampler)
     exporter = OTLPSpanExporter(endpoint=OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True)
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
     _IS_INITIALIZED = True
-    log.info("OpenTelemetry инициализирован: service=%s, endpoint=%s", name, OTEL_EXPORTER_OTLP_ENDPOINT)
+    log.info("OpenTelemetry инициализирован: service=%s, ratio=%.2f", name, ratio)
 
 
 def get_tracer(name: str = "para") -> trace.Tracer:

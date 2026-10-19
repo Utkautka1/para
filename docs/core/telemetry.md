@@ -21,30 +21,64 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`setup_telemetry`](#setup_telemetry) | Function | L33–L52 | `None` | Executes core domain logic for `setup_telemetry`. |
-| [`get_tracer`](#get_tracer) | Function | L55–L61 | `trace.Tracer` | Retrieves and resolves domain data for `get_tracer`. |
-| [`format_trace_id`](#format_trace_id) | Function | L64–L74 | `str` | Formats message payload and presentation markup for `fo... |
-| [`inject_trace_carrier`](#inject_trace_carrier) | Function | L77–L85 | `dict[str, str]` | Executes core domain logic for `inject_trace_carrier`. |
-| [`extract_trace_context`](#extract_trace_context) | Function | L88–L96 | `context.Context` | Executes core domain logic for `extract_trace_context`. |
-| [`carrier_from_grpc_metadata`](#carrier_from_grpc_metadata) | Function | L99–L111 | `dict[str, str]` | Executes core domain logic for `carrier_from_grpc_metad... |
-| [`carrier_to_grpc_metadata`](#carrier_to_grpc_metadata) | Function | L114–L120 | `tuple[tuple[str, str], ...]` | Executes core domain logic for `carrier_to_grpc_metadat... |
-| [`SpanContextManager.__init__`](#spancontextmanager__init__) | Method | L126–L138 | `None` | Executes core domain logic for `__init__`. |
-| [`SpanContextManager.__enter__`](#spancontextmanager__enter__) | Method | L140–L150 | `trace.Span` | Executes core domain logic for `__enter__`. |
-| [`SpanContextManager.__exit__`](#spancontextmanager__exit__) | Method | L152–L158 | `bool | None` | Executes core domain logic for `__exit__`. |
-| [`SpanContextManager.__aenter__`](#spancontextmanager__aenter__) | Method | L160–L161 | `trace.Span` | Executes core domain logic for `__aenter__`. |
-| [`SpanContextManager.__aexit__`](#spancontextmanager__aexit__) | Method | L163–L164 | `bool | None` | Executes core domain logic for `__aexit__`. |
-| [`trace_span`](#trace_span) | Function | L167–L183 | `SpanContextManager` | Executes core domain logic for `trace_span`. |
+| [`get_telemetry_sampler`](#get_telemetry_sampler) | Function | L45–L56 | `Sampler` | Retrieves and resolves domain data for `get_telemetry_s... |
+| [`setup_telemetry`](#setup_telemetry) | Function | L59–L82 | `None` | Executes core domain logic for `setup_telemetry`. |
+| [`get_tracer`](#get_tracer) | Function | L85–L91 | `trace.Tracer` | Retrieves and resolves domain data for `get_tracer`. |
+| [`format_trace_id`](#format_trace_id) | Function | L94–L104 | `str` | Formats message payload and presentation markup for `fo... |
+| [`inject_trace_carrier`](#inject_trace_carrier) | Function | L107–L115 | `dict[str, str]` | Executes core domain logic for `inject_trace_carrier`. |
+| [`extract_trace_context`](#extract_trace_context) | Function | L118–L126 | `context.Context` | Executes core domain logic for `extract_trace_context`. |
+| [`carrier_from_grpc_metadata`](#carrier_from_grpc_metadata) | Function | L129–L141 | `dict[str, str]` | Executes core domain logic for `carrier_from_grpc_metad... |
+| [`carrier_to_grpc_metadata`](#carrier_to_grpc_metadata) | Function | L144–L150 | `tuple[tuple[str, str], ...]` | Executes core domain logic for `carrier_to_grpc_metadat... |
+| [`SpanContextManager.__init__`](#spancontextmanager__init__) | Method | L156–L168 | `None` | Executes core domain logic for `__init__`. |
+| [`SpanContextManager.__enter__`](#spancontextmanager__enter__) | Method | L170–L180 | `trace.Span` | Executes core domain logic for `__enter__`. |
+| [`SpanContextManager.__exit__`](#spancontextmanager__exit__) | Method | L182–L188 | `bool | None` | Executes core domain logic for `__exit__`. |
+| [`SpanContextManager.__aenter__`](#spancontextmanager__aenter__) | Method | L190–L191 | `trace.Span` | Executes core domain logic for `__aenter__`. |
+| [`SpanContextManager.__aexit__`](#spancontextmanager__aexit__) | Method | L193–L194 | `bool | None` | Executes core domain logic for `__aexit__`. |
+| [`trace_span`](#trace_span) | Function | L197–L213 | `SpanContextManager` | Executes core domain logic for `trace_span`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
 
-### `setup_telemetry`
+### `get_telemetry_sampler`
 ```python
-def setup_telemetry(service_name: str | None = None) -> None
+def get_telemetry_sampler(ratio: float = 1.0) -> Sampler
 ```
 
-- **Source Reference**: [`core/telemetry.py#L33-L52`](../../core/telemetry.py#L33-L52)
+- **Source Reference**: [`core/telemetry.py#L45-L56`](../../core/telemetry.py#L45-L56)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `Sampler`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_telemetry_sampler`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `ratio` | `float` | Yes | Parameter `ratio` of type `float`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.telemetry import get_telemetry_sampler
+
+# Execute call
+result = get_telemetry_sampler(ratio=...)
+```
+
+---
+
+### `setup_telemetry`
+```python
+def setup_telemetry( service_name: str | None = None, sampling_ratio: float | None = None, ) -> None
+```
+
+- **Source Reference**: [`core/telemetry.py#L59-L82`](../../core/telemetry.py#L59-L82)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -55,6 +89,7 @@ Executes core domain logic for `setup_telemetry`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `service_name` | `str | None` | Yes | Parameter `service_name` of type `str | None`. |
+| `sampling_ratio` | `float | None` | Yes | Parameter `sampling_ratio` of type `float | None`. |
 
 #### Concurrency & Side Effects
 - Emits structured telemetry events to system logging subsystem.
@@ -67,7 +102,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from core.telemetry import setup_telemetry
 
 # Execute call
-result = setup_telemetry(service_name=...)
+result = setup_telemetry(service_name=..., sampling_ratio=...)
 ```
 
 ---
@@ -77,7 +112,7 @@ result = setup_telemetry(service_name=...)
 def get_tracer(name: str = "para") -> trace.Tracer
 ```
 
-- **Source Reference**: [`core/telemetry.py#L55-L61`](../../core/telemetry.py#L55-L61)
+- **Source Reference**: [`core/telemetry.py#L85-L91`](../../core/telemetry.py#L85-L91)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `trace.Tracer`
 
@@ -110,7 +145,7 @@ result = get_tracer(name=...)
 def format_trace_id(span: trace.Span | None = None) -> str
 ```
 
-- **Source Reference**: [`core/telemetry.py#L64-L74`](../../core/telemetry.py#L64-L74)
+- **Source Reference**: [`core/telemetry.py#L94-L104`](../../core/telemetry.py#L94-L104)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -143,7 +178,7 @@ result = format_trace_id(span=...)
 def inject_trace_carrier(carrier: dict[str, str] | None = None) -> dict[str, str]
 ```
 
-- **Source Reference**: [`core/telemetry.py#L77-L85`](../../core/telemetry.py#L77-L85)
+- **Source Reference**: [`core/telemetry.py#L107-L115`](../../core/telemetry.py#L107-L115)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -176,7 +211,7 @@ result = inject_trace_carrier(carrier=...)
 def extract_trace_context(carrier: dict[str, str] | None) -> context.Context
 ```
 
-- **Source Reference**: [`core/telemetry.py#L88-L96`](../../core/telemetry.py#L88-L96)
+- **Source Reference**: [`core/telemetry.py#L118-L126`](../../core/telemetry.py#L118-L126)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `context.Context`
 
@@ -209,7 +244,7 @@ result = extract_trace_context(carrier=...)
 def carrier_from_grpc_metadata(metadata: Any) -> dict[str, str]
 ```
 
-- **Source Reference**: [`core/telemetry.py#L99-L111`](../../core/telemetry.py#L99-L111)
+- **Source Reference**: [`core/telemetry.py#L129-L141`](../../core/telemetry.py#L129-L141)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -242,7 +277,7 @@ result = carrier_from_grpc_metadata(metadata=...)
 def carrier_to_grpc_metadata(carrier: dict[str, str]) -> tuple[tuple[str, str], ...]
 ```
 
-- **Source Reference**: [`core/telemetry.py#L114-L120`](../../core/telemetry.py#L114-L120)
+- **Source Reference**: [`core/telemetry.py#L144-L150`](../../core/telemetry.py#L144-L150)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[tuple[str, str], ...]`
 
@@ -279,7 +314,7 @@ Encapsulates domain entities and data transfer logic for `SpanContextManager`.
 def __init__( self, name: str, attributes: dict[str, Any] | None = None, parent_context: context.Context | None = None, tracer_name: str = "para", ) -> None
 ```
 
-- **Source Reference**: [`core/telemetry.py#L126-L138`](../../core/telemetry.py#L126-L138)
+- **Source Reference**: [`core/telemetry.py#L156-L168`](../../core/telemetry.py#L156-L168)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -315,7 +350,7 @@ result = __init__(name=..., attributes=..., parent_context=...)
 def __enter__(self) -> trace.Span
 ```
 
-- **Source Reference**: [`core/telemetry.py#L140-L150`](../../core/telemetry.py#L140-L150)
+- **Source Reference**: [`core/telemetry.py#L170-L180`](../../core/telemetry.py#L170-L180)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `trace.Span`
 
@@ -346,7 +381,7 @@ result = __enter__()
 def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool | None
 ```
 
-- **Source Reference**: [`core/telemetry.py#L152-L158`](../../core/telemetry.py#L152-L158)
+- **Source Reference**: [`core/telemetry.py#L182-L188`](../../core/telemetry.py#L182-L188)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool | None`
 
@@ -381,7 +416,7 @@ result = __exit__(exc_type=..., exc_val=..., exc_tb=...)
 async def __aenter__(self) -> trace.Span
 ```
 
-- **Source Reference**: [`core/telemetry.py#L160-L161`](../../core/telemetry.py#L160-L161)
+- **Source Reference**: [`core/telemetry.py#L190-L191`](../../core/telemetry.py#L190-L191)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `trace.Span`
 
@@ -412,7 +447,7 @@ result = await __aenter__()
 async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool | None
 ```
 
-- **Source Reference**: [`core/telemetry.py#L163-L164`](../../core/telemetry.py#L163-L164)
+- **Source Reference**: [`core/telemetry.py#L193-L194`](../../core/telemetry.py#L193-L194)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool | None`
 
@@ -447,7 +482,7 @@ result = await __aexit__(exc_type=..., exc_val=..., exc_tb=...)
 def trace_span( name: str, attributes: dict[str, Any] | None = None, parent_context: context.Context | None = None, tracer_name: str = "para", ) -> SpanContextManager
 ```
 
-- **Source Reference**: [`core/telemetry.py#L167-L183`](../../core/telemetry.py#L167-L183)
+- **Source Reference**: [`core/telemetry.py#L197-L213`](../../core/telemetry.py#L197-L213)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `SpanContextManager`
 

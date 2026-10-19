@@ -2837,7 +2837,7 @@ flowchart TD
 
 ### 16.1. Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)
 
-The distributed tracing lifecycle captures the complete span hierarchy across asynchronous boundaries, W3C TraceContext propagation over gRPC HTTP/2 metadata, L2 cache lookups, and SQLite WAL database operations with zero-overhead fallback.
+The distributed tracing lifecycle captures the complete span hierarchy across asynchronous boundaries, W3C TraceContext propagation over gRPC HTTP/2 metadata, L2 cache lookups, and SQLite WAL database operations. In production, an adaptive `ParentBased(TraceIdRatioBased(ratio=0.10))` sampler selects 10% of new root traces while ensuring 100% of downstream child spans (gRPC, Redis, SQLite) inherit the parent's sampling decision without orphan spans or serialization overhead.
 
 ```mermaid
 sequenceDiagram
@@ -2852,10 +2852,10 @@ sequenceDiagram
     participant SQLiteDB as 🗄️ SQLite WAL<br/>(core/database.py)
     participant Jaeger as 🔭 Jaeger Collector<br/>(OTLP gRPC :4317)
 
-    Note over User,BotMW: 1. Ingress Trigger
+    Note over User,BotMW: 1. Ingress Trigger & Adaptive Sampling
     User->>BotMW: Click Inline Button "📅 Сегодня" (sched:today)
     activate BotMW
-    Note over BotMW: Open Root Span:<br/>telegram.callback:sched<br/>[trace_id: 35a8c8...]
+    Note over BotMW: ParentBased Sampler (OTEL_SAMPLING_RATIO=0.10):<br/>Sample decision evaluated on Root Span<br/>[trace_id: 35a8c8...]
 
     BotMW->>BotHandler: Dispatch CallbackQuery
     activate BotHandler

@@ -23,6 +23,7 @@ from core.telemetry import (
     carrier_to_grpc_metadata,
     extract_trace_context,
     format_trace_id,
+    get_telemetry_sampler,
     get_tracer,
     inject_trace_carrier,
     trace_span,
@@ -154,3 +155,31 @@ async def test_grpc_tracing_interceptor() -> None:
     res = await wrapped.unary_unary("req", servicer_ctx)
     assert res == "grpc_resp"
     mock_unary.assert_awaited_once_with("req", servicer_ctx)
+
+
+def test_get_telemetry_sampler_instances() -> None:
+    """Проверяет создание ParentBased семплеров для различных коэффициентов."""
+    from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
+
+    s_full = get_telemetry_sampler(1.0)
+    s_zero = get_telemetry_sampler(0.0)
+    s_ratio = get_telemetry_sampler(0.1)
+
+    assert isinstance(s_full, ParentBased)
+    assert isinstance(s_zero, ParentBased)
+    assert isinstance(s_ratio, ParentBased)
+    assert isinstance(s_ratio._root, TraceIdRatioBased)
+
+
+def test_get_telemetry_sampler_decisions() -> None:
+    """Проверяет корректность решения о сэмплировании для граничных значений."""
+    from opentelemetry.sdk.trace.sampling import Decision
+
+    s_full = get_telemetry_sampler(1.0)
+    s_zero = get_telemetry_sampler(0.0)
+
+    res_full = s_full.should_sample(None, 0x12345, "span", None)
+    res_zero = s_zero.should_sample(None, 0x12345, "span", None)
+
+    assert res_full.decision == Decision.RECORD_AND_SAMPLE
+    assert res_zero.decision == Decision.DROP
