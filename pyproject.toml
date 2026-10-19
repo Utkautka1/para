@@ -1,5 +1,5 @@
 [tool.ruff]
-target-version = "py312"
+target-version = "py311"
 line-length = 120
 
 [tool.ruff.lint]
@@ -14,7 +14,7 @@ ignore = [
     "RUF002",  # Ambiguous unicode characters in docstrings (Cyrillic support)
     "RUF003",  # Ambiguous unicode characters in comments (Cyrillic support)
     "RUF006",  # Store a reference to asyncio.create_task (fire-and-forget tasks)
-    "UP038",   # Use X | Y in isinstance call (tuple is faster in CPython runtime)
+    "UP047",   # Type parameter syntax PEP 695 (incompatible with Python 3.11 runtimes)
 ]
 
 [tool.ruff.lint.isort]
