@@ -77,11 +77,11 @@
   <circle cx="61" cy="18" r="5" fill="#27c93f" />
 
   <!-- Window Title -->
-  <text x="410" y="22" text-anchor="middle" class="term-title">⚡ para-telemetry-engine ~ production ~ v2.4.0</text>
+  <text x="410" y="22" text-anchor="middle" class="term-title">⚡ para-telemetry-engine ~ production</text>
 
   <!-- Command Line Prompt -->
   <text x="24" y="56" class="term-prompt">❯ para cluster --status</text>
-  <text x="220" y="56" class="term-tag">[mesh: healthy | 5 services active]</text>
+  <text x="220" y="56" class="term-tag">[mesh: healthy | 6 services active]</text>
 
   <!-- Rotating Active Feature Lines -->
   <!-- Line 1: 0% - 20% (0s - 3s) -->
