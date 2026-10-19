@@ -57,8 +57,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Run Documentation Suite Generator
-        run: python3 scripts/generate_docs_suite.py
+      - name: Run Documentation Suite Generator and OpenAPI Export
+        run: |
+          make export-openapi
+          python3 scripts/generate_docs_suite.py
 
       - name: Verify Zero Documentation Drift
         run: git diff --exit-code docs/

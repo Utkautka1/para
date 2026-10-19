@@ -1,0 +1,13 @@
+# Global default owners for the entire repository
+* @Utkautka1
+
+# Subsystems and architecture domains
+/api/           @Utkautka1
+/bot/           @Utkautka1
+/core/          @Utkautka1
+/services/      @Utkautka1
+/integrations/  @Utkautka1
+/db/            @Utkautka1
+/utils/         @Utkautka1
+/.github/       @Utkautka1
+/docs/          @Utkautka1

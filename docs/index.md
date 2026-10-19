@@ -25,6 +25,7 @@
 | `Cloudflare Tunnel Syncer` | [`scripts/tunnel_sync.py`](../scripts/tunnel_sync.py) | [📖 View Specification](scripts/tunnel_sync.md) | Enterprise Service Component |
 | `DeepSeek LLM Integration` | [`integrations/deepseek.py`](../integrations/deepseek.py) | [📖 View Specification](integrations/deepseek.md) | Enterprise Service Component |
 | `Distributed L2 Cache` | [`core/redis_cache.py`](../core/redis_cache.py) | [📖 View Specification](core/redis_cache.md) | Enterprise Service Component |
+| `Domain Configuration Models` | [`core/config_models.py`](../core/config_models.py) | [📖 View Specification](core/config_models.md) | Enterprise Service Component |
 | `Domain Models` | [`services/models.py`](../services/models.py) | [📖 View Specification](services/models.md) | Enterprise Service Component |
 | `Examination Parser` | [`services/exam_parser.py`](../services/exam_parser.py) | [📖 View Specification](services/exam_parser.md) | Enterprise Service Component |
 | `Examination Topic` | [`services/exam_topic_updater.py`](../services/exam_topic_updater.py) | [📖 View Specification](services/exam_topic_updater.md) | Enterprise Service Component |

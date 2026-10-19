@@ -637,6 +637,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     },
     "core/api_client.py": {"out": "docs/core/api_client.md", "cat": "Internal RPC Client"},
     "core/bot.py": {"out": "docs/core/bot.md", "cat": "Bot Instance Singleton"},
+    "core/config_models.py": {"out": "docs/core/config_models.md", "cat": "Domain Configuration Models"},
     "core/logger.py": {"out": "docs/core/logger.md", "cat": "Telemetry Logging"},
     "core/metrics.py": {"out": "docs/core/metrics.md", "cat": "Prometheus Metrics Engine"},
     "core/redis.py": {"out": "docs/core/redis.md", "cat": "Redis Engine"},

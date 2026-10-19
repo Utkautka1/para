@@ -12,6 +12,18 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
+from core.config_models import (
+    AiSolverConfig,
+    ApiConfig,
+    CampusConfig,
+    NotificationConfig,
+    RedisConfig,
+    ScheduleConfig,
+    TelegramConfig,
+    WhisperConfig,
+    YandexConfig,
+)
+
 # Инициализируем переменные окружения из .env файла
 load_dotenv()
 
@@ -103,75 +115,104 @@ def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]:
 # 1. TELEGRAM BOT & ACCESS CONTROL
 # ==============================================================================
 
-# Токен бота Telegram и основной администратор
-BOT_TOKEN: str = get_required_env("BOT_TOKEN")
-ALLOWED_USER_ID: int = get_env_int("ALLOWED_USER_ID")
+telegram_config = TelegramConfig(
+    bot_token=get_required_env("BOT_TOKEN"),
+    allowed_user_id=get_env_int("ALLOWED_USER_ID"),
+    deputy_user_id=get_env_int("DEPUTY_USER_ID"),
+    group_id=get_required_env("GROUP_ID"),
+    group_name=get_required_env("GROUP_NAME"),
+    topic_chat_id=get_env_int("TOPIC_CHAT_ID"),
+    topic_thread_id=get_env_int("TOPIC_THREAD_ID"),
+    exam_topic_thread_id=get_env_int("EXAM_TOPIC_THREAD_ID"),
+    flood_topic_thread_id=get_env_int("FLOOD_TOPIC_THREAD_ID", 4),
+    birthday_topic_thread_id=get_env_int("BIRTHDAY_TOPIC_THREAD_ID"),
+    important_topic_thread_id=get_env_int("IMPORTANT_TOPIC_THREAD_ID"),
+    attendance_topic_thread_id=get_env_int("ATTENDANCE_TOPIC_THREAD_ID"),
+    hw_input_topic_thread_id=get_env_int("HW_INPUT_TOPIC_THREAD_ID"),
+    hw_output_topic_thread_id=get_env_int("HW_OUTPUT_TOPIC_THREAD_ID"),
+)
 
-# Заместитель старосты и объединенный пул доверенных модераторов
-DEPUTY_USER_ID: int = get_env_int("DEPUTY_USER_ID")
-ALLOWED_ATTENDANCE_USER_IDS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
+BOT_TOKEN: str = telegram_config.bot_token
+ALLOWED_USER_ID: int = telegram_config.allowed_user_id
+DEPUTY_USER_ID: int = telegram_config.deputy_user_id
+ALLOWED_ATTENDANCE_USER_IDS: set[int] = telegram_config.allowed_attendance_user_ids
+GROUP_ID: str = telegram_config.group_id
+GROUP_NAME: str = telegram_config.group_name
 
-# Целевая академическая группа КТМУ
-GROUP_ID: str = get_required_env("GROUP_ID")
-GROUP_NAME: str = get_required_env("GROUP_NAME")
-
-
-# ==============================================================================
-# 2. TOPICS & THREADS IDENTIFIERS (FORUM SUPERGROUP)
-# ==============================================================================
-
-TOPIC_CHAT_ID: int = get_env_int("TOPIC_CHAT_ID")
-TOPIC_THREAD_ID: int = get_env_int("TOPIC_THREAD_ID")
-EXAM_TOPIC_THREAD_ID: int = get_env_int("EXAM_TOPIC_THREAD_ID")
-FLOOD_TOPIC_THREAD_ID: int = get_env_int("FLOOD_TOPIC_THREAD_ID", 4)
-BIRTHDAY_TOPIC_THREAD_ID: int = get_env_int("BIRTHDAY_TOPIC_THREAD_ID")
-IMPORTANT_TOPIC_THREAD_ID: int = get_env_int("IMPORTANT_TOPIC_THREAD_ID")
-ATTENDANCE_TOPIC_THREAD_ID: int = get_env_int("ATTENDANCE_TOPIC_THREAD_ID")
-HW_INPUT_TOPIC_THREAD_ID: int = get_env_int("HW_INPUT_TOPIC_THREAD_ID")
-HW_OUTPUT_TOPIC_THREAD_ID: int = get_env_int("HW_OUTPUT_TOPIC_THREAD_ID")
-
-
-# ==============================================================================
-# 3. SCHEDULE API & UPSTREAM FAILOVER
-# ==============================================================================
-
-DEFAULT_FALLBACK_SCHEDULE_API_URL: str = get_required_env("DEFAULT_FALLBACK_SCHEDULE_API_URL")
-SCHEDULE_API_URL: str = get_required_env("SCHEDULE_API_URL")
-SCHEDULE_FALLBACK_API_URL: str = get_required_env("SCHEDULE_FALLBACK_API_URL")
-
-EXAM_SCHEDULE_API_URL: str = get_env("EXAM_SCHEDULE_API_URL", SCHEDULE_API_URL)
-EXAM_SCHEDULE_FALLBACK_API_URL: str = get_env("EXAM_SCHEDULE_FALLBACK_API_URL", SCHEDULE_FALLBACK_API_URL)
-
-TIMEZONE_NAME: str = get_required_env("TIMEZONE")
-TIMEZONE: ZoneInfo = ZoneInfo(TIMEZONE_NAME)
-
-SCHEDULE_CACHE_TTL_SECONDS: int = get_env_int("SCHEDULE_CACHE_TTL_SECONDS")
-SCHEDULE_COOLDOWN_SECONDS: int = 300
-DOCX_CACHE_TTL_SECONDS: int = get_env_int("DOCX_CACHE_TTL_SECONDS")
-DOCX_MIN_REFRESH_INTERVAL_SECONDS: float = 30.0
+TOPIC_CHAT_ID: int = telegram_config.topic_chat_id
+TOPIC_THREAD_ID: int = telegram_config.topic_thread_id
+EXAM_TOPIC_THREAD_ID: int = telegram_config.exam_topic_thread_id
+FLOOD_TOPIC_THREAD_ID: int = telegram_config.flood_topic_thread_id
+BIRTHDAY_TOPIC_THREAD_ID: int = telegram_config.birthday_topic_thread_id
+IMPORTANT_TOPIC_THREAD_ID: int = telegram_config.important_topic_thread_id
+ATTENDANCE_TOPIC_THREAD_ID: int = telegram_config.attendance_topic_thread_id
+HW_INPUT_TOPIC_THREAD_ID: int = telegram_config.hw_input_topic_thread_id
+HW_OUTPUT_TOPIC_THREAD_ID: int = telegram_config.hw_output_topic_thread_id
 
 
 # ==============================================================================
-# 4. CAMPUS ADDRESSES & LOCATIONS
+# 2. SCHEDULE API & UPSTREAM FAILOVER
 # ==============================================================================
 
-CAMPUS_ADDRESS_VOZNESENSKY: str = get_required_env("CAMPUS_ADDRESS_VOZNESENSKY")
-CAMPUS_ADDRESS_TSVETOCHNAYA: str = get_required_env("CAMPUS_ADDRESS_TSVETOCHNAYA")
-CAMPUS_ADDRESS_REMOTE: str = get_required_env("CAMPUS_ADDRESS_REMOTE")
+schedule_config = ScheduleConfig(
+    default_fallback_api_url=get_required_env("DEFAULT_FALLBACK_SCHEDULE_API_URL"),
+    api_url=get_required_env("SCHEDULE_API_URL"),
+    fallback_api_url=get_required_env("SCHEDULE_FALLBACK_API_URL"),
+    exam_api_url=get_env("EXAM_SCHEDULE_API_URL", get_required_env("SCHEDULE_API_URL")),
+    exam_fallback_api_url=get_env("EXAM_SCHEDULE_FALLBACK_API_URL", get_required_env("SCHEDULE_FALLBACK_API_URL")),
+    timezone_name=get_required_env("TIMEZONE"),
+    cache_ttl_seconds=get_env_int("SCHEDULE_CACHE_TTL_SECONDS"),
+    cooldown_seconds=300,
+    docx_cache_ttl_seconds=get_env_int("DOCX_CACHE_TTL_SECONDS"),
+    docx_min_refresh_interval_seconds=30.0,
+)
+
+DEFAULT_FALLBACK_SCHEDULE_API_URL: str = schedule_config.default_fallback_api_url
+SCHEDULE_API_URL: str = schedule_config.api_url
+SCHEDULE_FALLBACK_API_URL: str = schedule_config.fallback_api_url
+EXAM_SCHEDULE_API_URL: str = schedule_config.exam_api_url
+EXAM_SCHEDULE_FALLBACK_API_URL: str = schedule_config.exam_fallback_api_url
+TIMEZONE_NAME: str = schedule_config.timezone_name
+TIMEZONE: ZoneInfo = schedule_config.timezone
+SCHEDULE_CACHE_TTL_SECONDS: int = schedule_config.cache_ttl_seconds
+SCHEDULE_COOLDOWN_SECONDS: int = schedule_config.cooldown_seconds
+DOCX_CACHE_TTL_SECONDS: int = schedule_config.docx_cache_ttl_seconds
+DOCX_MIN_REFRESH_INTERVAL_SECONDS: float = schedule_config.docx_min_refresh_interval_seconds
 
 
 # ==============================================================================
-# 5. REDIS STORAGE & CACHING
+# 3. CAMPUS ADDRESSES & LOCATIONS
 # ==============================================================================
 
-REDIS_HOST: str = get_required_env("REDIS_HOST")
-REDIS_PORT: int = get_env_int("REDIS_PORT")
-REDIS_PASSWORD: str = get_required_env("REDIS_PASSWORD")
-REDIS_CACHE_TTL_SECONDS: int = get_env_int("REDIS_CACHE_TTL_SECONDS")
+campus_config = CampusConfig(
+    voznesensky=get_required_env("CAMPUS_ADDRESS_VOZNESENSKY"),
+    tsvetochnaya=get_required_env("CAMPUS_ADDRESS_TSVETOCHNAYA"),
+    remote=get_required_env("CAMPUS_ADDRESS_REMOTE"),
+)
 
-SNAPSHOT_KEY: str = "schedule:snapshot"
-SNAPSHOT_META_KEY: str = "schedule:snapshot:meta"
-TOPIC_CLEANUP_KEY: str = "cleanup:topic_messages"
+CAMPUS_ADDRESS_VOZNESENSKY: str = campus_config.voznesensky
+CAMPUS_ADDRESS_TSVETOCHNAYA: str = campus_config.tsvetochnaya
+CAMPUS_ADDRESS_REMOTE: str = campus_config.remote
+
+
+# ==============================================================================
+# 4. REDIS STORAGE & CACHING
+# ==============================================================================
+
+redis_config = RedisConfig(
+    host=get_required_env("REDIS_HOST"),
+    port=get_env_int("REDIS_PORT"),
+    password=get_required_env("REDIS_PASSWORD"),
+    cache_ttl_seconds=get_env_int("REDIS_CACHE_TTL_SECONDS"),
+)
+
+REDIS_HOST: str = redis_config.host
+REDIS_PORT: int = redis_config.port
+REDIS_PASSWORD: str = redis_config.password
+REDIS_CACHE_TTL_SECONDS: int = redis_config.cache_ttl_seconds
+SNAPSHOT_KEY: str = redis_config.snapshot_key
+SNAPSHOT_META_KEY: str = redis_config.snapshot_meta_key
+TOPIC_CLEANUP_KEY: str = redis_config.topic_cleanup_key
 
 SAFE_CACHE_FLUSH_PREFIXES: tuple[str, ...] = (
     "sched:",
@@ -192,22 +233,9 @@ end
 
 
 # ==============================================================================
-# 6. YANDEX INTEGRATION & ATTENDANCE TRACKER
+# 5. YANDEX INTEGRATION & ATTENDANCE TRACKER
 # ==============================================================================
 
-YANDEX_DOC_PUBLIC_URL: str = get_required_env("YANDEX_DOC_PUBLIC_URL")
-ATTENDANCE_DOC_URL: str = get_required_env("ATTENDANCE_DOC_URL")
-
-ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS: int = get_env_int("ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS", 180)
-ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS: int = get_env_int("ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS", 900)
-
-YANDEX_SESSION_ID: str = get_env("YANDEX_SESSION_ID", "")
-YANDEX_COOKIE: str = get_env("YANDEX_COOKIE", "")
-REDIS_YANDEX_COOKIE_KEY: str = "yandex:session_cookie"
-REDIS_COOKIE_TTL_SECONDS: int = 5184000  # 60 суток
-YANDEX_KEEPALIVE_INTERVAL_SECONDS: int = get_env_int("YANDEX_KEEPALIVE_INTERVAL_SECONDS", 21600)
-
-YANDEX_COOKIE_TEST_DOC_URL: str = get_env("YANDEX_COOKIE_TEST_DOC_URL", "")
 _DEFAULT_COOKIES: tuple[str, ...] = (
     "Session_id",
     "sessionid2",
@@ -219,10 +247,30 @@ _DEFAULT_COOKIES: tuple[str, ...] = (
     "yp",
     "L",
 )
-YANDEX_REQUIRED_COOKIE_NAMES: tuple[str, ...] = get_env_list(
-    "YANDEX_REQUIRED_COOKIE_NAMES",
-    _DEFAULT_COOKIES,
+
+yandex_config = YandexConfig(
+    doc_public_url=get_required_env("YANDEX_DOC_PUBLIC_URL"),
+    attendance_doc_url=get_required_env("ATTENDANCE_DOC_URL"),
+    sync_day_interval_seconds=get_env_int("ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS", 180),
+    sync_night_interval_seconds=get_env_int("ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS", 900),
+    session_id=get_env("YANDEX_SESSION_ID", ""),
+    cookie=get_env("YANDEX_COOKIE", ""),
+    keepalive_interval_seconds=get_env_int("YANDEX_KEEPALIVE_INTERVAL_SECONDS", 21600),
+    cookie_test_doc_url=get_env("YANDEX_COOKIE_TEST_DOC_URL", ""),
+    required_cookie_names=get_env_list("YANDEX_REQUIRED_COOKIE_NAMES", _DEFAULT_COOKIES),
 )
+
+YANDEX_DOC_PUBLIC_URL: str = yandex_config.doc_public_url
+ATTENDANCE_DOC_URL: str = yandex_config.attendance_doc_url
+ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS: int = yandex_config.sync_day_interval_seconds
+ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS: int = yandex_config.sync_night_interval_seconds
+YANDEX_SESSION_ID: str = yandex_config.session_id
+YANDEX_COOKIE: str = yandex_config.cookie
+REDIS_YANDEX_COOKIE_KEY: str = "yandex:session_cookie"
+REDIS_COOKIE_TTL_SECONDS: int = 5184000  # 60 суток
+YANDEX_KEEPALIVE_INTERVAL_SECONDS: int = yandex_config.keepalive_interval_seconds
+YANDEX_COOKIE_TEST_DOC_URL: str = yandex_config.cookie_test_doc_url
+YANDEX_REQUIRED_COOKIE_NAMES: tuple[str, ...] = yandex_config.required_cookie_names
 
 ATTENDANCE_REDIS_SESSION_KEY: str = "attendance:session"
 ATTENDANCE_SESSION_TTL_SECONDS: int = 7200
@@ -238,55 +286,81 @@ MARKS_CACHE_TTL_SECONDS: int = get_env_int("MARKS_CACHE_TTL_SECONDS", 2592000)
 
 
 # ==============================================================================
-# 7. DUAL-PROTOCOL API GATEWAY (REST & GRPC)
+# 6. DUAL-PROTOCOL API GATEWAY (REST & GRPC)
 # ==============================================================================
 
-API_SECRET_KEY: str = get_required_env("API_SECRET_KEY")
-API_BASE_URL: str = get_required_env("API_BASE_URL")
-API_HOST: str = get_required_env("API_HOST")
-API_PORT: int = get_env_int("API_PORT")
-API_EXTERNAL_PORT: int = get_env_int("API_EXTERNAL_PORT")
+api_config = ApiConfig(
+    secret_key=get_required_env("API_SECRET_KEY"),
+    base_url=get_required_env("API_BASE_URL"),
+    host=get_required_env("API_HOST"),
+    port=get_env_int("API_PORT"),
+    external_port=get_env_int("API_EXTERNAL_PORT"),
+    swagger_url=get_required_env("SWAGGER_URL"),
+    swagger_servers_url=get_required_env("SWAGGER_SERVERS_URL"),
+    swagger_servers_description=get_required_env("SWAGGER_SERVERS_DESCRIPTION"),
+    swagger_mask_host_pattern=get_env("SWAGGER_MASK_HOST_PATTERN", ""),
+    grpc_host=get_required_env("GRPC_HOST"),
+    grpc_port=get_env_int("GRPC_PORT"),
+    grpc_server_address=get_required_env("GRPC_SERVER_ADDRESS"),
+    grpc_max_message_length=get_env_int("GRPC_MAX_MESSAGE_LENGTH"),
+    miniapp_url=get_required_env("MINIAPP_URL"),
+    redis_testers_key=get_required_env("REDIS_TESTERS_KEY"),
+    session_max_age_seconds=get_env_int("SESSION_MAX_AGE_SECONDS"),
+    redis_tester_key_to_uid_prefix=get_required_env("REDIS_TESTER_KEY_TO_UID_PREFIX"),
+    redis_tester_uid_to_key_prefix=get_required_env("REDIS_TESTER_UID_TO_KEY_PREFIX"),
+    api_tester_key_prefix=get_required_env("API_TESTER_KEY_PREFIX"),
+    grpc_keepalive_time_ms=get_env_int("GRPC_KEEPALIVE_TIME_MS", 10000),
+    grpc_keepalive_timeout_ms=get_env_int("GRPC_KEEPALIVE_TIMEOUT_MS", 5000),
+    grpc_keepalive_permit_without_calls=get_env_int("GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS", 1),
+    grpc_http2_max_pings_without_data=get_env_int("GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA", 0),
+    grpc_http2_min_ping_interval_ms=get_env_int("GRPC_HTTP2_MIN_PING_INTERVAL_MS", 5000),
+    gzip_min_size_bytes=get_env_int("GZIP_MIN_SIZE_BYTES", 1000),
+    http_pool_max_keepalive_connections=get_env_int("HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS", 5),
+    http_pool_max_connections=get_env_int("HTTP_POOL_MAX_CONNECTIONS", 10),
+    http_client_timeout_seconds=get_env_float("HTTP_CLIENT_TIMEOUT_SECONDS", 60.0),
+)
 
-SWAGGER_URL: str = get_required_env("SWAGGER_URL")
-SWAGGER_SERVERS_URL: str = get_required_env("SWAGGER_SERVERS_URL")
-SWAGGER_SERVERS_DESCRIPTION: str = get_required_env("SWAGGER_SERVERS_DESCRIPTION")
-SWAGGER_MASK_HOST_PATTERN: str = get_env("SWAGGER_MASK_HOST_PATTERN", "")
+API_SECRET_KEY: str = api_config.secret_key
+API_BASE_URL: str = api_config.base_url
+API_HOST: str = api_config.host
+API_PORT: int = api_config.port
+API_EXTERNAL_PORT: int = api_config.external_port
 
-GRPC_HOST: str = get_required_env("GRPC_HOST")
-GRPC_PORT: int = get_env_int("GRPC_PORT")
-GRPC_SERVER_ADDRESS: str = get_required_env("GRPC_SERVER_ADDRESS")
-GRPC_MAX_MESSAGE_LENGTH: int = get_env_int("GRPC_MAX_MESSAGE_LENGTH")
+SWAGGER_URL: str = api_config.swagger_url
+SWAGGER_SERVERS_URL: str = api_config.swagger_servers_url
+SWAGGER_SERVERS_DESCRIPTION: str = api_config.swagger_servers_description
+SWAGGER_MASK_HOST_PATTERN: str = api_config.swagger_mask_host_pattern
+
+GRPC_HOST: str = api_config.grpc_host
+GRPC_PORT: int = api_config.grpc_port
+GRPC_SERVER_ADDRESS: str = api_config.grpc_server_address
+GRPC_MAX_MESSAGE_LENGTH: int = api_config.grpc_max_message_length
 GRPC_AUTH_HEADER_NAME: str = "x-api-key"
 
-MINIAPP_URL: str = get_required_env("MINIAPP_URL")
+MINIAPP_URL: str = api_config.miniapp_url
 MINIAPP_HTML_FILE_PATH: str = "data/api/miniapp.html"
 
-REDIS_TESTERS_KEY: str = get_required_env("REDIS_TESTERS_KEY")
-SESSION_MAX_AGE_SECONDS: int = get_env_int("SESSION_MAX_AGE_SECONDS")
-REDIS_TESTER_KEY_TO_UID_PREFIX: str = get_required_env("REDIS_TESTER_KEY_TO_UID_PREFIX")
-REDIS_TESTER_UID_TO_KEY_PREFIX: str = get_required_env("REDIS_TESTER_UID_TO_KEY_PREFIX")
-API_TESTER_KEY_PREFIX: str = get_required_env("API_TESTER_KEY_PREFIX")
+REDIS_TESTERS_KEY: str = api_config.redis_testers_key
+SESSION_MAX_AGE_SECONDS: int = api_config.session_max_age_seconds
+REDIS_TESTER_KEY_TO_UID_PREFIX: str = api_config.redis_tester_key_to_uid_prefix
+REDIS_TESTER_UID_TO_KEY_PREFIX: str = api_config.redis_tester_uid_to_key_prefix
+API_TESTER_KEY_PREFIX: str = api_config.api_tester_key_prefix
 
-GRPC_KEEPALIVE_TIME_MS: int = get_env_int("GRPC_KEEPALIVE_TIME_MS", 10000)
-GRPC_KEEPALIVE_TIMEOUT_MS: int = get_env_int("GRPC_KEEPALIVE_TIMEOUT_MS", 5000)
-GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: int = get_env_int("GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS", 1)
-GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA: int = get_env_int("GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA", 0)
-GRPC_HTTP2_MIN_PING_INTERVAL_MS: int = get_env_int("GRPC_HTTP2_MIN_PING_INTERVAL_MS", 5000)
+GRPC_KEEPALIVE_TIME_MS: int = api_config.grpc_keepalive_time_ms
+GRPC_KEEPALIVE_TIMEOUT_MS: int = api_config.grpc_keepalive_timeout_ms
+GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: int = api_config.grpc_keepalive_permit_without_calls
+GRPC_HTTP2_MAX_PINGS_WITHOUT_DATA: int = api_config.grpc_http2_max_pings_without_data
+GRPC_HTTP2_MIN_PING_INTERVAL_MS: int = api_config.grpc_http2_min_ping_interval_ms
 
-GZIP_MIN_SIZE_BYTES: int = get_env_int("GZIP_MIN_SIZE_BYTES", 1000)
-HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS: int = get_env_int("HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS", 5)
-HTTP_POOL_MAX_CONNECTIONS: int = get_env_int("HTTP_POOL_MAX_CONNECTIONS", 10)
-HTTP_CLIENT_TIMEOUT_SECONDS: float = get_env_float("HTTP_CLIENT_TIMEOUT_SECONDS", 60.0)
+GZIP_MIN_SIZE_BYTES: int = api_config.gzip_min_size_bytes
+HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS: int = api_config.http_pool_max_keepalive_connections
+HTTP_POOL_MAX_CONNECTIONS: int = api_config.http_pool_max_connections
+HTTP_CLIENT_TIMEOUT_SECONDS: float = api_config.http_client_timeout_seconds
 
 
 # ==============================================================================
-# 8. DEEPSEEK AI SOLVER & HOMEWORK QUEUE
+# 7. DEEPSEEK AI SOLVER & HOMEWORK QUEUE
 # ==============================================================================
-
-DEEPSEEK_API_KEY: str = get_required_env("DEEPSEEK_API_KEY")
-DEEPSEEK_API_BASE: str = get_env("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
-DEEPSEEK_MODEL_NAME: str = get_env("DEEPSEEK_MODEL_NAME", "deepseek-v4-flash-vision-exp")
-DEEPSEEK_TIMEOUT_SECONDS: float = get_env_float("DEEPSEEK_TIMEOUT_SECONDS", 60.0)
 
 DEEPSEEK_SYSTEM_PROMPT: str = (
     "Ты — преподаватель высшей математики и точных наук. "
@@ -300,51 +374,82 @@ DEEPSEEK_SYSTEM_PROMPT: str = (
     "Форматируй математику наглядно без сложного LaTeX, используй символы (Δ, ·, ║) и таблицы."
 )
 
-HW_MAX_FILE_SIZE: int = 20 * 1024 * 1024
-HW_MAX_PROMPT_TEXT_LENGTH: int = 15000
-HW_MAX_TASK_RETRIES: int = 3
-SOLVER_MAX_IMAGE_BASE64_BYTES: int = 28 * 1024 * 1024
+solver_config = AiSolverConfig(
+    api_key=get_required_env("DEEPSEEK_API_KEY"),
+    api_base=get_env("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1"),
+    model_name=get_env("DEEPSEEK_MODEL_NAME", "deepseek-v4-flash-vision-exp"),
+    timeout_seconds=get_env_float("DEEPSEEK_TIMEOUT_SECONDS", 60.0),
+    system_prompt=DEEPSEEK_SYSTEM_PROMPT,
+    max_concurrent_tasks=get_env_int("SOLVER_MAX_CONCURRENT_TASKS", 3),
+    rate_limit_per_minute=get_env_int("SOLVER_RATE_LIMIT_PER_MINUTE", 5),
+    rate_limit_window_seconds=get_env_int("SOLVER_RATE_LIMIT_WINDOW_SECONDS", 60),
+)
+
+DEEPSEEK_API_KEY: str = solver_config.api_key
+DEEPSEEK_API_BASE: str = solver_config.api_base
+DEEPSEEK_MODEL_NAME: str = solver_config.model_name
+DEEPSEEK_TIMEOUT_SECONDS: float = solver_config.timeout_seconds
+
+HW_MAX_FILE_SIZE: int = solver_config.max_file_size
+HW_MAX_PROMPT_TEXT_LENGTH: int = solver_config.max_prompt_text_length
+HW_MAX_TASK_RETRIES: int = solver_config.max_task_retries
+SOLVER_MAX_IMAGE_BASE64_BYTES: int = solver_config.max_image_base64_bytes
 
 HW_QUEUE_KEY: str = "hw:tasks:queue"
 HW_PROCESSING_KEY: str = "hw:tasks:processing"
 HW_DLQ_KEY: str = "hw:tasks:dlq"
 
-SOLVER_MAX_CONCURRENT_TASKS: int = get_env_int("SOLVER_MAX_CONCURRENT_TASKS", 3)
-SOLVER_RATE_LIMIT_PER_MINUTE: int = get_env_int("SOLVER_RATE_LIMIT_PER_MINUTE", 5)
-SOLVER_RATE_LIMIT_WINDOW_SECONDS: int = get_env_int("SOLVER_RATE_LIMIT_WINDOW_SECONDS", 60)
+SOLVER_MAX_CONCURRENT_TASKS: int = solver_config.max_concurrent_tasks
+SOLVER_RATE_LIMIT_PER_MINUTE: int = solver_config.rate_limit_per_minute
+SOLVER_RATE_LIMIT_WINDOW_SECONDS: int = solver_config.rate_limit_window_seconds
 
 
 # ==============================================================================
-# 9. WHISPER VOICE TRANSCRIBER & AUDIO LIMITS
+# 8. WHISPER VOICE TRANSCRIBER & AUDIO LIMITS
 # ==============================================================================
 
-WHISPER_MODEL_NAME: str = get_required_env("WHISPER_MODEL_NAME")
-WHISPER_DEVICE: str = get_required_env("WHISPER_DEVICE")
-WHISPER_COMPUTE_TYPE: str = get_required_env("WHISPER_COMPUTE_TYPE")
-WHISPER_DOWNLOAD_ROOT: str = get_required_env("WHISPER_DOWNLOAD_ROOT")
-WHISPER_LANGUAGE: str = get_required_env("WHISPER_LANGUAGE")
-WHISPER_BEAM_SIZE: int = get_env_int("WHISPER_BEAM_SIZE")
+whisper_config = WhisperConfig(
+    model_name=get_required_env("WHISPER_MODEL_NAME"),
+    device=get_required_env("WHISPER_DEVICE"),
+    compute_type=get_required_env("WHISPER_COMPUTE_TYPE"),
+    download_root=get_required_env("WHISPER_DOWNLOAD_ROOT"),
+    language=get_required_env("WHISPER_LANGUAGE"),
+    beam_size=get_env_int("WHISPER_BEAM_SIZE"),
+)
 
-MAX_AUDIO_DURATION: int = 300  # 5 минут
-MAX_AUDIO_SIZE: int = 20 * 1024 * 1024  # 20 МБ
-MAX_CONCURRENT_PER_USER: int = 2
-DOWNLOAD_TIMEOUT: float = 25.0
-TRANSCRIBE_TIMEOUT: float = 90.0
+WHISPER_MODEL_NAME: str = whisper_config.model_name
+WHISPER_DEVICE: str = whisper_config.device
+WHISPER_COMPUTE_TYPE: str = whisper_config.compute_type
+WHISPER_DOWNLOAD_ROOT: str = whisper_config.download_root
+WHISPER_LANGUAGE: str = whisper_config.language
+WHISPER_BEAM_SIZE: int = whisper_config.beam_size
+
+MAX_AUDIO_DURATION: int = whisper_config.max_audio_duration
+MAX_AUDIO_SIZE: int = whisper_config.max_audio_size
+MAX_CONCURRENT_PER_USER: int = whisper_config.max_concurrent_per_user
+DOWNLOAD_TIMEOUT: float = whisper_config.download_timeout
+TRANSCRIBE_TIMEOUT: float = whisper_config.transcribe_timeout
 
 _USER_IN_FLIGHT: dict[int, int] = {}
 
 
 # ==============================================================================
-# 10. NOTIFICATION TIMERS & THROTTLING
+# 9. NOTIFICATION TIMERS & THROTTLING
 # ==============================================================================
 
-DAILY_NOTIFY_HOUR: int = get_env_int("DAILY_NOTIFY_HOUR")
-DAILY_NOTIFY_MINUTE: int = get_env_int("DAILY_NOTIFY_MINUTE")
-REMINDER_OFFSET_MINUTES: int = get_env_int("REMINDER_OFFSET_MINUTES")
+notify_config = NotificationConfig(
+    daily_notify_hour=get_env_int("DAILY_NOTIFY_HOUR"),
+    daily_notify_minute=get_env_int("DAILY_NOTIFY_MINUTE"),
+    reminder_offset_minutes=get_env_int("REMINDER_OFFSET_MINUTES"),
+)
 
-THROTTLING_HEAVY_COOLDOWN: float = 4.0
-THROTTLING_NAV_COOLDOWN: float = 1.0
-THROTTLING_DEFAULT_COOLDOWN: float = 0.5
+DAILY_NOTIFY_HOUR: int = notify_config.daily_notify_hour
+DAILY_NOTIFY_MINUTE: int = notify_config.daily_notify_minute
+REMINDER_OFFSET_MINUTES: int = notify_config.reminder_offset_minutes
+
+THROTTLING_HEAVY_COOLDOWN: float = notify_config.throttling_heavy_cooldown
+THROTTLING_NAV_COOLDOWN: float = notify_config.throttling_nav_cooldown
+THROTTLING_DEFAULT_COOLDOWN: float = notify_config.throttling_default_cooldown
 
 
 # ==============================================================================

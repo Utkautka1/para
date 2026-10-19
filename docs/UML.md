@@ -320,6 +320,43 @@ classDiagram
         +close() void
     }
 
+    class TelegramConfig {
+        +str bot_token
+        +int allowed_user_id
+        +int deputy_user_id
+        +str group_id
+        +int topic_chat_id
+        +allowed_attendance_user_ids() set
+    }
+
+    class ScheduleConfig {
+        +str api_url
+        +str fallback_api_url
+        +str timezone_name
+        +int cache_ttl_seconds
+        +timezone() ZoneInfo
+    }
+
+    class RedisConfig {
+        +str host
+        +int port
+        +str password
+        +int cache_ttl_seconds
+    }
+
+    class ApiConfig {
+        +str secret_key
+        +str base_url
+        +int port
+        +int grpc_port
+    }
+
+    class AiSolverConfig {
+        +str api_key
+        +str model_name
+        +int max_concurrent_tasks
+    }
+
     class ScheduleParser {
         -dict _in_memory_cache
         -float _cache_timestamp

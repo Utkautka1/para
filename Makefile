@@ -44,7 +44,7 @@ docs-check: docs ## Verify that engineering documentation is in sync with codeba
 	git diff --exit-code docs/
 
 export-openapi: ## Export static OpenAPI JSON schema for REST API
-	PYTHONPATH=. $(PYTHON) -c "import json; from api import create_app; open('docs/openapi.json', 'w').write(json.dumps(create_app().openapi(), indent=2))"
+	PYTHONPATH=. $(PYTHON) -c "import json; from api import create_app; open('docs/openapi.json', 'w').write(json.dumps(create_app().openapi(), indent=2) + '\n')"
 
 dev-redis: ## Spin up background Redis 7 persistence container
 	docker run -d --name para-redis -p 6379:6379 redis:7-alpine redis-server --appendonly yes || docker start para-redis
