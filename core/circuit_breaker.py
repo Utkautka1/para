@@ -106,7 +106,7 @@ async def async_retry_with_backoff(
                 log.error(f"❌ Превышено число повторных попыток ({max_retries}): {exc}")
                 raise
             delay = min(max_delay, base_delay * (2 ** (attempt - 1)))
-            jitter = random.uniform(0.0, 0.2 * delay)
+            jitter = random.uniform(0.0, 0.2 * delay)  # nosec B311
             total_delay = delay + jitter
             log.warning(f"🔄 Retry #{attempt}/{max_retries} через {total_delay:.2f}с из-за ошибки: {exc}")
             await asyncio.sleep(total_delay)
