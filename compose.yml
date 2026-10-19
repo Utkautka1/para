@@ -36,6 +36,7 @@ services:
       start_period: 5s
 
   api:
+    image: para-api:latest
     build:
       context: .
       dockerfile: api.dockerfile
@@ -76,6 +77,7 @@ services:
         max-file: "3"
 
   bot:
+    image: para-bot:latest
     build:
       context: .
       dockerfile: bot.dockerfile
@@ -115,6 +117,7 @@ services:
         max-file: "3"
 
   worker:
+    image: para-worker:latest
     build:
       context: .
       dockerfile: worker.dockerfile
@@ -149,6 +152,7 @@ services:
         max-file: "3"
 
   solver:
+    image: para-solver:latest
     build:
       context: .
       dockerfile: solver.dockerfile

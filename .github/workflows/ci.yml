@@ -107,3 +107,13 @@ jobs:
 
       - name: Build All Docker Compose Services
         run: docker compose build --parallel
+
+      - name: Run Trivy Vulnerability Scanner on API Image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'para-api:latest'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'

@@ -6,12 +6,18 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+RUN groupadd -g 1000 appuser && \
+    useradd -u 1000 -g appuser -s /bin/sh -m appuser
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     rm -rf /root/.cache/pip
 
 COPY . .
+RUN mkdir -p /app/data /app/logs && chown -R appuser:appuser /app
+
+USER appuser
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"

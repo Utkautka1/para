@@ -5,8 +5,8 @@
 контекстное логирование trace_id и запись метрик нейросетей и очередей.
 """
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from api import create_app
 from core.logger import get_logger, get_trace_id, set_trace_id

@@ -2400,12 +2400,13 @@ flowchart TD
         EnvCI["Mock Env Loader\n(.env.ci -> .env)"]
     end
 
-    subgraph Stage3["3. Container Delivery Gate"]
-        DockerBuild["Docker Compose Build Matrix\n(--parallel)"]
-        SrvApi["para-api (FastAPI + gRPC)"]
-        SrvBot["para-bot (Aiogram 3.4)"]
-        SrvWorker["para-worker (Topic & Notifier)"]
-        SrvSolver["para-solver (DeepSeek Worker)"]
+    subgraph Stage3["3. Container Delivery & Security Gate"]
+        DockerBuild["Docker Compose Build Matrix\n(appuser UID 1000)"]
+        SrvApi["para-api:latest\n(Non-Root appuser)"]
+        SrvBot["para-bot:latest\n(Non-Root appuser)"]
+        SrvWorker["para-worker:latest\n(Non-Root appuser)"]
+        SrvSolver["para-solver:latest\n(Non-Root appuser)"]
+        TrivyScan["Trivy Vulnerability Scanner\n(OS & Library CVE Audit)"]
     end
 
     Trigger --> Stage1
@@ -2420,8 +2421,9 @@ flowchart TD
     DockerBuild --> SrvBot
     DockerBuild --> SrvWorker
     DockerBuild --> SrvSolver
+    SrvApi --> TrivyScan
 
-    Stage3 --> Success(["✅ Deployment Verified (Production Ready)"])
+    TrivyScan --> Success(["✅ Deployment Verified (Production Ready)"])
 ```
 
 ---
