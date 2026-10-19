@@ -42,4 +42,3 @@ scripts/
 *.md
 Makefile
 docker-compose.override.yml
-

@@ -42,9 +42,7 @@ router.message.filter(AttendanceAuthFilter())
 router.callback_query.filter(AttendanceAuthFilter())
 
 
-async def _async_commit_and_update(
-    message: Message | None, session, stats: dict[str, int]
-) -> None:
+async def _async_commit_and_update(message: Message | None, session, stats: dict[str, int]) -> None:
     """
     Выполняет фоновую фиксацию посещаемости в Яндекс Таблицу с обновлением сообщения.
 
@@ -60,8 +58,8 @@ async def _async_commit_and_update(
 
     badge = (
         "\n\n✅ <i>Успешно сохранено в Яндекс Таблицу</i>"
-        if success else
-        "\n\n⚠️ <i>Не удалось сохранить в Яндекс. Данные сохранены в Redis (/attendance).</i>"
+        if success
+        else "\n\n⚠️ <i>Не удалось сохранить в Яндекс. Данные сохранены в Redis (/attendance).</i>"
     )
     try:
         await message.edit_text(format_summary_text(session, stats) + badge)
@@ -111,9 +109,7 @@ def get_partner_admin_id(current_user_id: int) -> int | None:
     return None
 
 
-async def notify_partner_about_attendance(
-    session, stats: dict[str, int], user_full_name: str | None = None
-) -> None:
+async def notify_partner_about_attendance(session, stats: dict[str, int], user_full_name: str | None = None) -> None:
     """
     Отправляет полный отчет о завершении отметки пары второму администратору в ЛС.
 
@@ -134,6 +130,7 @@ async def notify_partner_about_attendance(
     text = format_partner_attendance_report(session, stats, title)
     try:
         from core.bot import bot
+
         await bot.send_message(partner_id, text)
         log.info(f"Статистика пары {session.lesson_num} отправлена партнеру {partner_id}")
     except Exception as e:
@@ -152,8 +149,7 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
 
     stats = calculate_summary_stats(session.marks)
     text_saving = (
-        format_summary_text(session, stats)
-        + "\n\n⏳ <i>Синхронизация с Яндекс Таблицей и топиком в фоне...</i>"
+        format_summary_text(session, stats) + "\n\n⏳ <i>Синхронизация с Яндекс Таблицей и топиком в фоне...</i>"
     )
     if cb.message:
         try:
@@ -269,7 +265,6 @@ async def check_session_ownership(cb: CallbackQuery, session) -> bool:
         return False
 
     return True
-
 
 
 async def _resolve_lesson_title_for_start(target_date, lesson_num: int) -> str:
@@ -476,9 +471,7 @@ async def cb_cancel_lesson(cb: CallbackQuery) -> None:
     if cb.message:
         await cb.message.edit_text(f"❌ Отметка посещаемости за пару {lesson_num} отменена.")
 
-    asyncio.create_task(
-        notify_partner_about_cancellation(lesson_num, cb.from_user.id, cb.from_user.full_name)
-    )
+    asyncio.create_task(notify_partner_about_cancellation(lesson_num, cb.from_user.id, cb.from_user.full_name))
     await cb.answer()
 
 
@@ -521,4 +514,3 @@ async def cb_close_menu(cb: CallbackQuery) -> None:
         await cb.message.delete()
 
     await cb.answer()
-

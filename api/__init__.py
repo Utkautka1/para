@@ -63,9 +63,7 @@ def _configure_openapi_servers(schema: dict[str, Any]) -> None:
 
     Ничего не возвращает; мутирует переданный словарь схемы.
     """
-    schema["servers"] = [
-        {"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}
-    ]
+    schema["servers"] = [{"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}]
 
 
 def _configure_openapi_security(schema: dict[str, Any]) -> None:
@@ -123,6 +121,7 @@ def _register_protected_docs(app: FastAPI) -> None:
 
     Ничего не возвращает.
     """
+
     @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
     async def get_openapi_spec() -> JSONResponse:
         """Отдает схему OpenAPI только авторизованным тестировщикам."""

@@ -175,7 +175,9 @@ async def mark_student(payload: MarkStudentRequest) -> ActiveSessionResponse:
     return _build_session_response(session)
 
 
-@router.post("/session/batch_present", response_model=ActiveSessionResponse, dependencies=[Depends(verify_admin_access)])
+@router.post(
+    "/session/batch_present", response_model=ActiveSessionResponse, dependencies=[Depends(verify_admin_access)]
+)
 async def batch_present() -> ActiveSessionResponse:
     """
     Массово проставляет статус 'П' (присутствует) всем оставшимся студентам (Admin only).
@@ -230,4 +232,3 @@ async def cancel_session() -> dict:
     await clear_session()
 
     return {"status": "ok", "message": "Attendance session cleared"}
-

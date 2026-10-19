@@ -5,7 +5,6 @@
 из официального документа Яндекс Диска и пользовательских настроек.
 """
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from api.deps import verify_admin_access, verify_api_or_tester
@@ -134,4 +133,3 @@ async def refresh_teachers() -> TeachersRefreshResponse:
     raw = await get_teacher_links(force_refresh=True)
 
     return TeachersRefreshResponse(status="ok", count=len(raw))
-

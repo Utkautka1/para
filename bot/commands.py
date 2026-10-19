@@ -70,4 +70,3 @@ async def register_bot_commands(bot: Bot) -> None:
         log.info("✅ Системное меню команд бота успешно зарегистрировано в Telegram")
     except Exception as e:
         log.warning(f"⚠️ Не удалось зарегистрировать системное меню команд: {e}")
-

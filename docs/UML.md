@@ -41,6 +41,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 10.4. [Multi-Tier High-Performance Architecture: L1 In-Memory, uvloop & gRPC Keepalive](#104-multi-tier-high-performance-architecture-l1-in-memory-uvloop--grpc-keepalive)
 11. [Automated CI/CD Pipeline & Delivery Verification](#11-automated-cicd-pipeline--delivery-verification)
 12. [Resilient Fallback Upstream & Clean Micro-Functions Architecture](#12-resilient-fallback-upstream--clean-micro-functions-architecture)
+13. [Hardened Security Governance & Secrets Lifecycle Management](#13-hardened-security-governance--secrets-lifecycle-management)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -1927,11 +1928,11 @@ sequenceDiagram
     TestersMgr->>RedisStore: SET api:key_to_uid:para_test_xxx 8894263260
     TestersMgr-->>Handler: Return True & Generated Key
     Handler-->>Admin: Alert with tester ID & Personal API Key
-    
+
     Tester->>Bot: /start or /swagger
     Bot->>Bot: Check is_tester_allowed(8894263260) == True
     Bot-->>Tester: Render Tester Cabinet with Key & Swagger UI buttons
-    
+
     Tester->>ApiServer: Request with Header X-API-Key or Bearer para_test_xxx
     ApiServer->>TestersMgr: get_tester_by_key(para_test_xxx)
     TestersMgr->>RedisStore: GET api:key_to_uid:para_test_xxx -> 8894263260
@@ -2323,18 +2324,20 @@ The automated GitHub Actions workflow (`.github/workflows/ci.yml`) enforces mult
 ```mermaid
 flowchart TD
     GitPush(["Git Push / PR (main)"]) --> Trigger["GitHub Actions Runner (ubuntu-latest)"]
-    
+
     subgraph Stage1["1. Static Analysis & Security (Python 3.12)"]
         Ruff["Ruff Linter\n(UP, B, SIM, E, F, I)"]
         Bandit["Bandit AST Scanner\n(pyproject.toml config)"]
+        PipAudit["Pip-Audit Scanner\n(PyPA Advisory Database)"]
+        DetectSecrets["Detect-Secrets Gate\n(.secrets.baseline)"]
     end
-    
+
     subgraph Stage2["2. Isolated Test Matrix (Strict AsyncIO)"]
         Py311["Pytest Suite\n(Python 3.11 Runtime)"]
         Py312["Pytest Suite\n(Python 3.12 Runtime)"]
         EnvCI["Mock Env Loader\n(.env.ci -> .env)"]
     end
-    
+
     subgraph Stage3["3. Container Delivery Gate"]
         DockerBuild["Docker Compose Build Matrix\n(--parallel)"]
         SrvApi["para-api (FastAPI + gRPC)"]
@@ -2342,20 +2345,20 @@ flowchart TD
         SrvWorker["para-worker (Topic & Notifier)"]
         SrvSolver["para-solver (DeepSeek Worker)"]
     end
-    
+
     Trigger --> Stage1
     Trigger --> Stage2
     Stage1 --> Stage3
     Stage2 --> Stage3
-    
+
     EnvCI --> Py311
     EnvCI --> Py312
-    
+
     DockerBuild --> SrvApi
     DockerBuild --> SrvBot
     DockerBuild --> SrvWorker
     DockerBuild --> SrvSolver
-    
+
     Stage3 --> Success(["✅ Deployment Verified (Production Ready)"])
 ```
 
@@ -2473,4 +2476,39 @@ classDiagram
     ConfigValidator --> TypedConfigDomain: 2. Typed & Fail-Fast Validated Ingress
 ```
 
+---
 
+## 13. Hardened Security Governance & Secrets Lifecycle Management
+
+To comply with enterprise security auditing, secret leakage prevention, and zero-trust policies, the system integrates pre-commit baseline auditing, dynamic secret rotation protocols, and strict token lifecycle management:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer / CI Pipeline
+    participant PC as Pre-Commit Framework
+    participant DS as Detect-Secrets Scanner
+    participant PA as Pip-Audit PyPA Engine
+    participant SecPol as SECURITY.md Governance
+    participant Redis as Redis Auth & Session Store
+
+    Dev->>PC: git commit (Trigger Pre-Commit Hooks)
+    activate PC
+    PC->>DS: Scan diff against .secrets.baseline
+    alt Secret Detected (High Entropy / Keyword)
+        DS-->>PC: Fail commit (Zero-Secrets Policy)
+        PC-->>Dev: ❌ Commit Blocked: Secret Leak Prevented
+    else No Secrets Found
+        DS-->>PC: Pass hook
+        PC->>PA: Verify requirements.txt against PyPA CVEs
+        PA-->>PC: Zero known vulnerabilities confirmed
+        PC-->>Dev: ✅ Pre-Commit Quality Gate Passed
+    end
+    deactivate PC
+
+    Dev->>SecPol: Periodic Secret Rotation (Cookies / Tokens / API Keys)
+    activate SecPol
+    SecPol->>Redis: Invalidate revoked keys & update session tokens
+    Redis-->>SecPol: Enforce dynamic TTL ceilings (86400s max)
+    deactivate SecPol
+```

@@ -21,7 +21,7 @@ loop Каждые 60 секунд
 
   updater -> api : GET /api/v1/schedule/day?group=...&date=today
   activate api
-  
+
   api -> redis : GET sched:group:snapshot
   activate redis
   alt Снимок найден в Redis (<2мс)
@@ -31,7 +31,7 @@ loop Каждые 60 секунд
     api -> redis : SET sched:group:snapshot (TTL 4ч)
   end
   deactivate redis
-  
+
   api --> updater : 200 OK (DayScheduleResponse)
   deactivate api
 

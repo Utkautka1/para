@@ -193,4 +193,3 @@ async def cb_delete_tester(callback: CallbackQuery) -> None:
 
     await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers))
     await callback.answer("Тестер удален")
-

@@ -26,18 +26,20 @@ async def test_get_api_schedule_for_date_deserialization():
     """Проверяет десериализацию списка занятий из ответа /schedule/day."""
     fake_json = {
         "date": "2026-09-28",
-        "lessons": [{
-            "period": 0,
-            "time_str": "08:30-10:00",
-            "subject": "Физика",
-            "lesson_type": "Лаб",
-            "teacher": "Сидоров С.С.",
-            "is_remote": False,
-            "room": "205",
-            "address": "Цветочная",
-            "subgroup": 1,
-            "is_stream": False,
-        }]
+        "lessons": [
+            {
+                "period": 0,
+                "time_str": "08:30-10:00",
+                "subject": "Физика",
+                "lesson_type": "Лаб",
+                "teacher": "Сидоров С.С.",
+                "is_remote": False,
+                "room": "205",
+                "address": "Цветочная",
+                "subgroup": 1,
+                "is_stream": False,
+            }
+        ],
     }
     with patch("core.api_client.fetch_day_schedule", new=AsyncMock(return_value=fake_json)):
         lessons = await get_api_schedule_for_date(date(2026, 9, 28))
@@ -52,16 +54,18 @@ async def test_get_api_exams_deserialization():
     """Проверяет десериализацию списка экзаменов из ответа /exams."""
     fake_json = {
         "count": 1,
-        "exams": [{
-            "subject": "Информатика",
-            "exam_type": "Экзамен",
-            "teacher": "Козлов К.К.",
-            "room": "301",
-            "address": "Вознесенский",
-            "weeks": [16, 17],
-            "subgroup": 0,
-            "format_str": "Очно",
-        }]
+        "exams": [
+            {
+                "subject": "Информатика",
+                "exam_type": "Экзамен",
+                "teacher": "Козлов К.К.",
+                "room": "301",
+                "address": "Вознесенский",
+                "weeks": [16, 17],
+                "subgroup": 0,
+                "format_str": "Очно",
+            }
+        ],
     }
     with patch("core.api_client.fetch_exams", new=AsyncMock(return_value=fake_json)):
         exams = await get_api_exams()
@@ -77,7 +81,6 @@ async def test_api_get_retries_on_network_error():
     mock_res = MagicMock()
     mock_res.json.return_value = {"status": "ok"}
     mock_res.raise_for_status = MagicMock()
-
 
     # Первый вызов падает с ошибкой сети, второй успешен
     mock_client.get.side_effect = [

@@ -41,11 +41,7 @@ def format_duration_str(duration_seconds: int) -> str:
     return f" ({mins}:{secs:02d})"
 
 
-def format_transcription_result(
-    sender_name: str,
-    duration_sec: int,
-    transcription_text: str
-) -> str:
+def format_transcription_result(sender_name: str, duration_sec: int, transcription_text: str) -> str:
     """
     Формирует красивое итоговое сообщение с расшифрованным текстом речи.
 
@@ -59,10 +55,7 @@ def format_transcription_result(
     safe_text = html.escape(transcription_text.strip())
     dur_str = format_duration_str(duration_sec)
 
-    return (
-        f"🗣 <b>{safe_name}</b>{dur_str}:\n\n"
-        f"«{safe_text}»"
-    )
+    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n" f"«{safe_text}»"
 
 
 def format_transcription_empty(sender_name: str, duration_sec: int) -> str:
@@ -78,10 +71,7 @@ def format_transcription_empty(sender_name: str, duration_sec: int) -> str:
     safe_name = html.escape(sender_name)
     dur_str = format_duration_str(duration_sec)
 
-    return (
-        f"🗣 <b>{safe_name}</b>{dur_str}:\n\n"
-        f"<i>(В аудиозаписи не удалось разобрать речь)</i>"
-    )
+    return f"🗣 <b>{safe_name}</b>{dur_str}:\n\n" f"<i>(В аудиозаписи не удалось разобрать речь)</i>"
 
 
 def format_transcription_error() -> str:
@@ -149,4 +139,3 @@ def format_queue_status(queue_pos: int) -> str:
     """
 
     return f"🎙 <i>В очереди на расшифровку (позиция: {queue_pos})...</i>"
-

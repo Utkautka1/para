@@ -5,7 +5,6 @@
 без импорта тяжёлых модулей парсинга (httpx, docx, etc).
 """
 
-
 from pydantic import BaseModel
 
 
@@ -71,4 +70,3 @@ class ExamItem(BaseModel):
     subgroup: int = 0
     # Текстовый формат проведения ('Очно' / 'Дистанционно')
     format_str: str = "Очно"
-

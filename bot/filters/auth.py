@@ -5,7 +5,6 @@
 разрешенному пользователю из конфигурации (ALLOWED_USER_ID).
 """
 
-
 from aiogram.filters import Filter
 from aiogram.types import CallbackQuery, Message
 
@@ -72,5 +71,3 @@ class AttendanceAuthFilter(Filter):
             return False
 
         return user.id in ALLOWED_ATTENDANCE_USER_IDS
-
-

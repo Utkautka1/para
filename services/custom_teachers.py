@@ -2,7 +2,6 @@
 Модуль локального хранения персональных контактов преподавателей.
 """
 
-
 from config import CUSTOM_TEACHERS_FILE_PATH
 from integrations.docx_parser import TeacherData
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -32,10 +31,7 @@ def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None:
     Ничего не возвращает.
     """
     data = load_custom_teachers()
-    data[last_name.lower()] = {
-        "full_name": full_name,
-        "link_info": link_info
-    }
+    data[last_name.lower()] = {"full_name": full_name, "link_info": link_info}
     sync_atomic_save_json(CUSTOM_TEACHERS_FILE, data)
 
 
@@ -52,4 +48,3 @@ def delete_custom_teacher(last_name: str) -> None:
     if last_name.lower() in data:
         data.pop(last_name.lower())
         sync_atomic_save_json(CUSTOM_TEACHERS_FILE, data)
-

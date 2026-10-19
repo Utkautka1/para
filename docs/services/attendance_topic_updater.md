@@ -25,26 +25,26 @@ graph LR
 | [`save_attendance_topic_state`](#save_attendance_topic_state) | Function | L50–L58 | `None` | Saves serialized entity data to storage for `save_atten... |
 | [`make_progress_bar`](#make_progress_bar) | Function | L61–L71 | `str` | Executes core domain logic for `make_progress_bar`. |
 | [`extract_short_fio`](#extract_short_fio) | Function | L74–L87 | `str` | Executes core domain logic for `extract_short_fio`. |
-| [`_build_student_item`](#_build_student_item) | Function | L90–L109 | `dict[str, Any]` | Executes core domain logic for `_build_student_item`. |
-| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L112–L126 | `str` | Executes core domain logic for `_build_compact_topic_he... |
-| [`_decline_absence`](#_decline_absence) | Function | L129–L146 | `str` | Executes core domain logic for `_decline_absence`. |
-| [`_format_debt_details`](#_format_debt_details) | Function | L149–L164 | `str` | Executes core domain logic for `_format_debt_details`. |
-| [`_format_debt_student`](#_format_debt_student) | Function | L167–L185 | `str` | Executes core domain logic for `_format_debt_student`. |
-| [`_format_perfect_student`](#_format_perfect_student) | Function | L188–L201 | `str` | Executes core domain logic for `_format_perfect_student... |
-| [`_build_topic_footer`](#_build_topic_footer) | Function | L204–L216 | `str` | Executes core domain logic for `_build_topic_footer`. |
-| [`_group_students_by_debts`](#_group_students_by_debts) | Function | L219–L231 | `tuple[list[dict], list[dict]]` | Executes core domain logic for `_group_students_by_debt... |
-| [`_build_topic_body_lines`](#_build_topic_body_lines) | Function | L234–L247 | `list[str]` | Executes core domain logic for `_build_topic_body_lines... |
-| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L250–L270 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L273–L288 | `None` | Executes core domain logic for `_pin_attendance_silentl... |
-| [`create_attendance_message`](#create_attendance_message) | Function | L291–L308 | `int` | Initializes and constructs a new instance of `create_at... |
-| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L311–L333 | `bool` | Executes core domain logic for `handle_attendance_edit_... |
-| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L336–L348 | `bool` | Executes core domain logic for `_edit_attendance_msg`. |
-| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L351–L371 | `bool` | Dispatches notification message via Telegram API for `s... |
-| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L374–L387 | `None` | Executes core domain logic for `_delete_old_attendance_... |
-| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L390–L406 | `bool` | Executes core domain logic for `recreate_attendance_top... |
-| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L409–L433 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
-| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L436–L449 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
-| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L452–L469 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
+| [`_build_student_item`](#_build_student_item) | Function | L90–L113 | `dict[str, Any]` | Executes core domain logic for `_build_student_item`. |
+| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L116–L130 | `str` | Executes core domain logic for `_build_compact_topic_he... |
+| [`_decline_absence`](#_decline_absence) | Function | L133–L150 | `str` | Executes core domain logic for `_decline_absence`. |
+| [`_format_debt_details`](#_format_debt_details) | Function | L153–L168 | `str` | Executes core domain logic for `_format_debt_details`. |
+| [`_format_debt_student`](#_format_debt_student) | Function | L171–L189 | `str` | Executes core domain logic for `_format_debt_student`. |
+| [`_format_perfect_student`](#_format_perfect_student) | Function | L192–L205 | `str` | Executes core domain logic for `_format_perfect_student... |
+| [`_build_topic_footer`](#_build_topic_footer) | Function | L208–L220 | `str` | Executes core domain logic for `_build_topic_footer`. |
+| [`_group_students_by_debts`](#_group_students_by_debts) | Function | L223–L235 | `tuple[list[dict], list[dict]]` | Executes core domain logic for `_group_students_by_debt... |
+| [`_build_topic_body_lines`](#_build_topic_body_lines) | Function | L238–L251 | `list[str]` | Executes core domain logic for `_build_topic_body_lines... |
+| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L254–L274 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L277–L292 | `None` | Executes core domain logic for `_pin_attendance_silentl... |
+| [`create_attendance_message`](#create_attendance_message) | Function | L295–L312 | `int` | Initializes and constructs a new instance of `create_at... |
+| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L315–L337 | `bool` | Executes core domain logic for `handle_attendance_edit_... |
+| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L340–L352 | `bool` | Executes core domain logic for `_edit_attendance_msg`. |
+| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L355–L375 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L378–L391 | `None` | Executes core domain logic for `_delete_old_attendance_... |
+| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L394–L410 | `bool` | Executes core domain logic for `recreate_attendance_top... |
+| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L413–L437 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
+| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L440–L453 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
+| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L456–L473 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
 
 ---
 
@@ -185,7 +185,7 @@ result = extract_short_fio(fio=...)
 def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L90-L109`](../../services/attendance_topic_updater.py#L90-L109)
+- **Source Reference**: [`services/attendance_topic_updater.py#L90-L113`](../../services/attendance_topic_updater.py#L90-L113)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -219,7 +219,7 @@ result = _build_student_item(fio=..., data=...)
 def _build_compact_topic_header(pulse: float, total: int, p_cnt: int, d_cnt: int) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L112-L126`](../../services/attendance_topic_updater.py#L112-L126)
+- **Source Reference**: [`services/attendance_topic_updater.py#L116-L130`](../../services/attendance_topic_updater.py#L116-L130)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -255,7 +255,7 @@ result = _build_compact_topic_header(pulse=..., total=..., p_cnt=...)
 def _decline_absence(n: int) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L129-L146`](../../services/attendance_topic_updater.py#L129-L146)
+- **Source Reference**: [`services/attendance_topic_updater.py#L133-L150`](../../services/attendance_topic_updater.py#L133-L150)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -288,7 +288,7 @@ result = _decline_absence(n=...)
 def _format_debt_details(s: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L149-L164`](../../services/attendance_topic_updater.py#L149-L164)
+- **Source Reference**: [`services/attendance_topic_updater.py#L153-L168`](../../services/attendance_topic_updater.py#L153-L168)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -321,7 +321,7 @@ result = _format_debt_details(s=...)
 def _format_debt_student(s: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L167-L185`](../../services/attendance_topic_updater.py#L167-L185)
+- **Source Reference**: [`services/attendance_topic_updater.py#L171-L189`](../../services/attendance_topic_updater.py#L171-L189)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -354,7 +354,7 @@ result = _format_debt_student(s=...)
 def _format_perfect_student(s: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L188-L201`](../../services/attendance_topic_updater.py#L188-L201)
+- **Source Reference**: [`services/attendance_topic_updater.py#L192-L205`](../../services/attendance_topic_updater.py#L192-L205)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -387,7 +387,7 @@ result = _format_perfect_student(s=...)
 def _build_topic_footer() -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L204-L216`](../../services/attendance_topic_updater.py#L204-L216)
+- **Source Reference**: [`services/attendance_topic_updater.py#L208-L220`](../../services/attendance_topic_updater.py#L208-L220)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -418,7 +418,7 @@ result = _build_topic_footer()
 def _group_students_by_debts(items: list[dict[str, Any]]) -> tuple[list[dict], list[dict]]
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L219-L231`](../../services/attendance_topic_updater.py#L219-L231)
+- **Source Reference**: [`services/attendance_topic_updater.py#L223-L235`](../../services/attendance_topic_updater.py#L223-L235)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[list[dict], list[dict]]`
 
@@ -451,7 +451,7 @@ result = _group_students_by_debts(items=...)
 def _build_topic_body_lines(perfect: list[dict[str, Any]], debts: list[dict[str, Any]]) -> list[str]
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L234-L247`](../../services/attendance_topic_updater.py#L234-L247)
+- **Source Reference**: [`services/attendance_topic_updater.py#L238-L251`](../../services/attendance_topic_updater.py#L238-L251)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
@@ -485,7 +485,7 @@ result = _build_topic_body_lines(perfect=..., debts=...)
 def format_attendance_topic_message(stats: dict[str, dict[str, Any]]) -> str
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L250-L270`](../../services/attendance_topic_updater.py#L250-L270)
+- **Source Reference**: [`services/attendance_topic_updater.py#L254-L274`](../../services/attendance_topic_updater.py#L254-L274)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -518,7 +518,7 @@ result = format_attendance_topic_message(stats=...)
 async def _pin_attendance_silently(message_id: int) -> None
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L273-L288`](../../services/attendance_topic_updater.py#L273-L288)
+- **Source Reference**: [`services/attendance_topic_updater.py#L277-L292`](../../services/attendance_topic_updater.py#L277-L292)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -551,7 +551,7 @@ result = await _pin_attendance_silently(message_id=...)
 async def create_attendance_message(text: str) -> int
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L291-L308`](../../services/attendance_topic_updater.py#L291-L308)
+- **Source Reference**: [`services/attendance_topic_updater.py#L295-L312`](../../services/attendance_topic_updater.py#L295-L312)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -584,7 +584,7 @@ result = await create_attendance_message(text=...)
 async def handle_attendance_edit_error(text: str, err_str: str, retry: bool) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L311-L333`](../../services/attendance_topic_updater.py#L311-L333)
+- **Source Reference**: [`services/attendance_topic_updater.py#L315-L337`](../../services/attendance_topic_updater.py#L315-L337)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -619,7 +619,7 @@ result = await handle_attendance_edit_error(text=..., err_str=..., retry=...)
 async def _edit_attendance_msg(text: str) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L336-L348`](../../services/attendance_topic_updater.py#L336-L348)
+- **Source Reference**: [`services/attendance_topic_updater.py#L340-L352`](../../services/attendance_topic_updater.py#L340-L352)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -652,7 +652,7 @@ result = await _edit_attendance_msg(text=...)
 async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L351-L371`](../../services/attendance_topic_updater.py#L351-L371)
+- **Source Reference**: [`services/attendance_topic_updater.py#L355-L375`](../../services/attendance_topic_updater.py#L355-L375)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -686,7 +686,7 @@ result = await send_or_edit_attendance_msg(text=..., _retry=...)
 async def _delete_old_attendance_msg(old_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L374-L387`](../../services/attendance_topic_updater.py#L374-L387)
+- **Source Reference**: [`services/attendance_topic_updater.py#L378-L391`](../../services/attendance_topic_updater.py#L378-L391)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -719,7 +719,7 @@ result = await _delete_old_attendance_msg(old_id=...)
 async def recreate_attendance_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L390-L406`](../../services/attendance_topic_updater.py#L390-L406)
+- **Source Reference**: [`services/attendance_topic_updater.py#L394-L410`](../../services/attendance_topic_updater.py#L394-L410)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -750,7 +750,7 @@ result = await recreate_attendance_topic_message()
 async def sync_attendance_topic_message(force_refresh: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L409-L433`](../../services/attendance_topic_updater.py#L409-L433)
+- **Source Reference**: [`services/attendance_topic_updater.py#L413-L437`](../../services/attendance_topic_updater.py#L413-L437)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -784,7 +784,7 @@ result = await sync_attendance_topic_message(force_refresh=...)
 def _get_attendance_sync_sleep_seconds() -> int
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L436-L449`](../../services/attendance_topic_updater.py#L436-L449)
+- **Source Reference**: [`services/attendance_topic_updater.py#L440-L453`](../../services/attendance_topic_updater.py#L440-L453)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -815,7 +815,7 @@ result = _get_attendance_sync_sleep_seconds()
 async def attendance_topic_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L452-L469`](../../services/attendance_topic_updater.py#L452-L469)
+- **Source Reference**: [`services/attendance_topic_updater.py#L456-L473`](../../services/attendance_topic_updater.py#L456-L473)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

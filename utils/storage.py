@@ -109,4 +109,3 @@ async def save_json(file_path: str, data: Any) -> bool:
     Возвращает True при успешной записи, False при сбое.
     """
     return await asyncio.to_thread(sync_atomic_save_json, file_path, data)
-

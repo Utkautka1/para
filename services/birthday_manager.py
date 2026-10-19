@@ -229,10 +229,7 @@ def format_birthday_registry_text(items: list[dict[str, Any]]) -> str:
 
     Возвращает готовую HTML-строку для отправки в топик.
     """
-    lines = [
-        "🎂 <b>ДНИ РОЖДЕНИЯ ГРУППЫ 1-КПД-3</b>",
-        "────────────────────────────"
-    ]
+    lines = ["🎂 <b>ДНИ РОЖДЕНИЯ ГРУППЫ 1-КПД-3</b>", "────────────────────────────"]
     lines.extend(format_today_block([i for i in items if i.get("is_today")]))
     lines.extend(format_upcoming_block(items))
     for title, months in SEASONS_INFO:
@@ -240,7 +237,6 @@ def format_birthday_registry_text(items: list[dict[str, Any]]) -> str:
     lines.append("────────────────────────────")
     lines.append("<i>🔄 Бот ежедневно обновляет реестр и поздравляет в 07:00</i>")
     return "\n".join(lines).strip()
-
 
 
 def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HISTORY_FILE) -> str:
@@ -296,15 +292,10 @@ def format_starosta_block(starosta_text: str | None) -> str:
     """
     if not starosta_text:
         return ""
-    return (
-        "👑 <b>Слово старосты:</b>\n"
-        f"<blockquote>«{starosta_text}»</blockquote>"
-    )
+    return "👑 <b>Слово старосты:</b>\n" f"<blockquote>«{starosta_text}»</blockquote>"
 
 
-def format_congrats_message(
-    item: dict[str, Any], wish_text: str, starosta_text: str | None = None
-) -> str:
+def format_congrats_message(item: dict[str, Any], wish_text: str, starosta_text: str | None = None) -> str:
     """
     Формирует праздничное персональное поздравление от имени группы и старосты.
 
@@ -329,9 +320,7 @@ def format_congrats_message(
     )
 
 
-async def _send_congrats_telegram(
-    text: str, person_key: str, key: str, state: dict[str, bool]
-) -> None:
+async def _send_congrats_telegram(text: str, person_key: str, key: str, state: dict[str, bool]) -> None:
     """
     Отправляет поздравление в топик 'Важное' и сохраняет флаг доставки.
 
@@ -341,9 +330,7 @@ async def _send_congrats_telegram(
     Ничего не возвращает.
     """
     try:
-        await bot.send_message(
-            chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text
-        )
+        await bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text)
         state[key] = True
         save_json_file(CONGRATS_STATE_FILE, state)
         log.info(f"✅ Отправлено поздравление для {person_key} в топик {IMPORTANT_TOPIC_THREAD_ID}")
@@ -433,9 +420,7 @@ async def _create_new_birthday_message(text: str) -> bool:
     Возвращает True при успешной отправке, False при ошибке Telegram API.
     """
     try:
-        msg = await bot.send_message(
-            chat_id=TOPIC_CHAT_ID, message_thread_id=BIRTHDAY_TOPIC_THREAD_ID, text=text
-        )
+        msg = await bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=BIRTHDAY_TOPIC_THREAD_ID, text=text)
         save_json_file(STATE_FILE, {"main_msg_id": msg.message_id})
         try:
             await bot.pin_chat_message(chat_id=TOPIC_CHAT_ID, message_id=msg.message_id, disable_notification=True)
@@ -503,4 +488,3 @@ async def birthday_sync_loop() -> None:
         except Exception as e:
             log.error(f"Ошибка в birthday_sync_loop: {e}")
         await asyncio.sleep(1800)
-

@@ -63,6 +63,7 @@ def get_target_doc_url() -> str:
     """
     try:
         from config import ATTENDANCE_DOC_URL
+
         return ATTENDANCE_DOC_URL or TEST_DOC_URL
     except Exception:
         return TEST_DOC_URL
@@ -96,6 +97,7 @@ def extract_raw_yandex_cookies(db_path: Path) -> dict[str, str]:
     Возвращает словарь {имя_куки: значение} с актуальными токенами.
     """
     import tempfile
+
     tmp_path = Path(tempfile.gettempdir()) / f"zen_cookies_{os.getpid()}.sqlite"  # nosec B108
     shutil.copy2(db_path, tmp_path)
     try:
@@ -126,7 +128,9 @@ def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str
     Возвращает дополненный словарь cookies с обновленными токенами сессии.
     """
     encoded_url = urllib.parse.quote(target_url, safe="")
-    passport_url = f"https://passport.yandex.ru/auth/update/?from=cloud&origin=disk_client_web_signin_ru&retpath={encoded_url}"
+    passport_url = (
+        f"https://passport.yandex.ru/auth/update/?from=cloud&origin=disk_client_web_signin_ru&retpath={encoded_url}"
+    )
     cookie_str = "; ".join(f"{k}={v}" for k, v in cookies.items())
     req = urllib.request.Request(passport_url, headers={"User-Agent": "Mozilla/5.0", "Cookie": cookie_str})
 
@@ -236,7 +240,7 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
         f"res = re.sub(r'YANDEX_COOKIE=.*\\n', v, s) if 'YANDEX_COOKIE=' in s else s + v; "
         f"open(p, 'w').write(res)"
     )
-    subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
+    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
 
 
 def send_api_urls_to_remote_env(
@@ -264,7 +268,7 @@ def send_api_urls_to_remote_env(
         f"s = re.sub(r'EXAM_SCHEDULE_FALLBACK_API_URL=.*\\n', '', s) + v_fb; "
         f"open(p, 'w').write(s)"
     )
-    subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
+    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
 
 
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
@@ -284,7 +288,7 @@ def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_
         f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', '{REDIS_YANDEX_COOKIE_KEY}', c, 'ex', '{REDIS_COOKIE_TTL_SECONDS}'], check=True); "
         f"subprocess.run(['docker', 'compose', 'up', '-d', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
     )
-    subprocess.run(["ssh", host, f"python3 -c \"{py}\""], check=True)
+    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
 
 
 def sync_cookies(host: str = "home") -> bool:

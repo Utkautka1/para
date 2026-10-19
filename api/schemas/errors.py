@@ -14,17 +14,18 @@ from pydantic import BaseModel, Field
 
 class ErrorDetail(BaseModel):
     """Стандартный ответ с ошибкой para-api."""
+
     detail: str = Field(..., description="Понятное человеку описание ошибки")
     code: str | None = Field(None, description="Специфический строковый код ошибки")
     timestamp: str = Field(
         default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        description="Время возникновения ошибки в формате ISO 8601"
+        description="Время возникновения ошибки в формате ISO 8601",
     )
-
 
 
 class ValidationErrorItem(BaseModel):
     """Детали одной ошибки валидации Pydantic."""
+
     loc: list[str | int] = Field(..., description="Путь к невалидному полю")
     msg: str = Field(..., description="Сообщение валидатора")
     type: str = Field(..., description="Тип нарушения валидации")
@@ -32,6 +33,7 @@ class ValidationErrorItem(BaseModel):
 
 class ValidationErrorResponse(BaseModel):
     """Стандартный ответ при ошибке 422 Unprocessable Entity."""
+
     detail: list[ValidationErrorItem] = Field(..., description="Список полей с ошибками валидации")
     code: str = Field(default="VALIDATION_ERROR", description="Код ошибки")
 

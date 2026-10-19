@@ -66,4 +66,3 @@ async def global_error_handler(event: ErrorEvent) -> bool:
         await _notify_message_error(update.message)
 
     return True
-

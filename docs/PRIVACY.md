@@ -1,8 +1,8 @@
 # Privacy Policy
 
-**Effective Date:** October 5, 2026  
-**Last Updated:** October 5, 2026  
-**Project:** Telegram Group Automation & Timetable Service for Student Group 1-KPD-3 («para»)  
+**Effective Date:** October 5, 2026
+**Last Updated:** October 5, 2026
+**Project:** Telegram Group Automation & Timetable Service for Student Group 1-KPD-3 («para»)
 **Repository:** [https://github.com/Utkautka1/para](https://github.com/Utkautka1/para)
 
 ---

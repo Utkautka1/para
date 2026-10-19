@@ -104,5 +104,3 @@ def add_user_to_cache(username: str, user_id: int) -> None:
         cache[clean] = user_id
         save_user_cache(cache)
         log.debug(f"Кэширован пользователь: @{clean} -> {user_id}")
-
-

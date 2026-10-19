@@ -421,13 +421,15 @@ def _format_spec_body(node: ast.AST, filepath: str) -> list[str]:
     ]
     for eff in analyze_side_effects(node):
         body.append(f"- {eff}")
-    body.extend([
-        "\n#### Fault Tolerance & Error Modes",
-        f"{analyze_error_modes(node)}\n",
-        "#### Production Usage Example",
-        build_example_snippet(name, is_async, args, filepath),
-        "\n---\n",
-    ])
+    body.extend(
+        [
+            "\n#### Fault Tolerance & Error Modes",
+            f"{analyze_error_modes(node)}\n",
+            "#### Production Usage Example",
+            build_example_snippet(name, is_async, args, filepath),
+            "\n---\n",
+        ]
+    )
     return body
 
 
@@ -542,7 +544,9 @@ def build_inventory_table(tree: ast.Module) -> list[str]:
             ret = ast.unparse(item.returns) if item.returns else "Any"
             intent = describe_function_intent(item.name, isinstance(item, ast.AsyncFunctionDef))
             short_desc = intent[:55] + "..." if len(intent) > 55 else intent
-            rows.append(f"| [`{item.name}`](#{item.name.lower()}) | Function | L{item.lineno}–L{item.end_lineno} | `{ret}` | {short_desc} |")
+            rows.append(
+                f"| [`{item.name}`](#{item.name.lower()}) | Function | L{item.lineno}–L{item.end_lineno} | `{ret}` | {short_desc} |"
+            )
         elif isinstance(item, ast.ClassDef):
             for method in item.body:
                 if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -551,7 +555,9 @@ def build_inventory_table(tree: ast.Module) -> list[str]:
                     short_desc = intent[:55] + "..." if len(intent) > 55 else intent
                     qual = f"{item.name}.{method.name}"
                     anchor = f"{item.name.lower()}{method.name.lower()}"
-                    rows.append(f"| [`{qual}`](#{anchor}) | Method | L{method.lineno}–L{method.end_lineno} | `{ret}` | {short_desc} |")
+                    rows.append(
+                        f"| [`{qual}`](#{anchor}) | Method | L{method.lineno}–L{method.end_lineno} | `{ret}` | {short_desc} |"
+                    )
     return rows
 
 
@@ -601,7 +607,10 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "config.py": {"out": "docs/entrypoints/config.md", "cat": "System Configuration"},
     "services/attendance_manager.py": {"out": "docs/services/attendance_manager.md", "cat": "Attendance Operations"},
     "services/attendance_stats.py": {"out": "docs/services/attendance_stats.md", "cat": "Spreadsheet Analytics"},
-    "services/attendance_topic_updater.py": {"out": "docs/services/attendance_topic_updater.md", "cat": "Telemetry Topic"},
+    "services/attendance_topic_updater.py": {
+        "out": "docs/services/attendance_topic_updater.md",
+        "cat": "Telemetry Topic",
+    },
     "services/birthday_manager.py": {"out": "docs/services/birthday_manager.md", "cat": "Student Lifecycle"},
     "services/classmates_auth.py": {"out": "docs/services/classmates_auth.md", "cat": "RBAC Security"},
     "services/custom_teachers.py": {"out": "docs/services/custom_teachers.md", "cat": "Faculty Registry"},
@@ -653,19 +662,40 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "bot/handlers/user/attendance.py": {"out": "docs/bot/handlers_user_attendance.md", "cat": "User Attendance Flow"},
     "bot/handlers/user/hw_solver.py": {"out": "docs/bot/handlers_user_hw_solver.md", "cat": "AI Homework Flow"},
     "bot/handlers/user/public_copy.py": {"out": "docs/bot/handlers_user_public_copy.md", "cat": "Public Sharing Flow"},
-    "bot/handlers/user/auth_fallback.py": {"out": "docs/bot/handlers_user_auth_fallback.md", "cat": "Fallback Auth Flow"},
-    "bot/handlers/user/voice_transcribe.py": {"out": "docs/bot/handlers_user_voice_transcribe.md", "cat": "Voice Transcription Handler"},
-    "bot/handlers/admin/attendance.py": {"out": "docs/bot/handlers_admin_attendance.md", "cat": "Headman Attendance Polling"},
+    "bot/handlers/user/auth_fallback.py": {
+        "out": "docs/bot/handlers_user_auth_fallback.md",
+        "cat": "Fallback Auth Flow",
+    },
+    "bot/handlers/user/voice_transcribe.py": {
+        "out": "docs/bot/handlers_user_voice_transcribe.md",
+        "cat": "Voice Transcription Handler",
+    },
+    "bot/handlers/admin/attendance.py": {
+        "out": "docs/bot/handlers_admin_attendance.md",
+        "cat": "Headman Attendance Polling",
+    },
     "bot/handlers/admin/panel.py": {"out": "docs/bot/handlers_admin_panel.md", "cat": "Admin Control Panel"},
     "bot/handlers/admin/mute.py": {"out": "docs/bot/handlers_admin_mute.md", "cat": "Moderation Ban Engine"},
-    "bot/handlers/admin/ping_all.py": {"out": "docs/bot/handlers_admin_ping_all.md", "cat": "Supergroup Alert Dispatch"},
+    "bot/handlers/admin/ping_all.py": {
+        "out": "docs/bot/handlers_admin_ping_all.md",
+        "cat": "Supergroup Alert Dispatch",
+    },
     "bot/handlers/admin/testers.py": {"out": "docs/bot/handlers_admin_testers.md", "cat": "Tester Management Flow"},
     "bot/templates/user/keyboards.py": {"out": "docs/bot/templates_user_keyboards.md", "cat": "User Inline Keyboards"},
     "bot/templates/user/messages.py": {"out": "docs/bot/templates_user_messages.md", "cat": "User Message Formatter"},
     "bot/templates/user/voice.py": {"out": "docs/bot/templates_user_voice.md", "cat": "Voice Message Templates"},
-    "bot/templates/admin/attendance.py": {"out": "docs/bot/templates_admin_attendance.md", "cat": "Attendance Keyboards"},
-    "bot/templates/admin/keyboards.py": {"out": "docs/bot/templates_admin_keyboards.md", "cat": "Admin Panel Keyboards"},
-    "bot/templates/admin/testers.py": {"out": "docs/bot/templates_admin_testers.md", "cat": "Tester Keyboards & States"},
+    "bot/templates/admin/attendance.py": {
+        "out": "docs/bot/templates_admin_attendance.md",
+        "cat": "Attendance Keyboards",
+    },
+    "bot/templates/admin/keyboards.py": {
+        "out": "docs/bot/templates_admin_keyboards.md",
+        "cat": "Admin Panel Keyboards",
+    },
+    "bot/templates/admin/testers.py": {
+        "out": "docs/bot/templates_admin_testers.md",
+        "cat": "Tester Keyboards & States",
+    },
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
 }
 
@@ -725,8 +755,12 @@ def build_master_portal(manifest: dict[str, dict[str, str]]) -> str:
     for src, meta in sorted(manifest.items(), key=lambda x: (x[1]["cat"], x[0])):
         out_rel = meta["out"].replace("docs/", "")
         rel_src = os.path.relpath(src, "docs")
-        lines.append(f"| `{meta['cat']}` | [`{src}`]({rel_src}) | [📖 View Specification]({out_rel}) | Enterprise Service Component |")
-    lines.append("\n---\n*Authored under Google Developer Documentation Style Guide standards. 100% Technical English.*")
+        lines.append(
+            f"| `{meta['cat']}` | [`{src}`]({rel_src}) | [📖 View Specification]({out_rel}) | Enterprise Service Component |"
+        )
+    lines.append(
+        "\n---\n*Authored under Google Developer Documentation Style Guide standards. 100% Technical English.*"
+    )
     return "\n".join(lines)
 
 

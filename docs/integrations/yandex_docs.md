@@ -21,47 +21,47 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`WopiSession.__init__`](#wopisession__init__) | Method | L46–L52 | `Any` | Executes core domain logic for `__init__`. |
-| [`extract_client_config`](#extract_client_config) | Function | L55–L69 | `dict` | Executes core domain logic for `extract_client_config`. |
-| [`merge_cookie_header`](#merge_cookie_header) | Function | L72–L88 | `str` | Executes core domain logic for `merge_cookie_header`. |
-| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L91–L106 | `str` | Retrieves and resolves domain data for `get_yandex_cook... |
-| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L109–L128 | `str` | Retrieves and resolves domain data for `get_effective_y... |
-| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L131–L148 | `None` | Saves serialized entity data to storage for `save_effec... |
-| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L151–L165 | `None` | Synchronizes and updates domain state for `update_cooki... |
-| [`_build_dom_headers`](#_build_dom_headers) | Function | L168–L187 | `dict[str, str]` | Executes core domain logic for `_build_dom_headers`. |
-| [`fetch_page_dom`](#fetch_page_dom) | Function | L190–L206 | `str` | Executes core domain logic for `fetch_page_dom`. |
-| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L209–L224 | `str` | Retrieves and resolves domain data for `get_active_wopi... |
-| [`init_wopi_session`](#init_wopi_session) | Function | L227–L246 | `WopiSession` | Executes core domain logic for `init_wopi_session`. |
-| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L249–L262 | `openpyxl.Workbook` | Executes core domain logic for `load_workbook_from_byte... |
-| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L265–L287 | `dict[tuple[str, int], int]` | Executes core domain logic for `compute_sheet_summary_c... |
-| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L290–L315 | `str` | Executes core domain logic for `patch_sheet_xml_counts`... |
-| [`_write_summary_col_header`](#_write_summary_col_header) | Function | L318–L328 | `None` | Executes core domain logic for `_write_summary_col_head... |
-| [`_write_summary_formulas`](#_write_summary_formulas) | Function | L331–L344 | `None` | Executes core domain logic for `_write_summary_formulas... |
-| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L347–L369 | `None` | Executes core domain logic for `ensure_all_summary_head... |
-| [`inject_summary_cache`](#inject_summary_cache) | Function | L372–L392 | `bytes` | Executes core domain logic for `inject_summary_cache`. |
-| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L395–L410 | `bytes` | Saves serialized entity data to storage for `save_workb... |
-| [`download_workbook`](#download_workbook) | Function | L413–L429 | `openpyxl.Workbook` | Executes core domain logic for `download_workbook`. |
-| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L432–L444 | `bool` | Executes core domain logic for `acquire_wopi_lock`. |
-| [`release_wopi_lock`](#release_wopi_lock) | Function | L447–L458 | `bool` | Executes core domain logic for `release_wopi_lock`. |
-| [`put_wopi_contents`](#put_wopi_contents) | Function | L461–L482 | `httpx.Response` | Executes core domain logic for `put_wopi_contents`. |
-| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L485–L506 | `bool` | Executes core domain logic for `_try_put_with_lock`. |
-| [`upload_workbook`](#upload_workbook) | Function | L509–L524 | `bool` | Executes core domain logic for `upload_workbook`. |
-| [`verify_upload`](#verify_upload) | Function | L527–L546 | `bool` | Executes core domain logic for `verify_upload`. |
-| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L549–L563 | `bytes` | Executes core domain logic for `_download_raw_bytes`. |
-| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L566–L585 | `str | None` | Executes core domain logic for `_find_sheet_rid`. |
-| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L588–L605 | `str | None` | Executes core domain logic for `_resolve_sheet_target_p... |
-| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L608–L631 | `str | None` | Executes core domain logic for `_extract_sheet_xml`. |
-| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L634–L644 | `bool` | Executes core domain logic for `_cell_has_expected_mark... |
-| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L647–L669 | `bool` | Executes core domain logic for `_marks_found_in_xml`. |
-| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L672–L692 | `bool` | Executes core domain logic for `_verify_marks_in_raw`. |
-| [`get_month_sheet`](#get_month_sheet) | Function | L695–L706 | `Worksheet` | Retrieves and resolves domain data for `get_month_sheet... |
-| [`parse_date_cell`](#parse_date_cell) | Function | L709–L721 | `str | None` | Parses and extracts structured entities from `parse_dat... |
-| [`find_date_column_start`](#find_date_column_start) | Function | L724–L738 | `int | None` | Executes core domain logic for `find_date_column_start`... |
-| [`find_lesson_column`](#find_lesson_column) | Function | L741–L759 | `int | None` | Executes core domain logic for `find_lesson_column`. |
-| [`normalize_fio`](#normalize_fio) | Function | L762–L770 | `str` | Executes core domain logic for `normalize_fio`. |
-| [`get_students_list`](#get_students_list) | Function | L773–L789 | `list[tuple[int, str]]` | Retrieves and resolves domain data for `get_students_li... |
-| [`find_student_row`](#find_student_row) | Function | L792–L804 | `int | None` | Executes core domain logic for `find_student_row`. |
-| [`write_student_mark`](#write_student_mark) | Function | L807–L827 | `None` | Executes core domain logic for `write_student_mark`. |
+| [`WopiSession.__init__`](#wopisession__init__) | Method | L56–L62 | `Any` | Executes core domain logic for `__init__`. |
+| [`extract_client_config`](#extract_client_config) | Function | L65–L79 | `dict` | Executes core domain logic for `extract_client_config`. |
+| [`merge_cookie_header`](#merge_cookie_header) | Function | L82–L98 | `str` | Executes core domain logic for `merge_cookie_header`. |
+| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L101–L116 | `str` | Retrieves and resolves domain data for `get_yandex_cook... |
+| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L119–L138 | `str` | Retrieves and resolves domain data for `get_effective_y... |
+| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L141–L158 | `None` | Saves serialized entity data to storage for `save_effec... |
+| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L161–L175 | `None` | Synchronizes and updates domain state for `update_cooki... |
+| [`_build_dom_headers`](#_build_dom_headers) | Function | L178–L197 | `dict[str, str]` | Executes core domain logic for `_build_dom_headers`. |
+| [`fetch_page_dom`](#fetch_page_dom) | Function | L200–L216 | `str` | Executes core domain logic for `fetch_page_dom`. |
+| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L219–L234 | `str` | Retrieves and resolves domain data for `get_active_wopi... |
+| [`init_wopi_session`](#init_wopi_session) | Function | L237–L256 | `WopiSession` | Executes core domain logic for `init_wopi_session`. |
+| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L259–L272 | `openpyxl.Workbook` | Executes core domain logic for `load_workbook_from_byte... |
+| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L275–L297 | `dict[tuple[str, int], int]` | Executes core domain logic for `compute_sheet_summary_c... |
+| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L300–L326 | `str` | Executes core domain logic for `patch_sheet_xml_counts`... |
+| [`_write_summary_col_header`](#_write_summary_col_header) | Function | L329–L339 | `None` | Executes core domain logic for `_write_summary_col_head... |
+| [`_write_summary_formulas`](#_write_summary_formulas) | Function | L342–L355 | `None` | Executes core domain logic for `_write_summary_formulas... |
+| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L358–L380 | `None` | Executes core domain logic for `ensure_all_summary_head... |
+| [`inject_summary_cache`](#inject_summary_cache) | Function | L383–L403 | `bytes` | Executes core domain logic for `inject_summary_cache`. |
+| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L406–L421 | `bytes` | Saves serialized entity data to storage for `save_workb... |
+| [`download_workbook`](#download_workbook) | Function | L424–L440 | `openpyxl.Workbook` | Executes core domain logic for `download_workbook`. |
+| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L443–L455 | `bool` | Executes core domain logic for `acquire_wopi_lock`. |
+| [`release_wopi_lock`](#release_wopi_lock) | Function | L458–L469 | `bool` | Executes core domain logic for `release_wopi_lock`. |
+| [`put_wopi_contents`](#put_wopi_contents) | Function | L472–L493 | `httpx.Response` | Executes core domain logic for `put_wopi_contents`. |
+| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L496–L515 | `bool` | Executes core domain logic for `_try_put_with_lock`. |
+| [`upload_workbook`](#upload_workbook) | Function | L518–L533 | `bool` | Executes core domain logic for `upload_workbook`. |
+| [`verify_upload`](#verify_upload) | Function | L536–L555 | `bool` | Executes core domain logic for `verify_upload`. |
+| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L558–L572 | `bytes` | Executes core domain logic for `_download_raw_bytes`. |
+| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L575–L594 | `str | None` | Executes core domain logic for `_find_sheet_rid`. |
+| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L597–L614 | `str | None` | Executes core domain logic for `_resolve_sheet_target_p... |
+| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L617–L640 | `str | None` | Executes core domain logic for `_extract_sheet_xml`. |
+| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L643–L653 | `bool` | Executes core domain logic for `_cell_has_expected_mark... |
+| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L656–L676 | `bool` | Executes core domain logic for `_marks_found_in_xml`. |
+| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L679–L697 | `bool` | Executes core domain logic for `_verify_marks_in_raw`. |
+| [`get_month_sheet`](#get_month_sheet) | Function | L700–L711 | `Worksheet` | Retrieves and resolves domain data for `get_month_sheet... |
+| [`parse_date_cell`](#parse_date_cell) | Function | L714–L726 | `str | None` | Parses and extracts structured entities from `parse_dat... |
+| [`find_date_column_start`](#find_date_column_start) | Function | L729–L743 | `int | None` | Executes core domain logic for `find_date_column_start`... |
+| [`find_lesson_column`](#find_lesson_column) | Function | L746–L764 | `int | None` | Executes core domain logic for `find_lesson_column`. |
+| [`normalize_fio`](#normalize_fio) | Function | L767–L775 | `str` | Executes core domain logic for `normalize_fio`. |
+| [`get_students_list`](#get_students_list) | Function | L778–L794 | `list[tuple[int, str]]` | Retrieves and resolves domain data for `get_students_li... |
+| [`find_student_row`](#find_student_row) | Function | L797–L809 | `int | None` | Executes core domain logic for `find_student_row`. |
+| [`write_student_mark`](#write_student_mark) | Function | L812–L832 | `None` | Executes core domain logic for `write_student_mark`. |
 
 ---
 
@@ -76,7 +76,7 @@ Encapsulates domain entities and data transfer logic for `WopiSession`.
 def __init__(self, resource_url: str, access_token: str, lock_id: str)
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L46-L52`](../../integrations/yandex_docs.py#L46-L52)
+- **Source Reference**: [`integrations/yandex_docs.py#L56-L62`](../../integrations/yandex_docs.py#L56-L62)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -111,7 +111,7 @@ result = __init__(resource_url=..., access_token=..., lock_id=...)
 def extract_client_config(html_content: str) -> dict
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L55-L69`](../../integrations/yandex_docs.py#L55-L69)
+- **Source Reference**: [`integrations/yandex_docs.py#L65-L79`](../../integrations/yandex_docs.py#L65-L79)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict`
 
@@ -144,7 +144,7 @@ result = extract_client_config(html_content=...)
 def merge_cookie_header(current_cookie: str, new_cookies: dict[str, str]) -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L72-L88`](../../integrations/yandex_docs.py#L72-L88)
+- **Source Reference**: [`integrations/yandex_docs.py#L82-L98`](../../integrations/yandex_docs.py#L82-L98)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -178,7 +178,7 @@ result = merge_cookie_header(current_cookie=..., new_cookies=...)
 def get_yandex_cookie_header() -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L91-L106`](../../integrations/yandex_docs.py#L91-L106)
+- **Source Reference**: [`integrations/yandex_docs.py#L101-L116`](../../integrations/yandex_docs.py#L101-L116)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -209,7 +209,7 @@ result = get_yandex_cookie_header()
 async def get_effective_yandex_cookie() -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L109-L128`](../../integrations/yandex_docs.py#L109-L128)
+- **Source Reference**: [`integrations/yandex_docs.py#L119-L138`](../../integrations/yandex_docs.py#L119-L138)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -241,7 +241,7 @@ result = await get_effective_yandex_cookie()
 async def save_effective_yandex_cookie(cookie_str: str) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L131-L148`](../../integrations/yandex_docs.py#L131-L148)
+- **Source Reference**: [`integrations/yandex_docs.py#L141-L158`](../../integrations/yandex_docs.py#L141-L158)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -275,7 +275,7 @@ result = await save_effective_yandex_cookie(cookie_str=...)
 async def update_cookies_from_response(res: httpx.Response, current_cookie: str) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L151-L165`](../../integrations/yandex_docs.py#L151-L165)
+- **Source Reference**: [`integrations/yandex_docs.py#L161-L175`](../../integrations/yandex_docs.py#L161-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -309,7 +309,7 @@ result = await update_cookies_from_response(res=..., current_cookie=...)
 def _build_dom_headers(cookie_hdr: str) -> dict[str, str]
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L168-L187`](../../integrations/yandex_docs.py#L168-L187)
+- **Source Reference**: [`integrations/yandex_docs.py#L178-L197`](../../integrations/yandex_docs.py#L178-L197)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -342,7 +342,7 @@ result = _build_dom_headers(cookie_hdr=...)
 async def fetch_page_dom(doc_url: str) -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L190-L206`](../../integrations/yandex_docs.py#L190-L206)
+- **Source Reference**: [`integrations/yandex_docs.py#L200-L216`](../../integrations/yandex_docs.py#L200-L216)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -375,7 +375,7 @@ result = await fetch_page_dom(doc_url=...)
 async def get_active_wopi_lock(resource_url: str, token: str) -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L209-L224`](../../integrations/yandex_docs.py#L209-L224)
+- **Source Reference**: [`integrations/yandex_docs.py#L219-L234`](../../integrations/yandex_docs.py#L219-L234)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -410,7 +410,7 @@ result = await get_active_wopi_lock(resource_url=..., token=...)
 async def init_wopi_session(doc_url: str = ATTENDANCE_DOC_URL) -> WopiSession
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L227-L246`](../../integrations/yandex_docs.py#L227-L246)
+- **Source Reference**: [`integrations/yandex_docs.py#L237-L256`](../../integrations/yandex_docs.py#L237-L256)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `WopiSession`
 
@@ -443,7 +443,7 @@ result = await init_wopi_session(doc_url=...)
 def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L249-L262`](../../integrations/yandex_docs.py#L249-L262)
+- **Source Reference**: [`integrations/yandex_docs.py#L259-L272`](../../integrations/yandex_docs.py#L259-L272)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `openpyxl.Workbook`
 
@@ -476,7 +476,7 @@ result = load_workbook_from_bytes(content=...)
 def compute_sheet_summary_counts(sheet: Worksheet) -> dict[tuple[str, int], int]
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L265-L287`](../../integrations/yandex_docs.py#L265-L287)
+- **Source Reference**: [`integrations/yandex_docs.py#L275-L297`](../../integrations/yandex_docs.py#L275-L297)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[tuple[str, int], int]`
 
@@ -509,7 +509,7 @@ result = compute_sheet_summary_counts(sheet=...)
 def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L290-L315`](../../integrations/yandex_docs.py#L290-L315)
+- **Source Reference**: [`integrations/yandex_docs.py#L300-L326`](../../integrations/yandex_docs.py#L300-L326)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -543,7 +543,7 @@ result = patch_sheet_xml_counts(xml_text=..., counts=...)
 def _write_summary_col_header(sheet: Worksheet, col: int, title: str, code: str) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L318-L328`](../../integrations/yandex_docs.py#L318-L328)
+- **Source Reference**: [`integrations/yandex_docs.py#L329-L339`](../../integrations/yandex_docs.py#L329-L339)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -579,7 +579,7 @@ result = _write_summary_col_header(sheet=..., col=..., title=...)
 def _write_summary_formulas(sheet: Worksheet, mc: int, l_o: str, l_u: str, l_n: str, end_col: str) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L331-L344`](../../integrations/yandex_docs.py#L331-L344)
+- **Source Reference**: [`integrations/yandex_docs.py#L342-L355`](../../integrations/yandex_docs.py#L342-L355)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -617,7 +617,7 @@ result = _write_summary_formulas(sheet=..., mc=..., l_o=...)
 def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L347-L369`](../../integrations/yandex_docs.py#L347-L369)
+- **Source Reference**: [`integrations/yandex_docs.py#L358-L380`](../../integrations/yandex_docs.py#L358-L380)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -650,7 +650,7 @@ result = ensure_all_summary_headers(wb=...)
 def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L372-L392`](../../integrations/yandex_docs.py#L372-L392)
+- **Source Reference**: [`integrations/yandex_docs.py#L383-L403`](../../integrations/yandex_docs.py#L383-L403)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bytes`
 
@@ -684,7 +684,7 @@ result = inject_summary_cache(raw_bytes=..., wb=...)
 def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L395-L410`](../../integrations/yandex_docs.py#L395-L410)
+- **Source Reference**: [`integrations/yandex_docs.py#L406-L421`](../../integrations/yandex_docs.py#L406-L421)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bytes`
 
@@ -717,7 +717,7 @@ result = save_workbook_to_bytes(wb=...)
 async def download_workbook(session: WopiSession) -> openpyxl.Workbook
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L413-L429`](../../integrations/yandex_docs.py#L413-L429)
+- **Source Reference**: [`integrations/yandex_docs.py#L424-L440`](../../integrations/yandex_docs.py#L424-L440)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `openpyxl.Workbook`
 
@@ -751,7 +751,7 @@ result = await download_workbook(session=...)
 async def acquire_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L432-L444`](../../integrations/yandex_docs.py#L432-L444)
+- **Source Reference**: [`integrations/yandex_docs.py#L443-L455`](../../integrations/yandex_docs.py#L443-L455)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -786,7 +786,7 @@ result = await acquire_wopi_lock(session=..., client=..., lock_id=...)
 async def release_wopi_lock(session: WopiSession, client: httpx.AsyncClient, lock_id: str) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L447-L458`](../../integrations/yandex_docs.py#L447-L458)
+- **Source Reference**: [`integrations/yandex_docs.py#L458-L469`](../../integrations/yandex_docs.py#L458-L469)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -821,7 +821,7 @@ result = await release_wopi_lock(session=..., client=..., lock_id=...)
 async def put_wopi_contents( session: WopiSession, client: httpx.AsyncClient, data: bytes, lock_id: str ) -> httpx.Response
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L461-L482`](../../integrations/yandex_docs.py#L461-L482)
+- **Source Reference**: [`integrations/yandex_docs.py#L472-L493`](../../integrations/yandex_docs.py#L472-L493)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `httpx.Response`
 
@@ -854,10 +854,10 @@ result = await put_wopi_contents(session=..., client=..., data=...)
 
 ### `_try_put_with_lock`
 ```python
-async def _try_put_with_lock( session: WopiSession, client: httpx.AsyncClient, data: bytes ) -> bool
+async def _try_put_with_lock(session: WopiSession, client: httpx.AsyncClient, data: bytes) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L485-L506`](../../integrations/yandex_docs.py#L485-L506)
+- **Source Reference**: [`integrations/yandex_docs.py#L496-L515`](../../integrations/yandex_docs.py#L496-L515)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -892,7 +892,7 @@ result = await _try_put_with_lock(session=..., client=..., data=...)
 async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L509-L524`](../../integrations/yandex_docs.py#L509-L524)
+- **Source Reference**: [`integrations/yandex_docs.py#L518-L533`](../../integrations/yandex_docs.py#L518-L533)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -927,7 +927,7 @@ result = await upload_workbook(session=..., wb=...)
 async def verify_upload( session: WopiSession, target_date: date, lesson_num: int, expected_marks: dict[str, str], ) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L527-L546`](../../integrations/yandex_docs.py#L527-L546)
+- **Source Reference**: [`integrations/yandex_docs.py#L536-L555`](../../integrations/yandex_docs.py#L536-L555)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -963,7 +963,7 @@ result = await verify_upload(session=..., target_date=..., lesson_num=...)
 async def _download_raw_bytes(session: WopiSession) -> bytes
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L549-L563`](../../integrations/yandex_docs.py#L549-L563)
+- **Source Reference**: [`integrations/yandex_docs.py#L558-L572`](../../integrations/yandex_docs.py#L558-L572)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bytes`
 
@@ -997,7 +997,7 @@ result = await _download_raw_bytes(session=...)
 def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L566-L585`](../../integrations/yandex_docs.py#L566-L585)
+- **Source Reference**: [`integrations/yandex_docs.py#L575-L594`](../../integrations/yandex_docs.py#L575-L594)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -1031,7 +1031,7 @@ result = _find_sheet_rid(wb_xml=..., sheet_name=...)
 def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L588-L605`](../../integrations/yandex_docs.py#L588-L605)
+- **Source Reference**: [`integrations/yandex_docs.py#L597-L614`](../../integrations/yandex_docs.py#L597-L614)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -1065,7 +1065,7 @@ result = _resolve_sheet_target_path(rels_xml=..., rid=...)
 def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L608-L631`](../../integrations/yandex_docs.py#L608-L631)
+- **Source Reference**: [`integrations/yandex_docs.py#L617-L640`](../../integrations/yandex_docs.py#L617-L640)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -1099,7 +1099,7 @@ result = _extract_sheet_xml(raw=..., sheet_name=...)
 def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L634-L644`](../../integrations/yandex_docs.py#L634-L644)
+- **Source Reference**: [`integrations/yandex_docs.py#L643-L653`](../../integrations/yandex_docs.py#L643-L653)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -1130,10 +1130,10 @@ result = _cell_has_expected_mark(cell_xml=..., mark=...)
 
 ### `_marks_found_in_xml`
 ```python
-def _marks_found_in_xml( xml_text: str, check_marks: dict[str, str] ) -> bool
+def _marks_found_in_xml(xml_text: str, check_marks: dict[str, str]) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L647-L669`](../../integrations/yandex_docs.py#L647-L669)
+- **Source Reference**: [`integrations/yandex_docs.py#L656-L676`](../../integrations/yandex_docs.py#L656-L676)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -1164,10 +1164,10 @@ result = _marks_found_in_xml(xml_text=..., check_marks=...)
 
 ### `_verify_marks_in_raw`
 ```python
-def _verify_marks_in_raw( raw: bytes, target_date: date, expected_marks: dict[str, str] ) -> bool
+def _verify_marks_in_raw(raw: bytes, target_date: date, expected_marks: dict[str, str]) -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L672-L692`](../../integrations/yandex_docs.py#L672-L692)
+- **Source Reference**: [`integrations/yandex_docs.py#L679-L697`](../../integrations/yandex_docs.py#L679-L697)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -1202,7 +1202,7 @@ result = _verify_marks_in_raw(raw=..., target_date=..., expected_marks=...)
 def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L695-L706`](../../integrations/yandex_docs.py#L695-L706)
+- **Source Reference**: [`integrations/yandex_docs.py#L700-L711`](../../integrations/yandex_docs.py#L700-L711)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Worksheet`
 
@@ -1236,7 +1236,7 @@ result = get_month_sheet(wb=..., target_date=...)
 def parse_date_cell(cell_value: object) -> str | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L709-L721`](../../integrations/yandex_docs.py#L709-L721)
+- **Source Reference**: [`integrations/yandex_docs.py#L714-L726`](../../integrations/yandex_docs.py#L714-L726)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -1269,7 +1269,7 @@ result = parse_date_cell(cell_value=...)
 def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L724-L738`](../../integrations/yandex_docs.py#L724-L738)
+- **Source Reference**: [`integrations/yandex_docs.py#L729-L743`](../../integrations/yandex_docs.py#L729-L743)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -1303,7 +1303,7 @@ result = find_date_column_start(sheet=..., target_date=...)
 def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> int | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L741-L759`](../../integrations/yandex_docs.py#L741-L759)
+- **Source Reference**: [`integrations/yandex_docs.py#L746-L764`](../../integrations/yandex_docs.py#L746-L764)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -1338,7 +1338,7 @@ result = find_lesson_column(sheet=..., target_date=..., lesson_num=...)
 def normalize_fio(name: str) -> str
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L762-L770`](../../integrations/yandex_docs.py#L762-L770)
+- **Source Reference**: [`integrations/yandex_docs.py#L767-L775`](../../integrations/yandex_docs.py#L767-L775)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -1371,7 +1371,7 @@ result = normalize_fio(name=...)
 def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L773-L789`](../../integrations/yandex_docs.py#L773-L789)
+- **Source Reference**: [`integrations/yandex_docs.py#L778-L794`](../../integrations/yandex_docs.py#L778-L794)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -1404,7 +1404,7 @@ result = get_students_list(sheet=...)
 def find_student_row(sheet: Worksheet, student_name: str) -> int | None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L792-L804`](../../integrations/yandex_docs.py#L792-L804)
+- **Source Reference**: [`integrations/yandex_docs.py#L797-L809`](../../integrations/yandex_docs.py#L797-L809)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -1438,7 +1438,7 @@ result = find_student_row(sheet=..., student_name=...)
 def write_student_mark( sheet: Worksheet, row: int, col: int, mark: str, ) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_docs.py#L807-L827`](../../integrations/yandex_docs.py#L807-L827)
+- **Source Reference**: [`integrations/yandex_docs.py#L812-L832`](../../integrations/yandex_docs.py#L812-L832)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 

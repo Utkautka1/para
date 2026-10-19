@@ -14,6 +14,7 @@ ignore = [
     "RUF002",  # Ambiguous unicode characters in docstrings (Cyrillic support)
     "RUF003",  # Ambiguous unicode characters in comments (Cyrillic support)
     "RUF006",  # Store a reference to asyncio.create_task (fire-and-forget tasks)
+    "UP038",   # Use X | Y in isinstance call (tuple is faster in CPython runtime)
 ]
 
 [tool.ruff.lint.isort]

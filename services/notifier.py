@@ -53,9 +53,9 @@ def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, 
         f"<i>Пара проходит в дистанционном формате, но ссылки нет в документе Яндекс Диска.</i>"
     )
     last_name = raw_teacher.split()[0].lower()
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="➕ Добавить контакты", callback_data=f"admin:add_t:{last_name}")
-    ]])
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="➕ Добавить контакты", callback_data=f"admin:add_t:{last_name}")]]
+    )
 
     return text, kb
 

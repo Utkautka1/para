@@ -24,9 +24,9 @@ graph LR
 | [`is_assessment_type`](#is_assessment_type) | Function | L27–L38 | `tuple[bool, str]` | Executes core domain logic for `is_assessment_type`. |
 | [`resolve_teacher_name`](#resolve_teacher_name) | Function | L41–L52 | `str` | Executes core domain logic for `resolve_teacher_name`. |
 | [`extract_load_weeks`](#extract_load_weeks) | Function | L55–L65 | `list[int]` | Executes core domain logic for `extract_load_weeks`. |
-| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L68–L94 | `tuple[str, ExamItem] | None` | Parses and extracts structured entities from `parse_exa... |
-| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L97–L121 | `None` | Executes core domain logic for `enrich_exam_from_instan... |
-| [`get_group_exams`](#get_group_exams) | Function | L124–L147 | `list[ExamItem]` | Retrieves and resolves domain data for `get_group_exams... |
+| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L68–L97 | `tuple[str, ExamItem] | None` | Parses and extracts structured entities from `parse_exa... |
+| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L100–L128 | `None` | Executes core domain logic for `enrich_exam_from_instan... |
+| [`get_group_exams`](#get_group_exams) | Function | L131–L154 | `list[ExamItem]` | Retrieves and resolves domain data for `get_group_exams... |
 
 ---
 
@@ -138,7 +138,7 @@ result = extract_load_weeks(load=...)
 def parse_exam_from_load( load: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], teacher_links: dict[str, Any] ) -> tuple[str, ExamItem] | None
 ```
 
-- **Source Reference**: [`services/exam_parser.py#L68-L94`](../../services/exam_parser.py#L68-L94)
+- **Source Reference**: [`services/exam_parser.py#L68-L97`](../../services/exam_parser.py#L68-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, ExamItem] | None`
 
@@ -173,7 +173,7 @@ result = parse_exam_from_load(load=..., entity_maps=..., teacher_links=...)
 def enrich_exam_from_instance( inst: dict[str, Any], entity_maps: tuple[dict, dict, dict, dict, dict], exams_dict: dict[str, ExamItem] ) -> None
 ```
 
-- **Source Reference**: [`services/exam_parser.py#L97-L121`](../../services/exam_parser.py#L97-L121)
+- **Source Reference**: [`services/exam_parser.py#L100-L128`](../../services/exam_parser.py#L100-L128)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -208,7 +208,7 @@ result = enrich_exam_from_instance(inst=..., entity_maps=..., exams_dict=...)
 async def get_group_exams() -> list[ExamItem]
 ```
 
-- **Source Reference**: [`services/exam_parser.py#L124-L147`](../../services/exam_parser.py#L124-L147)
+- **Source Reference**: [`services/exam_parser.py#L131-L154`](../../services/exam_parser.py#L131-L154)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[ExamItem]`
 

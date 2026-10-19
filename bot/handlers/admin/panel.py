@@ -357,10 +357,12 @@ def _build_custom_teachers_view(custom: dict) -> tuple[str, list]:
     kb_rows = []
     for key, val in custom.items():
         text += f"🔹 <b>{val['full_name']}</b> (код: <code>{key}</code>):\n<code>{val['link_info']}</code>\n\n"
-        kb_rows.append([
-            InlineKeyboardButton(text=f"✏️ {val['full_name'].split()[0]}", callback_data=f"admin:edit_t:{key}"),
-            InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"admin:del_t:{key}"),
-        ])
+        kb_rows.append(
+            [
+                InlineKeyboardButton(text=f"✏️ {val['full_name'].split()[0]}", callback_data=f"admin:edit_t:{key}"),
+                InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"admin:del_t:{key}"),
+            ]
+        )
 
     return text, kb_rows
 

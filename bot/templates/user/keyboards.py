@@ -5,7 +5,6 @@
 Ссылки группируются максимум по 2 в ряд для аккуратного отображения в топике.
 """
 
-
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import MINIAPP_URL, SWAGGER_URL
@@ -44,7 +43,7 @@ def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]
             if url:
                 btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
 
-    return [btns[i:i + 2] for i in range(0, len(btns), 2)]
+    return [btns[i : i + 2] for i in range(0, len(btns), 2)]
 
 
 def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[list[InlineKeyboardButton]]:
@@ -62,14 +61,19 @@ def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[lis
         rows.append([InlineKeyboardButton(text="📝 Отметить посещаемость", callback_data="att:menu", style="success")])
 
     if is_admin:
-        rows.append([InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")])
+        rows.append(
+            [InlineKeyboardButton(text="⚙️ Панель управления (Админ)", callback_data="admin:menu", style="danger")]
+        )
 
     return rows
 
 
 def _build_nav_rows(
-    week_offset: int, is_admin: bool = False, is_subscribed: bool = True,
-    is_attendance_admin: bool = False, is_tester: bool = False,
+    week_offset: int,
+    is_admin: bool = False,
+    is_subscribed: bool = True,
+    is_attendance_admin: bool = False,
+    is_tester: bool = False,
 ) -> list[list[InlineKeyboardButton]]:
     """
     Формирует основные кнопки навигации по календарю и переключатели настроек.
@@ -84,11 +88,19 @@ def _build_nav_rows(
     w_data = "sched:week_next" if week_offset == 0 else "sched:week"
     n_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
     rows = [
-        [InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
-         InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success")],
-        [InlineKeyboardButton(text=w_text, callback_data=w_data, style="primary"),
-         InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary")],
-        [InlineKeyboardButton(text=n_text, callback_data="sched:toggle_notify", style="success" if is_subscribed else "danger")],
+        [
+            InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
+            InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success"),
+        ],
+        [
+            InlineKeyboardButton(text=w_text, callback_data=w_data, style="primary"),
+            InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary"),
+        ],
+        [
+            InlineKeyboardButton(
+                text=n_text, callback_data="sched:toggle_notify", style="success" if is_subscribed else "danger"
+            )
+        ],
     ]
     if is_tester:
         rows.append([InlineKeyboardButton(text="🧪 Swagger UI (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
@@ -119,10 +131,15 @@ def get_schedule_inline_kb(
     if lessons:
         rows.extend(chunk_link_buttons(lessons))
 
-    rows.extend(_build_nav_rows(
-        week_offset, is_admin=is_admin, is_subscribed=is_subscribed,
-        is_attendance_admin=is_attendance_admin, is_tester=is_tester
-    ))
+    rows.extend(
+        _build_nav_rows(
+            week_offset,
+            is_admin=is_admin,
+            is_subscribed=is_subscribed,
+            is_attendance_admin=is_attendance_admin,
+            is_tester=is_tester,
+        )
+    )
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -178,9 +195,7 @@ def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup:
     toggle_style = "danger" if is_subscribed else "success"
     rows = [
         [InlineKeyboardButton(text=toggle_text, callback_data="notice:toggle", style=toggle_style)],
-        [InlineKeyboardButton(text="📅 К расписанию", callback_data="sched:today", style="primary")]
+        [InlineKeyboardButton(text="📅 К расписанию", callback_data="sched:today", style="primary")],
     ]
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
-

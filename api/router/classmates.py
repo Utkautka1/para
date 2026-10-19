@@ -100,4 +100,3 @@ async def get_classmate_detail(student_id: int) -> ClassmateDetailResponse:
         days_until_birthday=calc["days_until"],
         current_age=calc["turning_age"] - (0 if calc["is_today"] else 1),
     )
-

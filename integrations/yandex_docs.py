@@ -29,8 +29,18 @@ log = get_logger("yandex_docs")
 
 # Соответствие порядкового номера месяца короткому имени вкладки
 MONTH_SHEET_MAP: dict[int, str] = {
-    1: "ЯНВ", 2: "ФЕВР", 3: "МАРТ", 4: "АПР", 5: "МАЙ", 6: "ИЮН",
-    7: "ИЮЛ", 8: "АВГ", 9: "СЕНТ", 10: "ОКТ", 11: "НОЯБ", 12: "ДЕК"
+    1: "ЯНВ",
+    2: "ФЕВР",
+    3: "МАРТ",
+    4: "АПР",
+    5: "МАЙ",
+    6: "ИЮН",
+    7: "ИЮЛ",
+    8: "АВГ",
+    9: "СЕНТ",
+    10: "ОКТ",
+    11: "НОЯБ",
+    12: "ДЕК",
 }
 
 
@@ -296,6 +306,7 @@ def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) ->
 
     Возвращает модифицированный текст XML листа книги.
     """
+
     def repl(m):
         col, r = m.group(1), int(m.group(2))
         if (col, r) not in counts:
@@ -482,9 +493,7 @@ async def put_wopi_contents(
     return res
 
 
-async def _try_put_with_lock(
-    session: WopiSession, client: httpx.AsyncClient, data: bytes
-) -> bool:
+async def _try_put_with_lock(session: WopiSession, client: httpx.AsyncClient, data: bytes) -> bool:
     """
     Пробует зафиксировать файл сначала с текущей сессионной блокировкой, затем с новой.
 
@@ -644,9 +653,7 @@ def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool:
     return bool(match and match.group(1).strip().upper() == mark)
 
 
-def _marks_found_in_xml(
-    xml_text: str, check_marks: dict[str, str]
-) -> bool:
+def _marks_found_in_xml(xml_text: str, check_marks: dict[str, str]) -> bool:
     """
     Проверяет наличие ожидаемых отметок в сыром XML-тексте листа.
 
@@ -669,9 +676,7 @@ def _marks_found_in_xml(
     return ok
 
 
-def _verify_marks_in_raw(
-    raw: bytes, target_date: date, expected_marks: dict[str, str]
-) -> bool:
+def _verify_marks_in_raw(raw: bytes, target_date: date, expected_marks: dict[str, str]) -> bool:
     """
     Координирует низкоуровневую верификацию отметок в байтах книги.
 

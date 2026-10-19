@@ -19,7 +19,6 @@ from core.logger import get_logger
 log = get_logger("miniapp_auth")
 
 
-
 def _build_data_check_string(parsed_data: dict[str, str]) -> str:
     """
     Формирует каноническую строку для проверки цифровой подписи initData.
@@ -29,9 +28,7 @@ def _build_data_check_string(parsed_data: dict[str, str]) -> str:
 
     Возвращает строку пар key=value, разделенных символом перевода строки.
     """
-    sorted_items = sorted(
-        (k, v) for k, v in parsed_data.items() if k != "hash"
-    )
+    sorted_items = sorted((k, v) for k, v in parsed_data.items() if k != "hash")
     return "\n".join(f"{k}={v}" for k, v in sorted_items)
 
 
@@ -140,4 +137,3 @@ def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) ->
         return int(raw_uid)
     except ValueError:
         return None
-

@@ -1,9 +1,9 @@
 # Component Reference: `scripts/sync_yandex_cookie.py`
-> **File Path**: [`scripts/sync_yandex_cookie.py`](../../scripts/sync_yandex_cookie.py)  
-> **Subsystem**: `Yandex Office Integration & Telemetry`  
-> **Architecture Layer**: `Operational Automation Utility`  
-> **Concurrency Model**: `Synchronous Execution & Subprocess Orchestration`  
-> **Persistence Backend**: `Redis 7 State Store & Local / Remote .env`  
+> **File Path**: [`scripts/sync_yandex_cookie.py`](../../scripts/sync_yandex_cookie.py)
+> **Subsystem**: `Yandex Office Integration & Telemetry`
+> **Architecture Layer**: `Operational Automation Utility`
+> **Concurrency Model**: `Synchronous Execution & Subprocess Orchestration`
+> **Persistence Backend**: `Redis 7 State Store & Local / Remote .env`
 > **Service Level Objective**: `High-Availability Academic Telemetry`
 
 ## 1. Architectural Role & Responsibilities

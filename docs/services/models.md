@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`Lesson.number`](#lessonnumber) | Method | L43–L52 | `int` | Executes core domain logic for `number`. |
+| [`Lesson.number`](#lessonnumber) | Method | L42–L51 | `int` | Executes core domain logic for `number`. |
 
 ---
 
@@ -36,7 +36,7 @@ Encapsulates domain entities and data transfer logic for `Lesson`.
 def number(self) -> int
 ```
 
-- **Source Reference**: [`services/models.py#L43-L52`](../../services/models.py#L43-L52)
+- **Source Reference**: [`services/models.py#L42-L51`](../../services/models.py#L42-L51)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 

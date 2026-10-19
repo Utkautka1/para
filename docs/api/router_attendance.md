@@ -28,9 +28,9 @@ graph LR
 | [`get_current_session`](#get_current_session) | Function | L126–L138 | `ActiveSessionResponse` | Retrieves and resolves domain data for `get_current_ses... |
 | [`start_session`](#start_session) | Function | L142–L157 | `ActiveSessionResponse` | Executes core domain logic for `start_session`. |
 | [`mark_student`](#mark_student) | Function | L161–L175 | `ActiveSessionResponse` | Executes core domain logic for `mark_student`. |
-| [`batch_present`](#batch_present) | Function | L179–L193 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
-| [`commit_session`](#commit_session) | Function | L197–L216 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
-| [`cancel_session`](#cancel_session) | Function | L220–L232 | `dict` | Executes core domain logic for `cancel_session`. |
+| [`batch_present`](#batch_present) | Function | L181–L195 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
+| [`commit_session`](#commit_session) | Function | L199–L218 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
+| [`cancel_session`](#cancel_session) | Function | L222–L234 | `dict` | Executes core domain logic for `cancel_session`. |
 
 ---
 
@@ -270,7 +270,7 @@ result = await mark_student(payload=...)
 async def batch_present() -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L179-L193`](../../api/router/attendance.py#L179-L193)
+- **Source Reference**: [`api/router/attendance.py#L181-L195`](../../api/router/attendance.py#L181-L195)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
@@ -301,7 +301,7 @@ result = await batch_present()
 async def commit_session() -> CommitAttendanceResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L197-L216`](../../api/router/attendance.py#L197-L216)
+- **Source Reference**: [`api/router/attendance.py#L199-L218`](../../api/router/attendance.py#L199-L218)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CommitAttendanceResponse`
 
@@ -332,7 +332,7 @@ result = await commit_session()
 async def cancel_session() -> dict
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L220-L232`](../../api/router/attendance.py#L220-L232)
+- **Source Reference**: [`api/router/attendance.py#L222-L234`](../../api/router/attendance.py#L222-L234)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 

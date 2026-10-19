@@ -46,4 +46,3 @@ class RetryAfterMiddleware(BaseMiddleware):
                 raise
 
         return await handler(event, data)
-

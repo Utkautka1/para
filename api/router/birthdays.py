@@ -105,4 +105,3 @@ async def get_today_birthdays() -> TodayBirthdaysResponse:
     items = [_map_calculated_to_dto(c) for c in today_items]
 
     return TodayBirthdaysResponse(count=len(items), celebrants=items)
-

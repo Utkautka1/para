@@ -147,17 +147,25 @@ async def test_get_day_schedule_cached_miss() -> None:
 
     from bot.handlers.user.schedule import get_day_schedule_cached
     from services.models import Lesson
+
     test_d = date(2026, 10, 5)
     sample_lessons = [
         Lesson(
-            subject="Физика", teacher="Сидоров С.С.", room="202",
-            time_str="08:30-10:00", period=0, is_remote=False,
-            lesson_type="Лек", address="Корпус 2"
+            subject="Физика",
+            teacher="Сидоров С.С.",
+            room="202",
+            time_str="08:30-10:00",
+            period=0,
+            is_remote=False,
+            lesson_type="Лек",
+            address="Корпус 2",
         )
     ]
-    with patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=None)), \
-         patch("bot.handlers.user.schedule.cache_set", AsyncMock()) as mock_set, \
-         patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock(return_value=sample_lessons)):
+    with (
+        patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=None)),
+        patch("bot.handlers.user.schedule.cache_set", AsyncMock()) as mock_set,
+        patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock(return_value=sample_lessons)),
+    ):
         text, lessons = await get_day_schedule_cached(test_d)
         assert len(lessons) == 1
         assert "Физика" in text
@@ -170,10 +178,13 @@ async def test_get_day_schedule_cached_hit() -> None:
     from datetime import date
 
     from bot.handlers.user.schedule import get_day_schedule_cached
+
     test_d = date(2026, 10, 5)
     cached_payload = json.dumps({"text": "Кэшированный текст", "lessons": []})
-    with patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=cached_payload)), \
-         patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock()) as mock_api:
+    with (
+        patch("bot.handlers.user.schedule.cache_get", AsyncMock(return_value=cached_payload)),
+        patch("bot.handlers.user.schedule.get_api_schedule_for_date", AsyncMock()) as mock_api,
+    ):
         text, lessons = await get_day_schedule_cached(test_d)
         assert text == "Кэшированный текст"
         assert len(lessons) == 0
@@ -183,10 +194,13 @@ async def test_get_day_schedule_cached_hit() -> None:
 def test_classmates_registry_in_memory_mtime_cache() -> None:
     """Проверяет in-memory кэширование реестра студентов по mtime файла."""
     from services.classmates_auth import clear_registry_cache, load_classmates_registry
+
     clear_registry_cache()
     mock_data = [{"full_name": "Тест Студент", "tg_id": 111222}]
-    with patch("os.path.getmtime", return_value=12345.0), \
-         patch("services.classmates_auth.sync_load_json", return_value=mock_data) as mock_load:
+    with (
+        patch("os.path.getmtime", return_value=12345.0),
+        patch("services.classmates_auth.sync_load_json", return_value=mock_data) as mock_load,
+    ):
         reg1 = load_classmates_registry()
         reg2 = load_classmates_registry()
         assert reg1 == mock_data
@@ -200,14 +214,22 @@ async def test_concurrent_send_reminders() -> None:
     """Проверяет параллельную доставку напоминаний нескольким подписчикам."""
     from services.models import Lesson
     from services.notifier import send_single_reminder
+
     lesson = Lesson(
-        subject="Химия", teacher="Петров П.П.", room="303",
-        time_str="10:05-11:30", period=1, is_remote=False,
-        lesson_type="Лаб", address="Корпус 1"
+        subject="Химия",
+        teacher="Петров П.П.",
+        room="303",
+        time_str="10:05-11:30",
+        period=1,
+        is_remote=False,
+        lesson_type="Лаб",
+        address="Корпус 1",
     )
     targets = {111, 222, 333}
-    with patch("db.subscribers.load_subscribers", return_value=targets), \
-         patch("services.notifier.bot.send_message", AsyncMock()) as mock_send:
+    with (
+        patch("db.subscribers.load_subscribers", return_value=targets),
+        patch("services.notifier.bot.send_message", AsyncMock()) as mock_send,
+    ):
         await send_single_reminder(lesson)
         assert mock_send.call_count == 3
 
@@ -218,8 +240,11 @@ async def test_retry_after_middleware_success() -> None:
     from aiogram.exceptions import TelegramRetryAfter
 
     from bot.middlewares.retry import RetryAfterMiddleware
+
     mw = RetryAfterMiddleware()
-    handler = AsyncMock(side_effect=[TelegramRetryAfter(method=MagicMock(), message="Too Fast", retry_after=0.01), "success"])
+    handler = AsyncMock(
+        side_effect=[TelegramRetryAfter(method=MagicMock(), message="Too Fast", retry_after=0.01), "success"]
+    )
     event = MagicMock()
     with patch("asyncio.sleep", AsyncMock()) as mock_sleep:
         res = await mw(handler, event, {})
@@ -232,11 +257,14 @@ async def test_retry_after_middleware_success() -> None:
 async def test_collect_health_summary() -> None:
     """Проверяет формирование диагностического текста в админке."""
     from bot.handlers.admin.panel import _collect_health_summary
-    with patch("db.subscribers.load_subscribers", return_value={1, 2}), \
-         patch("services.classmates_auth.load_classmates_registry", return_value=[{"tg_id": 1}]), \
-         patch("bot.handlers.admin.panel.fetch_teachers", AsyncMock(return_value={"count": 15})), \
-         patch("integrations.yandex_docs.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")), \
-         patch("core.redis_cache.init_redis", AsyncMock(return_value=None)):
+
+    with (
+        patch("db.subscribers.load_subscribers", return_value={1, 2}),
+        patch("services.classmates_auth.load_classmates_registry", return_value=[{"tg_id": 1}]),
+        patch("bot.handlers.admin.panel.fetch_teachers", AsyncMock(return_value={"count": 15})),
+        patch("integrations.yandex_docs.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")),
+        patch("core.redis_cache.init_redis", AsyncMock(return_value=None)),
+    ):
         summary = await _collect_health_summary()
         assert "ДИАГНОСТИКА СИСТЕМЫ" in summary
         assert "15" in summary
@@ -250,6 +278,7 @@ async def test_callback_throttle_middleware() -> None:
     from aiogram.types import CallbackQuery
 
     from bot.middlewares.throttling import CallbackThrottleMiddleware
+
     mw = CallbackThrottleMiddleware()
     event = MagicMock(spec=CallbackQuery)
     event.from_user = MagicMock(id=123)
@@ -273,6 +302,7 @@ async def test_docx_singleflight_cache_freshness() -> None:
     import time
 
     import integrations.docx_parser as dp_mod
+
     cached = {"teacher": {"full_name": "T", "link_info": "L"}}
     with (
         patch.object(dp_mod, "_CACHE", (time.time(), cached)),
@@ -289,10 +319,12 @@ async def test_week_schedule_single_fetch() -> None:
     from datetime import date
 
     from services.schedule_parser import get_week_schedule
-    with patch("services.schedule_parser.fetch_schedule_data", AsyncMock()) as mock_fetch, \
-         patch("services.schedule_parser.get_schedule_for_date", AsyncMock(return_value=[])) as mock_day:
+
+    with (
+        patch("services.schedule_parser.fetch_schedule_data", AsyncMock()) as mock_fetch,
+        patch("services.schedule_parser.get_schedule_for_date", AsyncMock(return_value=[])) as mock_day,
+    ):
         res = await get_week_schedule(date(2026, 10, 5), force_refresh=True)
         assert len(res) == 6
         mock_fetch.assert_called_once_with(force_refresh=True)
         assert mock_day.call_count == 6
-

@@ -103,4 +103,3 @@ async def unsubscribe_user(chat_id: int) -> SubscriberActionResponse:
     msg = "Подписка отключена" if removed else "Пользователь не был подписан"
 
     return SubscriberActionResponse(chat_id=chat_id, is_subscribed=False, message=msg)
-

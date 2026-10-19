@@ -71,9 +71,7 @@ def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]:
     return row_counts
 
 
-def _process_student_row(
-    sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]]
-) -> None:
+def _process_student_row(sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]]) -> None:
     """
     Извлекает и суммирует отметки одного студента из конкретной строки таблицы.
 
@@ -96,9 +94,7 @@ def _process_student_row(
         stats[fio]["total"][mark] += cnt
 
 
-def _aggregate_sheet_stats(
-    sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]
-) -> None:
+def _aggregate_sheet_stats(sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]) -> None:
     """
     Обрабатывает один лист месяца и накапливает отметки в общий реестр.
 
@@ -180,9 +176,7 @@ async def invalidate_attendance_stats_cache() -> None:
     log.info("Кэш сквозной статистики посещаемости сброшен")
 
 
-async def fetch_all_time_attendance(
-    force_refresh: bool = False
-) -> dict[str, dict[str, Any]]:
+async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]:
     """
     Возвращает сквозную статистику посещаемости с поддержкой Redis-кэширования.
 
@@ -203,9 +197,7 @@ async def fetch_all_time_attendance(
     return stats
 
 
-def find_student_attendance(
-    stats: dict[str, dict[str, Any]], target_name: str
-) -> dict[str, Any] | None:
+def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None:
     """
     Находит статистику студента по точному или частичному совпадению ФИО.
 
@@ -310,4 +302,3 @@ async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, A
     await _save_to_redis_cache(stats)
     log.info(f"✅ Оптимистичное обновление посещаемости пары {session.lesson_num} применено")
     return stats
-

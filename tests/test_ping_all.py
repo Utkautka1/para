@@ -147,6 +147,7 @@ async def test_safe_delete_command_message_handles_error() -> None:
 async def test_safe_delete_handles_message_not_found() -> None:
     """Проверяет тихое подавление ошибки, если сообщение уже удалено."""
     from aiogram.exceptions import TelegramBadRequest
+
     msg = AsyncMock(spec=Message)
     err = TelegramBadRequest(method=MagicMock(), message="Bad Request: message to delete not found")
     msg.delete = AsyncMock(side_effect=err)

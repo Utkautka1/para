@@ -36,6 +36,9 @@ jobs:
       - name: Run Bandit Security Analysis
         run: bandit -r services/ bot/ core/ api/ -c pyproject.toml
 
+      - name: Run Pip-Audit Dependency Security Scan
+        run: pip-audit -r requirements.txt
+
   docs-drift-check:
     name: Verify Engineering Documentation Drift
     runs-on: ubuntu-latest

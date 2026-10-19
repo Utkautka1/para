@@ -144,4 +144,3 @@ async def get_all_testers() -> list[int]:
             if s.isdigit():
                 testers.add(int(s))
     return sorted(testers)
-

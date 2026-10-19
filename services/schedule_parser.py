@@ -247,7 +247,7 @@ def get_period_time_str(
     day_idx: int,
     period_idx: int,
     week_num: int,
-    global_config: dict[str, Any] | None = None
+    global_config: dict[str, Any] | None = None,
 ) -> str:
     """
     Определяет точный временной интервал пары с учетом четности недели и дня.
@@ -618,7 +618,7 @@ async def _get_cached_or_revalidate(now: float) -> dict[str, Any] | None:
         return _DATA_CACHE[1]
 
     if _DATA_CACHE[1] is not None:
-        if (now - _DATA_CACHE[0] >= SCHEDULE_CACHE_TTL_SECONDS):
+        if now - _DATA_CACHE[0] >= SCHEDULE_CACHE_TTL_SECONDS:
             await _trigger_stale_refresh(now)
         return _DATA_CACHE[1]
 
@@ -679,9 +679,7 @@ def _handle_missing_remote_teacher(raw_teacher: str, subj_name: str) -> None:
 
 
 def _extract_existing_teacher_creds(
-    t_info: TeacherData,
-    raw_teacher: str,
-    is_remote: bool
+    t_info: TeacherData, raw_teacher: str, is_remote: bool
 ) -> tuple[str, str | None, str | None, str | None]:
     """
     Извлекает ФИО и доступы к Zoom/Телемост для найденного в реестре преподавателя.
@@ -739,7 +737,7 @@ def _resolve_lesson_meta(
     inst: dict[str, Any],
     asgn: dict[str, Any],
     maps: tuple[dict, dict, dict, dict, dict],
-    teacher_map: dict[str, TeacherData]
+    teacher_map: dict[str, TeacherData],
 ):
     """
     Определяет формат, аудиторию, адрес и контакты преподавателя для занятия.
@@ -757,8 +755,13 @@ def _resolve_lesson_meta(
 
 
 def _build_lesson_payload(
-    inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict],
-    day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None,
+    inst: dict[str, Any],
+    asgn: dict[str, Any],
+    maps: tuple[dict, dict, dict, dict, dict],
+    day_idx: int,
+    week_num: int,
+    teacher_map: dict[str, TeacherData],
+    cfg: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Формирует словарь полей для валидации и создания Pydantic-модели Lesson.
@@ -771,12 +774,19 @@ def _build_lesson_payload(
     is_rem, r_name, subj, t_name, link, mid, passc = _resolve_lesson_meta(inst, asgn, maps, teacher_map)
 
     return {
-        "period": period, "time_str": time_str, "subject": subj,
+        "period": period,
+        "time_str": time_str,
+        "subject": subj,
         "lesson_type": l_types.get(inst.get("typeId"), "") or "Пара",
-        "teacher": t_name, "is_remote": is_rem, "room": r_name,
+        "teacher": t_name,
+        "is_remote": is_rem,
+        "room": r_name,
         "address": resolve_room_address(r_name, is_rem),
-        "subgroup": extract_subgroup(inst, GROUP_ID), "is_stream": is_stream_lesson(inst),
-        "remote_link": link, "remote_passcode": passc, "remote_meeting_id": mid,
+        "subgroup": extract_subgroup(inst, GROUP_ID),
+        "is_stream": is_stream_lesson(inst),
+        "remote_link": link,
+        "remote_passcode": passc,
+        "remote_meeting_id": mid,
     }
 
 

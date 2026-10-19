@@ -146,8 +146,10 @@ async def test_is_hw_allowed_admin_rate_limit_bypass() -> None:
     from config import ALLOWED_USER_ID
 
     msg = MagicMock(spec=Message, message_id=1, text="реши задачу 1", caption=None, photo=[], document=None)
-    with patch("bot.handlers.user.hw_solver.check_user_rate_limit", AsyncMock(return_value=False)), \
-         patch("bot.handlers.user.hw_solver.is_message_processed", AsyncMock(return_value=False)):
+    with (
+        patch("bot.handlers.user.hw_solver.check_user_rate_limit", AsyncMock(return_value=False)),
+        patch("bot.handlers.user.hw_solver.is_message_processed", AsyncMock(return_value=False)),
+    ):
         assert await is_hw_allowed(msg, msg, 999999) is False
         assert await is_hw_allowed(msg, msg, ALLOWED_USER_ID) is True
 
@@ -176,4 +178,3 @@ async def test_validate_hw_file_size_rejected() -> None:
     is_valid = await validate_hw_file_size(bot, msg, 25 * 1024 * 1024, "large.pdf")
     assert is_valid is False
     bot.set_message_reaction.assert_awaited_once()
-

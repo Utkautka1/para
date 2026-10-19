@@ -221,6 +221,7 @@ def test_format_day_schedule_empty() -> None:
 def test_format_notice_settings_text() -> None:
     """Проверяет форматирование экрана настроек уведомлений /notice."""
     from bot.templates.user.messages import format_notice_settings_text
+
     text_on = format_notice_settings_text(True)
     assert "НАСТРОЙКИ УВЕДОМЛЕНИЙ" in text_on
     assert "ВКЛЮЧЕНЫ" in text_on
@@ -229,4 +230,3 @@ def test_format_notice_settings_text() -> None:
     text_off = format_notice_settings_text(False)
     assert "ОТКЛЮЧЕНЫ" in text_off
     assert "🔕" in text_off
-

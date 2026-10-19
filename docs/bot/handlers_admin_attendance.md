@@ -21,27 +21,27 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L45–L69 | `None` | Executes core domain logic for `_async_commit_and_updat... |
-| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L72–L90 | `None` | Executes core domain logic for `_instant_topic_sync`. |
-| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L93–L111 | `int | None` | Retrieves and resolves domain data for `get_partner_adm... |
-| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L114–L140 | `None` | Executes core domain logic for `notify_partner_about_at... |
-| [`finish_and_notify`](#finish_and_notify) | Function | L143–L167 | `None` | Executes core domain logic for `finish_and_notify`. |
-| [`show_attendance_menu`](#show_attendance_menu) | Function | L172–L191 | `None` | Executes core domain logic for `show_attendance_menu`. |
-| [`cb_select_day`](#cb_select_day) | Function | L195–L215 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`parse_start_callback`](#parse_start_callback) | Function | L218–L234 | `Any` | Parses and extracts structured entities from `parse_sta... |
-| [`get_initiator_title`](#get_initiator_title) | Function | L237–L249 | `str` | Retrieves and resolves domain data for `get_initiator_t... |
-| [`check_session_ownership`](#check_session_ownership) | Function | L252–L271 | `bool` | Executes core domain logic for `check_session_ownership... |
-| [`_resolve_lesson_title_for_start`](#_resolve_lesson_title_for_start) | Function | L275–L288 | `str` | Executes core domain logic for `_resolve_lesson_title_f... |
-| [`_ensure_session_available`](#_ensure_session_available) | Function | L291–L307 | `bool` | Executes core domain logic for `_ensure_session_availab... |
-| [`_init_session_safe`](#_init_session_safe) | Function | L310–L326 | `Any` | Executes core domain logic for `_init_session_safe`. |
-| [`cb_start_attendance`](#cb_start_attendance) | Function | L330–L352 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`cb_mark_student`](#cb_mark_student) | Function | L356–L380 | `None` | Handles Telegram inline callback query events for `cb_m... |
-| [`cb_step_back`](#cb_step_back) | Function | L384–L407 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`cb_all_present`](#cb_all_present) | Function | L411–L431 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L434–L460 | `None` | Executes core domain logic for `notify_partner_about_ca... |
-| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L464–L482 | `None` | Handles Telegram inline callback query events for `cb_c... |
-| [`cb_abort_survey`](#cb_abort_survey) | Function | L486–L506 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_close_menu`](#cb_close_menu) | Function | L510–L523 | `None` | Handles Telegram inline callback query events for `cb_c... |
+| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L45–L67 | `None` | Executes core domain logic for `_async_commit_and_updat... |
+| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L70–L88 | `None` | Executes core domain logic for `_instant_topic_sync`. |
+| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L91–L109 | `int | None` | Retrieves and resolves domain data for `get_partner_adm... |
+| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L112–L137 | `None` | Executes core domain logic for `notify_partner_about_at... |
+| [`finish_and_notify`](#finish_and_notify) | Function | L140–L163 | `None` | Executes core domain logic for `finish_and_notify`. |
+| [`show_attendance_menu`](#show_attendance_menu) | Function | L168–L187 | `None` | Executes core domain logic for `show_attendance_menu`. |
+| [`cb_select_day`](#cb_select_day) | Function | L191–L211 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`parse_start_callback`](#parse_start_callback) | Function | L214–L230 | `Any` | Parses and extracts structured entities from `parse_sta... |
+| [`get_initiator_title`](#get_initiator_title) | Function | L233–L245 | `str` | Retrieves and resolves domain data for `get_initiator_t... |
+| [`check_session_ownership`](#check_session_ownership) | Function | L248–L267 | `bool` | Executes core domain logic for `check_session_ownership... |
+| [`_resolve_lesson_title_for_start`](#_resolve_lesson_title_for_start) | Function | L270–L283 | `str` | Executes core domain logic for `_resolve_lesson_title_f... |
+| [`_ensure_session_available`](#_ensure_session_available) | Function | L286–L302 | `bool` | Executes core domain logic for `_ensure_session_availab... |
+| [`_init_session_safe`](#_init_session_safe) | Function | L305–L321 | `Any` | Executes core domain logic for `_init_session_safe`. |
+| [`cb_start_attendance`](#cb_start_attendance) | Function | L325–L347 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`cb_mark_student`](#cb_mark_student) | Function | L351–L375 | `None` | Handles Telegram inline callback query events for `cb_m... |
+| [`cb_step_back`](#cb_step_back) | Function | L379–L402 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`cb_all_present`](#cb_all_present) | Function | L406–L426 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L429–L455 | `None` | Executes core domain logic for `notify_partner_about_ca... |
+| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L459–L475 | `None` | Handles Telegram inline callback query events for `cb_c... |
+| [`cb_abort_survey`](#cb_abort_survey) | Function | L479–L499 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`cb_close_menu`](#cb_close_menu) | Function | L503–L516 | `None` | Handles Telegram inline callback query events for `cb_c... |
 
 ---
 
@@ -49,10 +49,10 @@ graph LR
 
 ### `_async_commit_and_update`
 ```python
-async def _async_commit_and_update( message: Message | None, session, stats: dict[str, int] ) -> None
+async def _async_commit_and_update(message: Message | None, session, stats: dict[str, int]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L45-L69`](../../bot/handlers/admin/attendance.py#L45-L69)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L45-L67`](../../bot/handlers/admin/attendance.py#L45-L67)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -87,7 +87,7 @@ result = await _async_commit_and_update(message=..., session=..., stats=...)
 async def _instant_topic_sync(session) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L72-L90`](../../bot/handlers/admin/attendance.py#L72-L90)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L70-L88`](../../bot/handlers/admin/attendance.py#L70-L88)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -120,7 +120,7 @@ result = await _instant_topic_sync(session=...)
 def get_partner_admin_id(current_user_id: int) -> int | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L93-L111`](../../bot/handlers/admin/attendance.py#L93-L111)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L91-L109`](../../bot/handlers/admin/attendance.py#L91-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -150,10 +150,10 @@ result = get_partner_admin_id(current_user_id=...)
 
 ### `notify_partner_about_attendance`
 ```python
-async def notify_partner_about_attendance( session, stats: dict[str, int], user_full_name: str | None = None ) -> None
+async def notify_partner_about_attendance(session, stats: dict[str, int], user_full_name: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L114-L140`](../../bot/handlers/admin/attendance.py#L114-L140)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L112-L137`](../../bot/handlers/admin/attendance.py#L112-L137)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -188,7 +188,7 @@ result = await notify_partner_about_attendance(session=..., stats=..., user_full
 async def finish_and_notify(cb: CallbackQuery, session) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L143-L167`](../../bot/handlers/admin/attendance.py#L143-L167)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L140-L163`](../../bot/handlers/admin/attendance.py#L140-L163)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -222,7 +222,7 @@ result = await finish_and_notify(cb=..., session=...)
 async def show_attendance_menu(event: Message | CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L172-L191`](../../bot/handlers/admin/attendance.py#L172-L191)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L168-L187`](../../bot/handlers/admin/attendance.py#L168-L187)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -255,7 +255,7 @@ result = await show_attendance_menu(event=...)
 async def cb_select_day(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L195-L215`](../../bot/handlers/admin/attendance.py#L195-L215)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L191-L211`](../../bot/handlers/admin/attendance.py#L191-L211)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -288,7 +288,7 @@ result = await cb_select_day(cb=...)
 def parse_start_callback(data: str)
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L218-L234`](../../bot/handlers/admin/attendance.py#L218-L234)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L214-L230`](../../bot/handlers/admin/attendance.py#L214-L230)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -321,7 +321,7 @@ result = parse_start_callback(data=...)
 def get_initiator_title(initiator_id: int) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L237-L249`](../../bot/handlers/admin/attendance.py#L237-L249)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L233-L245`](../../bot/handlers/admin/attendance.py#L233-L245)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -354,7 +354,7 @@ result = get_initiator_title(initiator_id=...)
 async def check_session_ownership(cb: CallbackQuery, session) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L252-L271`](../../bot/handlers/admin/attendance.py#L252-L271)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L248-L267`](../../bot/handlers/admin/attendance.py#L248-L267)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -388,7 +388,7 @@ result = await check_session_ownership(cb=..., session=...)
 async def _resolve_lesson_title_for_start(target_date, lesson_num: int) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L275-L288`](../../bot/handlers/admin/attendance.py#L275-L288)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L270-L283`](../../bot/handlers/admin/attendance.py#L270-L283)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -422,7 +422,7 @@ result = await _resolve_lesson_title_for_start(target_date=..., lesson_num=...)
 async def _ensure_session_available(cb: CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L291-L307`](../../bot/handlers/admin/attendance.py#L291-L307)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L286-L302`](../../bot/handlers/admin/attendance.py#L286-L302)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -455,7 +455,7 @@ result = await _ensure_session_available(cb=...)
 async def _init_session_safe(cb: CallbackQuery, target_date, lesson_num: int, title: str)
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L310-L326`](../../bot/handlers/admin/attendance.py#L310-L326)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L305-L321`](../../bot/handlers/admin/attendance.py#L305-L321)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
@@ -491,7 +491,7 @@ result = await _init_session_safe(cb=..., target_date=..., lesson_num=...)
 async def cb_start_attendance(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L330-L352`](../../bot/handlers/admin/attendance.py#L330-L352)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L325-L347`](../../bot/handlers/admin/attendance.py#L325-L347)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -524,7 +524,7 @@ result = await cb_start_attendance(cb=...)
 async def cb_mark_student(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L356-L380`](../../bot/handlers/admin/attendance.py#L356-L380)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L351-L375`](../../bot/handlers/admin/attendance.py#L351-L375)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -557,7 +557,7 @@ result = await cb_mark_student(cb=...)
 async def cb_step_back(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L384-L407`](../../bot/handlers/admin/attendance.py#L384-L407)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L379-L402`](../../bot/handlers/admin/attendance.py#L379-L402)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -590,7 +590,7 @@ result = await cb_step_back(cb=...)
 async def cb_all_present(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L411-L431`](../../bot/handlers/admin/attendance.py#L411-L431)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L406-L426`](../../bot/handlers/admin/attendance.py#L406-L426)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -623,7 +623,7 @@ result = await cb_all_present(cb=...)
 async def notify_partner_about_cancellation( lesson_num: int | str, user_id: int, user_full_name: str | None = None ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L434-L460`](../../bot/handlers/admin/attendance.py#L434-L460)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L429-L455`](../../bot/handlers/admin/attendance.py#L429-L455)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -658,7 +658,7 @@ result = await notify_partner_about_cancellation(lesson_num=..., user_id=..., us
 async def cb_cancel_lesson(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L464-L482`](../../bot/handlers/admin/attendance.py#L464-L482)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L459-L475`](../../bot/handlers/admin/attendance.py#L459-L475)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -691,7 +691,7 @@ result = await cb_cancel_lesson(cb=...)
 async def cb_abort_survey(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L486-L506`](../../bot/handlers/admin/attendance.py#L486-L506)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L479-L499`](../../bot/handlers/admin/attendance.py#L479-L499)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -724,7 +724,7 @@ result = await cb_abort_survey(cb=...)
 async def cb_close_menu(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L510-L523`](../../bot/handlers/admin/attendance.py#L510-L523)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L503-L516`](../../bot/handlers/admin/attendance.py#L503-L516)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -191,7 +191,7 @@ def test_apply_marks_to_sheet():
         lesson_title="Тест",
         students=[(5, "Иванов"), (6, "Петров")],
         marks={"5": "П", "6": "Н"},
-        initiator_id=123
+        initiator_id=123,
     )
     apply_marks_to_sheet(sheet, session, col=3)
     assert sheet.cell(5, 3).value == "П"
@@ -238,7 +238,7 @@ def test_format_student_card():
         lesson_num=1,
         lesson_title="Математика",
         students=[(5, "Иванов Иван"), (6, "Петров Петр")],
-        initiator_id=123
+        initiator_id=123,
     )
     text = format_student_card(session)
     assert "[1/2]" in text
@@ -253,7 +253,7 @@ def test_format_summary_text():
         lesson_title="Физика",
         students=[(5, "Иванов Иван"), (6, "Петров Петр")],
         marks={"5": "П", "6": "Н"},
-        initiator_id=123
+        initiator_id=123,
     )
     stats = {"П": 1, "О": 0, "У": 0, "Н": 1}
     summary = format_summary_text(session, stats)
@@ -265,6 +265,7 @@ def test_format_summary_text():
 def test_get_days_select_kb():
     """Проверяет генерацию кнопок выбора дней."""
     from bot.templates.admin.attendance import get_days_select_kb
+
     kb = get_days_select_kb()
     assert len(kb.inline_keyboard) >= 2
     assert kb.inline_keyboard[0][0].callback_data.startswith("att:day:")
@@ -272,17 +273,50 @@ def test_get_days_select_kb():
 
 def test_lesson_model_number_property():
     """Проверяет свойство number модели Lesson (period + 1)."""
-    l0 = Lesson(period=0, time_str="08:30", subject="Мат", lesson_type="Лек", teacher="", is_remote=False, room="", address="")
-    l2 = Lesson(period=2, time_str="12:00", subject="Физ", lesson_type="Прак", teacher="", is_remote=False, room="", address="")
+    l0 = Lesson(
+        period=0, time_str="08:30", subject="Мат", lesson_type="Лек", teacher="", is_remote=False, room="", address=""
+    )
+    l2 = Lesson(
+        period=2, time_str="12:00", subject="Физ", lesson_type="Прак", teacher="", is_remote=False, room="", address=""
+    )
     assert l0.number == 1
     assert l2.number == 3
 
 
 def test_get_lesson_select_kb_with_lesson_models():
     """Проверяет генерацию кнопок с объектами Lesson и дедупликацию подгрупп."""
-    l1 = Lesson(period=0, time_str="08:30", subject="Информатика", lesson_type="Лаб", teacher="", is_remote=False, room="", address="", subgroup=1)
-    l2 = Lesson(period=0, time_str="08:30", subject="Информатика", lesson_type="Лаб", teacher="", is_remote=False, room="", address="", subgroup=2)
-    l3 = Lesson(period=1, time_str="10:00", subject="История", lesson_type="Лек", teacher="", is_remote=False, room="", address="")
+    l1 = Lesson(
+        period=0,
+        time_str="08:30",
+        subject="Информатика",
+        lesson_type="Лаб",
+        teacher="",
+        is_remote=False,
+        room="",
+        address="",
+        subgroup=1,
+    )
+    l2 = Lesson(
+        period=0,
+        time_str="08:30",
+        subject="Информатика",
+        lesson_type="Лаб",
+        teacher="",
+        is_remote=False,
+        room="",
+        address="",
+        subgroup=2,
+    )
+    l3 = Lesson(
+        period=1,
+        time_str="10:00",
+        subject="История",
+        lesson_type="Лек",
+        teacher="",
+        is_remote=False,
+        room="",
+        address="",
+    )
     kb = get_lesson_select_kb([l1, l2, l3], chosen_date=date(2026, 9, 29))
     # 2 ряда пар (Пара 1 дедуплицирована, Пара 2) + 1 ряд навигации = 3 ряда
     assert len(kb.inline_keyboard) == 3
@@ -318,8 +352,11 @@ async def test_redis_session_crud():
 
     with patch("services.attendance_manager.get_redis", return_value=mock_redis):
         session = AttendanceSession(
-            target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
-            students=[(5, "Иванов"), (6, "Петров")], initiator_id=123
+            target_date="2026-09-29",
+            lesson_num=1,
+            lesson_title="Мат",
+            students=[(5, "Иванов"), (6, "Петров")],
+            initiator_id=123,
         )
         await save_session_to_redis(session)
         assert "attendance:session" in store
@@ -337,11 +374,16 @@ async def test_redis_session_crud():
 async def test_record_student_mark_and_step_back():
     """Проверяет выставление отметки студенту и шаг назад."""
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
-        students=[(5, "Иванов"), (6, "Петров")], initiator_id=123
+        target_date="2026-09-29",
+        lesson_num=1,
+        lesson_title="Мат",
+        students=[(5, "Иванов"), (6, "Петров")],
+        initiator_id=123,
     )
-    with patch("services.attendance_manager.get_active_session", return_value=session), \
-         patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock):
+    with (
+        patch("services.attendance_manager.get_active_session", return_value=session),
+        patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock),
+    ):
         res = await record_student_mark("П")
         assert res.current_idx == 1
         assert res.marks["5"] == "П"
@@ -355,12 +397,18 @@ async def test_record_student_mark_and_step_back():
 async def test_mark_all_remaining_present():
     """Проверяет массовую отметку 'П' всем оставшимся студентам."""
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=1, lesson_title="Мат",
-        students=[(5, "Иванов"), (6, "Петров"), (7, "Сидоров")], initiator_id=123,
-        current_idx=1, marks={"5": "Н"}
+        target_date="2026-09-29",
+        lesson_num=1,
+        lesson_title="Мат",
+        students=[(5, "Иванов"), (6, "Петров"), (7, "Сидоров")],
+        initiator_id=123,
+        current_idx=1,
+        marks={"5": "Н"},
     )
-    with patch("services.attendance_manager.get_active_session", return_value=session), \
-         patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock):
+    with (
+        patch("services.attendance_manager.get_active_session", return_value=session),
+        patch("services.attendance_manager.save_session_to_redis", new_callable=AsyncMock),
+    ):
         res = await mark_all_remaining_present()
         assert res.current_idx == 3
         assert res.marks == {"5": "Н", "6": "П", "7": "П"}
@@ -372,11 +420,17 @@ async def test_auto_close_attendance_session_protection():
     from services.notifier import auto_close_attendance_session
 
     active_session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=2, lesson_title="Мат",
-        students=[(5, "Иванов")], initiator_id=123, current_idx=1
+        target_date="2026-09-29",
+        lesson_num=2,
+        lesson_title="Мат",
+        students=[(5, "Иванов")],
+        initiator_id=123,
+        current_idx=1,
     )
-    with patch("services.notifier.get_active_session", return_value=active_session), \
-         patch("services.notifier.clear_session", new_callable=AsyncMock) as mock_clear:
+    with (
+        patch("services.notifier.get_active_session", return_value=active_session),
+        patch("services.notifier.clear_session", new_callable=AsyncMock) as mock_clear,
+    ):
         await auto_close_attendance_session(2)
         mock_clear.assert_not_called()
 
@@ -399,6 +453,7 @@ def test_ensure_summary_headers():
 def test_find_sheet_rid():
     """Проверяет извлечение r:id листа из workbook.xml даже с xmlns атрибутами."""
     from integrations.yandex_docs import _find_sheet_rid
+
     xml = (
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
         '<sheets><sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
@@ -411,11 +466,12 @@ def test_find_sheet_rid():
 def test_resolve_sheet_target_path():
     """Проверяет корректное разрешение пути листа по r:id с очисткой слэшей."""
     from integrations.yandex_docs import _resolve_sheet_target_path
+
     xml = (
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         '<Relationship Id="rId1" Target="/xl/worksheets/sheet1.xml"/>'
         '<Relationship Id="rId2" Target="worksheets/sheet2.xml"/>'
-        '</Relationships>'
+        "</Relationships>"
     )
     assert _resolve_sheet_target_path(xml, "rId1") == "xl/worksheets/sheet1.xml"
     assert _resolve_sheet_target_path(xml, "rId2") == "xl/worksheets/sheet2.xml"
@@ -425,6 +481,7 @@ def test_resolve_sheet_target_path():
 def test_cell_has_expected_mark_entities():
     """Проверяет распознавание отметок с HTML-сущностями и тегами <t> и <v>."""
     from integrations.yandex_docs import _cell_has_expected_mark
+
     assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>&#1055;</t></is></c>', "П")
     assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>О</t></is></c>', "О")
     assert _cell_has_expected_mark('<c r="D5"><v>Н</v></c>', "Н")
@@ -439,6 +496,7 @@ def test_extract_and_verify_marks_in_raw():
         _verify_marks_in_raw,
         save_workbook_to_bytes,
     )
+
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")
@@ -459,6 +517,7 @@ async def test_verify_upload_with_mock_bytes():
         save_workbook_to_bytes,
         verify_upload,
     )
+
     wb = create_mock_workbook()
     ws = wb["СЕНТ"]
     ws.cell(5, 4, "П")
@@ -474,14 +533,23 @@ async def test_verify_upload_with_mock_bytes():
 async def test_try_commit_once_success_handling():
     """Проверяет успешное сохранение в _try_commit_once при HTTP 200 от WOPI."""
     from services.attendance_manager import _try_commit_once
+
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=2, lesson_title="Тест",
-        students=[(5, "Иванов")], marks={"5": "П"}, initiator_id=123
+        target_date="2026-09-29",
+        lesson_num=2,
+        lesson_title="Тест",
+        students=[(5, "Иванов")],
+        marks={"5": "П"},
+        initiator_id=123,
     )
-    with patch("services.attendance_manager.init_wopi_session", new_callable=AsyncMock), \
-         patch("services.attendance_manager.download_workbook", new_callable=AsyncMock, return_value=create_mock_workbook()), \
-         patch("services.attendance_manager.upload_workbook", new_callable=AsyncMock, return_value=True), \
-         patch("services.attendance_manager.verify_upload", new_callable=AsyncMock, return_value=True):
+    with (
+        patch("services.attendance_manager.init_wopi_session", new_callable=AsyncMock),
+        patch(
+            "services.attendance_manager.download_workbook", new_callable=AsyncMock, return_value=create_mock_workbook()
+        ),
+        patch("services.attendance_manager.upload_workbook", new_callable=AsyncMock, return_value=True),
+        patch("services.attendance_manager.verify_upload", new_callable=AsyncMock, return_value=True),
+    ):
         assert await _try_commit_once(session, date(2026, 9, 29)) is True
 
 
@@ -489,12 +557,19 @@ async def test_try_commit_once_success_handling():
 async def test_commit_session_to_table_clears_on_success():
     """Проверяет сброс активной сессии в Redis после успешного сохранения."""
     from services.attendance_manager import commit_session_to_table
+
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=2, lesson_title="Тест",
-        students=[(5, "Иванов")], marks={"5": "П"}, initiator_id=123
+        target_date="2026-09-29",
+        lesson_num=2,
+        lesson_title="Тест",
+        students=[(5, "Иванов")],
+        marks={"5": "П"},
+        initiator_id=123,
     )
-    with patch("services.attendance_manager._try_commit_once", new_callable=AsyncMock, return_value=True), \
-         patch("services.attendance_manager.clear_session", new_callable=AsyncMock) as mock_clear:
+    with (
+        patch("services.attendance_manager._try_commit_once", new_callable=AsyncMock, return_value=True),
+        patch("services.attendance_manager.clear_session", new_callable=AsyncMock) as mock_clear,
+    ):
         ok = await commit_session_to_table(session)
         assert ok is True
         mock_clear.assert_called_once()
@@ -503,6 +578,7 @@ async def test_commit_session_to_table_clears_on_success():
 def test_get_partner_admin_id_logic():
     """Проверяет определение Telegram ID второго администратора."""
     from bot.handlers.admin.attendance import get_partner_admin_id
+
     assert get_partner_admin_id(ALLOWED_USER_ID) == DEPUTY_USER_ID
     assert get_partner_admin_id(DEPUTY_USER_ID) == ALLOWED_USER_ID
     assert get_partner_admin_id(999999999) is None
@@ -512,9 +588,14 @@ def test_get_partner_admin_id_logic():
 async def test_notify_partner_about_attendance_success():
     """Проверяет отправку полного отчёта о посещаемости напарнику в Telegram."""
     from bot.handlers.admin.attendance import notify_partner_about_attendance
+
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=1, lesson_title="Высшая математика",
-        students=[(5, "Иванов Иван"), (6, "Петров Петр")], marks={"5": "П", "6": "Н"}, initiator_id=ALLOWED_USER_ID
+        target_date="2026-09-29",
+        lesson_num=1,
+        lesson_title="Высшая математика",
+        students=[(5, "Иванов Иван"), (6, "Петров Петр")],
+        marks={"5": "П", "6": "Н"},
+        initiator_id=ALLOWED_USER_ID,
     )
     stats = {"П": 1, "О": 0, "У": 0, "Н": 1}
     with patch("core.bot.bot.send_message", new_callable=AsyncMock) as mock_send:
@@ -531,9 +612,14 @@ async def test_notify_partner_about_attendance_success():
 async def test_notify_partner_about_attendance_resilience():
     """Проверяет отказоустойчивость при ошибке доставки сообщения партнеру."""
     from bot.handlers.admin.attendance import notify_partner_about_attendance
+
     session = AttendanceSession(
-        target_date="2026-09-29", lesson_num=1, lesson_title="Физика",
-        students=[(5, "Иванов Иван")], marks={"5": "П"}, initiator_id=DEPUTY_USER_ID
+        target_date="2026-09-29",
+        lesson_num=1,
+        lesson_title="Физика",
+        students=[(5, "Иванов Иван")],
+        marks={"5": "П"},
+        initiator_id=DEPUTY_USER_ID,
     )
     with patch("core.bot.bot.send_message", side_effect=RuntimeError("Telegram Network Error")):
         # Не должно вызывать исключение
@@ -544,6 +630,7 @@ async def test_notify_partner_about_attendance_resilience():
 async def test_notify_partner_about_cancellation_success():
     """Проверяет отправку уведомления об отмене пары напарнику."""
     from bot.handlers.admin.attendance import notify_partner_about_cancellation
+
     with patch("core.bot.bot.send_message", new_callable=AsyncMock) as mock_send:
         await notify_partner_about_cancellation(3, ALLOWED_USER_ID, user_full_name="Староста")
         mock_send.assert_called_once()
@@ -551,5 +638,3 @@ async def test_notify_partner_about_cancellation_success():
         assert sent_to == DEPUTY_USER_ID
         assert "Староста" in sent_text
         assert "3" in sent_text
-
-

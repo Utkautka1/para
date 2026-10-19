@@ -21,16 +21,16 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_lesson_confirm_kb`](#get_lesson_confirm_kb) | Function | L16–L33 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_conf... |
-| [`get_student_poll_kb`](#get_student_poll_kb) | Function | L36–L66 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_student_pol... |
-| [`format_confirm_text`](#format_confirm_text) | Function | L69–L83 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_student_card`](#format_student_card) | Function | L86–L105 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_format_absent_students`](#_format_absent_students) | Function | L108–L126 | `str` | Executes core domain logic for `_format_absent_students... |
-| [`format_summary_text`](#format_summary_text) | Function | L129–L148 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_partner_attendance_report`](#format_partner_attendance_report) | Function | L151–L170 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_partner_cancel_report`](#format_partner_cancel_report) | Function | L173–L187 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_days_select_kb`](#get_days_select_kb) | Function | L190–L217 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_days_select... |
-| [`get_lesson_select_kb`](#get_lesson_select_kb) | Function | L220–L253 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_sele... |
+| [`get_lesson_confirm_kb`](#get_lesson_confirm_kb) | Function | L15–L32 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_conf... |
+| [`get_student_poll_kb`](#get_student_poll_kb) | Function | L35–L63 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_student_pol... |
+| [`format_confirm_text`](#format_confirm_text) | Function | L66–L80 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_student_card`](#format_student_card) | Function | L83–L102 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_format_absent_students`](#_format_absent_students) | Function | L105–L123 | `str` | Executes core domain logic for `_format_absent_students... |
+| [`format_summary_text`](#format_summary_text) | Function | L126–L145 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_partner_attendance_report`](#format_partner_attendance_report) | Function | L148–L165 | `str` | Formats message payload and presentation markup for `fo... |
+| [`format_partner_cancel_report`](#format_partner_cancel_report) | Function | L168–L182 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_days_select_kb`](#get_days_select_kb) | Function | L185–L212 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_days_select... |
+| [`get_lesson_select_kb`](#get_lesson_select_kb) | Function | L215–L250 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_lesson_sele... |
 
 ---
 
@@ -41,7 +41,7 @@ graph LR
 def get_lesson_confirm_kb(lesson_num: int) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L16-L33`](../../bot/templates/admin/attendance.py#L16-L33)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L15-L32`](../../bot/templates/admin/attendance.py#L15-L32)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -74,7 +74,7 @@ result = get_lesson_confirm_kb(lesson_num=...)
 def get_student_poll_kb(can_back: bool) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L36-L66`](../../bot/templates/admin/attendance.py#L36-L66)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L35-L63`](../../bot/templates/admin/attendance.py#L35-L63)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -107,7 +107,7 @@ result = get_student_poll_kb(can_back=...)
 def format_confirm_text(lesson_num: int, title: str, teacher: str) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L69-L83`](../../bot/templates/admin/attendance.py#L69-L83)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L66-L80`](../../bot/templates/admin/attendance.py#L66-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -142,7 +142,7 @@ result = format_confirm_text(lesson_num=..., title=..., teacher=...)
 def format_student_card(session: AttendanceSession) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L86-L105`](../../bot/templates/admin/attendance.py#L86-L105)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L83-L102`](../../bot/templates/admin/attendance.py#L83-L102)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -175,7 +175,7 @@ result = format_student_card(session=...)
 def _format_absent_students(session: AttendanceSession) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L108-L126`](../../bot/templates/admin/attendance.py#L108-L126)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L105-L123`](../../bot/templates/admin/attendance.py#L105-L123)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -208,7 +208,7 @@ result = _format_absent_students(session=...)
 def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L129-L148`](../../bot/templates/admin/attendance.py#L129-L148)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L126-L145`](../../bot/templates/admin/attendance.py#L126-L145)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -239,10 +239,10 @@ result = format_summary_text(session=..., stats=...)
 
 ### `format_partner_attendance_report`
 ```python
-def format_partner_attendance_report( session: AttendanceSession, stats: dict[str, int], initiator_title: str ) -> str
+def format_partner_attendance_report(session: AttendanceSession, stats: dict[str, int], initiator_title: str) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L151-L170`](../../bot/templates/admin/attendance.py#L151-L170)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L148-L165`](../../bot/templates/admin/attendance.py#L148-L165)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -277,7 +277,7 @@ result = format_partner_attendance_report(session=..., stats=..., initiator_titl
 def format_partner_cancel_report(lesson_num: int | str, initiator_title: str) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L173-L187`](../../bot/templates/admin/attendance.py#L173-L187)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L168-L182`](../../bot/templates/admin/attendance.py#L168-L182)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -311,7 +311,7 @@ result = format_partner_cancel_report(lesson_num=..., initiator_title=...)
 def get_days_select_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L190-L217`](../../bot/templates/admin/attendance.py#L190-L217)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L185-L212`](../../bot/templates/admin/attendance.py#L185-L212)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -342,7 +342,7 @@ result = get_days_select_kb()
 def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/attendance.py#L220-L253`](../../bot/templates/admin/attendance.py#L220-L253)
+- **Source Reference**: [`bot/templates/admin/attendance.py#L215-L250`](../../bot/templates/admin/attendance.py#L215-L250)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

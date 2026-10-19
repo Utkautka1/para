@@ -177,7 +177,6 @@ def test_format_attendance_topic_message_with_stats():
     assert "Мухамадеев Артём" in debt_part
 
 
-
 def test_topic_state_storage(tmp_path):
     """Проверяет сохранение и загрузку ID сообщения топика."""
     fake_state = str(tmp_path / "att_state.json")
@@ -204,8 +203,15 @@ async def test_cmd_my_attendance_authorized_private():
     msg.chat = Chat(id=111, type="private")
     msg.from_user = User(id=111, is_bot=False, first_name="Ева", username="eva")
     msg.answer = AsyncMock()
-    with patch("bot.handlers.user.attendance.process_user_auth", return_value=(True, False, {"full_name": "Барчугова Ева"})), \
-         patch("bot.handlers.user.attendance.fetch_all_time_attendance", return_value={"Барчугова Ева": {"total": {"П": 10, "О": 0, "У": 0, "Н": 1}, "months": {}}}):
+    with (
+        patch(
+            "bot.handlers.user.attendance.process_user_auth", return_value=(True, False, {"full_name": "Барчугова Ева"})
+        ),
+        patch(
+            "bot.handlers.user.attendance.fetch_all_time_attendance",
+            return_value={"Барчугова Ева": {"total": {"П": 10, "О": 0, "У": 0, "Н": 1}, "months": {}}},
+        ),
+    ):
         await cmd_my_attendance(msg)
         msg.answer.assert_called_once()
         assert "Барчугова Ева" in msg.answer.call_args[0][0]
@@ -229,8 +235,10 @@ async def test_admin_att_topic_callbacks():
     cb.message = AsyncMock(spec=Message)
     cb.message.edit_text = AsyncMock()
     cb.answer = AsyncMock()
-    with patch("services.attendance_topic_updater.sync_attendance_topic_message", return_value=True), \
-         patch("services.attendance_topic_updater.recreate_attendance_topic_message", return_value=True):
+    with (
+        patch("services.attendance_topic_updater.sync_attendance_topic_message", return_value=True),
+        patch("services.attendance_topic_updater.recreate_attendance_topic_message", return_value=True),
+    ):
         await cb_admin_force_att_topic(cb)
         await cb_admin_recreate_att_topic(cb)
         assert cb.message.edit_text.call_count == 2
@@ -246,13 +254,19 @@ async def test_optimistic_update_and_deduplication():
         "Базаров Аюр": {"fio": "Базаров Аюр", "total": {"П": 5, "О": 0, "У": 0, "Н": 1}, "months": {}},
     }
     session = AttendanceSession(
-        target_date="2026-10-05", lesson_num=1, lesson_title="Физика",
-        students=[(5, "Базаров Аюр")], marks={"5": "П"}, initiator_id=123,
+        target_date="2026-10-05",
+        lesson_num=1,
+        lesson_title="Физика",
+        students=[(5, "Базаров Аюр")],
+        marks={"5": "П"},
+        initiator_id=123,
     )
-    with patch("services.attendance_stats.fetch_all_time_attendance", return_value=initial_stats), \
-         patch("services.attendance_stats._get_saved_lesson_marks", return_value={}), \
-         patch("services.attendance_stats._save_lesson_marks", AsyncMock()), \
-         patch("services.attendance_stats._save_to_redis_cache", AsyncMock()):
+    with (
+        patch("services.attendance_stats.fetch_all_time_attendance", return_value=initial_stats),
+        patch("services.attendance_stats._get_saved_lesson_marks", return_value={}),
+        patch("services.attendance_stats._save_lesson_marks", AsyncMock()),
+        patch("services.attendance_stats._save_to_redis_cache", AsyncMock()),
+    ):
         updated = await apply_session_optimistic_update(session)
         assert updated["Базаров Аюр"]["total"]["П"] == 6
 
@@ -261,6 +275,7 @@ async def test_optimistic_update_and_deduplication():
 async def test_redis_lock_context():
     """Проверяет захват и освобождение распределенного лока Redis через Lua-скрипт."""
     from core.redis_cache import redis_lock
+
     mock_redis = AsyncMock()
     mock_redis.set.return_value = True
     mock_redis.eval.return_value = 1

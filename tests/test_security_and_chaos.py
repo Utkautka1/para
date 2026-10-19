@@ -45,7 +45,7 @@ def _forge_init_data(user_payload: str, auth_date: str, custom_hash: str) -> str
         "<script>alert(1)</script>",
         "user={\x00}&hash=abc",
         "auth_date=99999999999&hash=abc",  # Далекое будущее
-        "auth_date=1&user={}&hash=abc",     # Далекое прошлое (1970)
+        "auth_date=1&user={}&hash=abc",  # Далекое прошлое (1970)
         "user=" + ("A" * 10000) + "&hash=abc",  # DoS размер
     ],
 )
@@ -97,7 +97,6 @@ async def test_api_security_injection_attacks() -> None:
         assert res4.status_code in (401, 403)
 
 
-
 @pytest.mark.asyncio
 async def test_miniapp_dos_payload_protection() -> None:
     """Тестирует защиту от отправки гигантского тела в /miniapp/auth."""
@@ -133,13 +132,18 @@ async def test_grpc_resilience_on_upstream_failure() -> None:
     context = AsyncMock()
 
     # Падение парсера расписания
-    with patch("api.grpc.servicers.get_schedule_for_date", side_effect=RuntimeError("Upstream timeout")), pytest.raises(RuntimeError):
+    with (
+        patch("api.grpc.servicers.get_schedule_for_date", side_effect=RuntimeError("Upstream timeout")),
+        pytest.raises(RuntimeError),
+    ):
         req = schedule_pb2.DayScheduleRequest(target_date="2026-10-12")
         await schedule_servicer.GetDaySchedule(req, context)
 
     # Падение парсера экзаменов
     exams_servicer = ExamsServicer()
-    with patch("api.grpc.servicers.get_group_exams", side_effect=ValueError("Corrupted XML")), pytest.raises(ValueError):
+    with (
+        patch("api.grpc.servicers.get_group_exams", side_effect=ValueError("Corrupted XML")),
+        pytest.raises(ValueError),
+    ):
         req = exams_pb2.ExamsRequest(force_refresh=True)
         await exams_servicer.GetExams(req, context)
-

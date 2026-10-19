@@ -85,10 +85,13 @@ def parse_exam_from_load(
     is_remote = load.get("format") == "remote"
     subgroup = load.get("subgroup", 0)
     item = ExamItem(
-        subject=subj_name, exam_type=type_name, teacher=teacher_name,
+        subject=subj_name,
+        exam_type=type_name,
+        teacher=teacher_name,
         room="Дистанционно" if is_remote else "Кабинет уточняется",
         address=resolve_room_address("Дистанционно" if is_remote else "", is_remote),
-        weeks=extract_load_weeks(load), subgroup=subgroup,
+        weeks=extract_load_weeks(load),
+        subgroup=subgroup,
         format_str="🌐 Дистанционно" if is_remote else "📍 Очно",
     )
     return f"{subj_name}_{type_name}_{subgroup}", item
@@ -114,7 +117,11 @@ def enrich_exam_from_instance(
     key = f"{subj_name}_{type_name}_{subgroup}"
     if key in exams_dict:
         is_remote = inst.get("format") == "remote"
-        room_name = rms.get((inst.get("preferredRoomIds") or [""])[0], "Кабинет уточняется") if not is_remote else "Дистанционно"
+        room_name = (
+            rms.get((inst.get("preferredRoomIds") or [""])[0], "Кабинет уточняется")
+            if not is_remote
+            else "Дистанционно"
+        )
         exams_dict[key].room = room_name
         exams_dict[key].address = resolve_room_address(room_name, is_remote)
         if inst.get("customWeeks"):
@@ -145,4 +152,3 @@ async def get_group_exams() -> list[ExamItem]:
     result = list(exams_dict.values())
     result.sort(key=lambda x: (min(x.weeks) if x.weeks else 99, x.subject))
     return result
-

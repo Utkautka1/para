@@ -153,7 +153,7 @@ def _read_code_file_payload(doc_bytes: bytes, file_name: str, prompt: str) -> st
 
     txt = doc_bytes.decode("utf-8", errors="ignore")
     if len(txt) > config.HW_MAX_PROMPT_TEXT_LENGTH:
-        txt = txt[:config.HW_MAX_PROMPT_TEXT_LENGTH] + "\n...[Текст обрезан]..."
+        txt = txt[: config.HW_MAX_PROMPT_TEXT_LENGTH] + "\n...[Текст обрезан]..."
 
     return f"{prompt}\n\n[Содержимое {file_name}]:\n{txt}".strip()
 

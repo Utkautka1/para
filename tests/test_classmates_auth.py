@@ -75,10 +75,13 @@ def test_find_unregistered_already_registered() -> None:
 def test_update_classmate_tg_id_success() -> None:
     """Проверяет разовую фиксацию ID и сохранение в файл и кэш."""
     import copy
+
     reg_copy = copy.deepcopy(SAMPLE_REGISTRY)
-    with patch("services.classmates_auth.load_classmates_registry", return_value=reg_copy), \
-         patch("services.classmates_auth.sync_atomic_save_json") as mock_save, \
-         patch("services.classmates_auth.add_user_to_cache") as mock_cache:
+    with (
+        patch("services.classmates_auth.load_classmates_registry", return_value=reg_copy),
+        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
+        patch("services.classmates_auth.add_user_to_cache") as mock_cache,
+    ):
         updated = update_classmate_tg_id("etow0ndes", 555666777)
         assert updated is not None
         assert updated["tg_id"] == 555666777
@@ -88,8 +91,10 @@ def test_update_classmate_tg_id_success() -> None:
 
 def test_update_classmate_tg_id_already_registered_fails() -> None:
     """Проверяет запрет перезаписи ID для уже зафиксированного пользователя."""
-    with patch("services.classmates_auth.load_classmates_registry", return_value=SAMPLE_REGISTRY), \
-         patch("services.classmates_auth.sync_atomic_save_json") as mock_save:
+    with (
+        patch("services.classmates_auth.load_classmates_registry", return_value=SAMPLE_REGISTRY),
+        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
+    ):
         res = update_classmate_tg_id("arseniymazur", 999111222)
         assert res is None
         mock_save.assert_not_called()
@@ -124,8 +129,10 @@ def test_process_user_auth_unregistered_rejected() -> None:
 
 def test_process_user_auth_stranger_rejected() -> None:
     """Проверяет отказ в доступе постороннему лицу."""
-    with patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None), \
-         patch("services.classmates_auth.update_classmate_tg_id", return_value=None):
+    with (
+        patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None),
+        patch("services.classmates_auth.update_classmate_tg_id", return_value=None),
+    ):
         stranger = User(id=999888, is_bot=False, first_name="Bob", username="stranger_bob")
         is_auth, is_just_reg, student = process_user_auth(stranger)
         assert is_auth is False
@@ -160,13 +167,21 @@ async def test_send_single_reminder_subscribers_only() -> None:
 
     from services.models import Lesson
     from services.notifier import send_single_reminder
+
     lesson = Lesson(
-        subject="Математика", teacher="Иванов И.И.", room="101",
-        time_str="10:00-11:30", period=0, is_remote=False,
-        lesson_type="Пр", address="Корпус 1"
+        subject="Математика",
+        teacher="Иванов И.И.",
+        room="101",
+        time_str="10:00-11:30",
+        period=0,
+        is_remote=False,
+        lesson_type="Пр",
+        address="Корпус 1",
     )
-    with patch("db.subscribers.load_subscribers", return_value={1000965210}), \
-         patch("services.notifier.bot.send_message", new_callable=AsyncMock) as mock_send:
+    with (
+        patch("db.subscribers.load_subscribers", return_value={1000965210}),
+        patch("services.notifier.bot.send_message", new_callable=AsyncMock) as mock_send,
+    ):
         await send_single_reminder(lesson)
         assert mock_send.call_count == 1
         assert mock_send.call_args[0][0] == 1000965210
@@ -178,13 +193,16 @@ async def test_cb_toggle_notify() -> None:
     from unittest.mock import AsyncMock
 
     from bot.handlers.user.schedule import cb_toggle_notify
+
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=12345, is_bot=False, first_name="User")
     cb.answer = AsyncMock()
     cb.message = MagicMock(spec=Message)
     cb.message.edit_reply_markup = AsyncMock()
-    with patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True), \
-         patch("bot.handlers.user.schedule.get_api_schedule_for_date", return_value=[]):
+    with (
+        patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True),
+        patch("bot.handlers.user.schedule.get_api_schedule_for_date", return_value=[]),
+    ):
         await cb_toggle_notify(cb)
         cb.answer.assert_called_once_with("🔔 Напоминания за 10 мин включены!")
         cb.message.edit_reply_markup.assert_called_once()
@@ -196,11 +214,14 @@ async def test_cmd_notice_authorized() -> None:
     from unittest.mock import AsyncMock
 
     from bot.handlers.user.schedule import cmd_notice
+
     msg = MagicMock(spec=Message)
     msg.from_user = User(id=12345, is_bot=False, first_name="User")
     msg.answer = AsyncMock()
-    with patch("bot.handlers.user.schedule.is_authorized_user", return_value=True), \
-         patch("bot.handlers.user.schedule.is_subscribed", return_value=True):
+    with (
+        patch("bot.handlers.user.schedule.is_authorized_user", return_value=True),
+        patch("bot.handlers.user.schedule.is_subscribed", return_value=True),
+    ):
         await cmd_notice(msg)
         msg.answer.assert_called_once()
         assert "НАСТРОЙКИ УВЕДОМЛЕНИЙ" in msg.answer.call_args[0][0]
@@ -212,6 +233,7 @@ async def test_cmd_notice_stranger_rejected() -> None:
     from unittest.mock import AsyncMock
 
     from bot.handlers.user.schedule import cmd_notice
+
     msg = MagicMock(spec=Message)
     msg.from_user = User(id=99999, is_bot=False, first_name="Stranger")
     msg.answer = AsyncMock()
@@ -227,6 +249,7 @@ async def test_cb_notice_toggle() -> None:
     from unittest.mock import AsyncMock
 
     from bot.handlers.user.schedule import cb_notice_toggle
+
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=12345, is_bot=False, first_name="User")
     cb.answer = AsyncMock()
@@ -236,5 +259,3 @@ async def test_cb_notice_toggle() -> None:
         await cb_notice_toggle(cb)
         cb.answer.assert_called_once_with("🔕 Уведомления отключены.")
         cb.message.edit_text.assert_called_once()
-
-

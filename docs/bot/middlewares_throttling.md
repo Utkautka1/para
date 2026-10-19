@@ -23,9 +23,9 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`_determine_cooldown`](#_determine_cooldown) | Function | L30–L46 | `float` | Executes core domain logic for `_determine_cooldown`. |
 | [`CallbackThrottleMiddleware.__init__`](#callbackthrottlemiddleware__init__) | Method | L52–L60 | `None` | Executes core domain logic for `__init__`. |
-| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L62–L77 | `None` | Executes core domain logic for `_cleanup_old_entries`. |
-| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L79–L105 | `bool` | Executes core domain logic for `_handle_callback_thrott... |
-| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L107–L125 | `Any` | Executes core domain logic for `__call__`. |
+| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L62–L74 | `None` | Executes core domain logic for `_cleanup_old_entries`. |
+| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L76–L100 | `bool` | Executes core domain logic for `_handle_callback_thrott... |
+| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L102–L120 | `Any` | Executes core domain logic for `__call__`. |
 
 ---
 
@@ -104,7 +104,7 @@ result = __init__()
 def _cleanup_old_entries(self, now: float) -> None
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L62-L77`](../../bot/middlewares/throttling.py#L62-L77)
+- **Source Reference**: [`bot/middlewares/throttling.py#L62-L74`](../../bot/middlewares/throttling.py#L62-L74)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -134,10 +134,10 @@ result = _cleanup_old_entries(now=...)
 
 ### `CallbackThrottleMiddleware._handle_callback_throttle`
 ```python
-async def _handle_callback_throttle( self, event: CallbackQuery, now: float ) -> bool
+async def _handle_callback_throttle(self, event: CallbackQuery, now: float) -> bool
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L79-L105`](../../bot/middlewares/throttling.py#L79-L105)
+- **Source Reference**: [`bot/middlewares/throttling.py#L76-L100`](../../bot/middlewares/throttling.py#L76-L100)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -171,7 +171,7 @@ result = await _handle_callback_throttle(event=..., now=...)
 async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any], ) -> Any
 ```
 
-- **Source Reference**: [`bot/middlewares/throttling.py#L107-L125`](../../bot/middlewares/throttling.py#L107-L125)
+- **Source Reference**: [`bot/middlewares/throttling.py#L102-L120`](../../bot/middlewares/throttling.py#L102-L120)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 

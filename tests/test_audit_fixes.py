@@ -71,14 +71,18 @@ async def test_solver_solve_rate_limit_exceeded() -> None:
     app = create_app()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        with patch("api.deps._resolve_key_identity", new=AsyncMock(return_value="tester:888888")), \
-             patch("api.router.solver.init_redis") as mock_redis, \
-             patch("api.router.solver.solve_homework", new=AsyncMock(return_value="Решение")):
+        with (
+            patch("api.deps._resolve_key_identity", new=AsyncMock(return_value="tester:888888")),
+            patch("api.router.solver.init_redis") as mock_redis,
+            patch("api.router.solver.solve_homework", new=AsyncMock(return_value="Решение")),
+        ):
             client_mock = AsyncMock()
             client_mock.incr = AsyncMock(return_value=6)  # 6-й запрос превышает лимит 5
             client_mock.expire = AsyncMock()
             mock_redis.return_value = client_mock
-            res = await client.post("/solver/solve", json={"prompt": "Решите задачу номер 1"}, headers={"X-API-Key": "key"})
+            res = await client.post(
+                "/solver/solve", json={"prompt": "Решите задачу номер 1"}, headers={"X-API-Key": "key"}
+            )
             assert res.status_code == 429
 
             assert "Too many solver requests" in res.json()["detail"]
@@ -90,11 +94,15 @@ async def test_fetch_target_students_redis_caching() -> None:
     from datetime import date
 
     from services.attendance_manager import fetch_target_students
+
     fake_list = [(5, "Иванов И.И."), (6, "Петров П.П.")]
-    with patch("services.attendance_manager.get_redis") as mock_r, \
-         patch("services.attendance_manager._fetch_students_from_wopi") as mock_wopi:
+    with (
+        patch("services.attendance_manager.get_redis") as mock_r,
+        patch("services.attendance_manager._fetch_students_from_wopi") as mock_wopi,
+    ):
         client_mock = AsyncMock()
         import json
+
         client_mock.get = AsyncMock(return_value=json.dumps(fake_list))
         mock_r.return_value = client_mock
         res = await fetch_target_students(date(2026, 10, 5))
@@ -106,10 +114,18 @@ async def test_fetch_target_students_redis_caching() -> None:
 def _make_fake_lesson():
     """Создает тестовый объект занятия для проверки L1 кэша."""
     from services.models import Lesson
+
     return Lesson(
-        period=1, time_str="10:10-11:40", subject="Философия",
-        lesson_type="Лек", teacher="Смирнов", is_remote=False,
-        room="202", address="Цветочная", subgroup=0, is_stream=False
+        period=1,
+        time_str="10:10-11:40",
+        subject="Философия",
+        lesson_type="Лек",
+        teacher="Смирнов",
+        is_remote=False,
+        room="202",
+        address="Цветочная",
+        subgroup=0,
+        is_stream=False,
     )
 
 
@@ -123,11 +139,14 @@ async def test_schedule_l1_in_memory_caching() -> None:
         clear_resolved_day_cache,
         get_schedule_for_date,
     )
+
     target = date(2026, 10, 19)
     clear_resolved_day_cache()
     fake_lesson = _make_fake_lesson()
-    with patch("services.schedule_parser.fetch_schedule_data", new=AsyncMock(return_value={"schedule": {}})), \
-         patch("services.schedule_parser._extract_lessons_for_day", return_value=[fake_lesson]) as mock_ext:
+    with (
+        patch("services.schedule_parser.fetch_schedule_data", new=AsyncMock(return_value={"schedule": {}})),
+        patch("services.schedule_parser._extract_lessons_for_day", return_value=[fake_lesson]) as mock_ext,
+    ):
         res1 = await get_schedule_for_date(target)
         assert len(res1) == 1 and res1[0].subject == "Философия"
         res2 = await get_schedule_for_date(target)
@@ -147,16 +166,25 @@ async def test_system_flush_clears_l1_schedule_cache() -> None:
     app = create_app()
     target = date(2026, 10, 20)
     fake_lesson = Lesson(
-        period=1, time_str="10:10-11:40", subject="Информатика",
-        lesson_type="Пр", teacher="Петров", is_remote=False,
-        room="101", address="Вознесенский", subgroup=0, is_stream=False
+        period=1,
+        time_str="10:10-11:40",
+        subject="Информатика",
+        lesson_type="Пр",
+        teacher="Петров",
+        is_remote=False,
+        room="101",
+        address="Вознесенский",
+        subgroup=0,
+        is_stream=False,
     )
     _RESOLVED_DAY_CACHE[target] = [fake_lesson]
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        with patch("api.deps.verify_admin_access", return_value=True), \
-             patch("api.router.system.cache_flush", new=AsyncMock(return_value=5)):
+        with (
+            patch("api.deps.verify_admin_access", return_value=True),
+            patch("api.router.system.cache_flush", new=AsyncMock(return_value=5)),
+        ):
             headers = {"X-API-Key": API_SECRET_KEY}
             res = await client.post("/system/cache/flush", json={"pattern": "sched:*"}, headers=headers)
             assert res.status_code == 200
@@ -167,14 +195,19 @@ async def test_system_flush_clears_l1_schedule_cache() -> None:
 async def test_toggle_notify_uses_cached_schedule() -> None:
     """Проверяет, что тумблер уведомлений берет пары из кэша без сетевого запроса к API."""
     from bot.handlers.user.schedule import cb_toggle_notify
+
     cb = MagicMock()
     cb.from_user.id = 111
     cb.message = AsyncMock()
     cb.answer = AsyncMock()
 
-    with patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True), \
-         patch("bot.handlers.user.schedule.get_day_schedule_cached", new=AsyncMock(return_value=("текст", []))) as mock_cache, \
-         patch("bot.handlers.user.schedule.get_api_schedule_for_date", new=AsyncMock()) as mock_api:
+    with (
+        patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True),
+        patch(
+            "bot.handlers.user.schedule.get_day_schedule_cached", new=AsyncMock(return_value=("текст", []))
+        ) as mock_cache,
+        patch("bot.handlers.user.schedule.get_api_schedule_for_date", new=AsyncMock()) as mock_api,
+    ):
         await cb_toggle_notify(cb)
         mock_cache.assert_awaited_once()
         mock_api.assert_not_awaited()
@@ -184,6 +217,7 @@ async def test_toggle_notify_uses_cached_schedule() -> None:
 async def test_public_copy_shows_alert() -> None:
     """Проверяет, что копирование реквизитов открывает всплывающее окно (show_alert=True)."""
     from bot.handlers.user.public_copy import cb_public_copy_value
+
     cb = MagicMock()
     cb.data = "copy:123456"
     cb.from_user.id = 111
@@ -196,6 +230,7 @@ async def test_public_copy_shows_alert() -> None:
 def test_redis_auth_pool_configuration() -> None:
     """Проверяет передачу REDIS_PASSWORD в пул соединений Redis."""
     from core import redis as redis_module
+
     try:
         with patch("core.redis.ConnectionPool") as mock_pool_cls:
             redis_module._pool = None
@@ -210,6 +245,7 @@ def test_redis_auth_pool_configuration() -> None:
 def test_config_requires_redis_password() -> None:
     """Проверяет выброс ValueError при отсутствии обязательного REDIS_PASSWORD."""
     from config import get_required_env
+
     with patch.dict("os.environ", {}, clear=True), pytest.raises(ValueError, match="REDIS_PASSWORD"):
         get_required_env("REDIS_PASSWORD")
 
@@ -232,6 +268,3 @@ async def test_solver_payload_length_limits() -> None:
         too_long_prompt = "a" * (HW_MAX_PROMPT_TEXT_LENGTH + 10)
         res = await client.post("/solver/solve", json={"prompt": too_long_prompt})
         assert res.status_code == 422
-
-
-

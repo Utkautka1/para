@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_custom_teachers`](#load_custom_teachers) | Function | L13–L22 | `dict[str, TeacherData]` | Executes core domain logic for `load_custom_teachers`. |
-| [`save_custom_teacher`](#save_custom_teacher) | Function | L25–L39 | `None` | Saves serialized entity data to storage for `save_custo... |
-| [`delete_custom_teacher`](#delete_custom_teacher) | Function | L42–L54 | `None` | Evicts and removes record from storage for `delete_cust... |
+| [`load_custom_teachers`](#load_custom_teachers) | Function | L12–L21 | `dict[str, TeacherData]` | Executes core domain logic for `load_custom_teachers`. |
+| [`save_custom_teacher`](#save_custom_teacher) | Function | L24–L35 | `None` | Saves serialized entity data to storage for `save_custo... |
+| [`delete_custom_teacher`](#delete_custom_teacher) | Function | L38–L50 | `None` | Evicts and removes record from storage for `delete_cust... |
 
 ---
 
@@ -34,7 +34,7 @@ graph LR
 def load_custom_teachers() -> dict[str, TeacherData]
 ```
 
-- **Source Reference**: [`services/custom_teachers.py#L13-L22`](../../services/custom_teachers.py#L13-L22)
+- **Source Reference**: [`services/custom_teachers.py#L12-L21`](../../services/custom_teachers.py#L12-L21)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, TeacherData]`
 
@@ -65,7 +65,7 @@ result = load_custom_teachers()
 def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None
 ```
 
-- **Source Reference**: [`services/custom_teachers.py#L25-L39`](../../services/custom_teachers.py#L25-L39)
+- **Source Reference**: [`services/custom_teachers.py#L24-L35`](../../services/custom_teachers.py#L24-L35)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -100,7 +100,7 @@ result = save_custom_teacher(last_name=..., full_name=..., link_info=...)
 def delete_custom_teacher(last_name: str) -> None
 ```
 
-- **Source Reference**: [`services/custom_teachers.py#L42-L54`](../../services/custom_teachers.py#L42-L54)
+- **Source Reference**: [`services/custom_teachers.py#L38-L50`](../../services/custom_teachers.py#L38-L50)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 

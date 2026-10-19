@@ -150,16 +150,20 @@ async def test_send_overflow_chunks() -> None:
     msg.reply.assert_any_await("«кусок 2»")
 
 
-
 @pytest.mark.asyncio
 async def test_process_audio_pipeline_success() -> None:
     """Проверяет успешный цикл скачивания, транскрибации и очистки."""
     msg = MagicMock(spec=Message)
     status_msg = MagicMock(spec=Message)
     status_msg.edit_text = AsyncMock()
-    with patch("bot.handlers.user.voice_transcribe.download_temp_audio", new=AsyncMock(return_value="/tmp/fake.ogg")), \
-         patch("bot.handlers.user.voice_transcribe.transcriber_service.transcribe_file", new=AsyncMock(return_value="Текст")), \
-         patch("bot.handlers.user.voice_transcribe.cleanup_temp_file") as mock_clean:
+    with (
+        patch("bot.handlers.user.voice_transcribe.download_temp_audio", new=AsyncMock(return_value="/tmp/fake.ogg")),
+        patch(
+            "bot.handlers.user.voice_transcribe.transcriber_service.transcribe_file",
+            new=AsyncMock(return_value="Текст"),
+        ),
+        patch("bot.handlers.user.voice_transcribe.cleanup_temp_file") as mock_clean,
+    ):
         await process_audio_pipeline("f1", "Иван", 10, msg, status_msg)
         mock_clean.assert_called_once_with("/tmp/fake.ogg")
         status_msg.edit_text.assert_awaited_once()
@@ -171,8 +175,13 @@ async def test_process_audio_pipeline_error() -> None:
     msg = MagicMock(spec=Message)
     status_msg = MagicMock(spec=Message)
     status_msg.edit_text = AsyncMock()
-    with patch("bot.handlers.user.voice_transcribe.download_temp_audio", new=AsyncMock(side_effect=RuntimeError("Download err"))), \
-         patch("bot.handlers.user.voice_transcribe.cleanup_temp_file") as mock_clean:
+    with (
+        patch(
+            "bot.handlers.user.voice_transcribe.download_temp_audio",
+            new=AsyncMock(side_effect=RuntimeError("Download err")),
+        ),
+        patch("bot.handlers.user.voice_transcribe.cleanup_temp_file") as mock_clean,
+    ):
         await process_audio_pipeline("f2", "Иван", 10, msg, status_msg)
         mock_clean.assert_called_once_with("")
         status_msg.edit_text.assert_awaited_once()
@@ -228,6 +237,7 @@ async def test_handle_voice_too_long() -> None:
 async def test_handle_voice_rate_limit() -> None:
     """Проверяет срабатывание троттлинга при флуде аудио от одного пользователя."""
     from bot.handlers.user.voice_transcribe import _USER_IN_FLIGHT
+
     _USER_IN_FLIGHT[99] = 2  # лимит исчерпан
     msg = MagicMock(spec=Message)
     msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
@@ -256,6 +266,7 @@ async def test_send_overflow_chunks_html_escaping() -> None:
 async def test_multi_user_concurrent_transcriptions() -> None:
     """Проверяет параллельную обработку 5 пользователей без блокировок и утечек."""
     import asyncio
+
     tr = AudioTranscriber()
     mock_engine = MagicMock()
     mock_engine.transcribe.return_value = ([MagicMock(text="Привет")], None)

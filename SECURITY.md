@@ -46,3 +46,39 @@ This repository enforces defense-in-depth principles across all subsystems:
 - **Ephemeral RAM-Disk Media Isolation (`/dev/shm`)**: Audio and video notes ingested for STT transcription are strictly buffered into `/dev/shm` in-memory tmpfs with atomic unlinking in `finally` blocks, preventing persistent physical SSD wear and ensuring zero-trace media destruction.
 - **Audio Concurrency & Rate Limiting Guard**: Voice processing enforces per-user concurrency constraints (`MAX_CONCURRENT_PER_USER=2`) and strict duration (`MAX_AUDIO_DURATION=300s`) and file size (`MAX_AUDIO_SIZE=20MB`) ceilings to neutralize denial-of-service and memory exhaustion attacks.
 
+---
+
+## 4. Key Rotation & Revocation Protocol
+
+To minimize attack surface and credential exposure windows, all production secrets follow strict rotation lifecycles:
+
+| Secret / Credential | Rotation Cadence | Rotation Procedure | Immediate Revocation Action |
+| :--- | :--- | :--- | :--- |
+| **Yandex Cookies (`Session_id`, `sessar`)** | Automated (12-24h) | Executed via `scripts/sync_yandex_cookie.py` with direct Redis cache update. | Invalidate via Yandex Passport active sessions console; re-run `sync_yandex_cookie.py`. |
+| **DeepSeek API Key** | Quarterly (90 days) | Generate new key in DeepSeek Console -> update `.env` on host -> `docker compose restart solver`. | Revoke key in DeepSeek dashboard; replace with emergency backup key. |
+| **Telegram Bot Token** | Semi-annually (180 days) | Request new token from `@BotFather` -> update `.env` -> `docker compose restart bot api`. | Revoke immediately in `@BotFather` `/revoke` command. |
+| **Internal `API_SECRET_KEY`** | Annual (365 days) | Generate 32-byte cryptographically secure random token (`openssl rand -hex 32`) -> update `.env` across all services. | Replace `.env` and execute zero-downtime rolling restart of `api`, `bot`, `worker`, `solver`. |
+
+---
+
+## 5. Token Lifecycles & TTL Policies
+
+All transient authorization tokens enforce deterministic expiration bounds:
+
+- **Telegram Mini App Session Tokens**: Enforce cryptographic validation with a maximum age of `SESSION_MAX_AGE_SECONDS=86400` (24 hours). Expired session payloads are immediately rejected with `401 Unauthorized`.
+- **Redis Operational Cache Keys**:
+  - Timetable data: `SCHEDULE_CACHE_TTL_SECONDS=60` (dynamic invalidation on upstream update).
+  - Student and mark cache: `STUDENTS_CACHE_TTL_SECONDS=86400` (24h), `MARKS_CACHE_TTL_SECONDS=2592000` (30 days).
+  - Distributed Lock keys: `REDIS_CACHE_TTL_SECONDS=600` with automated Lua unlinking.
+- **Tester Personal API Keys**: Prefixed with `API_TESTER_KEY_PREFIX=para_test_`, audited in Redis whitelist sets (`REDIS_TESTERS_KEY`), and revocable instantly via administrative command without server restart.
+
+---
+
+## 6. PII Protection & Data Retention Policy
+
+In compliance with student data privacy requirements and educational data regulations:
+
+- **Zero-Storage for Raw Media**: Voice messages and video circles submitted for transcription are processed strictly in RAM (`/dev/shm`) and immediately purged via `cleanup_temp_file()` upon inference completion. No audio samples are persisted to disk or sent to third-party providers.
+- **Student Attendance Records**: Attendance logs are synchronized directly with institutional spreadsheet mirrors. Local cached JSON snapshots enforce an automatic retention cutoff of 90 days.
+- **Audit Logging Hygiene**: Structured application logs (`logs/*.log`) mask user tokens, full passport sessions, and raw homework prompt attachments. Logs are rotated with a maximum file size of 10MB and retained for at most 3 cycles (`max-file: 3`).
+- **Data Subject Rights & Deletion**: Telegram user IDs and associated cache records can be permanently expunged upon user command `/forget_me` or direct request to maintainers.

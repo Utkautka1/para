@@ -23,7 +23,7 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`get_system_info`](#get_system_info) | Function | L23–L52 | `SystemInfoResponse` | Retrieves and resolves domain data for `get_system_info... |
 | [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L55–L70 | `None` | Executes core domain logic for `_validate_flush_pattern... |
-| [`flush_cache`](#flush_cache) | Function | L74–L91 | `CacheFlushResponse` | Executes core domain logic for `flush_cache`. |
+| [`flush_cache`](#flush_cache) | Function | L74–L92 | `CacheFlushResponse` | Executes core domain logic for `flush_cache`. |
 
 ---
 
@@ -98,7 +98,7 @@ result = _validate_flush_pattern(pattern=...)
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L74-L91`](../../api/router/system.py#L74-L91)
+- **Source Reference**: [`api/router/system.py#L74-L92`](../../api/router/system.py#L74-L92)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CacheFlushResponse`
 

@@ -29,4 +29,3 @@ async def healthcheck() -> HealthResponse:
     """
 
     return HealthResponse(status="ok")
-

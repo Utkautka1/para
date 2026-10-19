@@ -167,7 +167,4 @@ async def test_api_key_auth_interceptor_invalid() -> None:
 
     mock_context = AsyncMock()
     await handler.unary_unary(None, mock_context)
-    mock_context.abort.assert_awaited_once_with(
-        grpc.StatusCode.UNAUTHENTICATED, "Invalid or missing X-API-Key header"
-    )
-
+    mock_context.abort.assert_awaited_once_with(grpc.StatusCode.UNAUTHENTICATED, "Invalid or missing X-API-Key header")

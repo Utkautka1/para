@@ -27,7 +27,7 @@ def test_build_cookie_header_success():
         "sessionid2": "3:test_id2",
         "_yasc": "test_yasc",
         "yandexuid": "123456",
-        "other": "ignore_me"
+        "other": "ignore_me",
     }
     res = build_cookie_header(cookies)
     assert "Session_id=3:test_session" in res
@@ -81,7 +81,6 @@ def test_verify_yandex_cookie_failure():
         assert verify_yandex_cookie("Session_id=123") is False
 
 
-
 def test_extract_raw_yandex_cookies(tmp_path: Path):
     """Проверяет корректное извлечение cookie из временной базы moz_cookies."""
     db_file = tmp_path / "cookies.sqlite"
@@ -89,12 +88,8 @@ def test_extract_raw_yandex_cookies(tmp_path: Path):
         conn.execute(
             "CREATE TABLE moz_cookies (name TEXT, value TEXT, host TEXT, originAttributes TEXT, lastAccessed INTEGER)"
         )
-        conn.execute(
-            "INSERT INTO moz_cookies VALUES ('Session_id', 'sess_val', '.yandex.ru', '', 100)"
-        )
-        conn.execute(
-            "INSERT INTO moz_cookies VALUES ('other', 'other_val', '.google.com', '', 100)"
-        )
+        conn.execute("INSERT INTO moz_cookies VALUES ('Session_id', 'sess_val', '.yandex.ru', '', 100)")
+        conn.execute("INSERT INTO moz_cookies VALUES ('other', 'other_val', '.google.com', '', 100)")
     extracted = extract_raw_yandex_cookies(db_file)
     assert extracted.get("Session_id") == "sess_val"
     assert "other" not in extracted
@@ -117,4 +112,3 @@ def test_get_target_doc_url_fallback():
     """Проверяет корректный fallback при отсутствии ATTENDANCE_DOC_URL в config."""
     with patch("config.ATTENDANCE_DOC_URL", ""):
         assert get_target_doc_url() == TEST_DOC_URL
-

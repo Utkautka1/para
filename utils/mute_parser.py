@@ -23,4 +23,3 @@ def parse_duration_to_seconds(time_str: str) -> int | None:
     amount = int(match.group(1))
     unit = match.group(2) or "м"
     return amount * DURATION_MULTIPLIERS.get(unit, 60)
-

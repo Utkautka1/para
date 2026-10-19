@@ -377,9 +377,7 @@ PROXY_URL: str | None = os.getenv("PROXY_URL")
 
 SAFE_HOST_REGEX: re.Pattern[str] = re.compile(r"^[a-zA-Z0-9_.-]+$")
 SAFE_PATH_REGEX: re.Pattern[str] = re.compile(r"^[a-zA-Z0-9_/.-]+$")
-CLOUDFLARE_TUNNEL_URL_REGEX: re.Pattern[str] = re.compile(
-    r"https://[a-zA-Z0-9-]+\.trycloudflare\.com"
-)
+CLOUDFLARE_TUNNEL_URL_REGEX: re.Pattern[str] = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
 
 WEEKDAYS_RU: list[str] = [
     "Понедельник",

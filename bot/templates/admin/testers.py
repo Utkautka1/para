@@ -5,7 +5,6 @@
 в соответствии с канонической структурой проекта.
 """
 
-
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
@@ -75,16 +74,19 @@ def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     if top_btns:
         rows.append(top_btns)
 
-    rows.append([
-        InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
-        InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),
-    ])
+    rows.append(
+        [
+            InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
+            InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),
+        ]
+    )
     for uid in testers[:6]:
-        rows.append([
-            InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
-            InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
+                InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
+            ]
+        )
     rows.append([InlineKeyboardButton(text="◀️ Назад в админку", callback_data="admin:menu", style="primary")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
-

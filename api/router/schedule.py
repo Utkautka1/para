@@ -192,4 +192,3 @@ async def schedule_refresh() -> ScheduleRefreshResponse:
     now_str = datetime.now(TIMEZONE).isoformat()
 
     return ScheduleRefreshResponse(status="ok", flushed_keys=deleted, timestamp=now_str)
-

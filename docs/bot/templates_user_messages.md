@@ -21,8 +21,8 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_format_remote_credentials`](#_format_remote_credentials) | Function | L19–L41 | `str` | Executes core domain logic for `_format_remote_credenti... |
-| [`format_lesson_card`](#format_lesson_card) | Function | L44–L69 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_format_remote_credentials`](#_format_remote_credentials) | Function | L17–L39 | `str` | Executes core domain logic for `_format_remote_credenti... |
+| [`format_lesson_card`](#format_lesson_card) | Function | L42–L71 | `str` | Formats message payload and presentation markup for `fo... |
 | [`format_minutes`](#format_minutes) | Function | L74–L92 | `str` | Formats message payload and presentation markup for `fo... |
 | [`_parse_time_interval_minutes`](#_parse_time_interval_minutes) | Function | L95–L114 | `tuple[int, int] | None` | Executes core domain logic for `_parse_time_interval_mi... |
 | [`_check_single_lesson_status`](#_check_single_lesson_status) | Function | L117–L140 | `tuple[bool, str]` | Executes core domain logic for `_check_single_lesson_st... |
@@ -44,7 +44,7 @@ graph LR
 def _format_remote_credentials(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L19-L41`](../../bot/templates/user/messages.py#L19-L41)
+- **Source Reference**: [`bot/templates/user/messages.py#L17-L39`](../../bot/templates/user/messages.py#L17-L39)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -77,7 +77,7 @@ result = _format_remote_credentials(lesson=...)
 def format_lesson_card(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L44-L69`](../../bot/templates/user/messages.py#L44-L69)
+- **Source Reference**: [`bot/templates/user/messages.py#L42-L71`](../../bot/templates/user/messages.py#L42-L71)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 

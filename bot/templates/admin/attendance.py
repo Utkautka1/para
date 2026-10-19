@@ -7,7 +7,6 @@
   - Форматирование карточек студентов и итоговой сводки
 """
 
-
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from services.attendance_manager import AttendanceSession
@@ -26,7 +25,7 @@ def get_lesson_confirm_kb(lesson_num: int) -> InlineKeyboardMarkup:
     kb = [
         [
             InlineKeyboardButton(text="✅ Да, отметить", callback_data=f"att:start:{lesson_num}"),
-            InlineKeyboardButton(text="❌ Пары нет / Отменена", callback_data=f"att:cancel:{lesson_num}")
+            InlineKeyboardButton(text="❌ Пары нет / Отменена", callback_data=f"att:cancel:{lesson_num}"),
         ]
     ]
 
@@ -46,15 +45,13 @@ def get_student_poll_kb(can_back: bool) -> InlineKeyboardMarkup:
     kb = [
         [
             InlineKeyboardButton(text="🟢 П (Присутствует)", callback_data="att:mark:П"),
-            InlineKeyboardButton(text="🟡 О (Опоздание)", callback_data="att:mark:О")
+            InlineKeyboardButton(text="🟡 О (Опоздание)", callback_data="att:mark:О"),
         ],
         [
             InlineKeyboardButton(text="🔵 У (Уважительная)", callback_data="att:mark:У"),
-            InlineKeyboardButton(text="🔴 Н (Неуважительная)", callback_data="att:mark:Н")
+            InlineKeyboardButton(text="🔴 Н (Неуважительная)", callback_data="att:mark:Н"),
         ],
-        [
-            InlineKeyboardButton(text="⚡️ Все остальные «П»", callback_data="att:all_p")
-        ]
+        [InlineKeyboardButton(text="⚡️ Все остальные «П»", callback_data="att:all_p")],
     ]
     nav_row = []
     if can_back:
@@ -148,9 +145,7 @@ def format_summary_text(session: AttendanceSession, stats: dict[str, int]) -> st
     )
 
 
-def format_partner_attendance_report(
-    session: AttendanceSession, stats: dict[str, int], initiator_title: str
-) -> str:
+def format_partner_attendance_report(session: AttendanceSession, stats: dict[str, int], initiator_title: str) -> str:
     """
     Формирует уведомление о сохранении посещаемости для второго администратора.
 
@@ -245,10 +240,11 @@ def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarku
         for num in range(1, 7):
             kb.append([InlineKeyboardButton(text=f"Пара {num}", callback_data=f"att:start:{d_str}:{num}")])
 
-    kb.append([
-        InlineKeyboardButton(text="⬅️ Выбрать другой день", callback_data="att:menu"),
-        InlineKeyboardButton(text="❌ Закрыть", callback_data="att:close")
-    ])
+    kb.append(
+        [
+            InlineKeyboardButton(text="⬅️ Выбрать другой день", callback_data="att:menu"),
+            InlineKeyboardButton(text="❌ Закрыть", callback_data="att:close"),
+        ]
+    )
 
     return InlineKeyboardMarkup(inline_keyboard=kb)
-

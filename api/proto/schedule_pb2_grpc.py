@@ -5,23 +5,24 @@ import grpc
 
 from api.proto import schedule_pb2 as api_dot_proto_dot_schedule__pb2
 
-GRPC_GENERATED_VERSION = '1.84.0'
+GRPC_GENERATED_VERSION = "1.84.0"
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
+
     _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
 except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
     raise RuntimeError(
-        f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in api/proto/schedule_pb2_grpc.py depends on'
-        + f' grpcio>={GRPC_GENERATED_VERSION}.'
-        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
-        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+        f"The grpc package installed is at version {GRPC_VERSION},"
+        + " but the generated code in api/proto/schedule_pb2_grpc.py depends on"
+        + f" grpcio>={GRPC_GENERATED_VERSION}."
+        + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
+        + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
     )
 
 
@@ -35,15 +36,17 @@ class ScheduleServiceStub:
             channel: A grpc.Channel.
         """
         self.GetDaySchedule = channel.unary_unary(
-                '/para.ScheduleService/GetDaySchedule',
-                request_serializer=api_dot_proto_dot_schedule__pb2.DayScheduleRequest.SerializeToString,
-                response_deserializer=api_dot_proto_dot_schedule__pb2.DayScheduleResponse.FromString,
-                _registered_method=True)
+            "/para.ScheduleService/GetDaySchedule",
+            request_serializer=api_dot_proto_dot_schedule__pb2.DayScheduleRequest.SerializeToString,
+            response_deserializer=api_dot_proto_dot_schedule__pb2.DayScheduleResponse.FromString,
+            _registered_method=True,
+        )
         self.GetWeekSchedule = channel.unary_unary(
-                '/para.ScheduleService/GetWeekSchedule',
-                request_serializer=api_dot_proto_dot_schedule__pb2.WeekScheduleRequest.SerializeToString,
-                response_deserializer=api_dot_proto_dot_schedule__pb2.WeekScheduleResponse.FromString,
-                _registered_method=True)
+            "/para.ScheduleService/GetWeekSchedule",
+            request_serializer=api_dot_proto_dot_schedule__pb2.WeekScheduleRequest.SerializeToString,
+            response_deserializer=api_dot_proto_dot_schedule__pb2.WeekScheduleResponse.FromString,
+            _registered_method=True,
+        )
 
 
 class ScheduleServiceServicer:
@@ -52,54 +55,55 @@ class ScheduleServiceServicer:
     def GetDaySchedule(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetWeekSchedule(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_ScheduleServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetDaySchedule': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetDaySchedule,
-                    request_deserializer=api_dot_proto_dot_schedule__pb2.DayScheduleRequest.FromString,
-                    response_serializer=api_dot_proto_dot_schedule__pb2.DayScheduleResponse.SerializeToString,
-            ),
-            'GetWeekSchedule': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetWeekSchedule,
-                    request_deserializer=api_dot_proto_dot_schedule__pb2.WeekScheduleRequest.FromString,
-                    response_serializer=api_dot_proto_dot_schedule__pb2.WeekScheduleResponse.SerializeToString,
-            ),
+        "GetDaySchedule": grpc.unary_unary_rpc_method_handler(
+            servicer.GetDaySchedule,
+            request_deserializer=api_dot_proto_dot_schedule__pb2.DayScheduleRequest.FromString,
+            response_serializer=api_dot_proto_dot_schedule__pb2.DayScheduleResponse.SerializeToString,
+        ),
+        "GetWeekSchedule": grpc.unary_unary_rpc_method_handler(
+            servicer.GetWeekSchedule,
+            request_deserializer=api_dot_proto_dot_schedule__pb2.WeekScheduleRequest.FromString,
+            response_serializer=api_dot_proto_dot_schedule__pb2.WeekScheduleResponse.SerializeToString,
+        ),
     }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'para.ScheduleService', rpc_method_handlers)
+    generic_handler = grpc.method_handlers_generic_handler("para.ScheduleService", rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('para.ScheduleService', rpc_method_handlers)
+    server.add_registered_method_handlers("para.ScheduleService", rpc_method_handlers)
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class ScheduleService:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def GetDaySchedule(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetDaySchedule(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/para.ScheduleService/GetDaySchedule',
+            "/para.ScheduleService/GetDaySchedule",
             api_dot_proto_dot_schedule__pb2.DayScheduleRequest.SerializeToString,
             api_dot_proto_dot_schedule__pb2.DayScheduleResponse.FromString,
             options,
@@ -110,23 +114,26 @@ class ScheduleService:
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def GetWeekSchedule(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def GetWeekSchedule(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/para.ScheduleService/GetWeekSchedule',
+            "/para.ScheduleService/GetWeekSchedule",
             api_dot_proto_dot_schedule__pb2.WeekScheduleRequest.SerializeToString,
             api_dot_proto_dot_schedule__pb2.WeekScheduleResponse.FromString,
             options,
@@ -137,4 +144,5 @@ class ScheduleService:
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )

@@ -25,8 +25,10 @@ async def test_unauth_fallback_shows_id_to_stranger() -> None:
     message.from_user = user
     message.answer = AsyncMock()
 
-    with patch("bot.handlers.user.auth_fallback.is_authorized_user", return_value=False), \
-         patch("bot.handlers.user.auth_fallback.is_tester_allowed", new=AsyncMock(return_value=False)):
+    with (
+        patch("bot.handlers.user.auth_fallback.is_authorized_user", return_value=False),
+        patch("bot.handlers.user.auth_fallback.is_tester_allowed", new=AsyncMock(return_value=False)),
+    ):
         await unauth_fallback(message)
 
     message.answer.assert_awaited_once()
@@ -59,8 +61,10 @@ async def test_unauth_fallback_ignores_tester() -> None:
     message.from_user = user
     message.answer = AsyncMock()
 
-    with patch("bot.handlers.user.auth_fallback.is_authorized_user", return_value=False), \
-         patch("bot.handlers.user.auth_fallback.is_tester_allowed", new=AsyncMock(return_value=True)):
+    with (
+        patch("bot.handlers.user.auth_fallback.is_authorized_user", return_value=False),
+        patch("bot.handlers.user.auth_fallback.is_tester_allowed", new=AsyncMock(return_value=True)),
+    ):
         await unauth_fallback(message)
 
     message.answer.assert_not_awaited()

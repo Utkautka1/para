@@ -23,10 +23,10 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L55 | `SolverQueueStatusResponse` | Retrieves and resolves domain data for `get_solver_queu... |
 | [`_decode_image_payload`](#_decode_image_payload) | Function | L58–L75 | `bytes | None` | Executes core domain logic for `_decode_image_payload`. |
-| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L78–L102 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
-| [`solve_task_direct`](#solve_task_direct) | Function | L106–L125 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
-| [`check_task_status`](#check_task_status) | Function | L129–L142 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
-| [`clear_solver_queue`](#clear_solver_queue) | Function | L146–L158 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
+| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L78–L104 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
+| [`solve_task_direct`](#solve_task_direct) | Function | L108–L127 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
+| [`check_task_status`](#check_task_status) | Function | L131–L144 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
+| [`clear_solver_queue`](#clear_solver_queue) | Function | L148–L160 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
 
 ---
 
@@ -101,7 +101,7 @@ result = _decode_image_payload(b64=...)
 async def _check_solver_rate_limit(identity: str) -> None
 ```
 
-- **Source Reference**: [`api/router/solver.py#L78-L102`](../../api/router/solver.py#L78-L102)
+- **Source Reference**: [`api/router/solver.py#L78-L104`](../../api/router/solver.py#L78-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -134,7 +134,7 @@ result = await _check_solver_rate_limit(identity=...)
 async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester), ) -> DirectSolveResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L106-L125`](../../api/router/solver.py#L106-L125)
+- **Source Reference**: [`api/router/solver.py#L108-L127`](../../api/router/solver.py#L108-L127)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `DirectSolveResponse`
 
@@ -168,7 +168,7 @@ result = await solve_task_direct(payload=..., identity=...)
 async def check_task_status(message_id: int) -> TaskStatusResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L129-L142`](../../api/router/solver.py#L129-L142)
+- **Source Reference**: [`api/router/solver.py#L131-L144`](../../api/router/solver.py#L131-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TaskStatusResponse`
 
@@ -201,7 +201,7 @@ result = await check_task_status(message_id=...)
 async def clear_solver_queue() -> ClearQueueResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L146-L158`](../../api/router/solver.py#L146-L158)
+- **Source Reference**: [`api/router/solver.py#L148-L160`](../../api/router/solver.py#L148-L160)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ClearQueueResponse`
 

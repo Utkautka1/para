@@ -168,7 +168,7 @@ def _strip_mute_prefix(text: str) -> str:
     clean_text = text.strip()
     for prefix in [".закрыть рот", ".закрой рот"]:
         if clean_text.lower().startswith(prefix):
-            return clean_text[len(prefix):].strip()
+            return clean_text[len(prefix) :].strip()
 
     return clean_text
 
@@ -238,7 +238,6 @@ async def extract_target_id_and_args(message: Message) -> tuple[int | None, str,
     return await parse_standalone_mute_args(message)
 
 
-
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None:
     """
     Накладывает ограничение на отправку сообщений пользователю через Bot API.
@@ -252,10 +251,7 @@ async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: 
     until_dt = datetime.now(TIMEZONE) + timedelta(seconds=duration_sec)
 
     await bot.restrict_chat_member(
-        chat_id=chat_id,
-        user_id=user_id,
-        permissions=ChatPermissions(can_send_messages=False),
-        until_date=until_dt
+        chat_id=chat_id, user_id=user_id, permissions=ChatPermissions(can_send_messages=False), until_date=until_dt
     )
 
 
@@ -270,9 +266,13 @@ async def _apply_unmute_permissions(bot, chat_id: int, user_id: int) -> None:
     """
 
     full_perms = ChatPermissions(
-        can_send_messages=True, can_send_audios=True, can_send_documents=True,
-        can_send_photos=True, can_send_videos=True, can_send_other_messages=True,
-        can_add_web_page_previews=True
+        can_send_messages=True,
+        can_send_audios=True,
+        can_send_documents=True,
+        can_send_photos=True,
+        can_send_videos=True,
+        can_send_other_messages=True,
+        can_add_web_page_previews=True,
     )
 
     await bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=full_perms)
@@ -430,4 +430,3 @@ async def cmd_unmute_user(message: Message) -> None:
     except Exception as e:
         log.error(f"Ошибка размута target_id={target_id}: {e}")
         await message.answer(f"❌ <b>Не удалось размутить:</b> {html.escape(str(e))}")
-

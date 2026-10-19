@@ -119,11 +119,7 @@ def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) 
 
     sender_id = sender.id if sender else None
     sender_user = sender.username if sender else None
-    tags = [
-        format_mention_tag(p)
-        for p in classmates
-        if not is_sender(p, sender_id, sender_user)
-    ]
+    tags = [format_mention_tag(p) for p in classmates if not is_sender(p, sender_id, sender_user)]
     valid_tags = [t for t in tags if t]
 
     return " ".join(valid_tags)
@@ -188,7 +184,6 @@ async def safe_delete_command_message(message: Message) -> None:
         log.warning(f"Не удалось удалить команду /all: {e}")
 
 
-
 async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message:
     """
     Отправляет пост от лица бота в целевой топик чата с сохранением вложений.
@@ -235,9 +230,7 @@ async def validate_group_chat(message: Message) -> bool:
     return True
 
 
-def compose_broadcast_content(
-    classmates: list[dict[str, Any]], message: Message
-) -> tuple[str, int | None]:
+def compose_broadcast_content(classmates: list[dict[str, Any]], message: Message) -> tuple[str, int | None]:
     """
     Формирует итоговый HTML-текст рассылки и извлекает ID сообщения для реплая.
 
@@ -291,4 +284,3 @@ async def cmd_ping_all(message: Message) -> None:
     classmates = await load_classmates_list()
     final_text, reply_id = compose_broadcast_content(classmates, message)
     await dispatch_broadcast(message, final_text, reply_id)
-

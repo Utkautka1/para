@@ -60,4 +60,3 @@ async def yandex_session_keepalive_loop(
         except Exception as e:
             log.error(f"Непредвиденная ошибка в keepalive цикле Яндекс: {e}")
         await asyncio.sleep(interval)
-

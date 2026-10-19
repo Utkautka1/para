@@ -181,4 +181,3 @@ async def api_remove_tester(user_id: int) -> dict:
         raise HTTPException(status_code=400, detail="Cannot remove admin or error")
 
     return {"status": "ok", "user_id": user_id}
-

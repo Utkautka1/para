@@ -8,7 +8,6 @@ Unit-тесты модуля генерации клавиатур Telegram (bot
   4. Генерацию полных клавиатур для ЛС и топиков (get_schedule_inline_kb, get_topic_inline_kb)
 """
 
-
 import pytest
 
 from bot.templates.user.keyboards import (
@@ -77,10 +76,7 @@ def test_chunk_link_buttons_empty_and_offline() -> None:
 )
 def test_chunk_link_buttons_grouping(links_count: int, expected_rows: int, expected_row_lengths: list[int]) -> None:
     """Проверяет разбивку кнопок максимум по 2 в ряду."""
-    lessons = [
-        make_test_lesson(period=i, is_remote=True, link=f"https://zoom.us/j/{i}")
-        for i in range(links_count)
-    ]
+    lessons = [make_test_lesson(period=i, is_remote=True, link=f"https://zoom.us/j/{i}") for i in range(links_count)]
     rows = chunk_link_buttons(lessons)
     assert len(rows) == expected_rows
     assert [len(r) for r in rows] == expected_row_lengths
@@ -158,6 +154,7 @@ def test_get_schedule_inline_kb_notify_toggle_states() -> None:
 def test_get_notice_settings_kb_states() -> None:
     """Проверяет генерацию инлайн-клавиатуры /notice для разных статусов."""
     from bot.templates.user.keyboards import get_notice_settings_kb
+
     kb_on = get_notice_settings_kb(is_subscribed=True)
     cbs_on = [btn.callback_data for row in kb_on.inline_keyboard for btn in row]
     assert "notice:toggle" in cbs_on
@@ -166,4 +163,3 @@ def test_get_notice_settings_kb_states() -> None:
 
     kb_off = get_notice_settings_kb(is_subscribed=False)
     assert any("Включить" in btn.text for row in kb_off.inline_keyboard for btn in row)
-

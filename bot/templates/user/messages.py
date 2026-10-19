@@ -11,9 +11,7 @@ from datetime import date
 from config import GROUP_NAME
 from services.models import Lesson
 
-WEEKDAYS_RU = [
-    "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"
-]
+WEEKDAYS_RU = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
 
 
 def _format_remote_credentials(lesson: Lesson) -> str:
@@ -56,7 +54,11 @@ def format_lesson_card(lesson: Lesson) -> str:
     l_type = f" ({html.escape(lesson.lesson_type)})" if lesson.lesson_type else ""
     stream = " • 🔗 <b>поток</b>" if lesson.is_stream else ""
     sg = f" • 👥 <b>Подгруппа {lesson.subgroup}</b>" if lesson.subgroup > 0 else ""
-    loc = "🌐 Дистанционно" if lesson.is_remote else f"📍 🏢 {html.escape(lesson.address)} (Каб. {html.escape(lesson.room)})"
+    loc = (
+        "🌐 Дистанционно"
+        if lesson.is_remote
+        else f"📍 🏢 {html.escape(lesson.address)} (Каб. {html.escape(lesson.room)})"
+    )
     creds = _format_remote_credentials(lesson)
 
     card = (
@@ -67,8 +69,6 @@ def format_lesson_card(lesson: Lesson) -> str:
     )
 
     return card
-
-
 
 
 def format_minutes(total_minutes: int) -> str:
@@ -310,5 +310,3 @@ def format_notice_settings_text(is_subscribed: bool) -> str:
         f"<i>{desc}</i>\n\n"
         f"💡 <i>Расписание в общем топике группы обновляется независимо от этих настроек.</i>"
     )
-
-

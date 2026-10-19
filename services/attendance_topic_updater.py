@@ -104,8 +104,12 @@ def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "fio": extract_short_fio(fio),
-        "p": p, "o": o, "u": u, "n": n,
-        "pct": pct, "total": total_classes,
+        "p": p,
+        "o": o,
+        "u": u,
+        "n": n,
+        "pct": pct,
+        "total": total_classes,
     }
 
 

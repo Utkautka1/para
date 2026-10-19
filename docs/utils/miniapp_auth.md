@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_data_check_string`](#_build_data_check_string) | Function | L23–L35 | `str` | Executes core domain logic for `_build_data_check_strin... |
-| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L38–L48 | `str` | Executes core domain logic for `_compute_init_data_hash... |
-| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L51–L65 | `bool` | Executes core domain logic for `_is_auth_date_valid`. |
-| [`_extract_user_payload`](#_extract_user_payload) | Function | L68–L81 | `dict[str, Any] | None` | Executes core domain logic for `_extract_user_payload`. |
-| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L84–L103 | `dict[str, Any] | None` | Validates architectural invariants and constraints for ... |
-| [`generate_tester_session`](#generate_tester_session) | Function | L106–L118 | `str` | Executes core domain logic for `generate_tester_session... |
-| [`verify_tester_session`](#verify_tester_session) | Function | L121–L142 | `int | None` | Executes core domain logic for `verify_tester_session`. |
+| [`_build_data_check_string`](#_build_data_check_string) | Function | L22–L32 | `str` | Executes core domain logic for `_build_data_check_strin... |
+| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L35–L45 | `str` | Executes core domain logic for `_compute_init_data_hash... |
+| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L48–L62 | `bool` | Executes core domain logic for `_is_auth_date_valid`. |
+| [`_extract_user_payload`](#_extract_user_payload) | Function | L65–L78 | `dict[str, Any] | None` | Executes core domain logic for `_extract_user_payload`. |
+| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L81–L100 | `dict[str, Any] | None` | Validates architectural invariants and constraints for ... |
+| [`generate_tester_session`](#generate_tester_session) | Function | L103–L115 | `str` | Executes core domain logic for `generate_tester_session... |
+| [`verify_tester_session`](#verify_tester_session) | Function | L118–L139 | `int | None` | Executes core domain logic for `verify_tester_session`. |
 
 ---
 
@@ -38,7 +38,7 @@ graph LR
 def _build_data_check_string(parsed_data: dict[str, str]) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L23-L35`](../../utils/miniapp_auth.py#L23-L35)
+- **Source Reference**: [`utils/miniapp_auth.py#L22-L32`](../../utils/miniapp_auth.py#L22-L32)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -71,7 +71,7 @@ result = _build_data_check_string(parsed_data=...)
 def _compute_init_data_hash(data_check_str: str) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L38-L48`](../../utils/miniapp_auth.py#L38-L48)
+- **Source Reference**: [`utils/miniapp_auth.py#L35-L45`](../../utils/miniapp_auth.py#L35-L45)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -104,7 +104,7 @@ result = _compute_init_data_hash(data_check_str=...)
 def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> bool
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L51-L65`](../../utils/miniapp_auth.py#L51-L65)
+- **Source Reference**: [`utils/miniapp_auth.py#L48-L62`](../../utils/miniapp_auth.py#L48-L62)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -138,7 +138,7 @@ result = _is_auth_date_valid(auth_date_str=..., max_age=...)
 def _extract_user_payload(raw_json: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L68-L81`](../../utils/miniapp_auth.py#L68-L81)
+- **Source Reference**: [`utils/miniapp_auth.py#L65-L78`](../../utils/miniapp_auth.py#L65-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -171,7 +171,7 @@ result = _extract_user_payload(raw_json=...)
 def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L84-L103`](../../utils/miniapp_auth.py#L84-L103)
+- **Source Reference**: [`utils/miniapp_auth.py#L81-L100`](../../utils/miniapp_auth.py#L81-L100)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -204,7 +204,7 @@ result = validate_telegram_init_data(init_data=...)
 def generate_tester_session(user_id: int) -> str
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L106-L118`](../../utils/miniapp_auth.py#L106-L118)
+- **Source Reference**: [`utils/miniapp_auth.py#L103-L115`](../../utils/miniapp_auth.py#L103-L115)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -237,7 +237,7 @@ result = generate_tester_session(user_id=...)
 def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) -> int | None
 ```
 
-- **Source Reference**: [`utils/miniapp_auth.py#L121-L142`](../../utils/miniapp_auth.py#L121-L142)
+- **Source Reference**: [`utils/miniapp_auth.py#L118-L139`](../../utils/miniapp_auth.py#L118-L139)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 

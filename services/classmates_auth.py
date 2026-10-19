@@ -197,5 +197,3 @@ def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | N
     if existing:
         return True, False, existing
     return False, False, None
-
-

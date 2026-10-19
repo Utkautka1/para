@@ -71,14 +71,9 @@ class CallbackThrottleMiddleware(BaseMiddleware):
 
         if len(self._last_clicks) > 1000:
             threshold = HEAVY_COOLDOWN * 2
-            self._last_clicks = {
-                k: v for k, v in self._last_clicks.items()
-                if now - v < threshold
-            }
+            self._last_clicks = {k: v for k, v in self._last_clicks.items() if now - v < threshold}
 
-    async def _handle_callback_throttle(
-        self, event: CallbackQuery, now: float
-    ) -> bool:
+    async def _handle_callback_throttle(self, event: CallbackQuery, now: float) -> bool:
         """
         Проверяет интервал времени между кликами и отправляет всплывающее предупреждение.
 
@@ -123,4 +118,3 @@ class CallbackThrottleMiddleware(BaseMiddleware):
             return None
 
         return await handler(event, data)
-

@@ -47,6 +47,7 @@ def test_subscribers_lifecycle(tmp_path) -> None:
 def test_subscribers_is_and_toggle(tmp_path) -> None:
     """Проверяет проверку статуса и тумблер переключения подписки."""
     from db.subscribers import is_subscribed, toggle_subscriber
+
     file_path = str(tmp_path / "subs_toggle.json")
     with patch("db.subscribers.SUBSCRIBERS_FILE_PATH", file_path):
         assert is_subscribed(123) is False

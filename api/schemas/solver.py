@@ -2,7 +2,6 @@
 Pydantic-схемы для роутера AI-решения домашних заданий (DeepSeek + очередь задач).
 """
 
-
 from pydantic import BaseModel, Field
 
 from config import HW_MAX_PROMPT_TEXT_LENGTH, SOLVER_MAX_IMAGE_BASE64_BYTES
@@ -10,6 +9,7 @@ from config import HW_MAX_PROMPT_TEXT_LENGTH, SOLVER_MAX_IMAGE_BASE64_BYTES
 
 class SolverQueueStatusResponse(BaseModel):
     """Текущее состояние распределенной очереди задач ДЗ в Redis."""
+
     pending_tasks: int = Field(..., description="Задач в очереди на выполнение (hw:tasks:queue)")
     processing_tasks: int = Field(..., description="Задач в обработке воркером (hw:tasks:processing)")
     dlq_tasks: int = Field(..., description="Ошибочных задач в Dead Letter Queue (hw:tasks:dlq)")
@@ -18,6 +18,7 @@ class SolverQueueStatusResponse(BaseModel):
 
 class DirectSolveRequest(BaseModel):
     """Запрос на прямое решение учебной задачи через DeepSeek API."""
+
     prompt: str = Field(
         ...,
         min_length=5,
@@ -35,6 +36,7 @@ class DirectSolveRequest(BaseModel):
 
 class DirectSolveResponse(BaseModel):
     """Результат решения задачи нейросетью."""
+
     status: str = Field(..., description="Статус генерации (ok/error)")
     solution_text: str = Field(..., description="Подробный ответ с решением по ГОСТ")
     model: str = Field(..., description="Использованная языковая модель")
@@ -42,6 +44,7 @@ class DirectSolveResponse(BaseModel):
 
 class TaskStatusResponse(BaseModel):
     """Статус обработки конкретного задания по Telegram Message ID."""
+
     message_id: int = Field(..., description="Telegram Message ID задания")
     is_processed: bool = Field(..., description="Выполнено ли задание")
     status_label: str = Field(..., description="Текстовый статус задачи")
@@ -49,5 +52,6 @@ class TaskStatusResponse(BaseModel):
 
 class ClearQueueResponse(BaseModel):
     """Результат очистки очереди задач."""
+
     status: str = Field(..., description="Статус операции")
     deleted_count: int = Field(..., description="Количество удалённых элементов очереди")

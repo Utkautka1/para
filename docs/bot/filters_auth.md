@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AuthFilter.__call__`](#authfilter__call__) | Method | L18–L32 | `bool` | Executes core domain logic for `__call__`. |
-| [`ClassmateAuthFilter.__call__`](#classmateauthfilter__call__) | Method | L38–L52 | `bool` | Executes core domain logic for `__call__`. |
-| [`AttendanceAuthFilter.__call__`](#attendanceauthfilter__call__) | Method | L58–L74 | `bool` | Executes core domain logic for `__call__`. |
+| [`AuthFilter.__call__`](#authfilter__call__) | Method | L17–L31 | `bool` | Executes core domain logic for `__call__`. |
+| [`ClassmateAuthFilter.__call__`](#classmateauthfilter__call__) | Method | L37–L51 | `bool` | Executes core domain logic for `__call__`. |
+| [`AttendanceAuthFilter.__call__`](#attendanceauthfilter__call__) | Method | L57–L73 | `bool` | Executes core domain logic for `__call__`. |
 
 ---
 
@@ -38,7 +38,7 @@ Encapsulates domain entities and data transfer logic for `AuthFilter`.
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L18-L32`](../../bot/filters/auth.py#L18-L32)
+- **Source Reference**: [`bot/filters/auth.py#L17-L31`](../../bot/filters/auth.py#L17-L31)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -75,7 +75,7 @@ Encapsulates domain entities and data transfer logic for `ClassmateAuthFilter`.
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L38-L52`](../../bot/filters/auth.py#L38-L52)
+- **Source Reference**: [`bot/filters/auth.py#L37-L51`](../../bot/filters/auth.py#L37-L51)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -112,7 +112,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceAuthFilter`.
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L58-L74`](../../bot/filters/auth.py#L58-L74)
+- **Source Reference**: [`bot/filters/auth.py#L57-L73`](../../bot/filters/auth.py#L57-L73)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

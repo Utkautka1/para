@@ -76,16 +76,20 @@ def build_deepseek_messages(
     Возвращает список словарей формата сообщений OpenAI Chat Completions.
     """
     prompt_val = text_prompt or "Реши все задания с листа."
-    content: list[dict] = [{
-        "type": "text",
-        "text": f"<учебное_задание>\n{prompt_val}\n</учебное_задание>",
-    }]
+    content: list[dict] = [
+        {
+            "type": "text",
+            "text": f"<учебное_задание>\n{prompt_val}\n</учебное_задание>",
+        }
+    ]
     if image_bytes:
         b64 = encode_image_bytes(image_bytes)
-        content.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-        })
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+            }
+        )
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": content},

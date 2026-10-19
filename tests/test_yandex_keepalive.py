@@ -74,9 +74,7 @@ async def test_save_effective_yandex_cookie() -> None:
 
     with patch("core.redis.get_redis", return_value=mock_redis):
         await save_effective_yandex_cookie("Session_id=test")
-        mock_redis.set.assert_awaited_once_with(
-            REDIS_YANDEX_COOKIE_KEY, "Session_id=test", ex=REDIS_COOKIE_TTL_SECONDS
-        )
+        mock_redis.set.assert_awaited_once_with(REDIS_YANDEX_COOKIE_KEY, "Session_id=test", ex=REDIS_COOKIE_TTL_SECONDS)
 
 
 @pytest.mark.asyncio

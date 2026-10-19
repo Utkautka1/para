@@ -31,8 +31,8 @@ graph LR
 | [`parse_reply_mute_args`](#parse_reply_mute_args) | Function | L176–L196 | `tuple[str, str]` | Parses and extracts structured entities from `parse_rep... |
 | [`parse_standalone_mute_args`](#parse_standalone_mute_args) | Function | L199–L220 | `tuple[int | None, str, str, str]` | Parses and extracts structured entities from `parse_sta... |
 | [`extract_target_id_and_args`](#extract_target_id_and_args) | Function | L223–L238 | `tuple[int | None, str, str, str]` | Executes core domain logic for `extract_target_id_and_a... |
-| [`apply_user_restriction`](#apply_user_restriction) | Function | L242–L259 | `None` | Executes core domain logic for `apply_user_restriction`... |
-| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L262–L278 | `None` | Executes core domain logic for `_apply_unmute_permissio... |
+| [`apply_user_restriction`](#apply_user_restriction) | Function | L241–L255 | `None` | Executes core domain logic for `apply_user_restriction`... |
+| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L258–L278 | `None` | Executes core domain logic for `_apply_unmute_permissio... |
 | [`send_mute_notification`](#send_mute_notification) | Function | L281–L295 | `None` | Dispatches notification message via Telegram API for `s... |
 | [`_safe_delete_message`](#_safe_delete_message) | Function | L298–L317 | `None` | Executes core domain logic for `_safe_delete_message`. |
 | [`_build_mute_report`](#_build_mute_report) | Function | L320–L335 | `str` | Executes core domain logic for `_build_mute_report`. |
@@ -385,7 +385,7 @@ result = await extract_target_id_and_args(message=...)
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L242-L259`](../../bot/handlers/admin/mute.py#L242-L259)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L241-L255`](../../bot/handlers/admin/mute.py#L241-L255)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -421,7 +421,7 @@ result = await apply_user_restriction(bot=..., chat_id=..., user_id=...)
 async def _apply_unmute_permissions(bot, chat_id: int, user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L262-L278`](../../bot/handlers/admin/mute.py#L262-L278)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L258-L278`](../../bot/handlers/admin/mute.py#L258-L278)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

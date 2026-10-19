@@ -84,10 +84,9 @@ async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
     _validate_flush_pattern(payload.pattern)
     if payload.pattern.startswith("sched:"):
         from services.schedule_parser import clear_resolved_day_cache
+
         clear_resolved_day_cache()
 
     count = await cache_flush(pattern=payload.pattern)
 
     return CacheFlushResponse(status="ok", pattern=payload.pattern, deleted_keys=count)
-
-

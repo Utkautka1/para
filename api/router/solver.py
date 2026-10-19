@@ -98,7 +98,9 @@ async def _check_solver_rate_limit(identity: str) -> None:
         await client.expire(key, SOLVER_RATE_LIMIT_WINDOW_SECONDS)
 
     if count > SOLVER_RATE_LIMIT_PER_MINUTE:
-        detail = f"Too many solver requests (max {SOLVER_RATE_LIMIT_PER_MINUTE} per {SOLVER_RATE_LIMIT_WINDOW_SECONDS}s)"
+        detail = (
+            f"Too many solver requests (max {SOLVER_RATE_LIMIT_PER_MINUTE} per {SOLVER_RATE_LIMIT_WINDOW_SECONDS}s)"
+        )
         raise HTTPException(status_code=429, detail=detail)
 
 
@@ -156,4 +158,3 @@ async def clear_solver_queue() -> ClearQueueResponse:
     deleted = await clear_hw_queue()
 
     return ClearQueueResponse(status="ok", deleted_count=deleted)
-

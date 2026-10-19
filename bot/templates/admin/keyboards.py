@@ -5,7 +5,6 @@
 а также списком тестировщиков и запуском Swagger UI Mini App.
 """
 
-
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import MINIAPP_URL
@@ -55,7 +54,11 @@ def _build_action_rows() -> list:
             InlineKeyboardButton(text="📊 Статус и Кэш", callback_data="admin:status", style="primary"),
         ],
         [InlineKeyboardButton(text="🧪 Swagger UI & Тестеры API", callback_data="admin:testers", style="primary")],
-        [InlineKeyboardButton(text="👨‍🏫 Ручные ссылки преподавателей", callback_data="admin:list_custom", style="primary")],
+        [
+            InlineKeyboardButton(
+                text="👨‍🏫 Ручные ссылки преподавателей", callback_data="admin:list_custom", style="primary"
+            )
+        ],
         [InlineKeyboardButton(text="👥 Привязать студента по ID", callback_data="admin:bind_student", style="primary")],
     ]
     rows.extend(_build_topic_action_rows())
@@ -103,16 +106,19 @@ def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """
 
     rows: list = [[get_swagger_launch_btn()]]
-    rows.append([
-        InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
-        InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),
-    ])
+    rows.append(
+        [
+            InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
+            InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),
+        ]
+    )
     for uid in testers[:6]:
-        rows.append([
-            InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
-            InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
+                InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
+            ]
+        )
     rows.append([InlineKeyboardButton(text="◀️ Назад в админку", callback_data="admin:menu", style="primary")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
-

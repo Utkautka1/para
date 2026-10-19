@@ -74,7 +74,7 @@ loop Бесконечный цикл обработки очереди
   deactivate docx
 
   solver -> user : Отправка solution.docx студенту в Telegram
-  
+
   solver -> redis : ack_hw_task(raw_task) -> LREM hw:tasks:processing 1 raw_task
   activate redis
   redis --> solver : 1 (Задача успешно завершена и удалена)

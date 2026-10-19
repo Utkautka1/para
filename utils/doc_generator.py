@@ -9,6 +9,7 @@
 5. Преобразование таблиц Markdown в таблицы Word ('Table Grid') с оформлением ячеек.
 6. Выравнивание основного текста по ширине (Justified), Times New Roman 14 pt, 1.5 интервал.
 """
+
 import os
 import re
 import tempfile
@@ -114,8 +115,11 @@ def add_title_signature_table(
     tbl = doc.add_table(rows=2, cols=2)
     tbl.style = "Normal Table"
     rows_data = [
-        (f"Выполнил студент группы {target_group}:", f"______________ {student_name}\n«___» ____________ {target_year} г."),
-        ("Проверил преподаватель:", f"______________ {teacher_name}\n«___» ____________ {target_year} г.")
+        (
+            f"Выполнил студент группы {target_group}:",
+            f"______________ {student_name}\n«___» ____________ {target_year} г.",
+        ),
+        ("Проверил преподаватель:", f"______________ {teacher_name}\n«___» ____________ {target_year} г."),
     ]
     for idx, (ltxt, rtxt) in enumerate(rows_data):
         format_table_row_cells(tbl.rows[idx], ltxt, rtxt)
@@ -276,7 +280,6 @@ def build_table_of_contents(doc: Document, headings: list[tuple[str, str, int, i
     for _, title, _, idx in headings:
         bm_name = f"sec_bm_{idx}"
         add_toc_hyperlink(doc, title, bm_name)
-
 
 
 def _apply_heading_formatting(p, title: str, level: int) -> None:
@@ -514,4 +517,3 @@ def create_solution_docx(
     doc.save(target_path)
     log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {target_path}")
     return target_path
-

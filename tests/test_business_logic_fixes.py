@@ -44,8 +44,10 @@ async def test_congrats_blocked_before_seven_am() -> None:
     items = [{"full_name": "Иванов Иван", "is_today": True}]
     fake_night = datetime(2026, 10, 5, 2, 0, tzinfo=TIMEZONE)
 
-    with patch("services.birthday_manager.datetime") as mock_dt, \
-         patch("services.birthday_manager.send_congrats_for_item", new_callable=AsyncMock) as mock_send:
+    with (
+        patch("services.birthday_manager.datetime") as mock_dt,
+        patch("services.birthday_manager.send_congrats_for_item", new_callable=AsyncMock) as mock_send,
+    ):
         mock_dt.now.return_value = fake_night
         await check_and_send_birthday_congratulations(items, date(2026, 10, 5))
         mock_send.assert_not_called()
@@ -61,8 +63,11 @@ def test_get_initiator_title() -> None:
 async def test_check_session_ownership_success() -> None:
     """Проверяет разрешение действий для автора активной сессии."""
     session = AttendanceSession(
-        target_date="2026-10-05", lesson_num=1, lesson_title="Тест",
-        students=[(5, "Студент")], initiator_id=ALLOWED_USER_ID
+        target_date="2026-10-05",
+        lesson_num=1,
+        lesson_title="Тест",
+        students=[(5, "Студент")],
+        initiator_id=ALLOWED_USER_ID,
     )
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=ALLOWED_USER_ID, is_bot=False, first_name="Староста")
@@ -77,8 +82,11 @@ async def test_check_session_ownership_success() -> None:
 async def test_check_session_ownership_forbidden() -> None:
     """Проверяет блокировку действий, если опрос начал другой староста."""
     session = AttendanceSession(
-        target_date="2026-10-05", lesson_num=1, lesson_title="Тест",
-        students=[(5, "Студент")], initiator_id=ALLOWED_USER_ID
+        target_date="2026-10-05",
+        lesson_num=1,
+        lesson_title="Тест",
+        students=[(5, "Студент")],
+        initiator_id=ALLOWED_USER_ID,
     )
     cb = MagicMock(spec=CallbackQuery)
     cb.from_user = User(id=DEPUTY_USER_ID, is_bot=False, first_name="Зам")
@@ -94,27 +102,30 @@ async def test_check_session_ownership_forbidden() -> None:
 async def test_create_session_collision_protection() -> None:
     """Проверяет выброс ошибки при попытке перетереть чужую сессию."""
     existing_session = AttendanceSession(
-        target_date="2026-10-05", lesson_num=1, lesson_title="Тест",
-        students=[(5, "Студент")], initiator_id=ALLOWED_USER_ID
+        target_date="2026-10-05",
+        lesson_num=1,
+        lesson_title="Тест",
+        students=[(5, "Студент")],
+        initiator_id=ALLOWED_USER_ID,
     )
     with (
         patch("services.attendance_manager.get_active_session", return_value=existing_session),
         pytest.raises(PermissionError),
     ):
-        await create_attendance_session(
-            date(2026, 10, 5), 1, "Новая пара", initiator_id=DEPUTY_USER_ID
-        )
+        await create_attendance_session(date(2026, 10, 5), 1, "Новая пара", initiator_id=DEPUTY_USER_ID)
 
 
 def test_bind_student_tg_id() -> None:
     """Проверяет ручную привязку Telegram ID для студента без юзернейма."""
     registry = [
         {"full_name": "Куулар Алдын-Сай", "username": None, "tg_id": None},
-        {"full_name": "Мазур Арсений", "username": "mazur", "tg_id": 12345}
+        {"full_name": "Мазур Арсений", "username": "mazur", "tg_id": 12345},
     ]
-    with patch("services.classmates_auth.load_classmates_registry", return_value=registry), \
-         patch("services.classmates_auth.sync_atomic_save_json") as mock_save, \
-         patch("services.classmates_auth.clear_registry_cache"):
+    with (
+        patch("services.classmates_auth.load_classmates_registry", return_value=registry),
+        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
+        patch("services.classmates_auth.clear_registry_cache"),
+    ):
         updated = bind_student_tg_id("Куулар Алдын-Сай", 777888999)
         assert updated is not None
         assert updated["tg_id"] == 777888999
