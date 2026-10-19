@@ -28,3 +28,31 @@ class CacheFlushResponse(BaseModel):
     status: str = Field(..., description="Статус операции")
     pattern: str = Field(..., description="Использованная маска")
     deleted_keys: int = Field(..., description="Число удалённых ключей")
+
+
+class IncidentItem(BaseModel):
+    """Запись системного инцидента."""
+
+    id: int = Field(..., description="ID инцидента")
+    incident_type: str = Field(..., description="Тип инцидента")
+    severity: str = Field(..., description="Критичность")
+    title: str = Field(..., description="Заголовок")
+    description: str = Field(..., description="Детали инцидента")
+    trace_id: str | None = Field(None, description="Трассировочный ID")
+    resolved: bool = Field(False, description="Флаг решения")
+    created_at: str = Field(..., description="Время фиксации")
+
+
+class IncidentListResponse(BaseModel):
+    """Список зафиксированных системных инцидентов."""
+
+    count: int = Field(..., description="Количество инцидентов")
+    incidents: list[IncidentItem] = Field(default_factory=list, description="Список записей")
+
+
+class BackupTriggerResponse(BaseModel):
+    """Ответ запуска процесса резервного копирования."""
+
+    status: str = Field(..., description="Статус запуска")
+    message: str = Field(..., description="Детальное сообщение")
+

@@ -15,6 +15,7 @@
 | `Attendance API` | [`api/router/attendance.py`](../api/router/attendance.py) | [📖 View Specification](api/router_attendance.md) | Enterprise Service Component |
 | `Attendance Keyboards` | [`bot/templates/admin/attendance.py`](../bot/templates/admin/attendance.py) | [📖 View Specification](bot/templates_admin_attendance.md) | Enterprise Service Component |
 | `Attendance Operations` | [`services/attendance_manager.py`](../services/attendance_manager.py) | [📖 View Specification](services/attendance_manager.md) | Enterprise Service Component |
+| `Automated Backup Engine` | [`services/backup_manager.py`](../services/backup_manager.py) | [📖 View Specification](services/backup_manager.md) | Enterprise Service Component |
 | `Background Daemon` | [`worker.py`](../worker.py) | [📖 View Specification](entrypoints/worker.md) | Enterprise Service Component |
 | `Ban Duration Parser` | [`utils/mute_parser.py`](../utils/mute_parser.py) | [📖 View Specification](utils/mute_parser.md) | Enterprise Service Component |
 | `Birthdays API` | [`api/router/birthdays.py`](../api/router/birthdays.py) | [📖 View Specification](api/router_birthdays.md) | Enterprise Service Component |
@@ -39,6 +40,7 @@
 | `HW Solver API` | [`api/router/solver.py`](../api/router/solver.py) | [📖 View Specification](api/router_solver.md) | Enterprise Service Component |
 | `Headman Attendance Polling` | [`bot/handlers/admin/attendance.py`](../bot/handlers/admin/attendance.py) | [📖 View Specification](bot/handlers_admin_attendance.md) | Enterprise Service Component |
 | `Healthcheck API` | [`api/router/health.py`](../api/router/health.py) | [📖 View Specification](api/router_health.md) | Enterprise Service Component |
+| `Incident Alerting` | [`services/alerting.py`](../services/alerting.py) | [📖 View Specification](services/alerting.md) | Enterprise Service Component |
 | `Ingress Gateway` | [`api.py`](../api.py) | [📖 View Specification](entrypoints/api.md) | Enterprise Service Component |
 | `Internal RPC Client` | [`core/api_client.py`](../core/api_client.py) | [📖 View Specification](core/api_client.md) | Enterprise Service Component |
 | `KTMU Timetable Engine` | [`services/schedule_parser.py`](../services/schedule_parser.py) | [📖 View Specification](services/schedule_parser.md) | Enterprise Service Component |
@@ -54,7 +56,10 @@
 | `RBAC Security` | [`services/classmates_auth.py`](../services/classmates_auth.py) | [📖 View Specification](services/classmates_auth.md) | Enterprise Service Component |
 | `REST Request Handlers` | [`api/handlers.py`](../api/handlers.py) | [📖 View Specification](api/handlers.md) | Enterprise Service Component |
 | `Redis Engine` | [`core/redis.py`](../core/redis.py) | [📖 View Specification](core/redis.md) | Enterprise Service Component |
+| `Relational SQLite Engine` | [`core/database.py`](../core/database.py) | [📖 View Specification](core/database.md) | Enterprise Service Component |
 | `Resilience & Circuit Breaker` | [`core/circuit_breaker.py`](../core/circuit_breaker.py) | [📖 View Specification](core/circuit_breaker.md) | Enterprise Service Component |
+| `SQLite Domain Models` | [`db/sqlite/models.py`](../db/sqlite/models.py) | [📖 View Specification](db/sqlite_models.md) | Enterprise Service Component |
+| `SQLite Repositories` | [`db/sqlite/repositories.py`](../db/sqlite/repositories.py) | [📖 View Specification](db/sqlite_repositories.md) | Enterprise Service Component |
 | `Schedule API` | [`api/router/schedule.py`](../api/router/schedule.py) | [📖 View Specification](api/router_schedule.md) | Enterprise Service Component |
 | `Security Dependencies` | [`api/deps.py`](../api/deps.py) | [📖 View Specification](api/deps.md) | Enterprise Service Component |
 | `Session Keepalive` | [`integrations/yandex_keepalive.py`](../integrations/yandex_keepalive.py) | [📖 View Specification](integrations/yandex_keepalive.md) | Enterprise Service Component |

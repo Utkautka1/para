@@ -176,24 +176,41 @@ async def invalidate_attendance_stats_cache() -> None:
     log.info("Кэш сквозной статистики посещаемости сброшен")
 
 
+async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None:
+    """Сохраняет срез посещаемости в реляционную базу данных SQLite."""
+    try:
+        from datetime import date
+
+        from db.sqlite.repositories import AttendanceRepository
+
+        records = []
+        for name, data in stats.items():
+            tot = data.get("total", {})
+            p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)
+            all_h = p + o + u + n
+            pct = (p / all_h * 100) if all_h > 0 else 0.0
+            records.append({"student_name": name, "total_hours": all_h, "attended_hours": p, "percent": pct})
+
+        await AttendanceRepository.save_daily_snapshots(date.today(), records)
+    except Exception as exc:
+        log.debug(f"Сохранение среза посещаемости в SQLite пропущено: {exc}")
+
+
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]:
-    """
-    Возвращает сквозную статистику посещаемости с поддержкой Redis-кэширования.
-
-    При промахе кэша или флаге force_refresh выполняет загрузку XLSX через WOPI,
-    парсит документ в пуле потоков и сохраняет результат в кэш.
-
-    Возвращает полный словарь посещаемости по всем студентам.
-    """
+    """Возвращает сквозную статистику посещаемости с кэшированием в Redis и снимком в SQLite."""
     if not force_refresh:
         cached = await _load_from_redis_cache()
         if cached:
             return cached
+
     log.info("Загрузка и пересчёт статистики посещаемости из Яндекс Документов...")
     wopi = await init_wopi_session()
     wb = await download_workbook(wopi)
     stats = await asyncio.to_thread(parse_workbook_attendance, wb)
+
     await _save_to_redis_cache(stats)
+    await _save_sqlite_snapshot(stats)
+
     return stats
 
 

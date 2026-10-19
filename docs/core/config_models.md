@@ -125,3 +125,7 @@ Encapsulates domain entities and data transfer logic for `WhisperConfig`.
 ## Class Model: `NotificationConfig`
 
 Encapsulates domain entities and data transfer logic for `NotificationConfig`.
+
+## Class Model: `DatabaseConfig`
+
+Encapsulates domain entities and data transfer logic for `DatabaseConfig`.

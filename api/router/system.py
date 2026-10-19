@@ -8,8 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.system import (
+    BackupTriggerResponse,
     CacheFlushRequest,
     CacheFlushResponse,
+    IncidentItem,
+    IncidentListResponse,
     SystemInfoResponse,
 )
 from config import SAFE_CACHE_FLUSH_PREFIXES, TIMEZONE
@@ -38,13 +41,15 @@ async def get_system_info() -> SystemInfoResponse:
         "swagger_ui": True,
         "telegram_miniapp": True,
         "redis_caching": redis_alive,
+        "sqlite_database": True,
+        "automated_backups": True,
         "yandex_docs": True,
         "deepseek_solver": True,
     }
 
     return SystemInfoResponse(
         service="para-api",
-        version="2.8.0",
+        version="2.9.0",
         timezone=str(TIMEZONE),
         server_time=now_str,
         redis_alive=redis_alive,
@@ -53,15 +58,7 @@ async def get_system_info() -> SystemInfoResponse:
 
 
 def _validate_flush_pattern(pattern: str) -> None:
-    """
-    Проверяет безопасность маски для предотвращения сброса служебных ключей Redis.
-
-    Блокирует попытки сбросить ключи очередей 'hw:tasks:*' или сессий тестеров.
-    Разрешает только безопасные префиксы из SAFE_CACHE_FLUSH_PREFIXES.
-
-    Ничего не возвращает (выбрасывает HTTP 400 при небезопасном шаблоне).
-    """
-
+    """Проверяет безопасность маски для предотвращения сброса служебных ключей Redis."""
     clean = pattern.strip()
     if clean in ("*", "", "*:*") or any(clean.startswith(d) for d in ("api:", "hw:tasks:", "user:")):
         raise HTTPException(status_code=400, detail="Unsafe pattern: flushing critical system keys is forbidden")
@@ -72,15 +69,7 @@ def _validate_flush_pattern(pattern: str) -> None:
 
 @router.post("/cache/flush", response_model=CacheFlushResponse, dependencies=[Depends(verify_admin_access)])
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
-    """
-    Выполняет принудительную очистку ключей Redis по безопасной маске (Admin only).
-
-    Инвалидирует указанный срез кэша и синхронизирует кэш в оперативной памяти.
-    Защищён verify_admin_access.
-
-    Возвращает CacheFlushResponse с маской и числом удаленных ключей.
-    """
-
+    """Выполняет принудительную очистку ключей Redis по безопасной маске (Admin only)."""
     _validate_flush_pattern(payload.pattern)
     if payload.pattern.startswith("sched:"):
         from services.schedule_parser import clear_resolved_day_cache
@@ -90,3 +79,38 @@ async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
     count = await cache_flush(pattern=payload.pattern)
 
     return CacheFlushResponse(status="ok", pattern=payload.pattern, deleted_keys=count)
+
+
+@router.get("/incidents", response_model=IncidentListResponse, dependencies=[Depends(verify_admin_access)])
+async def list_system_incidents(limit: int = 50, unresolved_only: bool = False) -> IncidentListResponse:
+    """Возвращает журнал системных инцидентов и сетевых сбоев из SQLite (Admin only)."""
+    from db.sqlite.repositories import IncidentRepository
+
+    records = await IncidentRepository.get_recent_incidents(limit=limit, unresolved_only=unresolved_only)
+    items = [
+        IncidentItem(
+            id=r.id,
+            incident_type=r.incident_type,
+            severity=r.severity,
+            title=r.title,
+            description=r.description,
+            trace_id=r.trace_id,
+            resolved=r.resolved,
+            created_at=r.created_at.isoformat(),
+        )
+        for r in records
+    ]
+
+    return IncidentListResponse(count=len(items), incidents=items)
+
+
+@router.post("/backup", response_model=BackupTriggerResponse, dependencies=[Depends(verify_admin_access)])
+async def trigger_system_backup() -> BackupTriggerResponse:
+    """Запускает процесс резервного копирования SQLite и Redis (Admin only)."""
+    from services.backup_manager import run_backup_pipeline
+
+    ok = await run_backup_pipeline()
+    if not ok:
+        raise HTTPException(status_code=500, detail="Backup execution failed")
+    return BackupTriggerResponse(status="ok", message="Automated backup completed and dispatched to admin")
+

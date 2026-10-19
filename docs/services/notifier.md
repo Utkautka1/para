@@ -37,7 +37,8 @@ graph LR
 | [`_schedule_attendance_close_job`](#_schedule_attendance_close_job) | Function | L289–L304 | `None` | Executes core domain logic for `_schedule_attendance_cl... |
 | [`schedule_attendance_poll`](#schedule_attendance_poll) | Function | L307–L325 | `None` | Executes core domain logic for `schedule_attendance_pol... |
 | [`daily_schedule_dispatch`](#daily_schedule_dispatch) | Function | L328–L348 | `None` | Executes core domain logic for `daily_schedule_dispatch... |
-| [`setup_scheduler`](#setup_scheduler) | Function | L351–L370 | `AsyncIOScheduler` | Executes core domain logic for `setup_scheduler`. |
+| [`_register_backup_job`](#_register_backup_job) | Function | L351–L362 | `None` | Executes core domain logic for `_register_backup_job`. |
+| [`setup_scheduler`](#setup_scheduler) | Function | L365–L379 | `AsyncIOScheduler` | Executes core domain logic for `setup_scheduler`. |
 
 ---
 
@@ -590,12 +591,43 @@ result = await daily_schedule_dispatch()
 
 ---
 
+### `_register_backup_job`
+```python
+def _register_backup_job() -> None
+```
+
+- **Source Reference**: [`services/notifier.py#L351-L362`](../../services/notifier.py#L351-L362)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_register_backup_job`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.notifier import _register_backup_job
+
+# Execute call
+result = _register_backup_job()
+```
+
+---
+
 ### `setup_scheduler`
 ```python
 def setup_scheduler() -> AsyncIOScheduler
 ```
 
-- **Source Reference**: [`services/notifier.py#L351-L370`](../../services/notifier.py#L351-L370)
+- **Source Reference**: [`services/notifier.py#L365-L379`](../../services/notifier.py#L365-L379)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AsyncIOScheduler`
 

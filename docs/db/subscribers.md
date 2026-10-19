@@ -21,23 +21,90 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_subscribers`](#load_subscribers) | Function | L15–L25 | `set[int]` | Executes core domain logic for `load_subscribers`. |
-| [`save_subscribers`](#save_subscribers) | Function | L28–L40 | `bool` | Saves serialized entity data to storage for `save_subsc... |
-| [`add_subscriber`](#add_subscriber) | Function | L43–L58 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`remove_subscriber`](#remove_subscriber) | Function | L61–L76 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`is_subscribed`](#is_subscribed) | Function | L79–L88 | `bool` | Executes core domain logic for `is_subscribed`. |
-| [`toggle_subscriber`](#toggle_subscriber) | Function | L91–L109 | `bool` | Executes core domain logic for `toggle_subscriber`. |
+| [`_query_sqlite_subscribers`](#_query_sqlite_subscribers) | Function | L18–L30 | `set[int] | None` | Executes core domain logic for `_query_sqlite_subscribe... |
+| [`_update_sqlite_subscriber`](#_update_sqlite_subscriber) | Function | L33–L49 | `None` | Executes core domain logic for `_update_sqlite_subscrib... |
+| [`load_subscribers`](#load_subscribers) | Function | L52–L58 | `set[int]` | Executes core domain logic for `load_subscribers`. |
+| [`save_subscribers`](#save_subscribers) | Function | L61–L68 | `bool` | Saves serialized entity data to storage for `save_subsc... |
+| [`add_subscriber`](#add_subscriber) | Function | L71–L80 | `bool` | Executes core domain logic for `add_subscriber`. |
+| [`remove_subscriber`](#remove_subscriber) | Function | L83–L92 | `bool` | Executes core domain logic for `remove_subscriber`. |
+| [`is_subscribed`](#is_subscribed) | Function | L95–L97 | `bool` | Executes core domain logic for `is_subscribed`. |
+| [`toggle_subscriber`](#toggle_subscriber) | Function | L100–L109 | `bool` | Executes core domain logic for `toggle_subscriber`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_query_sqlite_subscribers`
+```python
+def _query_sqlite_subscribers() -> set[int] | None
+```
+
+- **Source Reference**: [`db/subscribers.py#L18-L30`](../../db/subscribers.py#L18-L30)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `set[int] | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_query_sqlite_subscribers`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.subscribers import _query_sqlite_subscribers
+
+# Execute call
+result = _query_sqlite_subscribers()
+```
+
+---
+
+### `_update_sqlite_subscriber`
+```python
+def _update_sqlite_subscriber(chat_id: int, is_active: bool) -> None
+```
+
+- **Source Reference**: [`db/subscribers.py#L33-L49`](../../db/subscribers.py#L33-L49)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_update_sqlite_subscriber`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
+| `is_active` | `bool` | Yes | Parameter `is_active` of type `bool`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.subscribers import _update_sqlite_subscriber
+
+# Execute call
+result = _update_sqlite_subscriber(chat_id=..., is_active=...)
+```
+
+---
 
 ### `load_subscribers`
 ```python
 def load_subscribers() -> set[int]
 ```
 
-- **Source Reference**: [`db/subscribers.py#L15-L25`](../../db/subscribers.py#L15-L25)
+- **Source Reference**: [`db/subscribers.py#L52-L58`](../../db/subscribers.py#L52-L58)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[int]`
 
@@ -68,7 +135,7 @@ result = load_subscribers()
 def save_subscribers(subs: set[int]) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L28-L40`](../../db/subscribers.py#L28-L40)
+- **Source Reference**: [`db/subscribers.py#L61-L68`](../../db/subscribers.py#L61-L68)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -101,7 +168,7 @@ result = save_subscribers(subs=...)
 def add_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L43-L58`](../../db/subscribers.py#L43-L58)
+- **Source Reference**: [`db/subscribers.py#L71-L80`](../../db/subscribers.py#L71-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -134,7 +201,7 @@ result = add_subscriber(chat_id=...)
 def remove_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L61-L76`](../../db/subscribers.py#L61-L76)
+- **Source Reference**: [`db/subscribers.py#L83-L92`](../../db/subscribers.py#L83-L92)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -167,7 +234,7 @@ result = remove_subscriber(chat_id=...)
 def is_subscribed(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L79-L88`](../../db/subscribers.py#L79-L88)
+- **Source Reference**: [`db/subscribers.py#L95-L97`](../../db/subscribers.py#L95-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -200,7 +267,7 @@ result = is_subscribed(chat_id=...)
 def toggle_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/subscribers.py#L91-L109`](../../db/subscribers.py#L91-L109)
+- **Source Reference**: [`db/subscribers.py#L100-L109`](../../db/subscribers.py#L100-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 

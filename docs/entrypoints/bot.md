@@ -27,8 +27,8 @@ graph LR
 | [`shutdown_bot`](#shutdown_bot) | Function | L85–L102 | `None` | Executes core domain logic for `shutdown_bot`. |
 | [`setup_all_middlewares`](#setup_all_middlewares) | Function | L105–L120 | `None` | Executes core domain logic for `setup_all_middlewares`. |
 | [`_warmup_stt`](#_warmup_stt) | Function | L123–L139 | `None` | Executes core domain logic for `_warmup_stt`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L142–L158 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L161–L181 | `None` | Executes core domain logic for `main`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L142–L160 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L163–L183 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -225,7 +225,7 @@ result = await _warmup_stt()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L142-L158`](../../bot.py#L142-L158)
+- **Source Reference**: [`bot.py#L142-L160`](../../bot.py#L142-L160)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -256,7 +256,7 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L161-L181`](../../bot.py#L161-L181)
+- **Source Reference**: [`bot.py#L163-L183`](../../bot.py#L163-L183)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

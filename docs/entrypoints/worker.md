@@ -24,7 +24,7 @@ graph LR
 | [`schedule_today_reminders`](#schedule_today_reminders) | Function | L35–L52 | `None` | Executes core domain logic for `schedule_today_reminder... |
 | [`shutdown_worker`](#shutdown_worker) | Function | L55–L72 | `None` | Executes core domain logic for `shutdown_worker`. |
 | [`_start_worker_loops`](#_start_worker_loops) | Function | L75–L91 | `None` | Executes core domain logic for `_start_worker_loops`. |
-| [`main`](#main) | Function | L94–L118 | `None` | Executes core domain logic for `main`. |
+| [`main`](#main) | Function | L94–L121 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -128,7 +128,7 @@ result = await _start_worker_loops()
 async def main() -> None
 ```
 
-- **Source Reference**: [`worker.py#L94-L118`](../../worker.py#L94-L118)
+- **Source Reference**: [`worker.py#L94-L121`](../../worker.py#L94-L121)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

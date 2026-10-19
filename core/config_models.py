@@ -172,3 +172,14 @@ class NotificationConfig:
     throttling_heavy_cooldown: float = 4.0
     throttling_nav_cooldown: float = 1.0
     throttling_default_cooldown: float = 0.5
+
+
+@dataclass(frozen=True, slots=True)
+class DatabaseConfig:
+    """Конфигурация реляционной базы данных SQLite и параметров резервного копирования."""
+
+    db_path: str = "data/para.db"
+    database_url: str = "sqlite+aiosqlite:///data/para.db"
+    backup_dir: str = "data/backups"
+    backup_retention_days: int = 7
+

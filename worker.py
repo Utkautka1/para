@@ -105,6 +105,9 @@ async def main() -> None:
     log.info("ЗАПУСК Фонового Воркера Расписания (para-worker)")
     log.info("=" * 60)
     await init_redis()
+    from core.database import init_db
+
+    await init_db()
     setup_scheduler()
     await schedule_today_reminders()
 

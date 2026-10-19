@@ -3,7 +3,7 @@
   "info": {
     "title": "para-api",
     "description": "\u0412\u044b\u0441\u043e\u043a\u043e\u043f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u041a\u0422\u041c\u0423 (gRPC + OpenAPI + Swagger UI)",
-    "version": "2.8.0"
+    "version": "2.9.0"
   },
   "paths": {
     "/health": {
@@ -6399,7 +6399,7 @@
           "System"
         ],
         "summary": "Flush Cache",
-        "description": "\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442 \u043f\u0440\u0438\u043d\u0443\u0434\u0438\u0442\u0435\u043b\u044c\u043d\u0443\u044e \u043e\u0447\u0438\u0441\u0442\u043a\u0443 \u043a\u043b\u044e\u0447\u0435\u0439 Redis \u043f\u043e \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0439 \u043c\u0430\u0441\u043a\u0435 (Admin only).\n\n\u0418\u043d\u0432\u0430\u043b\u0438\u0434\u0438\u0440\u0443\u0435\u0442 \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u044b\u0439 \u0441\u0440\u0435\u0437 \u043a\u044d\u0448\u0430 \u0438 \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0438\u0440\u0443\u0435\u0442 \u043a\u044d\u0448 \u0432 \u043e\u043f\u0435\u0440\u0430\u0442\u0438\u0432\u043d\u043e\u0439 \u043f\u0430\u043c\u044f\u0442\u0438.\n\u0417\u0430\u0449\u0438\u0449\u0451\u043d verify_admin_access.\n\n\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 CacheFlushResponse \u0441 \u043c\u0430\u0441\u043a\u043e\u0439 \u0438 \u0447\u0438\u0441\u043b\u043e\u043c \u0443\u0434\u0430\u043b\u0435\u043d\u043d\u044b\u0445 \u043a\u043b\u044e\u0447\u0435\u0439.",
+        "description": "\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442 \u043f\u0440\u0438\u043d\u0443\u0434\u0438\u0442\u0435\u043b\u044c\u043d\u0443\u044e \u043e\u0447\u0438\u0441\u0442\u043a\u0443 \u043a\u043b\u044e\u0447\u0435\u0439 Redis \u043f\u043e \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0439 \u043c\u0430\u0441\u043a\u0435 (Admin only).",
         "operationId": "flush_cache_system_cache_flush_post",
         "security": [
           {
@@ -6444,6 +6444,342 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CacheFlushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/incidents": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "List System Incidents",
+        "description": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u0436\u0443\u0440\u043d\u0430\u043b \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u044b\u0445 \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u043e\u0432 \u0438 \u0441\u0435\u0442\u0435\u0432\u044b\u0445 \u0441\u0431\u043e\u0435\u0432 \u0438\u0437 SQLite (Admin only).",
+        "operationId": "list_system_incidents_system_incidents_get",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "unresolved_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Unresolved Only"
+            }
+          },
+          {
+            "name": "para_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Para Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/backup": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Trigger System Backup",
+        "description": "\u0417\u0430\u043f\u0443\u0441\u043a\u0430\u0435\u0442 \u043f\u0440\u043e\u0446\u0435\u0441\u0441 \u0440\u0435\u0437\u0435\u0440\u0432\u043d\u043e\u0433\u043e \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f SQLite \u0438 Redis (Admin only).",
+        "operationId": "trigger_system_backup_system_backup_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "para_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Para Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupTriggerResponse"
                 }
               }
             }
@@ -7603,6 +7939,27 @@
         "title": "AttendanceStatsResponse",
         "description": "\u0410\u0433\u0440\u0435\u0433\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u0432\u0435\u0434\u043e\u043c\u043e\u0441\u0442\u044c \u043f\u043e\u0441\u0435\u0449\u0430\u0435\u043c\u043e\u0441\u0442\u0438 \u0432\u0441\u0435\u0439 \u0433\u0440\u0443\u043f\u043f\u044b."
       },
+      "BackupTriggerResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "\u0421\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043f\u0443\u0441\u043a\u0430"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "\u0414\u0435\u0442\u0430\u043b\u044c\u043d\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "BackupTriggerResponse",
+        "description": "\u041e\u0442\u0432\u0435\u0442 \u0437\u0430\u043f\u0443\u0441\u043a\u0430 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0430 \u0440\u0435\u0437\u0435\u0440\u0432\u043d\u043e\u0433\u043e \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f."
+      },
       "BirthdayItem": {
         "properties": {
           "fio": {
@@ -8230,6 +8587,92 @@
         ],
         "title": "HealthResponse",
         "description": "\u041c\u043e\u0434\u0435\u043b\u044c \u043e\u0442\u0432\u0435\u0442\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 \u0436\u0438\u0437\u043d\u0435\u0441\u043f\u043e\u0441\u043e\u0431\u043d\u043e\u0441\u0442\u0438 \u0441\u0435\u0440\u0432\u0438\u0441\u0430 para-api."
+      },
+      "IncidentItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "ID \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u0430"
+          },
+          "incident_type": {
+            "type": "string",
+            "title": "Incident Type",
+            "description": "\u0422\u0438\u043f \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u0430"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "description": "\u041a\u0440\u0438\u0442\u0438\u0447\u043d\u043e\u0441\u0442\u044c"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "\u0417\u0430\u0433\u043e\u043b\u043e\u0432\u043e\u043a"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "\u0414\u0435\u0442\u0430\u043b\u0438 \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u0430"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id",
+            "description": "\u0422\u0440\u0430\u0441\u0441\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u044b\u0439 ID"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved",
+            "description": "\u0424\u043b\u0430\u0433 \u0440\u0435\u0448\u0435\u043d\u0438\u044f",
+            "default": false
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "\u0412\u0440\u0435\u043c\u044f \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "incident_type",
+          "severity",
+          "title",
+          "description",
+          "created_at"
+        ],
+        "title": "IncidentItem",
+        "description": "\u0417\u0430\u043f\u0438\u0441\u044c \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u043e\u0433\u043e \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u0430."
+      },
+      "IncidentListResponse": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u043e\u0432"
+          },
+          "incidents": {
+            "items": {
+              "$ref": "#/components/schemas/IncidentItem"
+            },
+            "type": "array",
+            "title": "Incidents",
+            "description": "\u0421\u043f\u0438\u0441\u043e\u043a \u0437\u0430\u043f\u0438\u0441\u0435\u0439"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "title": "IncidentListResponse",
+        "description": "\u0421\u043f\u0438\u0441\u043e\u043a \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u044b\u0445 \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u043e\u0432."
       },
       "Lesson": {
         "properties": {

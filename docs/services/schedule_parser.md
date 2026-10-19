@@ -48,24 +48,25 @@ graph TD
 | [`_fetch_single_endpoint`](#_fetch_single_endpoint) | Function | L488–L496 | `httpx.Response` | Executes core domain logic for `_fetch_single_endpoint`... |
 | [`_try_fetch_endpoint`](#_try_fetch_endpoint) | Function | L499–L515 | `httpx.Response | None` | Executes core domain logic for `_try_fetch_endpoint`. |
 | [`_fetch_remote_schedule`](#_fetch_remote_schedule) | Function | L518–L542 | `httpx.Response` | Executes core domain logic for `_fetch_remote_schedule`... |
-| [`refresh_schedule_in_background`](#refresh_schedule_in_background) | Function | L545–L569 | `None` | Executes core domain logic for `refresh_schedule_in_bac... |
-| [`init_schedule_cache_from_redis`](#init_schedule_cache_from_redis) | Function | L572–L595 | `bool` | Executes core domain logic for `init_schedule_cache_fro... |
-| [`_trigger_stale_refresh`](#_trigger_stale_refresh) | Function | L598–L607 | `None` | Executes core domain logic for `_trigger_stale_refresh`... |
-| [`_get_cached_or_revalidate`](#_get_cached_or_revalidate) | Function | L610–L625 | `dict[str, Any] | None` | Executes core domain logic for `_get_cached_or_revalida... |
-| [`fetch_schedule_data`](#fetch_schedule_data) | Function | L628–L649 | `dict[str, Any] | None` | Executes core domain logic for `fetch_schedule_data`. |
-| [`extract_entity_maps`](#extract_entity_maps) | Function | L652–L667 | `tuple[dict, dict, dict, dict, dict]` | Executes core domain logic for `extract_entity_maps`. |
-| [`_handle_missing_remote_teacher`](#_handle_missing_remote_teacher) | Function | L670–L678 | `None` | Executes core domain logic for `_handle_missing_remote_... |
-| [`_extract_existing_teacher_creds`](#_extract_existing_teacher_creds) | Function | L681–L691 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `_extract_existing_teach... |
-| [`resolve_teacher_contact_info`](#resolve_teacher_contact_info) | Function | L694–L718 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `resolve_teacher_contact... |
-| [`resolve_room_name`](#resolve_room_name) | Function | L721–L733 | `str` | Executes core domain logic for `resolve_room_name`. |
-| [`_resolve_lesson_meta`](#_resolve_lesson_meta) | Function | L736–L754 | `Any` | Executes core domain logic for `_resolve_lesson_meta`. |
-| [`_build_lesson_payload`](#_build_lesson_payload) | Function | L757–L790 | `dict[str, Any]` | Executes core domain logic for `_build_lesson_payload`. |
-| [`build_lesson_object`](#build_lesson_object) | Function | L793–L808 | `Lesson` | Executes core domain logic for `build_lesson_object`. |
-| [`is_placed_lesson_active`](#is_placed_lesson_active) | Function | L811–L822 | `bool` | Executes core domain logic for `is_placed_lesson_active... |
-| [`_collect_day_instances`](#_collect_day_instances) | Function | L825–L848 | `list[Lesson]` | Executes core domain logic for `_collect_day_instances`... |
-| [`_extract_lessons_for_day`](#_extract_lessons_for_day) | Function | L851–L873 | `list[Lesson]` | Executes core domain logic for `_extract_lessons_for_da... |
-| [`get_schedule_for_date`](#get_schedule_for_date) | Function | L876–L900 | `list[Lesson]` | Retrieves and resolves domain data for `get_schedule_fo... |
-| [`get_week_schedule`](#get_week_schedule) | Function | L903–L922 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_week_schedu... |
+| [`_dispatch_schedule_alert`](#_dispatch_schedule_alert) | Function | L545–L559 | `None` | Executes core domain logic for `_dispatch_schedule_aler... |
+| [`refresh_schedule_in_background`](#refresh_schedule_in_background) | Function | L562–L580 | `None` | Executes core domain logic for `refresh_schedule_in_bac... |
+| [`init_schedule_cache_from_redis`](#init_schedule_cache_from_redis) | Function | L583–L606 | `bool` | Executes core domain logic for `init_schedule_cache_fro... |
+| [`_trigger_stale_refresh`](#_trigger_stale_refresh) | Function | L609–L618 | `None` | Executes core domain logic for `_trigger_stale_refresh`... |
+| [`_get_cached_or_revalidate`](#_get_cached_or_revalidate) | Function | L621–L636 | `dict[str, Any] | None` | Executes core domain logic for `_get_cached_or_revalida... |
+| [`fetch_schedule_data`](#fetch_schedule_data) | Function | L639–L660 | `dict[str, Any] | None` | Executes core domain logic for `fetch_schedule_data`. |
+| [`extract_entity_maps`](#extract_entity_maps) | Function | L663–L678 | `tuple[dict, dict, dict, dict, dict]` | Executes core domain logic for `extract_entity_maps`. |
+| [`_handle_missing_remote_teacher`](#_handle_missing_remote_teacher) | Function | L681–L689 | `None` | Executes core domain logic for `_handle_missing_remote_... |
+| [`_extract_existing_teacher_creds`](#_extract_existing_teacher_creds) | Function | L692–L702 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `_extract_existing_teach... |
+| [`resolve_teacher_contact_info`](#resolve_teacher_contact_info) | Function | L705–L729 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `resolve_teacher_contact... |
+| [`resolve_room_name`](#resolve_room_name) | Function | L732–L744 | `str` | Executes core domain logic for `resolve_room_name`. |
+| [`_resolve_lesson_meta`](#_resolve_lesson_meta) | Function | L747–L765 | `Any` | Executes core domain logic for `_resolve_lesson_meta`. |
+| [`_build_lesson_payload`](#_build_lesson_payload) | Function | L768–L801 | `dict[str, Any]` | Executes core domain logic for `_build_lesson_payload`. |
+| [`build_lesson_object`](#build_lesson_object) | Function | L804–L819 | `Lesson` | Executes core domain logic for `build_lesson_object`. |
+| [`is_placed_lesson_active`](#is_placed_lesson_active) | Function | L822–L833 | `bool` | Executes core domain logic for `is_placed_lesson_active... |
+| [`_collect_day_instances`](#_collect_day_instances) | Function | L836–L859 | `list[Lesson]` | Executes core domain logic for `_collect_day_instances`... |
+| [`_extract_lessons_for_day`](#_extract_lessons_for_day) | Function | L862–L884 | `list[Lesson]` | Executes core domain logic for `_extract_lessons_for_da... |
+| [`get_schedule_for_date`](#get_schedule_for_date) | Function | L887–L911 | `list[Lesson]` | Retrieves and resolves domain data for `get_schedule_fo... |
+| [`get_week_schedule`](#get_week_schedule) | Function | L914–L933 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_week_schedu... |
 
 ---
 
@@ -939,12 +940,45 @@ result = await _fetch_remote_schedule()
 
 ---
 
+### `_dispatch_schedule_alert`
+```python
+def _dispatch_schedule_alert(err_msg: str) -> None
+```
+
+- **Source Reference**: [`services/schedule_parser.py#L545-L559`](../../services/schedule_parser.py#L545-L559)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_dispatch_schedule_alert`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `err_msg` | `str` | Yes | Parameter `err_msg` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.schedule_parser import _dispatch_schedule_alert
+
+# Execute call
+result = _dispatch_schedule_alert(err_msg=...)
+```
+
+---
+
 ### `refresh_schedule_in_background`
 ```python
 async def refresh_schedule_in_background(force: bool = False) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L545-L569`](../../services/schedule_parser.py#L545-L569)
+- **Source Reference**: [`services/schedule_parser.py#L562-L580`](../../services/schedule_parser.py#L562-L580)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -977,7 +1011,7 @@ result = await refresh_schedule_in_background(force=...)
 async def init_schedule_cache_from_redis(now: float) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L572-L595`](../../services/schedule_parser.py#L572-L595)
+- **Source Reference**: [`services/schedule_parser.py#L583-L606`](../../services/schedule_parser.py#L583-L606)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -1010,7 +1044,7 @@ result = await init_schedule_cache_from_redis(now=...)
 async def _trigger_stale_refresh(now: float) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L598-L607`](../../services/schedule_parser.py#L598-L607)
+- **Source Reference**: [`services/schedule_parser.py#L609-L618`](../../services/schedule_parser.py#L609-L618)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -1043,7 +1077,7 @@ result = await _trigger_stale_refresh(now=...)
 async def _get_cached_or_revalidate(now: float) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L610-L625`](../../services/schedule_parser.py#L610-L625)
+- **Source Reference**: [`services/schedule_parser.py#L621-L636`](../../services/schedule_parser.py#L621-L636)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -1076,7 +1110,7 @@ result = await _get_cached_or_revalidate(now=...)
 async def fetch_schedule_data(force_refresh: bool = False) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L628-L649`](../../services/schedule_parser.py#L628-L649)
+- **Source Reference**: [`services/schedule_parser.py#L639-L660`](../../services/schedule_parser.py#L639-L660)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -1109,7 +1143,7 @@ result = await fetch_schedule_data(force_refresh=...)
 def extract_entity_maps(data: dict[str, Any]) -> tuple[dict, dict, dict, dict, dict]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L652-L667`](../../services/schedule_parser.py#L652-L667)
+- **Source Reference**: [`services/schedule_parser.py#L663-L678`](../../services/schedule_parser.py#L663-L678)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[dict, dict, dict, dict, dict]`
 
@@ -1142,7 +1176,7 @@ result = extract_entity_maps(data=...)
 def _handle_missing_remote_teacher(raw_teacher: str, subj_name: str) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L670-L678`](../../services/schedule_parser.py#L670-L678)
+- **Source Reference**: [`services/schedule_parser.py#L681-L689`](../../services/schedule_parser.py#L681-L689)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -1176,7 +1210,7 @@ result = _handle_missing_remote_teacher(raw_teacher=..., subj_name=...)
 def _extract_existing_teacher_creds( t_info: TeacherData, raw_teacher: str, is_remote: bool ) -> tuple[str, str | None, str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L681-L691`](../../services/schedule_parser.py#L681-L691)
+- **Source Reference**: [`services/schedule_parser.py#L692-L702`](../../services/schedule_parser.py#L692-L702)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str | None, str | None, str | None]`
 
@@ -1211,7 +1245,7 @@ result = _extract_existing_teacher_creds(t_info=..., raw_teacher=..., is_remote=
 def resolve_teacher_contact_info( raw_teacher: str, teacher_data_map: dict[str, TeacherData], is_remote: bool, subj_name: str, ) -> tuple[str, str | None, str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L694-L718`](../../services/schedule_parser.py#L694-L718)
+- **Source Reference**: [`services/schedule_parser.py#L705-L729`](../../services/schedule_parser.py#L705-L729)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str | None, str | None, str | None]`
 
@@ -1247,7 +1281,7 @@ result = resolve_teacher_contact_info(raw_teacher=..., teacher_data_map=..., is_
 def resolve_room_name(asgn: dict[str, Any], inst: dict[str, Any], rms: dict[str, str], is_remote: bool) -> str
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L721-L733`](../../services/schedule_parser.py#L721-L733)
+- **Source Reference**: [`services/schedule_parser.py#L732-L744`](../../services/schedule_parser.py#L732-L744)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -1283,7 +1317,7 @@ result = resolve_room_name(asgn=..., inst=..., rms=...)
 def _resolve_lesson_meta( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], teacher_map: dict[str, TeacherData], )
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L736-L754`](../../services/schedule_parser.py#L736-L754)
+- **Source Reference**: [`services/schedule_parser.py#L747-L765`](../../services/schedule_parser.py#L747-L765)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -1319,7 +1353,7 @@ result = _resolve_lesson_meta(inst=..., asgn=..., maps=...)
 def _build_lesson_payload( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None,
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L757-L790`](../../services/schedule_parser.py#L757-L790)
+- **Source Reference**: [`services/schedule_parser.py#L768-L801`](../../services/schedule_parser.py#L768-L801)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -1358,7 +1392,7 @@ result = _build_lesson_payload(inst=..., asgn=..., maps=...)
 def build_lesson_object( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None,
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L793-L808`](../../services/schedule_parser.py#L793-L808)
+- **Source Reference**: [`services/schedule_parser.py#L804-L819`](../../services/schedule_parser.py#L804-L819)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Lesson`
 
@@ -1397,7 +1431,7 @@ result = build_lesson_object(inst=..., asgn=..., maps=...)
 def is_placed_lesson_active(inst: dict[str, Any], asgn: dict[str, Any] | None, day_idx: int, week_num: int) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L811-L822`](../../services/schedule_parser.py#L811-L822)
+- **Source Reference**: [`services/schedule_parser.py#L822-L833`](../../services/schedule_parser.py#L822-L833)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -1433,7 +1467,7 @@ result = is_placed_lesson_active(inst=..., asgn=..., day_idx=...)
 def _collect_day_instances( insts: list[dict[str, Any]], asgns: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], day_idx: int, week_num: int, links: dict[str, TeacherData], cfg: dict[str, Any] | None,
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L825-L848`](../../services/schedule_parser.py#L825-L848)
+- **Source Reference**: [`services/schedule_parser.py#L836-L859`](../../services/schedule_parser.py#L836-L859)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[Lesson]`
 
@@ -1472,7 +1506,7 @@ result = _collect_day_instances(insts=..., asgns=..., maps=...)
 def _extract_lessons_for_day( data: dict[str, Any], day_idx: int, week_num: int, links: dict[str, TeacherData], ) -> list[Lesson]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L851-L873`](../../services/schedule_parser.py#L851-L873)
+- **Source Reference**: [`services/schedule_parser.py#L862-L884`](../../services/schedule_parser.py#L862-L884)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[Lesson]`
 
@@ -1508,7 +1542,7 @@ result = _extract_lessons_for_day(data=..., day_idx=..., week_num=...)
 async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> list[Lesson]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L876-L900`](../../services/schedule_parser.py#L876-L900)
+- **Source Reference**: [`services/schedule_parser.py#L887-L911`](../../services/schedule_parser.py#L887-L911)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
@@ -1542,7 +1576,7 @@ result = await get_schedule_for_date(target_date=..., force_refresh=...)
 async def get_week_schedule(monday_date: date, force_refresh: bool = False) -> list[tuple[date, list[Lesson]]]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L903-L922`](../../services/schedule_parser.py#L903-L922)
+- **Source Reference**: [`services/schedule_parser.py#L914-L933`](../../services/schedule_parser.py#L914-L933)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[date, list[Lesson]]]`
 

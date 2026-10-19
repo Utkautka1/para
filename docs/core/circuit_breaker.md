@@ -26,8 +26,9 @@ graph LR
 | [`CircuitBreaker.state`](#circuitbreakerstate) | Method | L52–L58 | `CircuitState` | Executes core domain logic for `state`. |
 | [`CircuitBreaker.check_permission`](#circuitbreakercheck_permission) | Method | L60–L69 | `None` | Executes core domain logic for `check_permission`. |
 | [`CircuitBreaker.record_success`](#circuitbreakerrecord_success) | Method | L71–L78 | `None` | Executes core domain logic for `record_success`. |
-| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L80–L88 | `None` | Executes core domain logic for `record_failure`. |
-| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L91–L112 | `T` | Executes core domain logic for `async_retry_with_backof... |
+| [`CircuitBreaker._dispatch_open_alert`](#circuitbreaker_dispatch_open_alert) | Method | L80–L94 | `None` | Executes core domain logic for `_dispatch_open_alert`. |
+| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L96–L105 | `None` | Executes core domain logic for `record_failure`. |
+| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L108–L129 | `T` | Executes core domain logic for `async_retry_with_backof... |
 
 ---
 
@@ -207,12 +208,45 @@ result = await record_success()
 
 ---
 
+### `CircuitBreaker._dispatch_open_alert`
+```python
+def _dispatch_open_alert(self, error: Exception) -> None
+```
+
+- **Source Reference**: [`core/circuit_breaker.py#L80-L94`](../../core/circuit_breaker.py#L80-L94)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_dispatch_open_alert`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `error` | `Exception` | Yes | Parameter `error` of type `Exception`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.circuit_breaker import _dispatch_open_alert
+
+# Execute call
+result = _dispatch_open_alert(error=...)
+```
+
+---
+
 ### `CircuitBreaker.record_failure`
 ```python
 async def record_failure(self, error: Exception) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L80-L88`](../../core/circuit_breaker.py#L80-L88)
+- **Source Reference**: [`core/circuit_breaker.py#L96-L105`](../../core/circuit_breaker.py#L96-L105)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -245,7 +279,7 @@ result = await record_failure(error=...)
 async def async_retry_with_backoff( coro_fn: Callable[[], Awaitable[T]], max_retries: int = 3, base_delay: float = 0.5, max_delay: float = 5.0, retryable_exceptions: tuple[type[Exception], ...] = (Exception,), ) -> T
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L91-L112`](../../core/circuit_breaker.py#L91-L112)
+- **Source Reference**: [`core/circuit_breaker.py#L108-L129`](../../core/circuit_breaker.py#L108-L129)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `T`
 

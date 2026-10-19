@@ -21,19 +21,53 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`ping_yandex_session`](#ping_yandex_session) | Function | L21–L38 | `bool` | Executes core domain logic for `ping_yandex_session`. |
-| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L41–L62 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
+| [`_dispatch_yandex_alert`](#_dispatch_yandex_alert) | Function | L21–L33 | `None` | Executes core domain logic for `_dispatch_yandex_alert`... |
+| [`ping_yandex_session`](#ping_yandex_session) | Function | L36–L48 | `bool` | Executes core domain logic for `ping_yandex_session`. |
+| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L51–L72 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_dispatch_yandex_alert`
+```python
+async def _dispatch_yandex_alert(details: str) -> None
+```
+
+- **Source Reference**: [`integrations/yandex_keepalive.py#L21-L33`](../../integrations/yandex_keepalive.py#L21-L33)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_dispatch_yandex_alert`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `details` | `str` | Yes | Parameter `details` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.yandex_keepalive import _dispatch_yandex_alert
+
+# Execute call
+result = await _dispatch_yandex_alert(details=...)
+```
+
+---
 
 ### `ping_yandex_session`
 ```python
 async def ping_yandex_session() -> bool
 ```
 
-- **Source Reference**: [`integrations/yandex_keepalive.py#L21-L38`](../../integrations/yandex_keepalive.py#L21-L38)
+- **Source Reference**: [`integrations/yandex_keepalive.py#L36-L48`](../../integrations/yandex_keepalive.py#L36-L48)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -64,7 +98,7 @@ result = await ping_yandex_session()
 async def yandex_session_keepalive_loop( interval: int = KEEPALIVE_INTERVAL_SECONDS, ) -> None
 ```
 
-- **Source Reference**: [`integrations/yandex_keepalive.py#L41-L62`](../../integrations/yandex_keepalive.py#L41-L62)
+- **Source Reference**: [`integrations/yandex_keepalive.py#L51-L72`](../../integrations/yandex_keepalive.py#L51-L72)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

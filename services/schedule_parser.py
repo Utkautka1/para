@@ -542,15 +542,25 @@ async def _fetch_remote_schedule() -> httpx.Response:
     raise RuntimeError("Все доступные эндпоинты расписания КТМУ недоступны")
 
 
+def _dispatch_schedule_alert(err_msg: str) -> None:
+    """Асинхронно отправляет алерт при недоступности API расписания."""
+    try:
+        from services.alerting import IncidentType, send_admin_alert
+
+        asyncio.create_task(
+            send_admin_alert(
+                incident_type=IncidentType.TIMETABLE_API_DOWN,
+                title="API расписания КТМУ недоступно",
+                description=f"Ошибка запроса: {err_msg}. Активирован fallback на кэш.",
+                severity="WARNING",
+            )
+        )
+    except Exception as exc:
+        log.debug(f"Не удалось отправить алерт расписания: {exc}")
+
+
 async def refresh_schedule_in_background(force: bool = False) -> None:
-    """
-    Асинхронно опрашивает API расписания в фоновом режиме с защитой от спама.
-
-    При сетевых сбоях устанавливает 5-минутный кулдаун _COOLDOWN_UNTIL,
-    предотвращая лавину запросов при недоступности внешнего сервиса.
-
-    Ничего не возвращает.
-    """
+    """Асинхронно опрашивает API расписания в фоновом режиме с защитой от спама."""
     global _IS_REFRESHING, _COOLDOWN_UNTIL
 
     now = time.time()
@@ -565,6 +575,7 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
         _COOLDOWN_UNTIL = now + _COOLDOWN_SECONDS
         err_msg = repr(e) if str(e) == "" else f"{type(e).__name__}: {e}"
         log.warning(f"Фоновое обновление API КТМУ не удалось ({err_msg}). Используется кэш (кулдаун 5 мин).")
+        _dispatch_schedule_alert(err_msg)
     finally:
         _IS_REFRESHING = False
 

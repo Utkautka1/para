@@ -77,6 +77,22 @@ class CircuitBreaker:
             self._failure_count = 0
             self._last_state_change = time.monotonic()
 
+    def _dispatch_open_alert(self, error: Exception) -> None:
+        """Асинхронно инициирует отправку алерта администратору при переходе в OPEN."""
+        try:
+            from services.alerting import IncidentType, send_admin_alert
+
+            asyncio.create_task(
+                send_admin_alert(
+                    incident_type=IncidentType.CIRCUIT_BREAKER_OPEN,
+                    title=f"Circuit Breaker '{self.name}' перешел в состояние OPEN",
+                    description=f"Превышен порог ошибок ({self._failure_count}). Ошибка: {error}",
+                    severity="CRITICAL",
+                )
+            )
+        except Exception as exc:
+            log.debug(f"Не удалось отправить алерт CircuitBreaker: {exc}")
+
     async def record_failure(self, error: Exception) -> None:
         """Фиксирует сбой и переводит в OPEN при превышении порога."""
         async with self._lock:
@@ -86,6 +102,7 @@ class CircuitBreaker:
             if self._failure_count >= self.failure_threshold or self._state == CircuitState.HALF_OPEN:
                 self._state = CircuitState.OPEN
                 log.error(f"🛑 CircuitBreaker '{self.name}' перешел в состояние OPEN на {self.recovery_timeout}с")
+                self._dispatch_open_alert(error)
 
 
 async def async_retry_with_backoff(

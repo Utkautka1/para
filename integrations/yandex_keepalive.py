@@ -18,23 +18,33 @@ log = get_logger("yandex_keepalive")
 KEEPALIVE_INTERVAL_SECONDS = YANDEX_KEEPALIVE_INTERVAL_SECONDS
 
 
+async def _dispatch_yandex_alert(details: str) -> None:
+    """Отправляет уведомление администратору об инвалидации кук Яндекс."""
+    try:
+        from services.alerting import IncidentType, send_admin_alert
+
+        await send_admin_alert(
+            incident_type=IncidentType.YANDEX_COOKIE_EXPIRED,
+            title="Сессия Яндекс Документов не активна",
+            description=f"Сбой Keep-Alive: {details}. Обновите куки через scripts/sync_yandex_cookie.py.",
+            severity="WARNING",
+        )
+    except Exception as exc:
+        log.debug(f"Не удалось отправить алерт Яндекс: {exc}")
+
+
 async def ping_yandex_session() -> bool:
-    """
-    Выполняет одиночный проверочный запрос для продления сессии и обновления Cookie.
-
-    Делает HTTP GET к документу посещаемости, парсит officeActionData и сохраняет
-    новые сессионные куки в Redis через общий транспорт yandex_docs.
-
-    Возвращает True при успешном подтверждении авторизации, иначе False.
-    """
+    """Выполняет одиночный проверочный запрос для продления сессии и обновления Cookie."""
     try:
         html = await fetch_page_dom(ATTENDANCE_DOC_URL)
         config = extract_client_config(html)
         if config.get("officeActionData"):
             log.info("✅ Сессия Яндекс Документов успешно продлена (Keep-Alive OK)")
             return True
+        await _dispatch_yandex_alert("В ответе отсутствует officeActionData")
     except Exception as e:
         log.warning(f"⚠️ Ошибка фонового продления сессии Яндекс Документов: {e}")
+        await _dispatch_yandex_alert(str(e))
     return False
 
 

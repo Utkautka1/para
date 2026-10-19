@@ -53,6 +53,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await start_grpc_server(grpc_server, GRPC_HOST, GRPC_PORT)
     log.info(f"⚡ gRPC сервер активен на {GRPC_HOST}:{GRPC_PORT}")
     await init_redis()
+    from core.database import init_db
+
+    await init_db()
 
     try:
         yield

@@ -16,6 +16,7 @@ from core.config_models import (
     AiSolverConfig,
     ApiConfig,
     CampusConfig,
+    DatabaseConfig,
     NotificationConfig,
     RedisConfig,
     ScheduleConfig,
@@ -455,6 +456,18 @@ THROTTLING_DEFAULT_COOLDOWN: float = notify_config.throttling_default_cooldown
 # ==============================================================================
 # 11. DATA STORAGE & STATE FILE PATHS
 # ==============================================================================
+
+database_config = DatabaseConfig(
+    db_path=get_env("SQLITE_DB_PATH", "data/para.db"),
+    database_url=get_env("DATABASE_URL", f"sqlite+aiosqlite:///{get_env('SQLITE_DB_PATH', 'data/para.db')}"),
+    backup_dir=get_env("BACKUP_DIR_PATH", "data/backups"),
+    backup_retention_days=get_env_int("BACKUP_RETENTION_DAYS", 7),
+)
+
+SQLITE_DB_PATH: str = database_config.db_path
+DATABASE_URL: str = database_config.database_url
+BACKUP_DIR_PATH: str = database_config.backup_dir
+BACKUP_RETENTION_DAYS: int = database_config.backup_retention_days
 
 SUBSCRIBERS_FILE_PATH: str = "data/subscribers.json"
 BIRTHDAYS_FILE_PATH: str = "data/birthdays.json"

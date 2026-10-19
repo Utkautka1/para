@@ -348,14 +348,22 @@ async def daily_schedule_dispatch() -> None:
         schedule_attendance_poll(today, lesson, now_dt)
 
 
+def _register_backup_job() -> None:
+    """Регистрирует ежедневную крон-задачу резервного копирования в 03:00 МСК."""
+    from services.backup_manager import run_backup_pipeline
+
+    scheduler.add_job(
+        run_backup_pipeline,
+        "cron",
+        hour=3,
+        minute=0,
+        id="daily_backup",
+        replace_existing=True,
+    )
+
+
 def setup_scheduler() -> AsyncIOScheduler:
-    """
-    Инициализирует и запускает планировщик задач APScheduler.
-
-    Регистрирует ежедневную крон-задачу рассылки расписания в 06:00 МСК.
-
-    Возвращает настроенный экземпляр AsyncIOScheduler.
-    """
+    """Инициализирует и запускает планировщик задач APScheduler."""
     scheduler.add_job(
         daily_schedule_dispatch,
         "cron",
@@ -364,6 +372,7 @@ def setup_scheduler() -> AsyncIOScheduler:
         id="daily_dispatch",
         replace_existing=True,
     )
+    _register_backup_job()
     scheduler.start()
     log.info(f"Планировщик запущен. Ежедневная рассылка в {DAILY_NOTIFY_HOUR:02d}:{DAILY_NOTIFY_MINUTE:02d} МСК")
 

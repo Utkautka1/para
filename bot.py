@@ -150,10 +150,12 @@ async def _init_bot_subsystems() -> None:
     """
 
     from bot.commands import register_bot_commands
+    from core.database import init_db
 
     register_all_routers()
     setup_all_middlewares()
     await init_redis()
+    await init_db()
     await register_bot_commands(bot)
     asyncio.create_task(_warmup_stt())
 

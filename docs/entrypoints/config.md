@@ -21,11 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_required_env`](#get_required_env) | Function | L36–L49 | `str` | Retrieves and resolves domain data for `get_required_en... |
-| [`get_env`](#get_env) | Function | L52–L61 | `str` | Retrieves and resolves domain data for `get_env`. |
-| [`get_env_int`](#get_env_int) | Function | L64–L79 | `int` | Retrieves and resolves domain data for `get_env_int`. |
-| [`get_env_float`](#get_env_float) | Function | L82–L96 | `float` | Retrieves and resolves domain data for `get_env_float`. |
-| [`get_env_list`](#get_env_list) | Function | L99–L111 | `tuple[str, ...]` | Retrieves and resolves domain data for `get_env_list`. |
+| [`get_required_env`](#get_required_env) | Function | L37–L50 | `str` | Retrieves and resolves domain data for `get_required_en... |
+| [`get_env`](#get_env) | Function | L53–L62 | `str` | Retrieves and resolves domain data for `get_env`. |
+| [`get_env_int`](#get_env_int) | Function | L65–L80 | `int` | Retrieves and resolves domain data for `get_env_int`. |
+| [`get_env_float`](#get_env_float) | Function | L83–L97 | `float` | Retrieves and resolves domain data for `get_env_float`. |
+| [`get_env_list`](#get_env_list) | Function | L100–L112 | `tuple[str, ...]` | Retrieves and resolves domain data for `get_env_list`. |
 
 ---
 
@@ -36,7 +36,7 @@ graph LR
 def get_required_env(key: str) -> str
 ```
 
-- **Source Reference**: [`config.py#L36-L49`](../../config.py#L36-L49)
+- **Source Reference**: [`config.py#L37-L50`](../../config.py#L37-L50)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -69,7 +69,7 @@ result = get_required_env(key=...)
 def get_env(key: str, default: str) -> str
 ```
 
-- **Source Reference**: [`config.py#L52-L61`](../../config.py#L52-L61)
+- **Source Reference**: [`config.py#L53-L62`](../../config.py#L53-L62)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -103,7 +103,7 @@ result = get_env(key=..., default=...)
 def get_env_int(key: str, default: int | None = None) -> int
 ```
 
-- **Source Reference**: [`config.py#L64-L79`](../../config.py#L64-L79)
+- **Source Reference**: [`config.py#L65-L80`](../../config.py#L65-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -137,7 +137,7 @@ result = get_env_int(key=..., default=...)
 def get_env_float(key: str, default: float | None = None) -> float
 ```
 
-- **Source Reference**: [`config.py#L82-L96`](../../config.py#L82-L96)
+- **Source Reference**: [`config.py#L83-L97`](../../config.py#L83-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
@@ -171,7 +171,7 @@ result = get_env_float(key=..., default=...)
 def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]
 ```
 
-- **Source Reference**: [`config.py#L99-L111`](../../config.py#L99-L111)
+- **Source Reference**: [`config.py#L100-L112`](../../config.py#L100-L112)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, ...]`
 

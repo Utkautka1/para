@@ -43,6 +43,8 @@ Technical specification of the distributed system architecture, end-to-end data 
 11. [Automated CI/CD Pipeline & Delivery Verification](#11-automated-cicd-pipeline--delivery-verification)
 12. [Resilient Fallback Upstream & Clean Micro-Functions Architecture](#12-resilient-fallback-upstream--clean-micro-functions-architecture)
 13. [Hardened Security Governance & Secrets Lifecycle Management](#13-hardened-security-governance--secrets-lifecycle-management)
+14. [AI Resilience, Circuit Breaker & Prompt Sanitization Architecture](#14-ai-resilience-circuit-breaker--prompt-sanitization-architecture)
+15. [Persistent Relational SQLite Architecture, Incident Alerting & Automated Backups](#15-persistent-relational-sqlite-architecture-incident-alerting--automated-backups)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -2660,3 +2662,160 @@ flowchart TD
     TgReport --> AckTask
     AckTask --> TaskDone(["✅ Solution Delivered"])
 ```
+
+---
+
+## 15. Persistent Relational SQLite Architecture, Incident Alerting & Automated Backups
+
+Introduced in v2.9.0, the platform incorporates an asynchronous relational persistence tier via **SQLite + SQLAlchemy 2.0 (`aiosqlite`)**, proactive **System Incident Alerting** dispatching to the admin Telegram channel, and an **Automated Disaster Recovery Backup Pipeline** with 7-day retention rotation and Telegram document delivery.
+
+### 15.1. SQLite Persistence Class Diagram & Repository Contracts
+
+```mermaid
+classDiagram
+    direction TB
+
+    class DatabaseManager {
+        -AsyncEngine _engine
+        -async_sessionmaker _session_factory
+        +init_db() void
+        +get_async_session() AsyncSession
+        -_set_sqlite_pragmas(dbapi_connection, connection_record) void
+        -_migrate_subscribers_from_json() void
+    }
+
+    class Base {
+        <<DeclarativeBase>>
+    }
+
+    class Subscriber {
+        +int chat_id PK
+        +string username
+        +string full_name
+        +boolean is_active
+        +datetime subscribed_at
+        +datetime updated_at
+    }
+
+    class AttendanceSnapshot {
+        +int id PK
+        +date snapshot_date
+        +string student_name
+        +int total_hours
+        +int attended_hours
+        +float attendance_percent
+        +datetime created_at
+    }
+
+    class SystemIncident {
+        +int id PK
+        +string incident_type
+        +IncidentSeverity severity
+        +string title
+        +string description
+        +string trace_id
+        +datetime created_at
+    }
+
+    class IncidentSeverity {
+        <<enumeration>>
+        INFO
+        WARNING
+        ERROR
+        CRITICAL
+    }
+
+    class SubscriberRepository {
+        +add_subscriber(chat_id, username, full_name) bool
+        +remove_subscriber(chat_id) bool
+        +get_active_chat_ids() list[int]
+        +count_active() int
+    }
+
+    class IncidentRepository {
+        +record_incident(incident_type, title, description, severity, trace_id) SystemIncident
+        +get_recent_incidents(limit) list[SystemIncident]
+    }
+
+    class AttendanceRepository {
+        +save_daily_snapshots(snapshot_date, records) int
+        +get_snapshots_by_date(snapshot_date) list[AttendanceSnapshot]
+    }
+
+    Base <|-- Subscriber
+    Base <|-- AttendanceSnapshot
+    Base <|-- SystemIncident
+    SystemIncident --> IncidentSeverity : uses
+
+    DatabaseManager --> Subscriber : manages
+    DatabaseManager --> AttendanceSnapshot : manages
+    DatabaseManager --> SystemIncident : manages
+
+    SubscriberRepository ..> Subscriber : queries/persists
+    IncidentRepository ..> SystemIncident : queries/persists
+    AttendanceRepository ..> AttendanceSnapshot : queries/persists
+```
+
+### 15.2. System Incident Alerting Pipeline & Throttling
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Trig as Incident Trigger (CB / Parser / Keepalive)
+    participant Svc as services/alerting (send_admin_alert)
+    participant Rep as db/sqlite/repositories (IncidentRepository)
+    participant DB as SQLite DB (system_incidents)
+    participant Bot as core/bot (Bot.send_message)
+    participant Adm as Admin Telegram (ALLOWED_USER_ID)
+
+    Trig->>Svc: send_admin_alert(incident_type, severity, title, desc, trace_id)
+    activate Svc
+    Svc->>Svc: Check Cooldown (5 min per incident_type)
+    Svc->>Rep: record_incident(...)
+    Rep->>DB: INSERT INTO system_incidents VALUES (...)
+    DB-->>Rep: Incident Record #ID
+    Rep-->>Svc: SystemIncident
+
+    alt Alert Throttled (within 5m cooldown)
+        Svc-->>Trig: Suppress Telegram Alert (Deduplicated)
+    else Cooldown Expired / First Incident
+        Svc->>Bot: send_message(chat_id=ALLOWED_USER_ID, text=HTML_ALERT)
+        Bot->>Adm: 🚨 Alert: [CRITICAL] Circuit Breaker Open
+        Adm-->>Bot: Delivered
+        Bot-->>Svc: Success
+        Svc-->>Trig: Alert Dispatched
+    end
+    deactivate Svc
+```
+
+### 15.3. Automated Backup Pipeline & Disaster Recovery Lifecycle
+
+```mermaid
+flowchart TD
+    Cron(["⏰ Daily Scheduler (03:00 MSK)\nor POST /system/backup"]) --> BackupStart["services/backup_manager\n(run_backup_pipeline)"]
+
+    subgraph Consistency["1. Online Hot Backup & Snapshotting"]
+        SQLiteOnline["_backup_sqlite_online\n(sqlite3.backup API to staging/para.db)"]
+        RedisSnapshot["_trigger_redis_bgsave\n(Redis BGSAVE & wait for lastsave)"]
+    end
+
+    BackupStart --> SQLiteOnline
+    SQLiteOnline --> RedisSnapshot
+
+    subgraph Archival["2. Tarball Compression & Local Storage"]
+        TarArchive["_create_tar_archive\n(para_backup_YYYYMMDD_HHMMSS.tar.gz)"]
+        RotateBackups["_rotate_old_backups\n(Purge archives older than 7 days)"]
+    end
+
+    RedisSnapshot --> TarArchive
+    TarArchive --> RotateBackups
+
+    subgraph Delivery["3. Disaster Recovery Telegram Distribution"]
+        SendTg["_send_backup_to_telegram\n(FSInputFile -> bot.send_document to ALLOWED_USER_ID)"]
+        AdminInbox(["📱 Admin Telegram\n(Encrypted offline copy)"])
+    end
+
+    RotateBackups --> SendTg
+    SendTg --> AdminInbox
+```
+

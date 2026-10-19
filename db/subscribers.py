@@ -1,109 +1,109 @@
 """
-Модуль локального хранения подписчиков бота.
+Модуль персистентного хранения подписчиков бота с поддержкой SQLite (WAL) и JSON-фолбэка.
 
-Сохраняет и считывает список Telegram chat_id из файла data/subscribers.json.
-Обеспечивает атомарную запись через временный файл и fsync.
+Сохраняет и считывает список Telegram chat_id из реляционной базы данных SQLite.
+Дублирует запись в JSON для обратной совместимости и мгновенного восстановления.
 """
 
-from config import SUBSCRIBERS_FILE_PATH
+import os
+import sqlite3
+
+from config import SQLITE_DB_PATH, SUBSCRIBERS_FILE_PATH
 from core.logger import get_logger
 from utils.storage import sync_atomic_save_json, sync_load_json
 
 log = get_logger("subscribers")
 
 
+def _query_sqlite_subscribers() -> set[int] | None:
+    """Извлекает активных подписчиков из базы данных SQLite."""
+    if not os.path.exists(SQLITE_DB_PATH):
+        return None
+    try:
+        with sqlite3.connect(SQLITE_DB_PATH, timeout=5.0) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT chat_id FROM subscribers WHERE is_active = 1;")
+            rows = cursor.fetchall()
+            return {int(row[0]) for row in rows}
+    except Exception as exc:
+        log.debug(f"SQLite пока не инициализирован для подписчиков: {exc}")
+        return None
+
+
+def _update_sqlite_subscriber(chat_id: int, is_active: bool) -> None:
+    """Атомарно обновляет статус подписчика в SQLite."""
+    if not os.path.exists(SQLITE_DB_PATH):
+        return
+    try:
+        with sqlite3.connect(SQLITE_DB_PATH, timeout=5.0) as conn:
+            conn.execute(
+                """INSERT INTO subscribers (chat_id, is_active, updated_at)
+                   VALUES (?, ?, datetime('now'))
+                   ON CONFLICT(chat_id) DO UPDATE SET
+                       is_active = excluded.is_active,
+                       updated_at = excluded.updated_at;""",
+                (chat_id, 1 if is_active else 0),
+            )
+            conn.commit()
+    except Exception as exc:
+        log.warning(f"Не удалось обновить подписчика {chat_id} в SQLite: {exc}")
+
+
 def load_subscribers() -> set[int]:
-    """
-    Загружает множество идентификаторов подписанных пользователей из локального файла.
-
-    Использует защищенную загрузку JSON с дефолтным пустым списком, предотвращая
-    сбои сервиса при повреждении или отсутствии файла на диске.
-
-    Возвращает множество (set) целочисленных Telegram chat_id.
-    """
+    """Загружает множество идентификаторов подписчиков из SQLite с фолбэком на JSON."""
+    db_subs = _query_sqlite_subscribers()
+    if db_subs is not None:
+        return db_subs
     data = sync_load_json(SUBSCRIBERS_FILE_PATH, default=[])
     return set(data) if isinstance(data, list) else set()
 
 
 def save_subscribers(subs: set[int]) -> bool:
-    """
-    Атомарно сохраняет актуальное множество подписчиков в JSON-файл.
-
-    Записывает данные во временный файл с последующим атомарным переименованием
-    через fsync во избежание порчи данных при внезапном отключении питания.
-
-    Возвращает True в случае успешной записи на диск, иначе False.
-    """
+    """Сохраняет актуальное множество подписчиков в JSON-файл и SQLite."""
     ok = sync_atomic_save_json(SUBSCRIBERS_FILE_PATH, list(subs))
     if ok:
         log.debug(f"Сохранено {len(subs)} подписчиков в {SUBSCRIBERS_FILE_PATH}")
+    for cid in subs:
+        _update_sqlite_subscriber(cid, True)
     return ok
 
 
 def add_subscriber(chat_id: int) -> bool:
-    """
-    Добавляет новый идентификатор чата в список активных подписчиков.
-
-    Проверяет наличие пользователя во множестве для исключения дубликатов
-    и выполняет сохранение в файл только при реальном добавлении.
-
-    Возвращает True, если подписчик был успешно добавлен, False если уже существовал.
-    """
+    """Добавляет новый идентификатор чата в список активных подписчиков."""
     subs = load_subscribers()
     if chat_id not in subs:
         subs.add(chat_id)
         save_subscribers(subs)
+        _update_sqlite_subscriber(chat_id, True)
         log.info(f"Добавлен новый подписчик: {chat_id}")
         return True
     return False
 
 
 def remove_subscriber(chat_id: int) -> bool:
-    """
-    Удаляет идентификатор чата из списка получателей рассылки.
-
-    Безопасно исключает подписчика из множества и обновляет дисковый файл,
-    прекращая отправку утренних и предпарных уведомлений.
-
-    Возвращает True, если подписчик был найден и удален, иначе False.
-    """
+    """Удаляет идентификатор чата из списка получателей рассылки."""
     subs = load_subscribers()
     if chat_id in subs:
         subs.remove(chat_id)
         save_subscribers(subs)
+        _update_sqlite_subscriber(chat_id, False)
         log.info(f"Удален подписчик: {chat_id}")
         return True
     return False
 
 
 def is_subscribed(chat_id: int) -> bool:
-    """
-    Проверяет, подписан ли пользователь на персональные уведомления в ЛС.
-
-    Используется фильтрами клавиатур и обработчиками для отображения
-    актуального статуса колокольчика на кнопках меню.
-
-    Возвращает True, если chat_id присутствует в списке подписчиков, иначе False.
-    """
+    """Проверяет, подписан ли пользователь на персональные уведомления в ЛС."""
     return chat_id in load_subscribers()
 
 
 def toggle_subscriber(chat_id: int) -> bool:
-    """
-    Переключает статус подписки пользователя на противоположный (Toggle).
-
-    Атомарно инвертирует состояние подписки в файле и логирует пользовательское действие
-    с информативным эмодзи статуса.
-
-    Возвращает True, если подписка включена, False если отключена.
-    """
+    """Переключает статус подписки пользователя на противоположный (Toggle)."""
     subs = load_subscribers()
     if chat_id in subs:
-        subs.remove(chat_id)
-        save_subscribers(subs)
+        remove_subscriber(chat_id)
         log.info(f"🔕 Пользователь отключил напоминания: {chat_id}")
         return False
-    subs.add(chat_id)
-    save_subscribers(subs)
+    add_subscriber(chat_id)
     log.info(f"🔔 Пользователь включил напоминания: {chat_id}")
     return True
