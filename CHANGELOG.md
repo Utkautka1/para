@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.8.0] - 2026-10-19
+
+### Added
+- **Multimodal AI Safety & Prompt Injection Sanitizer**: Created `core/prompt_sanitizer.py` (and `services/solver/prompt_sanitizer.py`) implementing Unicode NFKC normalization, invisible control character removal, context XML delimiter isolation (`</учебное_задание>`), and regex heuristics for jailbreak / system prompt leak prevention.
+- **Stateful Async Circuit Breaker & Exponential Backoff**: Created `core/circuit_breaker.py` providing finite-state protection (`CLOSED`, `OPEN`, `HALF_OPEN`) and `async_retry_with_backoff` with random jitter for DeepSeek LLM, Telegram, and Yandex external endpoints.
+- **Production Prometheus Observability**: Added `core/metrics.py` and `GET /metrics` (`api/router/metrics.py`) exposing process RSS memory, CPU times, HTTP request latency histograms with percentile buckets, and active homework queue depth gauges.
+- **Distributed Request Tracing Context**: Integrated `ContextVar` `trace_id` logging format `[trace_id: ...] [thread: ...]` across all services and automatic `X-Request-ID` generation / propagation middleware in `api/__init__.py`.
+- **Pre-Commit Framework & Supply Chain Security**: Enforced 10 pre-commit hooks (`.pre-commit-config.yaml`), secret scanning baseline (`.secrets.baseline`), and automated PyPA advisory scanning (`pip-audit`) in GitHub Actions CI.
+- **Non-Root Container Hardening**: Enforced unprivileged `appuser` (UID 1000:GID 1000) across all Dockerfiles (`api`, `bot`, `worker`, `solver`) and integrated Trivy container vulnerability scanning in CI.
+- **Static Typing Gate (MyPy)**: Configured `[tool.mypy]` in `pyproject.toml`, added `type-check` target in `Makefile`, and integrated automated MyPy step into CI.
+- **Expanded Test Suite (629 Passing Tests)**: Added 35 new tests covering solver decomposition, domain config models, Prometheus metrics, distributed tracing, AI resilience / sanitization, and queue contract integration.
+- **Developer Onboarding Tooling**: Added `.github/CODEOWNERS`, `.github/pull_request_template.md`, and automated workstation setup script `scripts/dev_setup.sh`.
+- **Enterprise Release Specification**: Authored `docs/releases/v2.8.0.md` and updated `RELEASE_NOTES.md`.
+
+### Changed
+- **Monolithic Solver Decomposition**: Extracted `solver.py` (378 lines) into `services/solver/` package (`payload_extractor.py`, `telegram_reporter.py`, `task_processor.py`), shrinking the daemon entrypoint to 58 lines.
+- **Domain Configuration Architecture**: Structured `config.py` into frozen, typed domain models (`TelegramConfig`, `ScheduleConfig`, `CampusConfig`, `RedisConfig`, `YandexConfig`, `ApiConfig`, `AiSolverConfig`, `WhisperConfig`, `NotificationConfig`) in `core/config_models.py` with 100% backward compatibility.
+- **Graceful Lifecycle Shutdown**: Refactored `api.py` and `solver.py` lifespans to cleanly terminate gRPC servers, Redis pools, and HTTP sessions.
+- **Deterministic Dependency Locking**: Generated `requirements.lock` via `pip-compile` and added `compile-deps` / `test-cov` Makefile targets.
+- **Privacy Policy & Legal Compliance**: Expanded `docs/PRIVACY.md` detailing `/dev/shm` RAM-disk ephemeral audio cleanup, Russian Federal Law 152-FZ data localization, and 5-step Right to Erasure procedures.
+- **Architectural Diagram & UML Expansion**: Added Section 13 (Security Governance) and Section 14 (AI Resilience & Prompt Sanitization) in `docs/UML.md`.
+
+---
+
 ## [v2.7.0] - 2026-10-18
 
 ### Added

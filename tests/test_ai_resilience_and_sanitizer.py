@@ -47,12 +47,12 @@ def test_sanitize_prompt_injection_flags() -> None:
 
 def test_sanitize_prompt_control_characters() -> None:
     """Проверяет удаление нулевых байтов и невидимых управляющих символов."""
-    raw = "Формула\x00 E = mc^2\u200B\uFEFF с нулевым байтом"
+    raw = "Формула\x00 E = mc^2\u200b\ufeff с нулевым байтом"
     cleaned = remove_invisible_control_chars(raw)
     assert "\x00" not in cleaned
-    assert "\u200B" not in cleaned
-    assert "\uFEFF" not in cleaned
-    assert "Формула E = mc^2 с нулевым байтом" == cleaned
+    assert "\u200b" not in cleaned
+    assert "\ufeff" not in cleaned
+    assert cleaned == "Формула E = mc^2 с нулевым байтом"
 
 
 def test_sanitize_prompt_empty_fallback() -> None:
@@ -103,6 +103,7 @@ async def test_async_retry_with_backoff_success() -> None:
 @pytest.mark.asyncio
 async def test_async_retry_with_backoff_exhaustion() -> None:
     """Проверяет выброс исключения при превышении лимита повторных попыток."""
+
     async def always_failing() -> None:
         raise TimeoutError("Таймаут шлюза")
 

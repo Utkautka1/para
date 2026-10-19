@@ -6,10 +6,11 @@
 """
 
 import asyncio
-from enum import Enum
 import random
 import time
-from typing import Any, Awaitable, Callable, TypeVar
+from collections.abc import Awaitable, Callable
+from enum import StrEnum
+from typing import TypeVar
 
 from core.logger import get_logger
 
@@ -18,7 +19,7 @@ log = get_logger("circuit_breaker")
 T = TypeVar("T")
 
 
-class CircuitState(str, Enum):
+class CircuitState(StrEnum):
     """Состояния конечного автомата Circuit Breaker."""
 
     CLOSED = "CLOSED"

@@ -60,9 +60,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Prepare Test Environment
+        run: cp .env.ci .env
+
       - name: Run Documentation Suite Generator and OpenAPI Export
         run: |
-          make export-openapi
+          PYTHONPATH=. python3 -c "import json; from api import create_app; open('docs/openapi.json', 'w').write(json.dumps(create_app().openapi(), indent=2) + '\n')"
           python3 scripts/generate_docs_suite.py
 
       - name: Verify Zero Documentation Drift

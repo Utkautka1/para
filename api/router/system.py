@@ -44,7 +44,7 @@ async def get_system_info() -> SystemInfoResponse:
 
     return SystemInfoResponse(
         service="para-api",
-        version="2.0.0",
+        version="2.8.0",
         timezone=str(TIMEZONE),
         server_time=now_str,
         redis_alive=redis_alive,

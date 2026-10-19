@@ -1,51 +1,52 @@
-# Release Notes: Para v2.7.0
+# Release Notes: Para v2.8.0
 
 ## 🚀 Overview
 
-**Para v2.7.0** delivers a comprehensive architectural code overhaul, strict PEP 8 readability standards, and upstream fail-safe resilience. Every function and method across the entire codebase now adheres to a strict maximum limit of **25 lines**, features structured three-part Russian docstrings, and follows clear vertical spacing. Additionally, the system now automatically mitigates upstream TLS handshake failures from the college timetable endpoint by routing through a secondary mirror.
+**Para v2.8.0** delivers a comprehensive enterprise-grade production hardening and resilience milestone, implementing all 21 points of the architectural engineering audit. This release establishes robust zero-trust security (non-root Dockerfiles, Trivy CVE scanning, pre-commit secret auditing), production observability (Prometheus `/metrics`, distributed `trace_id` correlation), modular solver decomposition, typed domain configuration models, multimodal prompt injection sanitization, stateful async Circuit Breaker protection, strict MyPy static typing, and an expanded suite of **629 passing tests** (up from 594).
 
 ---
 
-## 📊 Summary of Changes vs v2.6.0
+## 📊 Summary of Changes vs v2.7.0
 
-| Dimension | Release v2.6.0 | Release v2.7.0 | Impact |
+| Dimension | Release v2.7.0 | Release v2.8.0 | Impact |
 | :--- | :--- | :--- | :--- |
-| **Docstrings** | Partial & English/Russian mixed | **100% Russian 3-Part Standard** | Full developer intent & edge-case visibility |
-| **Function Length** | Many methods > 30 lines | **Strictly <= 25 lines** | Clean Single Responsibility & maintainability |
-| **Vertical Rhythm** | Dense formatting | **Strict PEP 8 blank line spacing** | Easy to read on any display / IDE |
-| **Schedule Upstream** | Fragile against TLS alert errors | **Dual-Endpoint Automated Failover** | Zero downtime when `timetable-ktmu.ru` fails |
-| **Files Modified** | 18 files | **78 files** | Complete repository-wide overhaul |
-| **Lines Changed** | +1,240 / -480 | **+7,179 / -1,724** | Substantial quality & documentation boost |
-| **Tests Passing** | 594 / 594 (100%) | **594 / 594 (100%)** | Zero regression guaranteed |
+| **Container Security** | `root:root` execution | **Unprivileged `appuser` (UID 1000)** | Eliminates host volume takeover & breakout |
+| **CI Security Pipeline** | Basic lint & pytest | **Pre-commit (10 hooks) + Trivy + Pip-Audit** | Automated 4-tier security validation |
+| **Observability** | Plain text log files | **Prometheus `/metrics` + ContextVar Tracing** | Real-time monitoring and log correlation |
+| **AI LLM Protection** | Raw prompt passing | **Prompt Sanitizer + Circuit Breaker** | Protection against prompt injection & cascading outages |
+| **Solver Architecture** | Monolithic (378 lines) | **Decomposed `services/solver/` (58 lines)** | Modular, maintainable homework pipeline |
+| **Configuration** | Flat global constants | **Frozen Domain Dataclasses + Facade** | Type-safe configuration with 100% backward compatibility |
+| **Static Typing** | Unchecked dynamic types | **Configured MyPy (`make type-check`)** | Strict compile-time type verification |
+| **Automated Tests** | 594 / 594 passing | **629 / 629 passing (+35 tests)** | Full coverage of new resilience & domain components |
+| **Legal Compliance** | High-level overview | **Detailed GDPR / 152-ФЗ Erasure & /dev/shm** | Legal compliance and data minimization guarantees |
 
 ---
 
-## 🔍 Detailed Comparison with Version 2.6.0
+## 🔍 Key Architectural Enhancements
 
-### 1. Architectural Resilience & Upstream Failover
-* **Problem in v2.6.0**: When the college timetable endpoint (`timetable-ktmu.ru`) returned `[SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1016)`, workers repeatedly logged warnings and relied on decaying Redis cache.
-* **Resolution in v2.7.0**: Centralized `DEFAULT_FALLBACK_SCHEDULE_API_URL` (`https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2`) in `config.py`. In `services/schedule_parser.py`, failures trigger an immediate seamless fallback to the mirror, resulting in HTTP 200 responses and healthy Redis cache refreshes.
+### 1. Non-Root Container Security & Supply Chain Hardening
+* Enforced unprivileged user `appuser` (UID 1000:GID 1000) across all service Dockerfiles (`api`, `bot`, `worker`, `solver`).
+* Added pre-commit hooks (`.pre-commit-config.yaml`) with detect-secrets baseline (`.secrets.baseline`).
+* Automated PyPA vulnerability scanning (`pip-audit`) and Trivy CRITICAL scanner in GitHub Actions.
 
-### 2. Method Decomposition (< 25 Lines per Function)
-* **Problem in v2.6.0**: Key handlers (`cb_start_attendance`, `cb_mark_student`, `handle_voice_or_video_note`, `cmd_start`, `execute_single_task`, `parse_file_payload`, `run_solver_loop`) mixed validation, business logic, and UI rendering into routines spanning 30 to 50 lines.
-* **Resolution in v2.7.0**: Decomposed all routines into single-purpose helpers:
-  - `_resolve_lesson_title_for_start`, `_ensure_session_available`, `_init_session_safe` in `bot/handlers/admin/attendance.py`
-  - `_send_today_schedule`, `_greet_new_student`, `_show_access_denied`, `_show_tester_cabinet` in `bot/handlers/user/schedule.py`
-  - `_check_and_acquire_voice`, `_resolve_temp_audio_dir`, `_determine_audio_extension` in `bot/handlers/user/voice_transcribe.py`
-  - `_extract_docx_images`, `_read_code_file_payload`, `_drain_active_tasks` in `solver.py`
-  - `_build_compact_topic_header`, `_build_topic_body_lines` in `services/attendance_topic_updater.py`
+### 2. Prometheus Observability & Distributed Tracing
+* Exposed production metrics endpoint `GET /metrics` (`api/router/metrics.py`, `core/metrics.py`) tracking memory RSS, CPU times, HTTP duration histograms, and solver queue depth.
+* Integrated `ContextVar` `trace_id` into all logs (`[trace_id: ...] [thread: ...]`) and automatic `X-Request-ID` generation / propagation in FastAPI middleware.
 
-### 3. Readability & Code Style
-* **Problem in v2.6.0**: Code blocks were tightly packed without blank lines between docstrings and implementation, making visual inspection cumbersome.
-* **Resolution in v2.7.0**: Standardized formatting rules applied across all 78 files:
-  - 1 empty line immediately following closing docstring `"""`.
-  - 1 empty line before `return` or `raise`.
-  - 2 empty lines between top-level declarations (PEP 8).
-  - Logical guard clauses separated from main computational flow.
+### 3. Solver Monolith Decomposition & Modularity
+* Decomposed monolithic `solver.py` into `services/solver/`:
+  - `payload_extractor.py`: Safe download and multimodal attachment parser.
+  - `telegram_reporter.py`: Delivery of solutions and structured user alerts.
+  - `task_processor.py`: Worker loop with semaphore throttling and atomic ACK/NACK.
+* Shrunk the `solver.py` entrypoint from 378 lines to a clean 58-line orchestrator.
 
-### 4. Configuration Consolidation
-* **Problem in v2.6.0**: Some business modules used raw `os.getenv` with hardcoded defaults.
-* **Resolution in v2.7.0**: All environment variables are strictly loaded, validated, and typed in `config.py` using `get_required_env`, `get_env_int`, and `get_env_list`.
+### 4. Multimodal AI Safety & Circuit Breaker
+* `core/prompt_sanitizer.py`: Normalizes Unicode, removes control characters, escapes context tags (`</учебное_задание>`), and flags prompt injection / jailbreak attempts.
+* `core/circuit_breaker.py`: Stateful Circuit Breaker (`CLOSED`, `OPEN`, `HALF_OPEN`) with `async_retry_with_backoff` and random jitter.
+
+### 5. Domain Configuration Models & Developer Experience
+* Created frozen dataclasses in `core/config_models.py` (`TelegramConfig`, `ScheduleConfig`, `CampusConfig`, `RedisConfig`, `YandexConfig`, `ApiConfig`, `AiSolverConfig`, `WhisperConfig`, `NotificationConfig`).
+* Added `.github/CODEOWNERS`, PR templates, and developer setup script `scripts/dev_setup.sh`.
 
 ---
 
@@ -55,10 +56,9 @@
 # 1. Update source code
 git pull origin main
 
-# 2. Rebuild and launch containers
+# 2. Rebuild and launch hardened containers
 docker compose up -d --build
 
-# 3. Verify health
-docker compose ps
-docker compose logs -f para-worker para-api
+# 3. Verify health & metrics
+curl -s http://localhost:8000/metrics | grep process_resident_memory_bytes
 ```

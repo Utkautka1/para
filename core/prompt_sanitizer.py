@@ -5,10 +5,10 @@
 из контекстных XML-тегов (jailbreak) и утечки системного промпта.
 """
 
-from dataclasses import dataclass
 import html
 import re
 import unicodedata
+from dataclasses import dataclass
 
 from core.logger import get_logger
 

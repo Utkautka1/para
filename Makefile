@@ -1,6 +1,6 @@
 .PHONY: help install test lint type-check format docs docs-check dev-redis build up down logs clean export-openapi
 
-PYTHON ?= ./venv/bin/python3
+PYTHON ?= $(shell if [ -f ./venv/bin/python3 ]; then echo "./venv/bin/python3"; else echo "python3"; fi)
 VENV ?= venv
 PYTEST ?= $(VENV)/bin/pytest
 RUFF ?= $(VENV)/bin/ruff

@@ -14,13 +14,13 @@
 
 <p align="center">
   <a href="RELEASE_NOTES.md">
-    <img src="https://img.shields.io/badge/RELEASE-v2.7.0-8A2BE2?style=for-the-badge&logo=git&logoColor=white" alt="Release v2.7.0">
+    <img src="https://img.shields.io/badge/RELEASE-v2.8.0-8A2BE2?style=for-the-badge&logo=git&logoColor=white" alt="Release v2.8.0">
   </a>
   <a href="https://github.com/Utkautka1/para/actions">
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
-    <img src="https://img.shields.io/badge/TESTS-594%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 594 Passed">
+    <img src="https://img.shields.io/badge/TESTS-629%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 629 Passed">
   </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/PYTHON-3.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Versions">

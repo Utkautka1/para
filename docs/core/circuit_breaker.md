@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`CircuitOpenError.__init__`](#circuitopenerror__init__) | Method | L32–L35 | `Any` | Executes core domain logic for `__init__`. |
-| [`CircuitBreaker.__init__`](#circuitbreaker__init__) | Method | L41–L48 | `Any` | Executes core domain logic for `__init__`. |
-| [`CircuitBreaker.state`](#circuitbreakerstate) | Method | L51–L57 | `CircuitState` | Executes core domain logic for `state`. |
-| [`CircuitBreaker.check_permission`](#circuitbreakercheck_permission) | Method | L59–L68 | `None` | Executes core domain logic for `check_permission`. |
-| [`CircuitBreaker.record_success`](#circuitbreakerrecord_success) | Method | L70–L77 | `None` | Executes core domain logic for `record_success`. |
-| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L79–L87 | `None` | Executes core domain logic for `record_failure`. |
-| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L90–L111 | `T` | Executes core domain logic for `async_retry_with_backof... |
+| [`CircuitOpenError.__init__`](#circuitopenerror__init__) | Method | L33–L36 | `Any` | Executes core domain logic for `__init__`. |
+| [`CircuitBreaker.__init__`](#circuitbreaker__init__) | Method | L42–L49 | `Any` | Executes core domain logic for `__init__`. |
+| [`CircuitBreaker.state`](#circuitbreakerstate) | Method | L52–L58 | `CircuitState` | Executes core domain logic for `state`. |
+| [`CircuitBreaker.check_permission`](#circuitbreakercheck_permission) | Method | L60–L69 | `None` | Executes core domain logic for `check_permission`. |
+| [`CircuitBreaker.record_success`](#circuitbreakerrecord_success) | Method | L71–L78 | `None` | Executes core domain logic for `record_success`. |
+| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L80–L88 | `None` | Executes core domain logic for `record_failure`. |
+| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L91–L112 | `T` | Executes core domain logic for `async_retry_with_backof... |
 
 ---
 
@@ -46,7 +46,7 @@ Encapsulates domain entities and data transfer logic for `CircuitOpenError`.
 def __init__(self, name: str, retry_after: float)
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L32-L35`](../../core/circuit_breaker.py#L32-L35)
+- **Source Reference**: [`core/circuit_breaker.py#L33-L36`](../../core/circuit_breaker.py#L33-L36)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -84,7 +84,7 @@ Encapsulates domain entities and data transfer logic for `CircuitBreaker`.
 def __init__(self, name: str, failure_threshold: int = 3, recovery_timeout: float = 30.0)
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L41-L48`](../../core/circuit_breaker.py#L41-L48)
+- **Source Reference**: [`core/circuit_breaker.py#L42-L49`](../../core/circuit_breaker.py#L42-L49)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -119,7 +119,7 @@ result = __init__(name=..., failure_threshold=..., recovery_timeout=...)
 def state(self) -> CircuitState
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L51-L57`](../../core/circuit_breaker.py#L51-L57)
+- **Source Reference**: [`core/circuit_breaker.py#L52-L58`](../../core/circuit_breaker.py#L52-L58)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `CircuitState`
 
@@ -150,7 +150,7 @@ result = state()
 async def check_permission(self) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L59-L68`](../../core/circuit_breaker.py#L59-L68)
+- **Source Reference**: [`core/circuit_breaker.py#L60-L69`](../../core/circuit_breaker.py#L60-L69)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -181,7 +181,7 @@ result = await check_permission()
 async def record_success(self) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L70-L77`](../../core/circuit_breaker.py#L70-L77)
+- **Source Reference**: [`core/circuit_breaker.py#L71-L78`](../../core/circuit_breaker.py#L71-L78)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -212,7 +212,7 @@ result = await record_success()
 async def record_failure(self, error: Exception) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L79-L87`](../../core/circuit_breaker.py#L79-L87)
+- **Source Reference**: [`core/circuit_breaker.py#L80-L88`](../../core/circuit_breaker.py#L80-L88)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -245,7 +245,7 @@ result = await record_failure(error=...)
 async def async_retry_with_backoff( coro_fn: Callable[[], Awaitable[T]], max_retries: int = 3, base_delay: float = 0.5, max_delay: float = 5.0, retryable_exceptions: tuple[type[Exception], ...] = (Exception,), ) -> T
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L90-L111`](../../core/circuit_breaker.py#L90-L111)
+- **Source Reference**: [`core/circuit_breaker.py#L91-L112`](../../core/circuit_breaker.py#L91-L112)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `T`
 

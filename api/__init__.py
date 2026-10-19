@@ -107,7 +107,7 @@ def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
 
     schema = get_openapi(
         title="para-api",
-        version="2.0.0",
+        version="2.8.0",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         routes=app.routes,
     )
@@ -174,7 +174,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
-        version="2.0.0",
+        version="2.8.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
