@@ -23,7 +23,7 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`build_post_link`](#build_post_link) | Function | L17–L27 | `str` | Executes core domain logic for `build_post_link`. |
 | [`send_solution_to_telegram`](#send_solution_to_telegram) | Function | L30–L50 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`notify_task_error`](#notify_task_error) | Function | L53–L70 | `None` | Executes core domain logic for `notify_task_error`. |
+| [`notify_task_error`](#notify_task_error) | Function | L53–L73 | `None` | Executes core domain logic for `notify_task_error`. |
 
 ---
 
@@ -103,7 +103,7 @@ result = await send_solution_to_telegram(tg_bot=..., task=..., doc_path=...)
 async def notify_task_error(tg_bot: Bot, task: dict) -> None
 ```
 
-- **Source Reference**: [`services/solver/telegram_reporter.py#L53-L70`](../../services/solver/telegram_reporter.py#L53-L70)
+- **Source Reference**: [`services/solver/telegram_reporter.py#L53-L73`](../../services/solver/telegram_reporter.py#L53-L73)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

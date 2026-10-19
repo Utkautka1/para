@@ -6,6 +6,7 @@ RedisConfig, YandexConfig, ApiConfig, AiSolverConfig, WhisperConfig и Notificat
 а также гарантируют корректную привязку глобальных констант к полям моделей.
 """
 
+from dataclasses import FrozenInstanceError
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -79,5 +80,5 @@ def test_solver_whisper_and_notify_configs() -> None:
 
 def test_domain_configs_immutability() -> None:
     """Проверяет неизменяемость (frozen dataclass) доменных конфигураций."""
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         config.telegram_config.allowed_user_id = 999999  # type: ignore[misc]

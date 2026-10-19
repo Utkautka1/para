@@ -2613,3 +2613,50 @@ sequenceDiagram
     Redis-->>SecPol: Enforce dynamic TTL ceilings (86400s max)
     deactivate SecPol
 ```
+
+---
+
+## 14. AI Resilience, Circuit Breaker & Prompt Sanitization Architecture
+
+To protect multimodal AI processing from prompt injection attacks, jailbreaks, and external API outages, the solver pipeline incorporates structured prompt sanitation, stateful Circuit Breaker protection, and exponential retry backoff:
+
+```mermaid
+flowchart TD
+    TaskIngress(["📥 Student Homework Task\n(raw_text, media_paths)"]) --> ExtractPayload["services/solver/payload_extractor\n(resolve_task_payload)"]
+
+    subgraph Sanitization["1. Prompt Hygiene & Context Isolation (services/solver/prompt_sanitizer)"]
+        CleanChars["remove_invisible_control_chars\n(Strip null bytes & zero-width chars)"]
+        DetectInjection["detect_injection_indicators\n(Regex audit for prompt injection & jailbreak)"]
+        EscapeDelim["escape_context_delimiters\n(Escape XML tags & </учебное_задание>)"]
+    end
+
+    ExtractPayload --> CleanChars
+    CleanChars --> DetectInjection
+    DetectInjection --> EscapeDelim
+
+    subgraph Resilience["2. AI Fault-Tolerance Subsystem (core/circuit_breaker)"]
+        CBState{"Circuit State\n(CLOSED / OPEN / HALF_OPEN)"}
+        RetryLoop["async_retry_with_backoff\n(Exponential Backoff + Jitter)"]
+        DeepSeekAPI["DeepSeek Multimodal API\n(AsyncOpenAI Client)"]
+        RecordSuccess["record_success()\n(Reset failure count)"]
+        RecordFailure["record_failure()\n(Trip to OPEN after 3 failures)"]
+    end
+
+    EscapeDelim --> CBState
+    CBState -->|CLOSED or HALF_OPEN| RetryLoop
+    CBState -->|OPEN| FastFail["🛑 Fast-Fail: CircuitOpenError\n(Block request without network call)"]
+    RetryLoop --> DeepSeekAPI
+    DeepSeekAPI -->|200 OK| RecordSuccess
+    DeepSeekAPI -->|5xx / 429 Error| RecordFailure
+
+    subgraph Delivery["3. Solution Delivery & Reporting (services/solver)"]
+        DocGen["utils/doc_generator\n(GOST 7.32-2017 .docx Builder)"]
+        TgReport["services/solver/telegram_reporter\n(send_solution_to_telegram)"]
+        AckTask["core/redis_cache\n(ack_hw_task via atomic LREM)"]
+    end
+
+    RecordSuccess --> DocGen
+    DocGen --> TgReport
+    TgReport --> AckTask
+    AckTask --> TaskDone(["✅ Solution Delivered"])
+```

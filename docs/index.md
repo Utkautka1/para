@@ -7,6 +7,7 @@
 | Subsystem | Source Module | Specification Reference | Architectural Layer |
 | :--- | :--- | :--- | :--- |
 | `AI Homework Flow` | [`bot/handlers/user/hw_solver.py`](../bot/handlers/user/hw_solver.py) | [📖 View Specification](bot/handlers_user_hw_solver.md) | Enterprise Service Component |
+| `AI Prompt Sanitization` | [`core/prompt_sanitizer.py`](../core/prompt_sanitizer.py) | [📖 View Specification](core/prompt_sanitizer.md) | Enterprise Service Component |
 | `AI Queue Consumer` | [`solver.py`](../solver.py) | [📖 View Specification](entrypoints/solver.md) | Enterprise Service Component |
 | `Admin Control Panel` | [`bot/handlers/admin/panel.py`](../bot/handlers/admin/panel.py) | [📖 View Specification](bot/handlers_admin_panel.md) | Enterprise Service Component |
 | `Admin Panel Keyboards` | [`bot/templates/admin/keyboards.py`](../bot/templates/admin/keyboards.py) | [📖 View Specification](bot/templates_admin_keyboards.md) | Enterprise Service Component |
@@ -53,12 +54,14 @@
 | `RBAC Security` | [`services/classmates_auth.py`](../services/classmates_auth.py) | [📖 View Specification](services/classmates_auth.md) | Enterprise Service Component |
 | `REST Request Handlers` | [`api/handlers.py`](../api/handlers.py) | [📖 View Specification](api/handlers.md) | Enterprise Service Component |
 | `Redis Engine` | [`core/redis.py`](../core/redis.py) | [📖 View Specification](core/redis.md) | Enterprise Service Component |
+| `Resilience & Circuit Breaker` | [`core/circuit_breaker.py`](../core/circuit_breaker.py) | [📖 View Specification](core/circuit_breaker.md) | Enterprise Service Component |
 | `Schedule API` | [`api/router/schedule.py`](../api/router/schedule.py) | [📖 View Specification](api/router_schedule.md) | Enterprise Service Component |
 | `Security Dependencies` | [`api/deps.py`](../api/deps.py) | [📖 View Specification](api/deps.md) | Enterprise Service Component |
 | `Session Keepalive` | [`integrations/yandex_keepalive.py`](../integrations/yandex_keepalive.py) | [📖 View Specification](integrations/yandex_keepalive.md) | Enterprise Service Component |
 | `Solver Delivery & Reporting` | [`services/solver/telegram_reporter.py`](../services/solver/telegram_reporter.py) | [📖 View Specification](services/solver_telegram_reporter.md) | Enterprise Service Component |
 | `Solver Payload Ingestion` | [`services/solver/payload_extractor.py`](../services/solver/payload_extractor.py) | [📖 View Specification](services/solver_payload_extractor.md) | Enterprise Service Component |
 | `Solver Queue Processing` | [`services/solver/task_processor.py`](../services/solver/task_processor.py) | [📖 View Specification](services/solver_task_processor.md) | Enterprise Service Component |
+| `Solver Security Facade` | [`services/solver/prompt_sanitizer.py`](../services/solver/prompt_sanitizer.py) | [📖 View Specification](services/solver_prompt_sanitizer.md) | Enterprise Service Component |
 | `Speech-to-Text Whisper Engine` | [`services/transcriber.py`](../services/transcriber.py) | [📖 View Specification](services/transcriber.md) | Enterprise Service Component |
 | `Spreadsheet Analytics` | [`services/attendance_stats.py`](../services/attendance_stats.py) | [📖 View Specification](services/attendance_stats.md) | Enterprise Service Component |
 | `Student Identity Cache` | [`services/user_cache.py`](../services/user_cache.py) | [📖 View Specification](services/user_cache.md) | Enterprise Service Component |

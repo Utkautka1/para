@@ -134,14 +134,15 @@ The software integrates with select external services to fulfill its operational
 
 ## 6. Data Storage Architecture, Security & Retention
 
-### 6.1. Ephemeral & In-Memory Storage (Redis)
-Operational state is isolated in Redis key-value storage with strictly configured Time-To-Live (TTL) expiration:
+### 6.1. Ephemeral & In-Memory Storage (Redis & RAM-Disk)
+Operational state is isolated in Redis key-value storage and in-memory tmpfs with strictly configured Time-To-Live (TTL) expiration:
 - **Button Click Debounce Flags (`cb_throttle:{user_id}`)**: Automatically expire after 1.0–4.0 seconds;
 - **Day Schedule Cache Pack (`sched:day_pack:{date}`)**: Expires after 180 seconds;
 - **Bell Reminder Sent Flags (`rem:sent:{group}:{date}:{period}:{type}`)**: Expire after 2 hours;
 - **WOPI Session Tokens (`att:session:{session_id}`)**: Expire after 1 hour;
 - **Homework Task Queue Buffers (`hw:tasks:queue`, `hw:tasks:processing`)**: Removed via atomic `LREM` immediately upon document delivery;
-- **All-Time Attendance Stats Cache (`att:stats:all_time`)**: Retained for 1 hour with instant optimistic invalidation upon headman updates.
+- **All-Time Attendance Stats Cache (`att:stats:all_time`)**: Retained for 1 hour with instant optimistic invalidation upon headman updates;
+- **Voice Audio Processing in Transient RAM-Disk (`/dev/shm`)**: Audio notes and voice messages submitted for attendance marking or schedule search are buffered strictly in the volatile memory filesystem (`/dev/shm`), converted to text via local Whisper STT, and physically unlinked via `os.remove()` inside guaranteed `finally` blocks immediately after transcription. No student voice recordings are ever persisted to magnetic/SSD disk storage or retained in backup archives.
 
 ### 6.2. Persistent Storage & Security Measures
 - **File System Permissions**: Local data stores (`data/bot/birthdays.json`, `data/bot/user_cache.json`, `data/bot/subscribers.json`) reside on restricted server storage with strict POSIX permissions (`chmod 600`), preventing unauthorized local access.
@@ -151,6 +152,12 @@ Operational state is isolated in Redis key-value storage with strictly configure
 
 ### 6.3. Data Retention Schedule
 Personal data is retained only for the duration of the student's active enrollment in academic group 1-KPD-3. Upon completion of the academic program, graduation, or student transfer, associated identifiers are purged from active configuration files within thirty (30) calendar days upon notice.
+
+### 6.4. Data Localization & Russian Federal Law 152-FZ Compliance
+In strict compliance with Article 18, Paragraph 5 of Federal Law No. 152-FZ «On Personal Data»:
+- All recording, systematization, accumulation, storage, clarification (updating, changing), and extraction of personal data of Russian Federation citizens is conducted exclusively utilizing computing infrastructure, databases, and physical servers situated within the territory of the Russian Federation;
+- Primary persistent storage volumes and in-memory caches reside in Russian Tier-III data centers;
+- Cross-border data transmission during homework solving is limited to non-personally identifiable problem formulations without student identity attributes.
 
 ---
 
@@ -163,9 +170,14 @@ Under established data protection principles (including fair information practic
 2. **Right to Rectification**:
    - Students may request updates to their registered name, subgroup designation, or Telegram username by notifying the group headman or using the `/help` command to discover administrative contacts.
    - Headmen can link Telegram IDs for students without usernames via the in-bot administrative command `admin:bind_student`.
-3. **Right to Erasure («Right to be Forgotten»)**:
-   - A student may request the removal of their birthdate from `data/bot/birthdays.json`, permanently disabling automated birthday greetings.
-   - A student may request decoupling of their Telegram ID from the authorization whitelist.
+3. **Right to Erasure («Right to be Forgotten» / Ст. 15 152-ФЗ)**:
+   - Any user may request complete purging of their personal data from the platform. Execution occurs through a formal 5-step procedure:
+     1. **Submission**: Send an erasure request to the system administrator or submit an issue via repository redress channels.
+     2. **Roster Removal**: Immediate removal of birthdate from `data/bot/birthdays.json`, halting automated congratulatory messages.
+     3. **Cache Eviction**: Expulsion of the user's mapping from `data/bot/user_cache.json` and unlinking from `data/bot/subscribers.json`.
+     4. **Redis Purge**: Atomic invalidation of all related keys (`cb_throttle:{user_id}`, `auth:session:{user_id}`).
+     5. **Historical Anonymization**: Replacement of the student's legal name in attendance sheets with a cryptographic pseudonym (`STUDENT_ANON_xxxx`) to preserve historical class statistical integrity without retaining PII.
+     6. **Notice of Completion**: Formal confirmation delivered to the requesting student within ten (10) business days pursuant to 152-FZ.
 4. **Right to Restriction of Automated Notifications**:
    - Students may opt out of broadcast notifications and daily schedule alerts at any time by issuing the unsubscribe action.
 5. **Right to File an Inquiry**:

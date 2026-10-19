@@ -59,9 +59,12 @@ async def notify_task_error(tg_bot: Bot, task: dict) -> None:
 
     Ничего не возвращает.
     """
+    chat_id = task.get("chat_id")
+    if not chat_id:
+        return
     try:
         await tg_bot.send_message(
-            chat_id=task.get("chat_id"),
+            chat_id=chat_id,
             text="⚠️ <b>Не удалось решить ДЗ.</b>\nПроверьте читаемость файла или повторите позже.",
             reply_to_message_id=task.get("message_id"),
             message_thread_id=task.get("message_thread_id"),

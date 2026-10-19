@@ -37,6 +37,8 @@ async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> byte
             return None
 
         downloaded = await tg_bot.download_file(f_info.file_path)
+        if downloaded is None:
+            return None
         return downloaded.read()
     except Exception as e:
         log.error(f"Ошибка скачивания файла {file_id}: {e}")

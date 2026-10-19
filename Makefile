@@ -1,10 +1,11 @@
-.PHONY: help install test lint format docs docs-check dev-redis build up down logs clean export-openapi
+.PHONY: help install test lint type-check format docs docs-check dev-redis build up down logs clean export-openapi
 
 PYTHON ?= ./venv/bin/python3
 VENV ?= venv
 PYTEST ?= $(VENV)/bin/pytest
 RUFF ?= $(VENV)/bin/ruff
 BANDIT ?= $(VENV)/bin/bandit
+MYPY ?= $(VENV)/bin/mypy
 
 help: ## Show available developer commands
 	@echo "=================================================================="
@@ -32,6 +33,9 @@ compile-deps: ## Compile deterministic requirements.lock from requirements.txt v
 lint: ## Execute strict Ruff linter and Bandit security AST analysis
 	$(RUFF) check .
 	$(BANDIT) -r services/ bot/ core/ api/ -c pyproject.toml
+
+type-check: ## Execute static type analysis with MyPy
+	$(MYPY)
 
 format: ## Automatically fix lint errors and format code
 	$(RUFF) check . --fix

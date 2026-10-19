@@ -35,3 +35,20 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+follow_imports = "silent"
+files = [
+    "core/config_models.py",
+    "core/circuit_breaker.py",
+    "core/prompt_sanitizer.py",
+    "core/metrics.py",
+    "services/solver",
+    "integrations/deepseek.py",
+]

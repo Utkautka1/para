@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`download_file_bytes`](#download_file_bytes) | Function | L21–L43 | `bytes | None` | Executes core domain logic for `download_file_bytes`. |
-| [`_extract_docx_images`](#_extract_docx_images) | Function | L46–L62 | `list[bytes]` | Executes core domain logic for `_extract_docx_images`. |
-| [`extract_docx_data`](#extract_docx_data) | Function | L65–L84 | `tuple[str, list[bytes]]` | Executes core domain logic for `extract_docx_data`. |
-| [`extract_pdf_data`](#extract_pdf_data) | Function | L87–L104 | `str` | Executes core domain logic for `extract_pdf_data`. |
-| [`_read_code_file_payload`](#_read_code_file_payload) | Function | L107–L120 | `str` | Executes core domain logic for `_read_code_file_payload... |
-| [`parse_file_payload`](#parse_file_payload) | Function | L123–L148 | `tuple[bytes | None, str | None]` | Parses and extracts structured entities from `parse_fil... |
-| [`resolve_task_payload`](#resolve_task_payload) | Function | L151–L173 | `tuple[bytes | None, str | None]` | Executes core domain logic for `resolve_task_payload`. |
+| [`download_file_bytes`](#download_file_bytes) | Function | L21–L45 | `bytes | None` | Executes core domain logic for `download_file_bytes`. |
+| [`_extract_docx_images`](#_extract_docx_images) | Function | L48–L64 | `list[bytes]` | Executes core domain logic for `_extract_docx_images`. |
+| [`extract_docx_data`](#extract_docx_data) | Function | L67–L86 | `tuple[str, list[bytes]]` | Executes core domain logic for `extract_docx_data`. |
+| [`extract_pdf_data`](#extract_pdf_data) | Function | L89–L106 | `str` | Executes core domain logic for `extract_pdf_data`. |
+| [`_read_code_file_payload`](#_read_code_file_payload) | Function | L109–L122 | `str` | Executes core domain logic for `_read_code_file_payload... |
+| [`parse_file_payload`](#parse_file_payload) | Function | L125–L150 | `tuple[bytes | None, str | None]` | Parses and extracts structured entities from `parse_fil... |
+| [`resolve_task_payload`](#resolve_task_payload) | Function | L153–L175 | `tuple[bytes | None, str | None]` | Executes core domain logic for `resolve_task_payload`. |
 
 ---
 
@@ -38,7 +38,7 @@ graph LR
 async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> bytes | None
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L21-L43`](../../services/solver/payload_extractor.py#L21-L43)
+- **Source Reference**: [`services/solver/payload_extractor.py#L21-L45`](../../services/solver/payload_extractor.py#L21-L45)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bytes | None`
 
@@ -73,7 +73,7 @@ result = await download_file_bytes(tg_bot=..., file_id=..., file_size=...)
 def _extract_docx_images(doc) -> list[bytes]
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L46-L62`](../../services/solver/payload_extractor.py#L46-L62)
+- **Source Reference**: [`services/solver/payload_extractor.py#L48-L64`](../../services/solver/payload_extractor.py#L48-L64)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[bytes]`
 
@@ -106,7 +106,7 @@ result = _extract_docx_images(doc=...)
 def extract_docx_data(doc_bytes: bytes) -> tuple[str, list[bytes]]
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L65-L84`](../../services/solver/payload_extractor.py#L65-L84)
+- **Source Reference**: [`services/solver/payload_extractor.py#L67-L86`](../../services/solver/payload_extractor.py#L67-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, list[bytes]]`
 
@@ -139,7 +139,7 @@ result = extract_docx_data(doc_bytes=...)
 def extract_pdf_data(doc_bytes: bytes) -> str
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L87-L104`](../../services/solver/payload_extractor.py#L87-L104)
+- **Source Reference**: [`services/solver/payload_extractor.py#L89-L106`](../../services/solver/payload_extractor.py#L89-L106)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -172,7 +172,7 @@ result = extract_pdf_data(doc_bytes=...)
 def _read_code_file_payload(doc_bytes: bytes, file_name: str, prompt: str) -> str
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L107-L120`](../../services/solver/payload_extractor.py#L107-L120)
+- **Source Reference**: [`services/solver/payload_extractor.py#L109-L122`](../../services/solver/payload_extractor.py#L109-L122)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -207,7 +207,7 @@ result = _read_code_file_payload(doc_bytes=..., file_name=..., prompt=...)
 def parse_file_payload( doc_bytes: bytes, file_name: str, mime: str | None, prompt: str ) -> tuple[bytes | None, str | None]
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L123-L148`](../../services/solver/payload_extractor.py#L123-L148)
+- **Source Reference**: [`services/solver/payload_extractor.py#L125-L150`](../../services/solver/payload_extractor.py#L125-L150)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[bytes | None, str | None]`
 
@@ -243,7 +243,7 @@ result = parse_file_payload(doc_bytes=..., file_name=..., mime=...)
 async def resolve_task_payload(tg_bot: Bot, task: dict) -> tuple[bytes | None, str | None]
 ```
 
-- **Source Reference**: [`services/solver/payload_extractor.py#L151-L173`](../../services/solver/payload_extractor.py#L151-L173)
+- **Source Reference**: [`services/solver/payload_extractor.py#L153-L175`](../../services/solver/payload_extractor.py#L153-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[bytes | None, str | None]`
 

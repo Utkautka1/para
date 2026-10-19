@@ -39,6 +39,9 @@ jobs:
       - name: Run Pip-Audit Dependency Security Scan
         run: pip-audit -r requirements.txt
 
+      - name: Run MyPy Static Type Check
+        run: mypy
+
   docs-drift-check:
     name: Verify Engineering Documentation Drift
     runs-on: ubuntu-latest
