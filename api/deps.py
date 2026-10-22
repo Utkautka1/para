@@ -16,6 +16,7 @@ from config import (
     DEPUTY_USER_ID,
 )
 from core.logger import get_logger
+from services.classmates_auth import find_classmate_by_tg_id
 from services.testers_manager import get_tester_by_key, is_tester_allowed
 from utils.miniapp_auth import verify_tester_session
 
@@ -62,7 +63,11 @@ async def _resolve_token_identity(token: str | None) -> str | None:
         return f"tester:{uid}" if uid and await is_tester_allowed(uid) else None
 
     uid = verify_tester_session(token)
-    return f"tester:{uid}" if uid and await is_tester_allowed(uid) else None
+    if not uid:
+        return None
+    if uid == ALLOWED_USER_ID or find_classmate_by_tg_id(uid) is not None:
+        return f"classmate:{uid}"
+    return f"tester:{uid}" if await is_tester_allowed(uid) else None
 
 
 def _log_audit_access(identity: str, request: Request) -> None:

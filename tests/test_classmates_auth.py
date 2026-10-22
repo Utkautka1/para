@@ -16,6 +16,7 @@ from aiogram.types import CallbackQuery, Message, User
 from bot.filters.auth import ClassmateAuthFilter
 from config import ALLOWED_USER_ID
 from services.classmates_auth import (
+    clear_registry_cache,
     find_classmate_by_tg_id,
     find_unregistered_by_username,
     is_authorized_user,
@@ -40,10 +41,12 @@ SAMPLE_REGISTRY = [
 
 def test_load_classmates_registry() -> None:
     """Проверяет загрузку реестра студентов через sync_load_json."""
+    clear_registry_cache()
     with patch("services.classmates_auth.sync_load_json", return_value=SAMPLE_REGISTRY):
-        registry = load_classmates_registry()
+        registry = load_classmates_registry(force_reload=True)
         assert len(registry) == 2
         assert registry[0]["username"] == "etow0ndes"
+    clear_registry_cache()
 
 
 def test_find_classmate_by_tg_id() -> None:

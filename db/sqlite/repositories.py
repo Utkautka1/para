@@ -125,3 +125,12 @@ class AttendanceRepository:
                 count += 1
             log.info(f"Сохранено {count} записей посещаемости за {snapshot_date}")
             return count
+
+    @staticmethod
+    async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]:
+        """Возвращает последний доступный срез посещаемости всех студентов."""
+        async with get_async_session() as session:
+            subq = select(func.max(AttendanceSnapshot.snapshot_date)).scalar_subquery()
+            stmt = select(AttendanceSnapshot).where(AttendanceSnapshot.snapshot_date == subq)
+            result = await session.execute(stmt)
+            return result.scalars().all()

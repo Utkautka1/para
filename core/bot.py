@@ -26,9 +26,9 @@ def create_bot_session() -> AiohttpSession:
     Возвращает сконфигурированный экземпляр aiogram.client.session.aiohttp.AiohttpSession.
     """
     if PROXY_URL:
-        log.info("SOCKS5 Прокси успешно подключен для Telegram API (limit=50, timeout=30s)")
-        return AiohttpSession(proxy=PROXY_URL, limit=50, timeout=30.0)
-    return AiohttpSession(limit=50, timeout=15.0)
+        log.info("SOCKS5 Прокси подключен для Telegram API (limit=50, timeout=45s)")
+        return AiohttpSession(proxy=PROXY_URL, limit=50, timeout=45.0)
+    return AiohttpSession(limit=50, timeout=45.0)
 
 
 def create_fsm_storage():

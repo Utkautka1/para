@@ -21,6 +21,7 @@ from aiogram.types import (
     Message,
 )
 
+from bot.filters.auth import ClassmateAuthFilter
 from core.logger import get_logger
 from services.attendance_stats import fetch_all_time_attendance, find_student_attendance
 from services.attendance_topic_updater import sync_attendance_topic_message
@@ -28,6 +29,8 @@ from services.classmates_auth import find_classmate_by_tg_id, process_user_auth
 
 log = get_logger("user_attendance")
 router = Router()
+router.message.filter(ClassmateAuthFilter())
+router.callback_query.filter(ClassmateAuthFilter())
 
 
 def _calculate_attendance_percent(p: int, o: int, u: int, total: int) -> str:

@@ -25,6 +25,7 @@ from config import (
     SESSION_MAX_AGE_SECONDS,
 )
 from core.logger import get_logger
+from services.classmates_auth import find_classmate_by_tg_id
 from services.testers_manager import (
     add_tester,
     get_all_testers,
@@ -87,7 +88,7 @@ async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) 
     """
     Аутентифицирует пользователя по Telegram initData и устанавливает сессионную куку.
 
-    Проверяет валидность HMAC-SHA256 подписи данных веб-приложения и права тестера.
+    Проверяет валидность HMAC-SHA256 подписи данных веб-приложения и принадлежность к группе.
     Выбрасывает HTTP 401 при неверной подписи и HTTP 403 при отсутствии доступа.
 
     Возвращает MiniappAuthResponse с базовым профилем пользователя.
@@ -98,8 +99,10 @@ async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram signature")
 
     user_id = int(info["id"])
-    if not await is_tester_allowed(user_id):
-        log.warning(f"🚫 Пользователь {user_id} не в списке тестеров API")
+    is_classmate = bool(user_id == ALLOWED_USER_ID or find_classmate_by_tg_id(user_id) is not None)
+    is_tester = await is_tester_allowed(user_id)
+    if not is_classmate and not is_tester:
+        log.warning(f"🚫 Пользователь {user_id} не в группе 1-КПД-3 и не в списке тестеров")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
 
     _set_tester_cookie(response, user_id)

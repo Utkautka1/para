@@ -165,7 +165,7 @@ async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None:
 
 async def invalidate_attendance_stats_cache() -> None:
     """
-    Принудительно инвалидирует кэш сквозной статистики посещаемости в Redis.
+    Принудительно инвалидирует кэш сквозной статистики и лидерборда в Redis.
 
     Вызывается после сохранения новых отметок старостой в Яндекс Документы
     для гарантии актуальности последующих запросов аналитики.
@@ -173,7 +173,8 @@ async def invalidate_attendance_stats_cache() -> None:
     Ничего не возвращает.
     """
     await cache_flush(f"{REDIS_STATS_KEY}*")
-    log.info("Кэш сквозной статистики посещаемости сброшен")
+    await cache_flush("gamification:leaderboard*")
+    log.info("Кэш сквозной статистики посещаемости и лидерборда сброшен")
 
 
 async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None:
@@ -196,6 +197,28 @@ async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None:
         log.debug(f"Сохранение среза посещаемости в SQLite пропущено: {exc}")
 
 
+async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None:
+    """Восстанавливает срез посещаемости из SQLite при сетевой недоступности Яндекса."""
+    try:
+        from db.sqlite.repositories import AttendanceRepository
+
+        snapshots = await AttendanceRepository.get_latest_snapshots()
+        if not snapshots:
+            return None
+        res: dict[str, dict[str, Any]] = {}
+        for s in snapshots:
+            res[s.student_name] = {
+                "fio": s.student_name,
+                "total": {"П": s.attended_hours, "О": 0, "У": 0, "Н": max(0, s.total_hours - s.attended_hours)},
+                "months": {},
+            }
+        log.info(f"✅ Восстановлен срез посещаемости из SQLite ({len(res)} студентов)")
+        return res
+    except Exception as exc:
+        log.warning(f"Не удалось прочитать срез посещаемости из SQLite: {exc}")
+        return None
+
+
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]:
     """Возвращает сквозную статистику посещаемости с кэшированием в Redis и снимком в SQLite."""
     if not force_refresh:
@@ -204,14 +227,19 @@ async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, di
             return cached
 
     log.info("Загрузка и пересчёт статистики посещаемости из Яндекс Документов...")
-    wopi = await init_wopi_session()
-    wb = await download_workbook(wopi)
-    stats = await asyncio.to_thread(parse_workbook_attendance, wb)
-
-    await _save_to_redis_cache(stats)
-    await _save_sqlite_snapshot(stats)
-
-    return stats
+    try:
+        wopi = await init_wopi_session()
+        wb = await download_workbook(wopi)
+        stats = await asyncio.to_thread(parse_workbook_attendance, wb)
+        await _save_to_redis_cache(stats)
+        await _save_sqlite_snapshot(stats)
+        return stats
+    except Exception as exc:
+        log.error(f"Сбой загрузки Яндекс Документов ({exc}), попытка фолбэка на SQLite...")
+        fallback_stats = await _load_sqlite_snapshot()
+        if fallback_stats:
+            return fallback_stats
+        raise
 
 
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None:

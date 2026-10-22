@@ -8,9 +8,12 @@
   4. Формирование турнирной таблицы лидеров группы 1-КПД-3
 """
 
+import json
+from dataclasses import asdict
 from typing import Any
 
 from core.logger import get_logger
+from core.redis_cache import cache_get, cache_set
 from services.attendance_stats import fetch_all_time_attendance
 from services.attendance_topic_updater import extract_short_fio
 from services.gamification_models import RankDefinition, StudentProfile
@@ -22,6 +25,8 @@ from services.gamification_registry import (
 )
 
 log = get_logger("gamification")
+LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v1"
+LEADERBOARD_CACHE_TTL = 300
 
 
 def resolve_student_rank(pct: float, n_count: int, o_count: int) -> RankDefinition:
@@ -147,18 +152,60 @@ def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | 
     )
 
 
+async def _load_cached_leaderboard() -> list[StudentProfile] | None:
+    """Загружает предварительно рассчитанный рейтинг студентов из Redis."""
+    raw = await cache_get(LEADERBOARD_CACHE_KEY)
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        return [StudentProfile(**item) for item in data]
+    except Exception as exc:
+        log.warning(f"Ошибка десериализации кэша лидерборда: {exc}")
+        return None
+
+
+async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None:
+    """Сохраняет рассчитанный рейтинг студентов в Redis на 300 секунд."""
+    try:
+        data = [asdict(p) for p in profiles]
+        payload = json.dumps(data, ensure_ascii=False)
+        await cache_set(LEADERBOARD_CACHE_KEY, payload, ttl=LEADERBOARD_CACHE_TTL)
+    except Exception as exc:
+        log.warning(f"Ошибка сохранения кэша лидерборда: {exc}")
+
+
+async def get_group_leaderboard(
+    provided_stats: dict[str, Any] | None = None,
+    force_refresh: bool = False,
+) -> list[StudentProfile]:
+    """Формирует упорядоченный список студентов группы 1-КПД-3 по рангу и XP."""
+    if not provided_stats and not force_refresh:
+        cached = await _load_cached_leaderboard()
+        if cached:
+            return cached
+
+    stats = provided_stats or await fetch_all_time_attendance()
+    profiles = [build_student_profile(fio, data) for fio, data in stats.items()]
+    profiles.sort(key=lambda s: (0 if is_starosta(s.fio) else 1, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
+    if not provided_stats:
+        await _save_cached_leaderboard(profiles)
+    return profiles
+
+
 async def get_student_profile_by_fio(fio: str, extra: set[str] | None = None) -> StudentProfile | None:
     """Находит статистику студента по ФИО и возвращает профиль геймификации."""
+    board = await get_group_leaderboard()
+    clean = fio.strip().lower()
+    matched = next((p for p in board if clean in p.fio.lower() or p.fio.lower() in clean), None)
+    if matched and not extra:
+        return matched
+    if matched and extra:
+        raw = {"total": {"П": matched.present_count, "О": matched.late_count, "У": matched.excused_count, "Н": matched.unexcused_count}}
+        return build_student_profile(matched.fio, raw, extra)
     stats = await fetch_all_time_attendance()
-    matched_fio = next((k for k in stats if fio.lower() in k.lower()), None)
+    matched_fio = next((k for k in stats if clean in k.lower() or k.lower() in clean), None)
     if not matched_fio:
         return None
     return build_student_profile(matched_fio, stats[matched_fio], extra)
 
-
-async def get_group_leaderboard(provided_stats: dict[str, Any] | None = None) -> list[StudentProfile]:
-    """Формирует упорядоченный список студентов группы 1-КПД-3 по рангу и XP."""
-    stats = provided_stats or await fetch_all_time_attendance()
-    profiles = [build_student_profile(fio, data) for fio, data in stats.items()]
-    profiles.sort(key=lambda s: (0 if is_starosta(s.fio) else 1, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
-    return profiles

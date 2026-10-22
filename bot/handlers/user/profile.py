@@ -13,6 +13,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
+from bot.filters.auth import ClassmateAuthFilter
 from config import ALLOWED_USER_ID, MINIAPP_URL
 from core.logger import get_logger
 from services.classmates_auth import find_classmate_by_tg_id
@@ -21,6 +22,8 @@ from services.gamification_registry import ACHIEVEMENTS_MAP
 
 log = get_logger("user_profile")
 router = Router()
+router.message.filter(ClassmateAuthFilter())
+router.callback_query.filter(ClassmateAuthFilter())
 
 
 def _build_miniapp_keyboard() -> InlineKeyboardMarkup:
@@ -45,9 +48,20 @@ def _format_profile_achievements(ach_ids: list[str]) -> str:
     return "  •  ".join(top_icons)
 
 
+def _render_ascii_progress(current: int, total: int, length: int = 10) -> str:
+    """Формирует текстовый прогресс-бар вида [██████░░░░]."""
+    if total <= 0:
+        return f"[{'░' * length}] 0%"
+    pct = min(100.0, max(0.0, (current / total) * 100.0))
+    filled = min(length, round((current / total) * length))
+    bar = "█" * filled + "░" * (length - filled)
+    return f"[{bar}] {current}/{total} ({pct:.0f}%)"
+
+
 def _format_profile_message(p) -> str:
     """Формирует HTML-текст персональной карточки студента с рангом и XP."""
     achs_text = _format_profile_achievements(p.unlocked_achievements)
+    ach_bar = _render_ascii_progress(len(p.unlocked_achievements), 80, 10)
     clean_fio = html.escape(p.fio)
     return (
         "👤 <b>СТУДЕНЧЕСКИЙ ПРОФИЛЬ • 1-КПД-3</b>\n"
@@ -58,7 +72,8 @@ def _format_profile_message(p) -> str:
         f"📊 Посещаемость: <b>{p.attendance_pct}%</b> ({p.total_classes} пар)\n"
         f"✅ Присутствовал: <b>{p.present_count}</b>  •  ⏱ Опозданий: <b>{p.late_count}</b>\n"
         f"📋 По справке: <b>{p.excused_count}</b>  •  ⛔️ Прогулов: <b>{p.unexcused_count}</b>\n\n"
-        f"🎖 <b>ОТКРЫТЫЕ ДОСТИЖЕНИЯ ({len(p.unlocked_achievements)}/80):</b>\n"
+        f"🏆 <b>Коллекция ачивок:</b> <code>{ach_bar}</code>\n"
+        f"🎖 <b>ОТКРЫТЫЕ ({len(p.unlocked_achievements)}/80):</b>\n"
         f"{achs_text}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     )

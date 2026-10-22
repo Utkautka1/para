@@ -183,7 +183,7 @@ async def main() -> None:
     await _init_bot_subsystems()
 
     try:
-        await dp.start_polling(bot, drop_pending_updates=True)
+        await dp.start_polling(bot, drop_pending_updates=True, polling_timeout=20)
     except Exception as e:
         log.error(f"❌ Критическая ошибка при работе бота: {e}")
     finally:

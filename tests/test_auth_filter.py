@@ -58,3 +58,26 @@ async def test_auth_filter_handles_none_user():
     event = MagicMock(spec=Message)
     event.from_user = None
     assert await filter_obj(event) is False
+
+
+@pytest.mark.asyncio
+async def test_classmate_auth_filter_denies_stranger(stranger_user: User):
+    """Проверяет, что ClassmateAuthFilter блокирует постороннего пользователя."""
+    from bot.filters.auth import ClassmateAuthFilter
+
+    filter_obj = ClassmateAuthFilter()
+    msg = MagicMock(spec=Message)
+    msg.from_user = stranger_user
+    assert await filter_obj(msg) is False
+
+
+@pytest.mark.asyncio
+async def test_classmate_auth_filter_allows_admin(auth_user: User):
+    """Проверяет, что ClassmateAuthFilter разрешает доступ администратору группы."""
+    from bot.filters.auth import ClassmateAuthFilter
+
+    filter_obj = ClassmateAuthFilter()
+    msg = MagicMock(spec=Message)
+    msg.from_user = auth_user
+    assert await filter_obj(msg) is True
+

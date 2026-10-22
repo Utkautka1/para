@@ -3007,8 +3007,114 @@ sequenceDiagram
         JaegerProxy->>JaegerUI: HTTPX GET http://jaeger:16686/jaeger/
         JaegerUI-->>JaegerProxy: HTTP 200 (HTML + base href="/jaeger/")
         JaegerProxy-->>WebApp: Stream Response to <iframe>
-        Note over WebApp: Seamless Distributed Tracing View
+
+---
+
+## 17. High-Performance Reliability, PII Protection & Gamification Showcase
+
+### 17.1. Zero-Latency Event Loop & Resilient Long-Polling Architecture
+
+To eliminate socket drops and event loop blocking, the long-polling timeout is configured to 20 seconds, well within the 45-second client session timeout over SOCKS5 proxy. Expensive operations (WOPI Excel downloads and parsing) are cached in Redis (`gamification:leaderboard:v1`, TTL=300s) with seamless failover to local SQLite snapshots.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 Student / Group Member
+    participant Bot as 🤖 Telegram Bot (aiogram :start_polling)
+    participant Redis as ⚡ Redis 7 Cache
+    participant SQLite as 🗄️ SQLite WAL Snapshot
+    participant Worker as ⚙️ para-worker (Background)
+    participant Yandex as ☁️ Yandex Docs (WOPI)
+
+    Note over Bot: Polling loop: timeout=20s < client_timeout=45s (Zero drops)
+    User->>Bot: /leaderboard or /profile
+    activate Bot
+    Bot->>Redis: cache_get("gamification:leaderboard:v1")
+    activate Redis
+    alt Cache Hit (Sub-millisecond)
+        Redis-->>Bot: JSON payload with 26 calculated profiles
+    else Cache Miss
+        Redis-->>Bot: None
+        deactivate Redis
+        Bot->>SQLite: AttendanceRepository.get_latest_snapshots()
+        activate SQLite
+        SQLite-->>Bot: Return local daily attendance snapshot
+        deactivate SQLite
+        Note over Bot: Instant response with fallback snapshot (No blocking)
     end
+
+    Bot-->>User: Render Leaderboard / Profile Card & Progress Bar
+    deactivate Bot
+
+    Note over Worker: Background async loop maintains fresh cache
+    Worker->>Yandex: WOPI Download & Parse Workbook (1MB)
+    activate Worker
+    Yandex-->>Worker: Updated attendance workbook
+    Worker->>SQLite: AttendanceRepository.save_daily_snapshots()
+    Worker->>Redis: cache_set("att:stats:all_time", ...)
+    Worker->>Redis: cache_set("gamification:leaderboard:v1", ...)
+    deactivate Worker
 ```
+
+### 17.2. Strict PII Protection & Classmate Auth Boundary
+
+The bot and API implement a zero-trust policy for student personal identifiable information (full names and academic attendance records). Non-classmates are intercepted at the router level by `ClassmateAuthFilter` and served a generic access-denied screen with their Telegram ID.
+
+```mermaid
+flowchart TD
+    User([Telegram User Ingress]) --> FilterCheck{ClassmateAuthFilter\nis_authorized_user?}
+
+    FilterCheck -- "Yes (Classmate / Admin)" --> AllowAccess["Allow Execution\n- /leaderboard (Full podium & names)\n- /profile (Personal stats & XP)\n- /my_attendance (Card with records)\n- Mini App Open Button"]
+    FilterCheck -- "No (Stranger / Outside User)" --> DenyAccess["Intercept via auth_fallback\n- Output: ⛔ Доступ ограничен\n- Display: Telegram ID\n- ZERO student names or stats exposed"]
+
+    AllowAccess --> TelegramView([Render Group Schedule & Stats])
+    DenyAccess --> TelegramDeny([Send Access Restricted Notice])
+```
+
+### 17.3. Gamification Progress Bar & Visual Status Architecture
+
+The Mini App and Telegram bot provide clear visual feedback distinguishing unlocked achievements from locked/in-progress ones, complete with status filtering and interactive progress bars.
+
+```mermaid
+classDiagram
+    class StudentProfile {
+        +str fio
+        +str short_fio
+        +float attendance_pct
+        +int total_classes
+        +int present_count
+        +int late_count
+        +int excused_count
+        +int unexcused_count
+        +str rank_name
+        +str rank_icon
+        +int xp
+        +list~str~ unlocked_achievements
+    }
+
+    class AchievementVisualCard {
+        +str id
+        +str title
+        +str description
+        +str icon
+        +str rarity
+        +int xp_reward
+        +bool is_unlocked
+        +render_card()
+    }
+
+    class MiniAppShowcaseView {
+        +int total_achievements : 80
+        +int unlocked_count
+        +float progress_pct
+        +filter_status(st) : all | unlocked | locked
+        +filter_category(cat)
+        +update_progress_bar()
+    }
+
+    StudentProfile "1" --> "*" AchievementVisualCard : owns
+    MiniAppShowcaseView "1" --> "*" AchievementVisualCard : displays
+```
+
 
 
