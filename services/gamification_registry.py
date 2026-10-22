@@ -18,6 +18,16 @@ from services.gamification_models import (
 # ШКАЛА АКАДЕМИЧЕСКИХ РАНГОВ
 # ==============================================================================
 
+STAROSTA_RANK = RankDefinition(
+    name="Староста группы",
+    icon="👑",
+    description="Отец-основатель и Староста 1-КПД-3. Все 80 достижений разблокированы!",
+    min_pct=100.0,
+    max_pct=100.0,
+    min_n=0,
+    max_n=0,
+)
+
 RANKS: list[RankDefinition] = [
     RankDefinition(
         name="Любимчик старосты",

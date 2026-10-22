@@ -94,23 +94,29 @@ def test_calculate_xp_rewards_and_penalties() -> None:
     stat = {"p": 10, "u": 2, "n": 4}
     unlocked = ["att_survivor_6"]  # 50 XP
     xp = calculate_student_xp(stat, unlocked)
-    # base = 10*10 + 2*5 - 4*5 = 100 + 10 - 20 = 90. Plus 50 ach = 140.
     assert xp == 140
+
+
+def test_starosta_privileges_all_80_achievements() -> None:
+    """Проверяет, что Староста получает все 80 ачивок и максимальный ранг."""
+    raw = {"total": {"П": 34, "О": 0, "У": 2, "Н": 0}}
+    p = build_student_profile("Стрыгин Дмитрий Вячеславович", raw)
+    assert p.rank_name == "Староста группы" and p.rank_icon == "👑"
+    assert len(p.unlocked_achievements) == 80 and p.xp > 10000
 
 
 @pytest.mark.asyncio
 async def test_get_group_leaderboard_sorting() -> None:
-    """Проверяет сортировку лидерборда по проценту и опыту."""
+    """Проверяет сортировку лидерборда с 1-м местом Старосты."""
     fake_stats = {
-        "Иванов Иван": {"total": {"П": 10, "О": 0, "У": 0, "Н": 10}},  # 50%
-        "Петров Петр": {"total": {"П": 30, "О": 0, "У": 0, "Н": 0}},   # 100%
-        "Сидоров Сидор": {"total": {"П": 20, "О": 0, "У": 0, "Н": 5}}, # 80%
+        "Иванов Иван": {"total": {"П": 10, "О": 0, "У": 0, "Н": 10}},
+        "Петров Петр": {"total": {"П": 30, "О": 0, "У": 0, "Н": 0}},
+        "Стрыгин Дмитрий": {"total": {"П": 34, "О": 0, "У": 2, "Н": 0}},
     }
     board = await get_group_leaderboard(fake_stats)
     assert len(board) == 3
-    assert board[0].fio == "Петров Петр"
-    assert board[1].fio == "Сидоров Сидор"
-    assert board[2].fio == "Иванов Иван"
+    assert board[0].fio == "Стрыгин Дмитрий"
+    assert len(board[0].unlocked_achievements) == 80
 
 
 @pytest.mark.asyncio

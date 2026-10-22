@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Strict Role-Based UI Isolation in Mini App**: Developer tabs (`⚡ Swagger UI` and `🔍 Jaeger Traces`) are permanently hidden by default (`display: none !important;`) and guarded via client-side checks; they appear strictly for administrators and whitelisted testers verified through HMAC-SHA256 Telegram `initData` and Redis whitelist.
-- **Expanded Test Suite (666 Passing Tests)**: Added comprehensive unit tests in `tests/test_gamification.py`, achieving 100% passing across all 666 tests (+37 new tests).
+- **Expanded Test Suite (667 Passing Tests)**: Added comprehensive unit tests in `tests/test_gamification.py`, achieving 100% passing across all 667 tests (+38 new tests).
 - **Updated Architectural Documentation**: Updated `docs/UML.md` with `GamificationRouter` and service class relationships.
 
 ---

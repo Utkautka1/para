@@ -19,7 +19,7 @@ This release also establishes **strict UI security isolation**: regular classmat
 | **Telegram Bot Commands** | Basic schedule & attendance | **Added `/profile` and `/leaderboard`** | Student profile status card + podium leaderboard with WebApp button |
 | **Alert Routing Topology** | General chat alerts | **Topic-based Forum Routing (Debug 3, Warning 5, Fatal 7)** | Clean separation of system errors by severity in Supergroup forum |
 | **API Endpoints** | 11 Routers | **12 Routers: `/gamification/*` (4 public endpoints)** | Fast JSON endpoints for group pulse, leaderboard, and badge lists |
-| **Test Suite Coverage** | 629 passing tests | **666 passing tests (+37 new tests)** | 100% test pass rate across all services |
+| **Test Suite Coverage** | 629 passing tests | **667 passing tests (+38 new tests)** | 100% test pass rate across all services |
 
 ---
 
@@ -52,7 +52,7 @@ This release also establishes **strict UI security isolation**: regular classmat
 ```bash
 # Full test suite execution
 PYTHONPATH=. pytest
-# 666 passed in 6.05s (100% success rate)
+# 667 passed in 6.97s (100% success rate)
 
 # Linter and type checks
 ruff check . && mypy api services bot

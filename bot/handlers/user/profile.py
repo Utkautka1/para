@@ -13,7 +13,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
-from config import MINIAPP_URL
+from config import ALLOWED_USER_ID, MINIAPP_URL
 from core.logger import get_logger
 from services.classmates_auth import find_classmate_by_tg_id
 from services.gamification import get_group_leaderboard, get_student_profile_by_fio
@@ -71,7 +71,9 @@ async def handle_profile_command(message: Message) -> None:
     if not user:
         return
     classmate = find_classmate_by_tg_id(user.id)
-    raw_fio = classmate.get("name") if classmate else None
+    raw_fio = (classmate.get("full_name") or classmate.get("name")) if classmate else None
+    if user.id == ALLOWED_USER_ID:
+        raw_fio = "Стрыгин Дмитрий"
     fio: str = str(raw_fio) if raw_fio else (user.full_name or "Студент")
     profile = await get_student_profile_by_fio(fio)
     if not profile:

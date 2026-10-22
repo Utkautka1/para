@@ -14,7 +14,12 @@ from core.logger import get_logger
 from services.attendance_stats import fetch_all_time_attendance
 from services.attendance_topic_updater import extract_short_fio
 from services.gamification_models import RankDefinition, StudentProfile
-from services.gamification_registry import ACHIEVEMENTS_MAP, RANKS
+from services.gamification_registry import (
+    ACHIEVEMENTS_MAP,
+    RANKS,
+    STAROSTA_RANK,
+    get_all_achievements,
+)
 
 log = get_logger("gamification")
 
@@ -111,11 +116,18 @@ def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, An
     return {"fio": fio, "p": p, "o": o, "u": u, "n": n, "total": total, "pct": pct}
 
 
+def is_starosta(fio: str) -> bool:
+    """Проверяет, является ли студент Старостой группы (Дмитрий Стрыгин)."""
+    return "стрыгин" in fio.lower()
+
+
 def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | None = None) -> StudentProfile:
     """Создает объект профиля студента со званием, ачивками и опытом."""
     m = _extract_student_metrics(fio, raw_data)
-    rank = resolve_student_rank(m["pct"], m["n"], m["o"])
-    achs = _evaluate_all_rules(m, extra)
+    starosta = is_starosta(fio)
+    rank = STAROSTA_RANK if starosta else resolve_student_rank(m["pct"], m["n"], m["o"])
+    all_achs = [a.id for a in get_all_achievements()]
+    achs = all_achs if starosta else _evaluate_all_rules(m, extra)
     xp = calculate_student_xp(m, achs)
 
     return StudentProfile(
@@ -145,12 +157,8 @@ async def get_student_profile_by_fio(fio: str, extra: set[str] | None = None) ->
 
 
 async def get_group_leaderboard(provided_stats: dict[str, Any] | None = None) -> list[StudentProfile]:
-    """
-    Формирует упорядоченный список студентов группы 1-КПД-3 по рангу и XP.
-
-    Возвращает отсортированный по убыванию достижений лидерборд.
-    """
+    """Формирует упорядоченный список студентов группы 1-КПД-3 по рангу и XP."""
     stats = provided_stats or await fetch_all_time_attendance()
     profiles = [build_student_profile(fio, data) for fio, data in stats.items()]
-    profiles.sort(key=lambda s: (-s.attendance_pct, -s.xp, -s.present_count, s.fio))
+    profiles.sort(key=lambda s: (0 if is_starosta(s.fio) else 1, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
     return profiles

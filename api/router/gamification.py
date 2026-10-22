@@ -16,6 +16,7 @@ from api.schemas.gamification import (
     StudentProfileSchema,
 )
 from core.logger import get_logger
+from services.classmates_auth import find_classmate_by_tg_id
 from services.gamification import get_group_leaderboard, get_student_profile_by_fio
 from services.gamification_registry import RANKS, get_all_achievements
 
@@ -31,13 +32,20 @@ def _calculate_group_pulse(profiles: list) -> float:
     return round(sum(p.attendance_pct for p in profiles) / len(profiles), 1)
 
 
+def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str:
+    """Определяет ФИО студента по переданной строке или Telegram ID."""
+    if fio:
+        return fio
+    if tg_id:
+        classmate = find_classmate_by_tg_id(tg_id)
+        if classmate and classmate.get("full_name"):
+            return str(classmate["full_name"])
+    return "Стрыгин Дмитрий"
+
+
 @router.get("/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard_endpoint() -> LeaderboardResponse:
-    """
-    Возвращает актуальный рейтинг всех 26 студентов группы 1-КПД-3.
-
-    Сортирует участников по проценту посещаемости, очкам опыта и активности.
-    """
+    """Возвращает актуальный рейтинг всех 26 студентов группы 1-КПД-3."""
     profiles = await get_group_leaderboard()
     pulse = _calculate_group_pulse(profiles)
     return LeaderboardResponse(
@@ -49,18 +57,16 @@ async def get_leaderboard_endpoint() -> LeaderboardResponse:
 
 @router.get("/profile", response_model=StudentProfileSchema)
 async def get_student_profile_endpoint(
-    fio: str = Query(..., min_length=2, description="Фамилия или полное ФИО студента")
+    fio: str | None = Query(default=None, description="Фамилия или ФИО студента"),
+    tg_id: int | None = Query(default=None, description="Telegram ID студента"),
 ) -> StudentProfileSchema:
-    """
-    Возвращает персональный профиль студента с рангом, опытом и списком ачивок.
-
-    Выполняет нечеткий поиск по списку группы 1-КПД-3.
-    """
-    profile = await get_student_profile_by_fio(fio)
+    """Возвращает персональный профиль студента по ФИО или Telegram ID."""
+    target_fio = _resolve_target_fio(fio, tg_id)
+    profile = await get_student_profile_by_fio(target_fio)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Студент '{fio}' не найден в реестре группы 1-КПД-3",
+            detail=f"Студент '{target_fio}' не найден в реестре группы 1-КПД-3",
         )
     return StudentProfileSchema.model_validate(profile)
 

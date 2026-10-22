@@ -429,7 +429,7 @@
       <div class="profile-xp-box">
         <div style="display:flex; justify-content:space-between; font-weight:600;">
           <span id="prof-xp-val">1,450 XP</span>
-          <span style="color:#a5b4fc;">Уровень 5</span>
+          <span style="color:#a5b4fc;" id="prof-lvl">Уровень 5</span>
         </div>
         <div class="xp-bar-bg"><div class="xp-bar-fill"></div></div>
       </div>
@@ -485,6 +485,24 @@
     let isTester = false;
     let jaegerLoaded = false;
     let swaggerLoaded = false;
+    let myProfile = null;
+
+    async function loadMyProfile() {
+      try {
+        let myTgId = null;
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+          myTgId = tg.initDataUnsafe.user.id;
+        }
+        const url = myTgId ? `/gamification/profile?tg_id=${myTgId}` : `/gamification/profile?fio=Стрыгин`;
+        const resp = await fetch(url);
+        if (resp.ok) {
+          myProfile = await resp.json();
+          renderProfile(myProfile);
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки личного профиля:', e);
+      }
+    }
 
     async function loadLeaderboard() {
       try {
@@ -494,7 +512,7 @@
         document.getElementById('group-pulse-lbl').innerText = `Пульс: ${data.group_pulse}%`;
         renderPodium(data.leaderboard.slice(0, 3));
         renderStudentsList(data.leaderboard);
-        if (data.leaderboard.length > 0) renderProfile(data.leaderboard[0]);
+        loadMyProfile();
       } catch (e) {
         console.error('Ошибка загрузки лидерборда:', e);
       }
@@ -593,17 +611,29 @@
     function renderProfile(student) {
       document.getElementById('prof-fio').innerText = student.fio;
       document.getElementById('prof-rank').innerText = `${student.rank_icon} ${student.rank_name}`;
-      document.getElementById('prof-xp-val').innerText = `${student.xp} XP`;
+      document.getElementById('prof-xp-val').innerText = `${student.xp.toLocaleString()} XP`;
       document.getElementById('prof-pct').innerText = `${student.attendance_pct}%`;
       document.getElementById('prof-p').innerText = student.present_count;
       document.getElementById('prof-o').innerText = student.late_count;
       document.getElementById('prof-n').innerText = student.unexcused_count;
+
+      const level = Math.max(1, Math.floor(student.xp / 400) + 1);
+      const lvlEl = document.getElementById('prof-lvl');
+      if (lvlEl) lvlEl.innerText = `Уровень ${level}`;
+      const fillBar = document.querySelector('.xp-bar-fill');
+      if (fillBar) {
+        const fillPct = Math.min(100, Math.max(15, Math.round(((student.xp % 400) / 400) * 100)));
+        fillBar.style.width = `${fillPct}%`;
+      }
     }
 
     function switchTab(tab) {
       if ((tab === 'swagger' || tab === 'jaeger') && !isTester) {
         console.warn('Доступ запрещен: панель доступна только администратору и тестерам.');
         return;
+      }
+      if (tab === 'profile' && myProfile) {
+        renderProfile(myProfile);
       }
       currentTab = tab;
       const tabs = ['leaderboard', 'achievements', 'profile', 'swagger', 'jaeger'];
