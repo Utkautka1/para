@@ -46,6 +46,26 @@ async def _notify_message_error(msg) -> None:
         log.debug(f"Не удалось отправить уведомление об ошибке: {e}")
 
 
+async def _dispatch_error_alert(exc: Exception) -> None:
+    """Асинхронно отправляет алерт о сбое хэндлера в Fatal топик."""
+    try:
+        import html
+
+        from db.sqlite.models import IncidentSeverity
+        from services.alerting import send_admin_alert
+
+        err_type = type(exc).__name__
+        err_msg = str(exc) or err_type
+        await send_admin_alert(
+            incident_type="UNHANDLED_EXCEPTION",
+            severity=IncidentSeverity.CRITICAL,
+            title=f"Необработанная ошибка ({err_type})",
+            description=f"<code>{html.escape(err_msg[:500])}</code>",
+        )
+    except Exception as e:
+        log.debug(f"Не удалось отправить алерт об ошибке: {e}")
+
+
 @router.error()
 async def global_error_handler(event: ErrorEvent) -> bool:
     """
@@ -56,8 +76,8 @@ async def global_error_handler(event: ErrorEvent) -> bool:
 
     Возвращает True для подтверждения успешной обработки события сбоя.
     """
-
     log.error(f"❌ Необработанная ошибка в хэндлере: {event.exception}")
+    await _dispatch_error_alert(event.exception)
     update = event.update
 
     if update.callback_query:

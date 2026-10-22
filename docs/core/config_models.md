@@ -21,8 +21,8 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L33–L35 | `set[int]` | Executes core domain logic for `allowed_attendance_user... |
-| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L54–L56 | `ZoneInfo` | Executes core domain logic for `timezone`. |
+| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L37–L39 | `set[int]` | Executes core domain logic for `allowed_attendance_user... |
+| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L58–L60 | `ZoneInfo` | Executes core domain logic for `timezone`. |
 
 ---
 
@@ -37,7 +37,7 @@ Encapsulates domain entities and data transfer logic for `TelegramConfig`.
 def allowed_attendance_user_ids(self) -> set[int]
 ```
 
-- **Source Reference**: [`core/config_models.py#L33-L35`](../../core/config_models.py#L33-L35)
+- **Source Reference**: [`core/config_models.py#L37-L39`](../../core/config_models.py#L37-L39)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[int]`
 
@@ -72,7 +72,7 @@ Encapsulates domain entities and data transfer logic for `ScheduleConfig`.
 def timezone(self) -> ZoneInfo
 ```
 
-- **Source Reference**: [`core/config_models.py#L54-L56`](../../core/config_models.py#L54-L56)
+- **Source Reference**: [`core/config_models.py#L58-L60`](../../core/config_models.py#L58-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ZoneInfo`
 

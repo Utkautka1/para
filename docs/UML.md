@@ -332,6 +332,10 @@ classDiagram
         +int deputy_user_id
         +str group_id
         +int topic_chat_id
+        +int debug_chat_id
+        +int debug_thread_id
+        +int warning_thread_id
+        +int fatal_thread_id
         +allowed_attendance_user_ids() set
     }
 
@@ -2773,13 +2777,14 @@ classDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Trig as Incident Trigger (CB / Parser / Keepalive)
+    participant Trig as Incident Trigger (CB / Parser / Keepalive / ErrorHandler)
     participant Svc as services/alerting (send_admin_alert)
     participant Red as core/redis (Distributed Cooldown)
     participant Rep as db/sqlite/repositories (IncidentRepository)
     participant DB as SQLite DB (system_incidents)
     participant Bot as core/bot (Bot.send_message)
-    participant Adm as Admin Telegram (ALLOWED_USER_ID)
+    participant Dbg as Debug Forum (-1004381975171)
+    participant Adm as Admin Telegram (ALLOWED_USER_ID fallback)
 
     Trig->>Svc: send_admin_alert(incident_type, severity, title, desc, trace_id, cooldown_seconds)
     activate Svc
@@ -2793,9 +2798,14 @@ sequenceDiagram
         Svc-->>Trig: Suppress Telegram Alert (Deduplicated across containers)
     else Cooldown Expired / First Incident
         Red-->>Svc: True (Key Set - Cooldown Acquired)
-        Svc->>Bot: send_message(chat_id=ALLOWED_USER_ID, text=HTML_ALERT)
-        Bot->>Adm: 🚨 Alert: [WARNING] TIMETABLE_API_DOWN (Throttled 1h)
-        Adm-->>Bot: Delivered
+        Svc->>Svc: _resolve_alert_destination(severity)
+        alt DEBUG_CHAT_ID Configured
+            Svc->>Bot: send_message(chat_id=DEBUG_CHAT_ID, thread_id=3/5/7, text=HTML)
+            Bot->>Dbg: Topic [Fatal(7) / Warning(5) / Debug(3)] Alert Delivered
+        else No Debug Group
+            Svc->>Bot: send_message(chat_id=ALLOWED_USER_ID, text=HTML_ALERT)
+            Bot->>Adm: Delivered directly to Admin PM
+        end
         Bot-->>Svc: Success
         Svc-->>Trig: Alert Dispatched
     end

@@ -8,7 +8,13 @@
 import time
 from enum import StrEnum
 
-from config import ALLOWED_USER_ID
+from config import (
+    ALLOWED_USER_ID,
+    DEBUG_CHAT_ID,
+    DEBUG_THREAD_ID,
+    FATAL_THREAD_ID,
+    WARNING_THREAD_ID,
+)
 from core.bot import bot
 from core.logger import get_logger
 from db.sqlite.models import IncidentSeverity
@@ -89,15 +95,25 @@ def _format_alert_text(
     )
 
 
-async def send_admin_alert(
+def _resolve_alert_destination(severity: str) -> tuple[int, int | None]:
+    """Определяет целевой chat_id и message_thread_id по уровню серьезности алерта."""
+    if DEBUG_CHAT_ID:
+        if severity == IncidentSeverity.CRITICAL:
+            return DEBUG_CHAT_ID, FATAL_THREAD_ID
+        if severity == IncidentSeverity.WARNING:
+            return DEBUG_CHAT_ID, WARNING_THREAD_ID
+        return DEBUG_CHAT_ID, DEBUG_THREAD_ID
+    return ALLOWED_USER_ID, None
+
+
+async def _record_incident_safe(
     incident_type: str,
+    severity: str,
     title: str,
     description: str,
-    severity: str = IncidentSeverity.WARNING,
-    trace_id: str | None = None,
-    cooldown_seconds: float | None = None,
-) -> bool:
-    """Записывает инцидент в SQLite и отправляет Telegram-алерт администратору."""
+    trace_id: str | None,
+) -> None:
+    """Безопасно сохраняет событие инцидента в базу данных SQLite."""
     try:
         await IncidentRepository.record_incident(
             incident_type=incident_type,
@@ -109,16 +125,44 @@ async def send_admin_alert(
     except Exception as exc:
         log.error(f"Не удалось зафиксировать инцидент в SQLite: {exc}")
 
+
+async def _deliver_alert_message(
+    incident_type: str,
+    severity: str,
+    title: str,
+    description: str,
+    trace_id: str | None,
+) -> bool:
+    """Форматирует и отправляет сообщение алерта в Telegram."""
+    try:
+        text = _format_alert_text(incident_type, severity, title, description, trace_id)
+        chat_id, thread_id = _resolve_alert_destination(severity)
+        await bot.send_message(
+            chat_id=chat_id,
+            message_thread_id=thread_id,
+            text=text,
+            parse_mode="HTML",
+        )
+        log.info(f"✅ Алерт {incident_type} доставлен в {chat_id} (topic={thread_id})")
+        return True
+    except Exception as exc:
+        log.error(f"❌ Ошибка отправки алерта: {exc}")
+        return False
+
+
+async def send_admin_alert(
+    incident_type: str,
+    title: str,
+    description: str,
+    severity: str = IncidentSeverity.WARNING,
+    trace_id: str | None = None,
+    cooldown_seconds: float | None = None,
+) -> bool:
+    """Записывает инцидент в SQLite и отправляет Telegram-алерт администратору."""
+    await _record_incident_safe(incident_type, severity, title, description, trace_id)
     cooldown = cooldown_seconds or DEFAULT_ALERT_COOLDOWNS.get(incident_type, 1800.0)
     if await _is_alert_throttled(incident_type, cooldown):
         log.debug(f"Алерт {incident_type} пропущен из-за кулдауна троттлинга")
         return False
+    return await _deliver_alert_message(incident_type, severity, title, description, trace_id)
 
-    try:
-        text = _format_alert_text(incident_type, severity, title, description, trace_id)
-        await bot.send_message(chat_id=ALLOWED_USER_ID, text=text, parse_mode="HTML")
-        log.info(f"✅ Алерт {incident_type} успешно доставлен администратору {ALLOWED_USER_ID}")
-        return True
-    except Exception as exc:
-        log.error(f"❌ Ошибка отправки алерта администратору: {exc}")
-        return False

@@ -12,6 +12,7 @@ from services.alerting import (
     IncidentType,
     _format_alert_text,
     _last_alert_timestamps,
+    _resolve_alert_destination,
     _should_throttle_alert,
     send_admin_alert,
 )
@@ -29,6 +30,24 @@ def test_format_alert_text() -> None:
     assert "🚨" in text
     assert "[SYSTEM ALERT] CIRCUIT_BREAKER_OPEN" in text
     assert "tr-404" in text
+
+
+def test_resolve_alert_destination() -> None:
+    """Проверяет маршрутизацию алертов по топикам форума в зависимости от severity."""
+    with (
+        patch("services.alerting.DEBUG_CHAT_ID", -1004381975171),
+        patch("services.alerting.FATAL_THREAD_ID", 7),
+        patch("services.alerting.WARNING_THREAD_ID", 5),
+        patch("services.alerting.DEBUG_THREAD_ID", 3),
+    ):
+        assert _resolve_alert_destination(IncidentSeverity.CRITICAL) == (-1004381975171, 7)
+        assert _resolve_alert_destination(IncidentSeverity.WARNING) == (-1004381975171, 5)
+        assert _resolve_alert_destination(IncidentSeverity.INFO) == (-1004381975171, 3)
+
+    with patch("services.alerting.DEBUG_CHAT_ID", None):
+        chat_id, thread_id = _resolve_alert_destination(IncidentSeverity.CRITICAL)
+        assert thread_id is None
+        assert chat_id is not None
 
 
 def test_alert_throttling_window() -> None:

@@ -147,6 +147,10 @@ telegram_config = TelegramConfig(
     attendance_topic_thread_id=get_env_int("ATTENDANCE_TOPIC_THREAD_ID"),
     hw_input_topic_thread_id=get_env_int("HW_INPUT_TOPIC_THREAD_ID"),
     hw_output_topic_thread_id=get_env_int("HW_OUTPUT_TOPIC_THREAD_ID"),
+    debug_chat_id=get_env_int("DEBUG_CHAT_ID", 0) or None,
+    debug_thread_id=get_env_int("DEBUG_THREAD_ID", 0) or None,
+    warning_thread_id=get_env_int("WARNING_THREAD_ID", 0) or None,
+    fatal_thread_id=get_env_int("FATAL_THREAD_ID", 0) or None,
 )
 
 BOT_TOKEN: str = telegram_config.bot_token
@@ -165,6 +169,11 @@ IMPORTANT_TOPIC_THREAD_ID: int = telegram_config.important_topic_thread_id
 ATTENDANCE_TOPIC_THREAD_ID: int = telegram_config.attendance_topic_thread_id
 HW_INPUT_TOPIC_THREAD_ID: int = telegram_config.hw_input_topic_thread_id
 HW_OUTPUT_TOPIC_THREAD_ID: int = telegram_config.hw_output_topic_thread_id
+
+DEBUG_CHAT_ID: int | None = telegram_config.debug_chat_id
+DEBUG_THREAD_ID: int | None = telegram_config.debug_thread_id
+WARNING_THREAD_ID: int | None = telegram_config.warning_thread_id
+FATAL_THREAD_ID: int | None = telegram_config.fatal_thread_id
 
 
 # ==============================================================================

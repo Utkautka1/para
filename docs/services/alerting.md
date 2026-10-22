@@ -21,11 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L40–L53 | `bool | None` | Executes core domain logic for `_check_redis_throttle`. |
-| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L56–L66 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
-| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L69–L74 | `bool` | Executes core domain logic for `_is_alert_throttled`. |
-| [`_format_alert_text`](#_format_alert_text) | Function | L77–L89 | `str` | Executes core domain logic for `_format_alert_text`. |
-| [`send_admin_alert`](#send_admin_alert) | Function | L92–L124 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L46–L59 | `bool | None` | Executes core domain logic for `_check_redis_throttle`. |
+| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L62–L72 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
+| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L75–L80 | `bool` | Executes core domain logic for `_is_alert_throttled`. |
+| [`_format_alert_text`](#_format_alert_text) | Function | L83–L95 | `str` | Executes core domain logic for `_format_alert_text`. |
+| [`_resolve_alert_destination`](#_resolve_alert_destination) | Function | L98–L106 | `tuple[int, int | None]` | Executes core domain logic for `_resolve_alert_destinat... |
+| [`_record_incident_safe`](#_record_incident_safe) | Function | L109–L126 | `None` | Executes core domain logic for `_record_incident_safe`. |
+| [`_deliver_alert_message`](#_deliver_alert_message) | Function | L129–L150 | `bool` | Executes core domain logic for `_deliver_alert_message`... |
+| [`send_admin_alert`](#send_admin_alert) | Function | L153–L167 | `bool` | Dispatches notification message via Telegram API for `s... |
 
 ---
 
@@ -40,7 +43,7 @@ Encapsulates domain entities and data transfer logic for `IncidentType`.
 async def _check_redis_throttle(incident_type: str, cooldown_seconds: float) -> bool | None
 ```
 
-- **Source Reference**: [`services/alerting.py#L40-L53`](../../services/alerting.py#L40-L53)
+- **Source Reference**: [`services/alerting.py#L46-L59`](../../services/alerting.py#L46-L59)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool | None`
 
@@ -75,7 +78,7 @@ result = await _check_redis_throttle(incident_type=..., cooldown_seconds=...)
 def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L56-L66`](../../services/alerting.py#L56-L66)
+- **Source Reference**: [`services/alerting.py#L62-L72`](../../services/alerting.py#L62-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -109,7 +112,7 @@ result = _should_throttle_alert(incident_type=..., cooldown_seconds=...)
 async def _is_alert_throttled(incident_type: str, cooldown_seconds: float) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L69-L74`](../../services/alerting.py#L69-L74)
+- **Source Reference**: [`services/alerting.py#L75-L80`](../../services/alerting.py#L75-L80)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -143,7 +146,7 @@ result = await _is_alert_throttled(incident_type=..., cooldown_seconds=...)
 def _format_alert_text( incident_type: str, severity: str, title: str, description: str, trace_id: str | None = None ) -> str
 ```
 
-- **Source Reference**: [`services/alerting.py#L77-L89`](../../services/alerting.py#L77-L89)
+- **Source Reference**: [`services/alerting.py#L83-L95`](../../services/alerting.py#L83-L95)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -175,12 +178,119 @@ result = _format_alert_text(incident_type=..., severity=..., title=...)
 
 ---
 
+### `_resolve_alert_destination`
+```python
+def _resolve_alert_destination(severity: str) -> tuple[int, int | None]
+```
+
+- **Source Reference**: [`services/alerting.py#L98-L106`](../../services/alerting.py#L98-L106)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[int, int | None]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_resolve_alert_destination`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `severity` | `str` | Yes | Parameter `severity` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.alerting import _resolve_alert_destination
+
+# Execute call
+result = _resolve_alert_destination(severity=...)
+```
+
+---
+
+### `_record_incident_safe`
+```python
+async def _record_incident_safe( incident_type: str, severity: str, title: str, description: str, trace_id: str | None, ) -> None
+```
+
+- **Source Reference**: [`services/alerting.py#L109-L126`](../../services/alerting.py#L109-L126)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_record_incident_safe`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `incident_type` | `str` | Yes | Parameter `incident_type` of type `str`. |
+| `severity` | `str` | Yes | Parameter `severity` of type `str`. |
+| `title` | `str` | Yes | Parameter `title` of type `str`. |
+| `description` | `str` | Yes | Parameter `description` of type `str`. |
+| `trace_id` | `str | None` | Yes | Parameter `trace_id` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.alerting import _record_incident_safe
+
+# Execute call
+result = await _record_incident_safe(incident_type=..., severity=..., title=...)
+```
+
+---
+
+### `_deliver_alert_message`
+```python
+async def _deliver_alert_message( incident_type: str, severity: str, title: str, description: str, trace_id: str | None, ) -> bool
+```
+
+- **Source Reference**: [`services/alerting.py#L129-L150`](../../services/alerting.py#L129-L150)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_deliver_alert_message`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `incident_type` | `str` | Yes | Parameter `incident_type` of type `str`. |
+| `severity` | `str` | Yes | Parameter `severity` of type `str`. |
+| `title` | `str` | Yes | Parameter `title` of type `str`. |
+| `description` | `str` | Yes | Parameter `description` of type `str`. |
+| `trace_id` | `str | None` | Yes | Parameter `trace_id` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.alerting import _deliver_alert_message
+
+# Execute call
+result = await _deliver_alert_message(incident_type=..., severity=..., title=...)
+```
+
+---
+
 ### `send_admin_alert`
 ```python
 async def send_admin_alert( incident_type: str, title: str, description: str, severity: str = IncidentSeverity.WARNING, trace_id: str | None = None, cooldown_seconds: float | None = None, ) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L92-L124`](../../services/alerting.py#L92-L124)
+- **Source Reference**: [`services/alerting.py#L153-L167`](../../services/alerting.py#L153-L167)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -201,7 +311,7 @@ Dispatches notification message via Telegram API for `send_admin_alert`.
 - Emits structured telemetry events to system logging subsystem.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python

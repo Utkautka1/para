@@ -28,6 +28,10 @@ class TelegramConfig:
     attendance_topic_thread_id: int
     hw_input_topic_thread_id: int
     hw_output_topic_thread_id: int
+    debug_chat_id: int | None = None
+    debug_thread_id: int | None = None
+    warning_thread_id: int | None = None
+    fatal_thread_id: int | None = None
 
     @property
     def allowed_attendance_user_ids(self) -> set[int]:
