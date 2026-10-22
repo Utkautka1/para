@@ -7810,10 +7810,636 @@
           }
         }
       }
+    },
+    "/gamification/leaderboard": {
+      "get": {
+        "tags": [
+          "Gamification & Leaderboard"
+        ],
+        "summary": "Get Leaderboard Endpoint",
+        "description": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u0430\u043a\u0442\u0443\u0430\u043b\u044c\u043d\u044b\u0439 \u0440\u0435\u0439\u0442\u0438\u043d\u0433 \u0432\u0441\u0435\u0445 26 \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u043e\u0432 \u0433\u0440\u0443\u043f\u043f\u044b 1-\u041a\u041f\u0414-3.\n\n\u0421\u043e\u0440\u0442\u0438\u0440\u0443\u0435\u0442 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u043f\u043e \u043f\u0440\u043e\u0446\u0435\u043d\u0442\u0443 \u043f\u043e\u0441\u0435\u0449\u0430\u0435\u043c\u043e\u0441\u0442\u0438, \u043e\u0447\u043a\u0430\u043c \u043e\u043f\u044b\u0442\u0430 \u0438 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u0438.",
+        "operationId": "get_leaderboard_endpoint_gamification_leaderboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaderboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/gamification/profile": {
+      "get": {
+        "tags": [
+          "Gamification & Leaderboard"
+        ],
+        "summary": "Get Student Profile Endpoint",
+        "description": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u043f\u0440\u043e\u0444\u0438\u043b\u044c \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u0430 \u0441 \u0440\u0430\u043d\u0433\u043e\u043c, \u043e\u043f\u044b\u0442\u043e\u043c \u0438 \u0441\u043f\u0438\u0441\u043a\u043e\u043c \u0430\u0447\u0438\u0432\u043e\u043a.\n\n\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442 \u043d\u0435\u0447\u0435\u0442\u043a\u0438\u0439 \u043f\u043e\u0438\u0441\u043a \u043f\u043e \u0441\u043f\u0438\u0441\u043a\u0443 \u0433\u0440\u0443\u043f\u043f\u044b 1-\u041a\u041f\u0414-3.",
+        "operationId": "get_student_profile_endpoint_gamification_profile_get",
+        "parameters": [
+          {
+            "name": "fio",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "description": "\u0424\u0430\u043c\u0438\u043b\u0438\u044f \u0438\u043b\u0438 \u043f\u043e\u043b\u043d\u043e\u0435 \u0424\u0418\u041e \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u0430",
+              "title": "Fio"
+            },
+            "description": "\u0424\u0430\u043c\u0438\u043b\u0438\u044f \u0438\u043b\u0438 \u043f\u043e\u043b\u043d\u043e\u0435 \u0424\u0418\u041e \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u0430"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfileSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/gamification/achievements": {
+      "get": {
+        "tags": [
+          "Gamification & Leaderboard"
+        ],
+        "summary": "Get Achievements Catalog Endpoint",
+        "description": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043f\u043e\u043b\u043d\u044b\u0439 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u0438\u0437 80 \u0434\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u0439 \u0441 \u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f\u043c\u0438, \u0440\u0435\u0434\u043a\u043e\u0441\u0442\u044c\u044e \u0438 XP.\n\n\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0440\u0435\u043d\u0434\u0435\u0440\u0438\u043d\u0433\u0430 \u0432\u0438\u0442\u0440\u0438\u043d\u044b \u0431\u0435\u0439\u0434\u0436\u0435\u0439 \u0432 Telegram Mini App.",
+        "operationId": "get_achievements_catalog_endpoint_gamification_achievements_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AchievementsCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/gamification/ranks": {
+      "get": {
+        "tags": [
+          "Gamification & Leaderboard"
+        ],
+        "summary": "Get Ranks Catalog Endpoint",
+        "description": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u0432\u0441\u0435\u0445 \u0430\u043a\u0430\u0434\u0435\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0445 \u0440\u0430\u043d\u0433\u043e\u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u044b.",
+        "operationId": "get_ranks_catalog_endpoint_gamification_ranks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Ranks Catalog Endpoint Gamification Ranks Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441 (Bad Request)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "\u041d\u0435\u0430\u0432\u0442\u043e\u0440\u0438\u0437\u043e\u0432\u0430\u043d: \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442/\u043d\u0435\u0432\u0435\u0440\u0435\u043d API-\u043a\u043b\u044e\u0447 \u0438\u043b\u0438 \u0441\u0435\u0441\u0441\u0438\u044f",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "\u0414\u043e\u0441\u0442\u0443\u043f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d: \u0442\u0440\u0435\u0431\u0443\u044e\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u0430 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0430\u0442\u043e\u0440\u0430 \u0438\u043b\u0438 \u0441\u0442\u0430\u0440\u043e\u0441\u0442\u044b",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "\u0417\u0430\u043f\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u043c\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d (Not Found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "\u041c\u0435\u0442\u043e\u0434 HTTP \u043d\u0435 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044f (Method Not Allowed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "\u041e\u0448\u0438\u0431\u043a\u0430 \u0432\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u0438 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0437\u0430\u043f\u0440\u043e\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "\u041f\u0440\u0435\u0432\u044b\u0448\u0435\u043d \u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432 (Too Many Requests / Rate Limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 (Internal Server Error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "\u041e\u0448\u0438\u0431\u043e\u0447\u043d\u044b\u0439 \u0448\u043b\u044e\u0437: \u0432\u043d\u0435\u0448\u043d\u0438\u0439 \u0441\u0435\u0440\u0432\u0438\u0441 \u0438\u043b\u0438 \u0442\u0443\u043d\u043d\u0435\u043b\u044c \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "\u0421\u0435\u0440\u0432\u0438\u0441 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d: \u0441\u0431\u043e\u0439 Redis / \u0411\u0414",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "\u0422\u0430\u0439\u043c\u0430\u0443\u0442 \u0448\u043b\u044e\u0437\u0430 \u043f\u0440\u0438 \u043e\u0436\u0438\u0434\u0430\u043d\u0438\u0438 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u0440\u0432\u0438\u0441\u0430",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
     }
   },
   "components": {
     "schemas": {
+      "AchievementSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "\u0423\u043d\u0438\u043a\u0430\u043b\u044c\u043d\u044b\u0439 \u0441\u0442\u0440\u043e\u043a\u043e\u0432\u044b\u0439 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0434\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u044f"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "\u0423\u0441\u043b\u043e\u0432\u0438\u0435 \u043f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u044f"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon",
+            "description": "\u042d\u043c\u043e\u0434\u0437\u0438-\u0438\u043a\u043e\u043d\u043a\u0430"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f"
+          },
+          "rarity": {
+            "type": "string",
+            "title": "Rarity",
+            "description": "\u0421\u0442\u0435\u043f\u0435\u043d\u044c \u0440\u0435\u0434\u043a\u043e\u0441\u0442\u0438"
+          },
+          "xp_reward": {
+            "type": "integer",
+            "title": "Xp Reward",
+            "description": "\u041d\u0430\u0433\u0440\u0430\u0434\u0430 \u0432 \u043e\u0447\u043a\u0430\u0445 \u043e\u043f\u044b\u0442\u0430"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "icon",
+          "category",
+          "rarity",
+          "xp_reward"
+        ],
+        "title": "AchievementSchema",
+        "description": "\u0421\u0445\u0435\u043c\u0430 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0434\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u044f \u0432 API."
+      },
+      "AchievementsCatalogResponse": {
+        "properties": {
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "achievements": {
+            "items": {
+              "$ref": "#/components/schemas/AchievementSchema"
+            },
+            "type": "array",
+            "title": "Achievements"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_count",
+          "achievements"
+        ],
+        "title": "AchievementsCatalogResponse",
+        "description": "\u0421\u0445\u0435\u043c\u0430 \u043e\u0442\u0432\u0435\u0442\u0430 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0430 \u0432\u0441\u0435\u0445 80 \u0434\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u0439 \u0441\u0438\u0441\u0442\u0435\u043c\u044b."
+      },
       "ActiveSessionResponse": {
         "properties": {
           "is_active": {
@@ -8674,6 +9300,33 @@
         "title": "IncidentListResponse",
         "description": "\u0421\u043f\u0438\u0441\u043e\u043a \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u044b\u0445 \u0438\u043d\u0446\u0438\u0434\u0435\u043d\u0442\u043e\u0432."
       },
+      "LeaderboardResponse": {
+        "properties": {
+          "total_students": {
+            "type": "integer",
+            "title": "Total Students"
+          },
+          "group_pulse": {
+            "type": "number",
+            "title": "Group Pulse"
+          },
+          "leaderboard": {
+            "items": {
+              "$ref": "#/components/schemas/StudentProfileSchema"
+            },
+            "type": "array",
+            "title": "Leaderboard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_students",
+          "group_pulse",
+          "leaderboard"
+        ],
+        "title": "LeaderboardResponse",
+        "description": "\u0421\u0445\u0435\u043c\u0430 \u043e\u0442\u0432\u0435\u0442\u0430 \u043b\u0438\u0434\u0435\u0440\u0431\u043e\u0440\u0434\u0430 \u0433\u0440\u0443\u043f\u043f\u044b 1-\u041a\u041f\u0414-3."
+      },
       "Lesson": {
         "properties": {
           "period": {
@@ -9012,6 +9665,95 @@
         ],
         "title": "StudentPersonalStatsResponse",
         "description": "\u041f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u0430\u044f \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 \u043f\u043e\u0441\u0435\u0449\u0430\u0435\u043c\u043e\u0441\u0442\u0438 \u043a\u043e\u043d\u043a\u0440\u0435\u0442\u043d\u043e\u0433\u043e \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u0430."
+      },
+      "StudentProfileSchema": {
+        "properties": {
+          "fio": {
+            "type": "string",
+            "title": "Fio",
+            "description": "\u041f\u043e\u043b\u043d\u043e\u0435 \u043a\u0430\u043d\u043e\u043d\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u0424\u0418\u041e"
+          },
+          "short_fio": {
+            "type": "string",
+            "title": "Short Fio",
+            "description": "\u041a\u0440\u0430\u0442\u043a\u043e\u0435 \u0438\u043c\u044f (\u0424\u0430\u043c\u0438\u043b\u0438\u044f \u0418\u043c\u044f)"
+          },
+          "attendance_pct": {
+            "type": "number",
+            "title": "Attendance Pct",
+            "description": "\u041f\u0440\u043e\u0446\u0435\u043d\u0442 \u043f\u043e\u0441\u0435\u0449\u0430\u0435\u043c\u043e\u0441\u0442\u0438"
+          },
+          "total_classes": {
+            "type": "integer",
+            "title": "Total Classes",
+            "description": "\u0412\u0441\u0435\u0433\u043e \u0443\u0447\u0435\u0431\u043d\u044b\u0445 \u0437\u0430\u043d\u044f\u0442\u0438\u0439"
+          },
+          "present_count": {
+            "type": "integer",
+            "title": "Present Count",
+            "description": "\u041f\u0440\u0438\u0441\u0443\u0442\u0441\u0442\u0432\u043e\u0432\u0430\u043b (\u041f)"
+          },
+          "late_count": {
+            "type": "integer",
+            "title": "Late Count",
+            "description": "\u041e\u043f\u043e\u0437\u0434\u0430\u043d\u0438\u0439 (\u041e)"
+          },
+          "excused_count": {
+            "type": "integer",
+            "title": "Excused Count",
+            "description": "\u041f\u043e \u0441\u043f\u0440\u0430\u0432\u043a\u0435 (\u0423)"
+          },
+          "unexcused_count": {
+            "type": "integer",
+            "title": "Unexcused Count",
+            "description": "\u041f\u0440\u043e\u0433\u0443\u043b\u043e\u0432 (\u041d)"
+          },
+          "rank_name": {
+            "type": "string",
+            "title": "Rank Name",
+            "description": "\u0422\u0435\u043a\u0443\u0449\u0438\u0439 \u0430\u043a\u0430\u0434\u0435\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0440\u0430\u043d\u0433"
+          },
+          "rank_icon": {
+            "type": "string",
+            "title": "Rank Icon",
+            "description": "\u042d\u043c\u043e\u0434\u0437\u0438 \u0440\u0430\u043d\u0433\u0430"
+          },
+          "rank_description": {
+            "type": "string",
+            "title": "Rank Description",
+            "description": "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u0430"
+          },
+          "xp": {
+            "type": "integer",
+            "title": "Xp",
+            "description": "\u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0435 \u043e\u0447\u043a\u0438 \u043e\u043f\u044b\u0442\u0430"
+          },
+          "unlocked_achievements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unlocked Achievements",
+            "description": "\u0421\u043f\u0438\u0441\u043e\u043a ID \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0445 \u0430\u0447\u0438\u0432\u043e\u043a"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fio",
+          "short_fio",
+          "attendance_pct",
+          "total_classes",
+          "present_count",
+          "late_count",
+          "excused_count",
+          "unexcused_count",
+          "rank_name",
+          "rank_icon",
+          "rank_description",
+          "xp"
+        ],
+        "title": "StudentProfileSchema",
+        "description": "\u0421\u0445\u0435\u043c\u0430 \u043f\u0440\u043e\u0444\u0438\u043b\u044f \u0441\u0442\u0443\u0434\u0435\u043d\u0442\u0430 \u0441 \u0440\u0430\u043d\u0433\u043e\u043c \u0438 \u0430\u0447\u0438\u0432\u043a\u0430\u043c\u0438."
       },
       "StudentStatItem": {
         "properties": {

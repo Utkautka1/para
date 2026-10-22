@@ -1,64 +1,60 @@
-# Release Notes: Para v2.8.0
+# Release Notes: Para v2.9.0
 
-## 🚀 Overview
+## 🚀 Overview (Commit #300 Milestone)
 
-**Para v2.8.0** delivers a comprehensive enterprise-grade production hardening and resilience milestone, implementing all 21 points of the architectural engineering audit. This release establishes robust zero-trust security (non-root Dockerfiles, Trivy CVE scanning, pre-commit secret auditing), production observability (Prometheus `/metrics`, distributed `trace_id` correlation), modular solver decomposition, typed domain configuration models, multimodal prompt injection sanitization, stateful async Circuit Breaker protection, strict MyPy static typing, and an expanded suite of **629 passing tests** (up from 594).
+**Para v2.9.0** celebrates the historic **300th commit milestone** of the Para distributed academic ecosystem for college group **1-КПД-3** (KTMU College). This release introduces full-scale academic gamification: 10 dynamic attendance ranks, a group leaderboard with podium visualization, an automated catalog of **80 achievements across 8 categories**, and an interactive Mini App Student Portal.
+
+This release also establishes **strict UI security isolation**: regular classmates are strictly presented with the Student Portal (Rankings, Achievements, and Personal Profile). Developer tools (`Swagger UI` and `Jaeger Traces`) are permanently hidden by default and appear exclusively for verified administrators and whitelisted testers.
 
 ---
 
-## 📊 Summary of Changes vs v2.7.0
+## 📊 Summary of Changes: Release v2.8.0 vs Release v2.9.0
 
-| Dimension | Release v2.7.0 | Release v2.8.0 | Impact |
+| Subsystem / Feature | Release v2.8.0 | Release v2.9.0 (Commit #300) | User & System Impact |
 | :--- | :--- | :--- | :--- |
-| **Container Security** | `root:root` execution | **Unprivileged `appuser` (UID 1000)** | Eliminates host volume takeover & breakout |
-| **CI Security Pipeline** | Basic lint & pytest | **Pre-commit (10 hooks) + Trivy + Pip-Audit** | Automated 4-tier security validation |
-| **Observability** | Plain text log files | **Prometheus `/metrics` + ContextVar Tracing** | Real-time monitoring and log correlation |
-| **AI LLM Protection** | Raw prompt passing | **Prompt Sanitizer + Circuit Breaker** | Protection against prompt injection & cascading outages |
-| **Solver Architecture** | Monolithic (378 lines) | **Decomposed `services/solver/` (58 lines)** | Modular, maintainable homework pipeline |
-| **Configuration** | Flat global constants | **Frozen Domain Dataclasses + Facade** | Type-safe configuration with 100% backward compatibility |
-| **Static Typing** | Unchecked dynamic types | **Configured MyPy (`make type-check`)** | Strict compile-time type verification |
-| **Automated Tests** | 594 / 594 passing | **629 / 629 passing (+35 tests)** | Full coverage of new resilience & domain components |
-| **Legal Compliance** | High-level overview | **Detailed GDPR / 152-ФЗ Erasure & /dev/shm** | Legal compliance and data minimization guarantees |
+| **Telegram Mini App Portal** | Developer Swagger UI & Jaeger Traces | **Student Portal (Leaderboard, 80 Achievements, Profile)** | Classmates interact with group rankings instead of technical dev views |
+| **Developer Menu Visibility** | Exposed to all users | **Strictly hidden for classmates (`display: none !important`)** | Appears only for Admin & whitelisted testers after HMAC validation |
+| **Student Ranks** | None | **10 Dynamic Ranks + 80% Cult Meme Rank** | *"Любимчик старосты"*, *"ОХ ПЕРВЫЙ КУРС! ПОНЯЛИ?!"*, *"Балансир"* |
+| **Automated Achievements** | None | **80 Achievements across 8 categories with XP rewards** | 100% automated calculation; 0 manual burden on headman |
+| **Telegram Bot Commands** | Basic schedule & attendance | **Added `/profile` and `/leaderboard`** | Student profile status card + podium leaderboard with WebApp button |
+| **Alert Routing Topology** | General chat alerts | **Topic-based Forum Routing (Debug 3, Warning 5, Fatal 7)** | Clean separation of system errors by severity in Supergroup forum |
+| **API Endpoints** | 11 Routers | **12 Routers: `/gamification/*` (4 public endpoints)** | Fast JSON endpoints for group pulse, leaderboard, and badge lists |
+| **Test Suite Coverage** | 629 passing tests | **666 passing tests (+37 new tests)** | 100% test pass rate across all services |
 
 ---
 
-## 🔍 Key Architectural Enhancements
+## 🎖️ Group 1-КПД-3 Ranks
 
-### 1. Non-Root Container Security & Supply Chain Hardening
-* Enforced unprivileged user `appuser` (UID 1000:GID 1000) across all service Dockerfiles (`api`, `bot`, `worker`, `solver`).
-* Added pre-commit hooks (`.pre-commit-config.yaml`) with detect-secrets baseline (`.secrets.baseline`).
-* Automated PyPA vulnerability scanning (`pip-audit`) and Trivy CRITICAL scanner in GitHub Actions.
-
-### 2. Prometheus Observability & Distributed Tracing
-* Exposed production metrics endpoint `GET /metrics` (`api/router/metrics.py`, `core/metrics.py`) tracking memory RSS, CPU times, HTTP duration histograms, and solver queue depth.
-* Integrated `ContextVar` `trace_id` into all logs (`[trace_id: ...] [thread: ...]`) and automatic `X-Request-ID` generation / propagation in FastAPI middleware.
-
-### 3. Solver Monolith Decomposition & Modularity
-* Decomposed monolithic `solver.py` into `services/solver/`:
-  - `payload_extractor.py`: Safe download and multimodal attachment parser.
-  - `telegram_reporter.py`: Delivery of solutions and structured user alerts.
-  - `task_processor.py`: Worker loop with semaphore throttling and atomic ACK/NACK.
-* Shrunk the `solver.py` entrypoint from 378 lines to a clean 58-line orchestrator.
-
-### 4. Multimodal AI Safety & Circuit Breaker
-* `core/prompt_sanitizer.py`: Normalizes Unicode, removes control characters, escapes context tags (`</учебное_задание>`), and flags prompt injection / jailbreak attempts.
-* `core/circuit_breaker.py`: Stateful Circuit Breaker (`CLOSED`, `OPEN`, `HALF_OPEN`) with `async_retry_with_backoff` and random jitter.
-
-### 5. Domain Configuration Models & Developer Experience
-* Created frozen dataclasses in `core/config_models.py` (`TelegramConfig`, `ScheduleConfig`, `CampusConfig`, `RedisConfig`, `YandexConfig`, `ApiConfig`, `AiSolverConfig`, `WhisperConfig`, `NotificationConfig`).
-* Added `.github/CODEOWNERS`, PR templates, and developer setup script `scripts/dev_setup.sh`.
+1. **👑 Любимчик старосты**: 100% посещаемость, 0 пропусков, 0 опозданий
+2. **📜 Легальный отличник**: 100% посещаемость (со справками)
+3. **💎 Элитный отличник**: 95–99% посещаемости
+4. **⚖️ Балансир**: 90–94% посещаемости
+5. **☕ Нормис**: 81–89% посещаемости
+6. **🔥 ОХ ПЕРВЫЙ КУРС! ПОНЯЛИ?!**: Ровно 80% посещаемости (культовый мем группы)
+7. **⚠️ На грани**: 70–79% посещаемости
+8. **🛑 Злостный прогульщик**: 55–69% посещаемости
+9. **⚡ Кандидат на отчисление**: 40–54% посещаемости
+10. **👻 Призрак КТМУ**: < 40% посещаемости
 
 ---
 
-## 🛠️ Deployment & Verification
+## 🔒 Security Architecture: Developer Menu Isolation
+
+- **Default State**: Buttons `#tab-swagger` and `#tab-jaeger` have `style="display:none !important;"` in HTML and CSS.
+- **Client Guard**: `switchTab()` blocks switching to developer tabs unless `isTester === true`.
+- **Server Verification**: When Mini App initializes, Telegram `initData` is sent to `POST /miniapp/auth`. If the user is not in the Redis tester whitelist or admin list, the server returns `403 Forbidden` and the buttons remain hidden.
+- **Backend Gate**: Direct HTTP requests to `/openapi.json` and `/jaeger/` require `verify_api_or_tester` dependency, returning `401 Unauthorized` for unauthorized visitors.
+
+---
+
+## 🛠️ Verification & Test Results
 
 ```bash
-# 1. Update source code
-git pull origin main
+# Full test suite execution
+PYTHONPATH=. pytest
+# 666 passed in 6.05s (100% success rate)
 
-# 2. Rebuild and launch hardened containers
-docker compose up -d --build
-
-# 3. Verify health & metrics
-curl -s http://localhost:8000/metrics | grep process_resident_memory_bytes
+# Linter and type checks
+ruff check . && mypy api services bot
+# All checks passed!
 ```

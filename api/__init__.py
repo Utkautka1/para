@@ -22,6 +22,7 @@ from api.router.attendance import router as attendance_router
 from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
 from api.router.exams import router as exams_router
+from api.router.gamification import router as gamification_router
 from api.router.health import router as health_router
 from api.router.jaeger import router as jaeger_router
 from api.router.metrics import router as metrics_router
@@ -63,7 +64,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(system_router)
     app.include_router(miniapp_router)
     app.include_router(jaeger_router)
-
+    app.include_router(gamification_router)
 
 
 def _configure_openapi_servers(schema: dict[str, Any]) -> None:
@@ -89,7 +90,17 @@ def _configure_openapi_security(schema: dict[str, Any]) -> None:
         "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
         "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
     }
-    public_paths = {"/health", "/metrics", "/miniapp", "/miniapp/auth", "/miniapp/status"}
+    public_paths = {
+        "/health",
+        "/metrics",
+        "/miniapp",
+        "/miniapp/auth",
+        "/miniapp/status",
+        "/gamification/leaderboard",
+        "/gamification/profile",
+        "/gamification/achievements",
+        "/gamification/ranks",
+    }
 
     for path, methods in schema.get("paths", {}).items():
         for m, op in methods.items():
@@ -181,7 +192,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
-        version="2.8.0",
+        version="2.9.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,

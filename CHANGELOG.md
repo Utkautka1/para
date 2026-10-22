@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.9.0] - 2026-10-22
+
+### Added
+- **Academic Gamification & Group Leaderboard (1-КПД-3)**: Implemented `services/gamification.py`, `services/gamification_models.py`, and `services/gamification_registry.py` calculating dynamic XP, levels, and ranks based on aggregated Yandex Docs attendance records.
+- **10 Dynamic Group Ranks**: Configured 10 ranks including *"Любимчик старосты"* (100% attendance, 0 faults), *"Легальный отличник"* (100% with excused medical notes), *"Нормис"* (81–89%), *"Балансир"* (90–94%), *"Злостный прогульщик"* (55–69%), and the cult group meme rank at exactly 80%: **`"ОХ ПЕРВЫЙ КУРС! ПОНЯЛИ?!"`**.
+- **Automated Catalog of 80 Achievements**: Created 80 automated badges across 8 categories (Attendance, Punctuality, Bot Interaction, AI Homework, Student Life, Social, Easter Eggs, Mastery) with XP rewards and rarity tiers (`COMMON`, `RARE`, `EPIC`, `LEGENDARY`).
+- **Telegram Mini App Student Portal**: Redesigned `data/api/miniapp.html` into a dark Cyberpunk/Glassmorphism student portal featuring Top-3 gold/silver/bronze podium, group list with rank badges, category filtering for 80 achievements, and personal student profile.
+- **Telegram Bot Profile & Leaderboard Commands**: Added `/profile` (and `/me`, `/achievements`) and `/leaderboard` (`/top`) commands with student status cards and WebApp launcher buttons.
+- **Gamification API Router (`/gamification/*`)**: Mounted 4 public endpoints in `api/router/gamification.py` (`/leaderboard`, `/profile`, `/achievements`, `/ranks`).
+- **Topic-Based Forum Alert Routing**: Routed bot alerts by severity to dedicated topics in the administrator supergroup (Debug -> Topic 3, Warning -> Topic 5, Fatal -> Topic 7) with deduplication.
+
+### Changed
+- **Strict Role-Based UI Isolation in Mini App**: Developer tabs (`⚡ Swagger UI` and `🔍 Jaeger Traces`) are permanently hidden by default (`display: none !important;`) and guarded via client-side checks; they appear strictly for administrators and whitelisted testers verified through HMAC-SHA256 Telegram `initData` and Redis whitelist.
+- **Expanded Test Suite (666 Passing Tests)**: Added comprehensive unit tests in `tests/test_gamification.py`, achieving 100% passing across all 666 tests (+37 new tests).
+- **Updated Architectural Documentation**: Updated `docs/UML.md` with `GamificationRouter` and service class relationships.
+
+---
+
 ## [v2.8.0] - 2026-10-19
 
 ### Added

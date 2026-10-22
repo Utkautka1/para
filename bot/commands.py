@@ -27,6 +27,8 @@ def get_default_user_commands() -> list[BotCommand]:
 
     return [
         BotCommand(command="start", description="🚀 Главное меню"),
+        BotCommand(command="profile", description="👤 Мой профиль и ачивки"),
+        BotCommand(command="leaderboard", description="🏆 Рейтинг группы 1-КПД-3"),
         BotCommand(command="today", description="📅 Расписание на сегодня"),
         BotCommand(command="notice", description="🔔 Настройка напоминаний"),
         BotCommand(command="my_attendance", description="📊 Моя посещаемость"),

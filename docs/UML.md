@@ -2143,6 +2143,13 @@ classDiagram
         +GET /health
     }
 
+    class GamificationRouter {
+        +GET /gamification/leaderboard
+        +GET /gamification/profile
+        +GET /gamification/achievements
+        +GET /gamification/ranks
+    }
+
     FastApiApplication --> SecurityDependencies : enforces OpenAPI SecuritySchemes
     FastApiApplication --> ScheduleRouter : mounts
     FastApiApplication --> ExamsRouter : mounts
@@ -2156,6 +2163,7 @@ classDiagram
     FastApiApplication --> MiniappRouter : mounts
     FastApiApplication --> JaegerProxyRouter : mounts
     FastApiApplication --> HealthRouter : mounts
+    FastApiApplication --> GamificationRouter : mounts
 
     ScheduleRouter ..> SecurityDependencies : verify_api_or_tester
     ExamsRouter ..> SecurityDependencies : verify_api_or_tester
@@ -2168,6 +2176,7 @@ classDiagram
     SystemRouter ..> SecurityDependencies : verify_api_or_tester
     MiniappRouter ..> SecurityDependencies : verify_api_or_tester
     JaegerProxyRouter ..> SecurityDependencies : verify_api_or_tester
+    GamificationRouter ..> GamificationService : calculates XP, ranks & 80 achievements
 
 ```
 

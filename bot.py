@@ -53,6 +53,7 @@ def _register_user_routers() -> None:
     from bot.handlers.user.attendance import router as user_att_router
     from bot.handlers.user.auth_fallback import router as fallback_router
     from bot.handlers.user.hw_solver import router as hw_solver_router
+    from bot.handlers.user.profile import router as profile_router
     from bot.handlers.user.public_copy import public_router
     from bot.handlers.user.schedule import router as user_router
     from bot.handlers.user.voice_transcribe import router as voice_router
@@ -60,6 +61,7 @@ def _register_user_routers() -> None:
     dp.include_router(voice_router)
     dp.include_router(hw_solver_router)
     dp.include_router(public_router)
+    dp.include_router(profile_router)
     dp.include_router(user_att_router)
     dp.include_router(user_router)
     dp.include_router(fallback_router)

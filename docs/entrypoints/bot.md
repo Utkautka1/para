@@ -22,13 +22,13 @@ graph LR
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
 | [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L40 | `None` | Executes core domain logic for `_register_admin_routers... |
-| [`_register_user_routers`](#_register_user_routers) | Function | L43–L65 | `None` | Executes core domain logic for `_register_user_routers`... |
-| [`register_all_routers`](#register_all_routers) | Function | L68–L82 | `None` | Executes core domain logic for `register_all_routers`. |
-| [`shutdown_bot`](#shutdown_bot) | Function | L85–L102 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L105–L123 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_warmup_stt`](#_warmup_stt) | Function | L126–L142 | `None` | Executes core domain logic for `_warmup_stt`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L145–L165 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L168–L188 | `None` | Executes core domain logic for `main`. |
+| [`_register_user_routers`](#_register_user_routers) | Function | L43–L67 | `None` | Executes core domain logic for `_register_user_routers`... |
+| [`register_all_routers`](#register_all_routers) | Function | L70–L84 | `None` | Executes core domain logic for `register_all_routers`. |
+| [`shutdown_bot`](#shutdown_bot) | Function | L87–L104 | `None` | Executes core domain logic for `shutdown_bot`. |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L107–L125 | `None` | Executes core domain logic for `setup_all_middlewares`. |
+| [`_warmup_stt`](#_warmup_stt) | Function | L128–L144 | `None` | Executes core domain logic for `_warmup_stt`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L147–L167 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L170–L190 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -70,7 +70,7 @@ result = _register_admin_routers()
 def _register_user_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L43-L65`](../../bot.py#L43-L65)
+- **Source Reference**: [`bot.py#L43-L67`](../../bot.py#L43-L67)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -101,7 +101,7 @@ result = _register_user_routers()
 def register_all_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L68-L82`](../../bot.py#L68-L82)
+- **Source Reference**: [`bot.py#L70-L84`](../../bot.py#L70-L84)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -132,7 +132,7 @@ result = register_all_routers()
 async def shutdown_bot() -> None
 ```
 
-- **Source Reference**: [`bot.py#L85-L102`](../../bot.py#L85-L102)
+- **Source Reference**: [`bot.py#L87-L104`](../../bot.py#L87-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -163,7 +163,7 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L105-L123`](../../bot.py#L105-L123)
+- **Source Reference**: [`bot.py#L107-L125`](../../bot.py#L107-L125)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -194,7 +194,7 @@ result = setup_all_middlewares()
 async def _warmup_stt() -> None
 ```
 
-- **Source Reference**: [`bot.py#L126-L142`](../../bot.py#L126-L142)
+- **Source Reference**: [`bot.py#L128-L144`](../../bot.py#L128-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -225,7 +225,7 @@ result = await _warmup_stt()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L145-L165`](../../bot.py#L145-L165)
+- **Source Reference**: [`bot.py#L147-L167`](../../bot.py#L147-L167)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -256,7 +256,7 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L168-L188`](../../bot.py#L168-L188)
+- **Source Reference**: [`bot.py#L170-L190`](../../bot.py#L170-L190)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

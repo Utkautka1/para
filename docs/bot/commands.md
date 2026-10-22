@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L34 | `list[BotCommand]` | Retrieves and resolves domain data for `get_default_use... |
-| [`get_admin_commands`](#get_admin_commands) | Function | L37–L54 | `list[BotCommand]` | Retrieves and resolves domain data for `get_admin_comma... |
-| [`register_bot_commands`](#register_bot_commands) | Function | L57–L72 | `None` | Executes core domain logic for `register_bot_commands`. |
+| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L36 | `list[BotCommand]` | Retrieves and resolves domain data for `get_default_use... |
+| [`get_admin_commands`](#get_admin_commands) | Function | L39–L56 | `list[BotCommand]` | Retrieves and resolves domain data for `get_admin_comma... |
+| [`register_bot_commands`](#register_bot_commands) | Function | L59–L74 | `None` | Executes core domain logic for `register_bot_commands`. |
 
 ---
 
@@ -34,7 +34,7 @@ graph LR
 def get_default_user_commands() -> list[BotCommand]
 ```
 
-- **Source Reference**: [`bot/commands.py#L18-L34`](../../bot/commands.py#L18-L34)
+- **Source Reference**: [`bot/commands.py#L18-L36`](../../bot/commands.py#L18-L36)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[BotCommand]`
 
@@ -65,7 +65,7 @@ result = get_default_user_commands()
 def get_admin_commands() -> list[BotCommand]
 ```
 
-- **Source Reference**: [`bot/commands.py#L37-L54`](../../bot/commands.py#L37-L54)
+- **Source Reference**: [`bot/commands.py#L39-L56`](../../bot/commands.py#L39-L56)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[BotCommand]`
 
@@ -96,7 +96,7 @@ result = get_admin_commands()
 async def register_bot_commands(bot: Bot) -> None
 ```
 
-- **Source Reference**: [`bot/commands.py#L57-L72`](../../bot/commands.py#L57-L72)
+- **Source Reference**: [`bot/commands.py#L59-L74`](../../bot/commands.py#L59-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
