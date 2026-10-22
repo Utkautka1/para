@@ -2768,31 +2768,33 @@ classDiagram
     AttendanceRepository ..> AttendanceSnapshot : queries/persists
 ```
 
-### 15.2. System Incident Alerting Pipeline & Throttling
+### 15.2. System Incident Alerting Pipeline & Distributed Throttling
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Trig as Incident Trigger (CB / Parser / Keepalive)
     participant Svc as services/alerting (send_admin_alert)
+    participant Red as core/redis (Distributed Cooldown)
     participant Rep as db/sqlite/repositories (IncidentRepository)
     participant DB as SQLite DB (system_incidents)
     participant Bot as core/bot (Bot.send_message)
     participant Adm as Admin Telegram (ALLOWED_USER_ID)
 
-    Trig->>Svc: send_admin_alert(incident_type, severity, title, desc, trace_id)
+    Trig->>Svc: send_admin_alert(incident_type, severity, title, desc, trace_id, cooldown_seconds)
     activate Svc
-    Svc->>Svc: Check Cooldown (5 min per incident_type)
     Svc->>Rep: record_incident(...)
     Rep->>DB: INSERT INTO system_incidents VALUES (...)
     DB-->>Rep: Incident Record #ID
     Rep-->>Svc: SystemIncident
-
-    alt Alert Throttled (within 5m cooldown)
-        Svc-->>Trig: Suppress Telegram Alert (Deduplicated)
+    Svc->>Red: SET alert:cooldown:{type} EX cooldown NX
+    alt Redis Throttled or Local Cooldown Active
+        Red-->>Svc: False (Key Exists - Cooldown Active)
+        Svc-->>Trig: Suppress Telegram Alert (Deduplicated across containers)
     else Cooldown Expired / First Incident
+        Red-->>Svc: True (Key Set - Cooldown Acquired)
         Svc->>Bot: send_message(chat_id=ALLOWED_USER_ID, text=HTML_ALERT)
-        Bot->>Adm: 🚨 Alert: [CRITICAL] Circuit Breaker Open
+        Bot->>Adm: 🚨 Alert: [WARNING] TIMETABLE_API_DOWN (Throttled 1h)
         Adm-->>Bot: Delivered
         Bot-->>Svc: Success
         Svc-->>Trig: Alert Dispatched

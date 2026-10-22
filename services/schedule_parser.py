@@ -18,6 +18,7 @@ from config import (
     CAMPUS_ADDRESS_REMOTE,
     CAMPUS_ADDRESS_TSVETOCHNAYA,
     CAMPUS_ADDRESS_VOZNESENSKY,
+    DEFAULT_FALLBACK_SCHEDULE_API_URL,
     GROUP_ID,
     HTTP_CLIENT_TIMEOUT_SECONDS,
     HTTP_POOL_MAX_CONNECTIONS,
@@ -487,13 +488,18 @@ def _build_cache_headers() -> dict[str, str]:
 
 async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Response:
     """
-    Выполняет HTTP GET запрос к конкретному URL расписания с коротким таймаутом.
+    Выполняет HTTP GET запрос к конкретному URL расписания с коротким таймаутом соединения.
 
-    Позволяет быстро обнаружить сетевую недоступность и переключиться на резерв.
+    Использует connect=5.0s для быстрого failover и read=60.0s для загрузки 56 МБ данных.
 
     Возвращает объект httpx.Response.
     """
-    return await get_http_client().get(url, headers=headers, timeout=10.0)
+    timeout = httpx.Timeout(
+        HTTP_CLIENT_TIMEOUT_SECONDS,
+        connect=5.0,
+        read=HTTP_CLIENT_TIMEOUT_SECONDS,
+    )
+    return await get_http_client().get(url, headers=headers, timeout=timeout)
 
 
 async def _try_fetch_endpoint(url: str, idx: int, headers: dict[str, str]) -> httpx.Response | None:
@@ -515,6 +521,17 @@ async def _try_fetch_endpoint(url: str, idx: int, headers: dict[str, str]) -> ht
     return None
 
 
+def _get_schedule_endpoints() -> list[str]:
+    """Формирует упорядоченный список уникальных URL эндпоинтов расписания."""
+    fallback_url = SCHEDULE_FALLBACK_API_URL or DEFAULT_FALLBACK_SCHEDULE_API_URL
+    raw_urls = (SCHEDULE_API_URL, fallback_url)
+    endpoints: list[str] = []
+    for u in raw_urls:
+        if u and u not in endpoints:
+            endpoints.append(u)
+    return endpoints
+
+
 async def _fetch_remote_schedule() -> httpx.Response:
     """
     Запрашивает расписание из основного API с авто-переходом на резервный URL.
@@ -524,7 +541,7 @@ async def _fetch_remote_schedule() -> httpx.Response:
     Возвращает HTTP-ответ с кодом 200 или 304.
     """
     headers = _build_cache_headers()
-    endpoints = [u for u in (SCHEDULE_API_URL, SCHEDULE_FALLBACK_API_URL) if u]
+    endpoints = _get_schedule_endpoints()
     last_exc: Exception | None = None
 
     for idx, url in enumerate(endpoints):

@@ -63,3 +63,20 @@ async def test_send_admin_alert_success(tmp_path: Path) -> None:
             )
             assert ok is True
             mock_send.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_redis_alert_throttling() -> None:
+    """Проверяет распределенный троттлинг алертов через Redis set nx."""
+    from services.alerting import _check_redis_throttle, _is_alert_throttled
+
+    mock_redis = AsyncMock()
+    mock_redis.set.return_value = True  # first call: key set successfully (new alert)
+    with patch("core.redis.get_redis", AsyncMock(return_value=mock_redis)):
+        assert await _check_redis_throttle("INCIDENT_X", 3600.0) is False
+        assert await _is_alert_throttled("INCIDENT_X", 3600.0) is False
+
+    mock_redis.set.return_value = False  # second call: key already exists (throttled)
+    with patch("core.redis.get_redis", AsyncMock(return_value=mock_redis)):
+        assert await _check_redis_throttle("INCIDENT_X", 3600.0) is True
+        assert await _is_alert_throttled("INCIDENT_X", 3600.0) is True

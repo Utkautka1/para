@@ -10,6 +10,7 @@
 """
 
 import base64
+import json
 import os
 import shutil
 import sqlite3
@@ -243,31 +244,38 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
     subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
 
 
+def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
+    """Генерирует однострочный python-скрипт безопасного обновления .env файла."""
+    return (
+        f"import json, base64, os; p = '{remote_dir}/.env'; "
+        f"u = json.loads(base64.b64decode('{b64_payload}').decode()); "
+        f"lines = open(p).read().splitlines() if os.path.exists(p) else []; "
+        f"seen = set(); out = []; "
+        f"for l in lines: "
+        f"k = l.split('=', 1)[0] if '=' in l and not l.startswith('#') else None; "
+        f"out.append(f'{{k}}={{u[k]}}' if k in u else l); seen.add(k) if k in u else None; "
+        f"[out.append(f'{{k}}={{v}}') for k, v in u.items() if k not in seen]; "
+        f"open(p, 'w').write('\\n'.join(out) + '\\n')"
+    )
+
+
 def send_api_urls_to_remote_env(
     primary_url: str = "https://timetable-ktmu.ru/api/storage/schedule-data-v2",
     fallback_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
     host: str = "home",
     remote_dir: str = "/root/para",
 ) -> None:
-    """
-    Синхронизирует основной и резервный URL-адреса API расписания на сервере.
-
-    Обеспечивает синхронную настройку SCHEDULE_API_URL и SCHEDULE_FALLBACK_API_URL
-    для гарантии отказоустойчивости при недоступности основного сервера КТМУ.
-
-    Не возвращает значений; выбрасывает CalledProcessError при сбое SSH.
-    """
+    """Синхронизирует основной и резервный URL-адреса API расписания на сервере."""
     _validate_ssh_target(host, remote_dir)
-    py = (
-        f"import re, os; p = '{remote_dir}/.env'; "
-        f"s = open(p).read() if os.path.exists(p) else ''; "
-        f"s = re.sub(r'SCHEDULE_API_URL=.*\\n', 'SCHEDULE_API_URL={primary_url}\\n', s); "
-        f"s = re.sub(r'EXAM_SCHEDULE_API_URL=.*\\n', 'EXAM_SCHEDULE_API_URL={primary_url}\\n', s); "
-        f"v_fb = f'SCHEDULE_FALLBACK_API_URL={fallback_url}\\nEXAM_SCHEDULE_FALLBACK_API_URL={fallback_url}\\n'; "
-        f"s = re.sub(r'SCHEDULE_FALLBACK_API_URL=.*\\n', '', s); "
-        f"s = re.sub(r'EXAM_SCHEDULE_FALLBACK_API_URL=.*\\n', '', s) + v_fb; "
-        f"open(p, 'w').write(s)"
-    )
+    updates = {
+        "SCHEDULE_API_URL": primary_url,
+        "SCHEDULE_FALLBACK_API_URL": fallback_url,
+        "DEFAULT_FALLBACK_SCHEDULE_API_URL": fallback_url,
+        "EXAM_SCHEDULE_API_URL": primary_url,
+        "EXAM_SCHEDULE_FALLBACK_API_URL": fallback_url,
+    }
+    b64 = base64.b64encode(json.dumps(updates).encode("utf-8")).decode("ascii")
+    py = _build_env_update_script(remote_dir, b64)
     subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
 
 

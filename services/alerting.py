@@ -29,8 +29,32 @@ class IncidentType(StrEnum):
     BACKUP_SUCCESS = "BACKUP_SUCCESS"
 
 
+DEFAULT_ALERT_COOLDOWNS: dict[str, float] = {
+    IncidentType.TIMETABLE_API_DOWN: 3600.0,
+    IncidentType.YANDEX_COOKIE_EXPIRED: 7200.0,
+    IncidentType.CIRCUIT_BREAKER_OPEN: 1800.0,
+    IncidentType.BACKUP_FAILED: 1800.0,
+}
+
+
+async def _check_redis_throttle(incident_type: str, cooldown_seconds: float) -> bool | None:
+    """Проверяет и выставляет распределенный ключ кулдауна в Redis."""
+    try:
+        from core.redis import get_redis
+
+        client = await get_redis()
+        if not client:
+            return None
+        key = f"alert:cooldown:{incident_type}"
+        is_new = await client.set(key, "1", ex=int(cooldown_seconds), nx=True)
+        return not bool(is_new)
+    except Exception as exc:
+        log.debug(f"Сбой проверки распределенного троттлинга Redis: {exc}")
+        return None
+
+
 def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) -> bool:
-    """Проверяет необходимость троттлинга уведомления для предотвращения спама."""
+    """Проверяет необходимость локального троттлинга уведомления в памяти процесса."""
     now = time.monotonic()
     if incident_type not in _last_alert_timestamps:
         _last_alert_timestamps[incident_type] = now
@@ -40,6 +64,14 @@ def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) 
         return True
     _last_alert_timestamps[incident_type] = now
     return False
+
+
+async def _is_alert_throttled(incident_type: str, cooldown_seconds: float) -> bool:
+    """Координирует распределенный (Redis) и локальный (память) троттлинг алертов."""
+    redis_throttle = await _check_redis_throttle(incident_type, cooldown_seconds)
+    if redis_throttle is not None:
+        return redis_throttle
+    return _should_throttle_alert(incident_type, cooldown_seconds)
 
 
 def _format_alert_text(
@@ -63,6 +95,7 @@ async def send_admin_alert(
     description: str,
     severity: str = IncidentSeverity.WARNING,
     trace_id: str | None = None,
+    cooldown_seconds: float | None = None,
 ) -> bool:
     """Записывает инцидент в SQLite и отправляет Telegram-алерт администратору."""
     try:
@@ -76,7 +109,8 @@ async def send_admin_alert(
     except Exception as exc:
         log.error(f"Не удалось зафиксировать инцидент в SQLite: {exc}")
 
-    if _should_throttle_alert(incident_type):
+    cooldown = cooldown_seconds or DEFAULT_ALERT_COOLDOWNS.get(incident_type, 1800.0)
+    if await _is_alert_throttled(incident_type, cooldown):
         log.debug(f"Алерт {incident_type} пропущен из-за кулдауна троттлинга")
         return False
 
