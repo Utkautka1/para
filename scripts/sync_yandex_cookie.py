@@ -245,18 +245,29 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
 
 
 def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
-    """Генерирует однострочный python-скрипт безопасного обновления .env файла."""
-    return (
-        f"import json, base64, os; p = '{remote_dir}/.env'; "
-        f"u = json.loads(base64.b64decode('{b64_payload}').decode()); "
-        f"lines = open(p).read().splitlines() if os.path.exists(p) else []; "
-        f"seen = set(); out = []; "
-        f"for l in lines: "
-        f"k = l.split('=', 1)[0] if '=' in l and not l.startswith('#') else None; "
-        f"out.append(f'{{k}}={{u[k]}}' if k in u else l); seen.add(k) if k in u else None; "
-        f"[out.append(f'{{k}}={{v}}') for k, v in u.items() if k not in seen]; "
-        f"open(p, 'w').write('\\n'.join(out) + '\\n')"
+    """Генерирует безопасную команду python с base64-скриптом обновления .env файла."""
+    script = (
+        "import json, base64, os\n"
+        f"p = '{remote_dir}/.env'\n"
+        f"u = json.loads(base64.b64decode('{b64_payload}').decode('utf-8'))\n"
+        "lines = open(p, encoding='utf-8').read().splitlines() if os.path.exists(p) else []\n"
+        "seen = set()\n"
+        "out = []\n"
+        "for l in lines:\n"
+        "    if '=' in l and not l.strip().startswith('#'):\n"
+        "        k = l.split('=', 1)[0].strip()\n"
+        "        if k in u:\n"
+        '            out.append(f"{k}={u[k]}")\n'
+        "            seen.add(k)\n"
+        "            continue\n"
+        "    out.append(l)\n"
+        "for k, v in u.items():\n"
+        "    if k not in seen:\n"
+        '        out.append(f"{k}={v}")\n'
+        "open(p, 'w', encoding='utf-8').write(chr(10).join(out) + chr(10))\n"
     )
+    b64_code = base64.b64encode(script.encode("utf-8")).decode("ascii")
+    return f"import base64; exec(base64.b64decode('{b64_code}').decode('utf-8'))"
 
 
 def send_api_urls_to_remote_env(
