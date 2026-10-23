@@ -55,6 +55,11 @@ PARAMETER_DESCRIPTIONS: dict[str, str] = {
     "max_mb": "Maximum allowed audio file size limit in megabytes.",
     "queue_pos": "1-based queue index indicating position waiting for GPU semaphore.",
     "status_msg": "Aiogram Message instance displaying transient progress status.",
+    "xp": "Experience points accrued through academic activities and attendance.",
+    "level": "Progressive student academic gamification tier level.",
+    "achievement_id": "Unique identifier of academic milestone achievement.",
+    "achievements": "List of unlocked academic achievement badges.",
+    "rank": "Class leaderboard rank position among 26 group peers.",
 }
 
 FUNCTION_INTENT_PATTERNS: list[tuple[str, str]] = [
@@ -152,9 +157,25 @@ SUBSYSTEM_METADATA: dict[str, dict[str, str]] = {
         "persistence": "Stateless HTML Escape & Telegram Formatter",
         "sla": "Sub-1µs Render Latency",
     },
+    "Academic Gamification Engine": {
+        "layer": "Domain Business Service",
+        "concurrency": "AsyncIO Event Loop + In-Memory Ranks",
+        "persistence": "Redis L2 + SQLite Attendance Stats",
+        "sla": "Sub-5ms Profile Calculation",
+    },
 }
 
 MERMAID_DIAGRAMS: dict[str, str] = {
+    "Academic Gamification Engine": (
+        "```mermaid\n"
+        "graph TD\n"
+        "    A[Student / Mini App] --> B[api.router.gamification / bot.handlers.user.profile]\n"
+        "    B --> C[services.gamification.GamificationService]\n"
+        "    C --> D[services.gamification_registry.ACHIEVEMENTS_REGISTRY]\n"
+        "    C --> E[services.attendance_stats.fetch_all_time_attendance]\n"
+        "    C --> F[Student Profile, XP, Rank & Achievements]\n"
+        "```"
+    ),
     "Attendance Operations": (
         "```mermaid\n"
         "graph TD\n"
@@ -719,6 +740,11 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
         "out": "docs/bot/templates_admin_testers.md",
         "cat": "Tester Keyboards & States",
     },
+    "api/router/gamification.py": {"out": "docs/api/router_gamification.md", "cat": "Gamification API"},
+    "bot/handlers/user/profile.py": {"out": "docs/bot/handlers_user_profile.md", "cat": "Student Profile Flow"},
+    "services/gamification.py": {"out": "docs/services/gamification.md", "cat": "Academic Gamification Engine"},
+    "services/gamification_models.py": {"out": "docs/services/gamification_models.md", "cat": "Gamification Domain Models"},
+    "services/gamification_registry.py": {"out": "docs/services/gamification_registry.md", "cat": "Gamification Registry"},
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
 }
 

@@ -9,6 +9,7 @@
 | `AI Homework Flow` | [`bot/handlers/user/hw_solver.py`](../bot/handlers/user/hw_solver.py) | [📖 View Specification](bot/handlers_user_hw_solver.md) | Enterprise Service Component |
 | `AI Prompt Sanitization` | [`core/prompt_sanitizer.py`](../core/prompt_sanitizer.py) | [📖 View Specification](core/prompt_sanitizer.md) | Enterprise Service Component |
 | `AI Queue Consumer` | [`solver.py`](../solver.py) | [📖 View Specification](entrypoints/solver.md) | Enterprise Service Component |
+| `Academic Gamification Engine` | [`services/gamification.py`](../services/gamification.py) | [📖 View Specification](services/gamification.md) | Enterprise Service Component |
 | `Admin Control Panel` | [`bot/handlers/admin/panel.py`](../bot/handlers/admin/panel.py) | [📖 View Specification](bot/handlers_admin_panel.md) | Enterprise Service Component |
 | `Admin Panel Keyboards` | [`bot/templates/admin/keyboards.py`](../bot/templates/admin/keyboards.py) | [📖 View Specification](bot/templates_admin_keyboards.md) | Enterprise Service Component |
 | `Atomic Storage Engine` | [`utils/storage.py`](../utils/storage.py) | [📖 View Specification](utils/storage.md) | Enterprise Service Component |
@@ -35,6 +36,9 @@
 | `Faculty Registry` | [`services/custom_teachers.py`](../services/custom_teachers.py) | [📖 View Specification](services/custom_teachers.md) | Enterprise Service Component |
 | `Fallback Auth Flow` | [`bot/handlers/user/auth_fallback.py`](../bot/handlers/user/auth_fallback.py) | [📖 View Specification](bot/handlers_user_auth_fallback.md) | Enterprise Service Component |
 | `GOST Document Generator` | [`utils/doc_generator.py`](../utils/doc_generator.py) | [📖 View Specification](utils/doc_generator.md) | Enterprise Service Component |
+| `Gamification API` | [`api/router/gamification.py`](../api/router/gamification.py) | [📖 View Specification](api/router_gamification.md) | Enterprise Service Component |
+| `Gamification Domain Models` | [`services/gamification_models.py`](../services/gamification_models.py) | [📖 View Specification](services/gamification_models.md) | Enterprise Service Component |
+| `Gamification Registry` | [`services/gamification_registry.py`](../services/gamification_registry.py) | [📖 View Specification](services/gamification_registry.md) | Enterprise Service Component |
 | `Global Error Trapper` | [`bot/handlers/errors.py`](../bot/handlers/errors.py) | [📖 View Specification](bot/handlers_errors.md) | Enterprise Service Component |
 | `HMAC-SHA256 Auth` | [`utils/miniapp_auth.py`](../utils/miniapp_auth.py) | [📖 View Specification](utils/miniapp_auth.md) | Enterprise Service Component |
 | `HW Solver API` | [`api/router/solver.py`](../api/router/solver.py) | [📖 View Specification](api/router_solver.md) | Enterprise Service Component |
@@ -73,6 +77,7 @@
 | `Spreadsheet Analytics` | [`services/attendance_stats.py`](../services/attendance_stats.py) | [📖 View Specification](services/attendance_stats.md) | Enterprise Service Component |
 | `Student Identity Cache` | [`services/user_cache.py`](../services/user_cache.py) | [📖 View Specification](services/user_cache.md) | Enterprise Service Component |
 | `Student Lifecycle` | [`services/birthday_manager.py`](../services/birthday_manager.py) | [📖 View Specification](services/birthday_manager.md) | Enterprise Service Component |
+| `Student Profile Flow` | [`bot/handlers/user/profile.py`](../bot/handlers/user/profile.py) | [📖 View Specification](bot/handlers_user_profile.md) | Enterprise Service Component |
 | `Subscriber Store` | [`db/subscribers.py`](../db/subscribers.py) | [📖 View Specification](db/subscribers.md) | Enterprise Service Component |
 | `Subscribers API` | [`api/router/subscribers.py`](../api/router/subscribers.py) | [📖 View Specification](api/router_subscribers.md) | Enterprise Service Component |
 | `Supergroup Alert Dispatch` | [`bot/handlers/admin/ping_all.py`](../bot/handlers/admin/ping_all.py) | [📖 View Specification](bot/handlers_admin_ping_all.md) | Enterprise Service Component |

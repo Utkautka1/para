@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_resolve_key_identity`](#_resolve_key_identity) | Function | L28–L46 | `str | None` | Executes core domain logic for `_resolve_key_identity`. |
-| [`_resolve_token_identity`](#_resolve_token_identity) | Function | L49–L65 | `str | None` | Executes core domain logic for `_resolve_token_identity... |
-| [`_log_audit_access`](#_log_audit_access) | Function | L68–L77 | `None` | Executes core domain logic for `_log_audit_access`. |
-| [`verify_api_or_tester`](#verify_api_or_tester) | Function | L80–L104 | `str` | Executes core domain logic for `verify_api_or_tester`. |
-| [`verify_admin_access`](#verify_admin_access) | Function | L107–L124 | `str` | Executes core domain logic for `verify_admin_access`. |
-| [`verify_api_key`](#verify_api_key) | Function | L127–L139 | `str` | Executes core domain logic for `verify_api_key`. |
+| [`_resolve_key_identity`](#_resolve_key_identity) | Function | L29–L47 | `str | None` | Executes core domain logic for `_resolve_key_identity`. |
+| [`_resolve_token_identity`](#_resolve_token_identity) | Function | L50–L70 | `str | None` | Executes core domain logic for `_resolve_token_identity... |
+| [`_log_audit_access`](#_log_audit_access) | Function | L73–L82 | `None` | Executes core domain logic for `_log_audit_access`. |
+| [`verify_api_or_tester`](#verify_api_or_tester) | Function | L85–L109 | `str` | Executes core domain logic for `verify_api_or_tester`. |
+| [`verify_admin_access`](#verify_admin_access) | Function | L112–L129 | `str` | Executes core domain logic for `verify_admin_access`. |
+| [`verify_api_key`](#verify_api_key) | Function | L132–L144 | `str` | Executes core domain logic for `verify_api_key`. |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 async def _resolve_key_identity(key: str | None) -> str | None
 ```
 
-- **Source Reference**: [`api/deps.py#L28-L46`](../../api/deps.py#L28-L46)
+- **Source Reference**: [`api/deps.py#L29-L47`](../../api/deps.py#L29-L47)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str | None`
 
@@ -70,7 +70,7 @@ result = await _resolve_key_identity(key=...)
 async def _resolve_token_identity(token: str | None) -> str | None
 ```
 
-- **Source Reference**: [`api/deps.py#L49-L65`](../../api/deps.py#L49-L65)
+- **Source Reference**: [`api/deps.py#L50-L70`](../../api/deps.py#L50-L70)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str | None`
 
@@ -103,7 +103,7 @@ result = await _resolve_token_identity(token=...)
 def _log_audit_access(identity: str, request: Request) -> None
 ```
 
-- **Source Reference**: [`api/deps.py#L68-L77`](../../api/deps.py#L68-L77)
+- **Source Reference**: [`api/deps.py#L73-L82`](../../api/deps.py#L73-L82)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -137,7 +137,7 @@ result = _log_audit_access(identity=..., request=...)
 async def verify_api_or_tester( request: Request, key: str | None = Security(_api_key_header), bearer: HTTPAuthorizationCredentials | None = Security(_bearer_scheme), para_session: str | None = Cookie(default=None), ) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L80-L104`](../../api/deps.py#L80-L104)
+- **Source Reference**: [`api/deps.py#L85-L109`](../../api/deps.py#L85-L109)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -173,7 +173,7 @@ result = await verify_api_or_tester(request=..., key=..., bearer=...)
 async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L107-L124`](../../api/deps.py#L107-L124)
+- **Source Reference**: [`api/deps.py#L112-L129`](../../api/deps.py#L112-L129)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -206,7 +206,7 @@ result = await verify_admin_access(auth_identity=...)
 async def verify_api_key(key: str | None = Security(_api_key_header)) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L127-L139`](../../api/deps.py#L127-L139)
+- **Source Reference**: [`api/deps.py#L132-L144`](../../api/deps.py#L132-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 

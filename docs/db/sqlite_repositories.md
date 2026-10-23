@@ -28,6 +28,7 @@ graph LR
 | [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L73–L92 | `SystemIncident` | Executes core domain logic for `record_incident`. |
 | [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L95–L101 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
 | [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L108–L127 | `int` | Saves serialized entity data to storage for `save_daily... |
+| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L130–L136 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
 
 ---
 
@@ -276,6 +277,37 @@ from db.sqlite.repositories import save_daily_snapshots
 
 # Execute call
 result = await save_daily_snapshots(snapshot_date=..., records=...)
+```
+
+---
+
+### `AttendanceRepository.get_latest_snapshots`
+```python
+async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L130-L136`](../../db/sqlite/repositories.py#L130-L136)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `Sequence[AttendanceSnapshot]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_latest_snapshots`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import get_latest_snapshots
+
+# Execute call
+result = await get_latest_snapshots()
 ```
 
 ---

@@ -512,7 +512,7 @@ Executes core domain logic for `_apply_heading_formatting`.
 | :--- | :--- | :--- | :--- |
 | `p` | `Any` | Yes | Parameter `p` of type `Any`. |
 | `title` | `str` | Yes | Parameter `title` of type `str`. |
-| `level` | `int` | Yes | Parameter `level` of type `int`. |
+| `level` | `int` | Yes | Progressive student academic gamification tier level. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -547,7 +547,7 @@ Executes core domain logic for `add_gost_heading`.
 | :--- | :--- | :--- | :--- |
 | `doc` | `Document` | Yes | Parameter `doc` of type `Document`. |
 | `title` | `str` | Yes | Parameter `title` of type `str`. |
-| `level` | `int` | Yes | Parameter `level` of type `int`. |
+| `level` | `int` | Yes | Progressive student academic gamification tier level. |
 | `page_break` | `bool` | Yes | Parameter `page_break` of type `bool`. |
 
 #### Concurrency & Side Effects
@@ -583,7 +583,7 @@ Executes core domain logic for `add_gost_heading_with_bookmark`.
 | :--- | :--- | :--- | :--- |
 | `doc` | `Document` | Yes | Parameter `doc` of type `Document`. |
 | `title` | `str` | Yes | Parameter `title` of type `str`. |
-| `level` | `int` | Yes | Parameter `level` of type `int`. |
+| `level` | `int` | Yes | Progressive student academic gamification tier level. |
 | `bm_id` | `int` | Yes | Parameter `bm_id` of type `int`. |
 
 #### Concurrency & Side Effects
