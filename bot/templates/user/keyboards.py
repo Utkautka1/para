@@ -163,7 +163,6 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
     )
 
 
-
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None:
     """
     Генерирует лаконичную клавиатуру со ссылками на пары для топика группы.

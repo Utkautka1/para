@@ -8,6 +8,7 @@
   4. Обновлять сводку в топике по кнопке att_topic:refresh
 """
 
+import asyncio
 import html
 from typing import Any
 
@@ -23,6 +24,7 @@ from aiogram.types import (
 
 from bot.filters.auth import ClassmateAuthFilter
 from core.logger import get_logger
+from services.achievement_service import award_achievement
 from services.attendance_stats import fetch_all_time_attendance, find_student_attendance
 from services.attendance_topic_updater import sync_attendance_topic_message
 from services.classmates_auth import find_classmate_by_tg_id, process_user_auth
@@ -171,21 +173,19 @@ async def cmd_my_attendance(message: Message) -> None:
         await message.answer(f"⚠️ Данные для <b>{html.escape(fio or 'студента')}</b> не найдены в журнале.")
         return
 
+    uid = message.from_user.id if message.from_user else 0
+    asyncio.create_task(
+        award_achievement(
+            uid, "bot_self_audit", message.bot, message.from_user.full_name if message.from_user else None
+        )
+    )
     text = format_personal_attendance_card(data.get("fio", fio), data)
     await message.answer(text, reply_markup=get_personal_attendance_kb())
 
 
 @router.callback_query(F.data == "att:my_refresh")
 async def cb_my_attendance_refresh(callback: CallbackQuery) -> None:
-    """
-    Обновляет персональную карточку посещаемости студента в ЛС по кнопке.
-
-    Принудительно скачивает свежую версию таблицы из Яндекс Документов.
-    Игнорирует исключения Telegram, если данные не изменились.
-
-    Ничего не возвращает.
-    """
-
+    """Обновляет персональную карточку посещаемости студента в ЛС по кнопке."""
     await callback.answer("⏳ Обновляю данные из журнала...")
     fio = _resolve_student_fio(callback.from_user)
     stats = await fetch_all_time_attendance(force_refresh=True)
@@ -194,6 +194,12 @@ async def cb_my_attendance_refresh(callback: CallbackQuery) -> None:
         await callback.answer("⚠️ Данные не найдены", show_alert=True)
         return
 
+    uid = callback.from_user.id if callback.from_user else 0
+    asyncio.create_task(
+        award_achievement(
+            uid, "bot_self_audit", callback.bot, callback.from_user.full_name if callback.from_user else None
+        )
+    )
     text = format_personal_attendance_card(data.get("fio", fio), data)
     try:
         if callback.message:

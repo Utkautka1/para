@@ -21,13 +21,16 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L48–L66 | `None` | Executes core domain logic for `_set_tester_cookie`. |
-| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L70–L83 | `HTMLResponse` | Executes core domain logic for `serve_miniapp_page`. |
-| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L87–L110 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
-| [`check_tester_status`](#check_tester_status) | Function | L114–L133 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
-| [`list_api_testers`](#list_api_testers) | Function | L137–L150 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
-| [`api_add_tester`](#api_add_tester) | Function | L154–L168 | `dict` | Executes core domain logic for `api_add_tester`. |
-| [`api_remove_tester`](#api_remove_tester) | Function | L172–L186 | `dict` | Executes core domain logic for `api_remove_tester`. |
+| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L50–L68 | `None` | Executes core domain logic for `_set_tester_cookie`. |
+| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L72–L85 | `HTMLResponse` | Executes core domain logic for `serve_miniapp_page`. |
+| [`dev_login`](#dev_login) | Function | L89–L96 | `Response` | Executes core domain logic for `dev_login`. |
+| [`_auth_developer_key`](#_auth_developer_key) | Function | L99–L105 | `MiniappAuthResponse` | Executes core domain logic for `_auth_developer_key`. |
+| [`_auth_telegram_init`](#_auth_telegram_init) | Function | L108–L125 | `MiniappAuthResponse` | Executes core domain logic for `_auth_telegram_init`. |
+| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L129–L135 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
+| [`check_tester_status`](#check_tester_status) | Function | L139–L158 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
+| [`list_api_testers`](#list_api_testers) | Function | L162–L175 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
+| [`api_add_tester`](#api_add_tester) | Function | L179–L193 | `dict` | Executes core domain logic for `api_add_tester`. |
+| [`api_remove_tester`](#api_remove_tester) | Function | L197–L211 | `dict` | Executes core domain logic for `api_remove_tester`. |
 
 ---
 
@@ -38,7 +41,7 @@ graph LR
 def _set_tester_cookie(response: Response, user_id: int) -> None
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L48-L66`](../../api/router/miniapp.py#L48-L66)
+- **Source Reference**: [`api/router/miniapp.py#L50-L68`](../../api/router/miniapp.py#L50-L68)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -72,7 +75,7 @@ result = _set_tester_cookie(response=..., user_id=...)
 async def serve_miniapp_page() -> HTMLResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L70-L83`](../../api/router/miniapp.py#L70-L83)
+- **Source Reference**: [`api/router/miniapp.py#L72-L85`](../../api/router/miniapp.py#L72-L85)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `HTMLResponse`
 
@@ -98,12 +101,113 @@ result = await serve_miniapp_page()
 
 ---
 
+### `dev_login`
+```python
+async def dev_login(key: str = Query(..., description="API Secret Key")) -> Response
+```
+
+- **Source Reference**: [`api/router/miniapp.py#L89-L96`](../../api/router/miniapp.py#L89-L96)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `Response`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `dev_login`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import dev_login
+
+# Execute call
+result = await dev_login(key=...)
+```
+
+---
+
+### `_auth_developer_key`
+```python
+def _auth_developer_key(api_key: str, response: Response) -> MiniappAuthResponse
+```
+
+- **Source Reference**: [`api/router/miniapp.py#L99-L105`](../../api/router/miniapp.py#L99-L105)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `MiniappAuthResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_auth_developer_key`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `api_key` | `str` | Yes | Parameter `api_key` of type `str`. |
+| `response` | `Response` | Yes | Parameter `response` of type `Response`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import _auth_developer_key
+
+# Execute call
+result = _auth_developer_key(api_key=..., response=...)
+```
+
+---
+
+### `_auth_telegram_init`
+```python
+async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuthResponse
+```
+
+- **Source Reference**: [`api/router/miniapp.py#L108-L125`](../../api/router/miniapp.py#L108-L125)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `MiniappAuthResponse`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_auth_telegram_init`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `init_data` | `str` | Yes | Parameter `init_data` of type `str`. |
+| `response` | `Response` | Yes | Parameter `response` of type `Response`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.miniapp import _auth_telegram_init
+
+# Execute call
+result = await _auth_telegram_init(init_data=..., response=...)
+```
+
+---
+
 ### `authenticate_miniapp`
 ```python
 async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L87-L110`](../../api/router/miniapp.py#L87-L110)
+- **Source Reference**: [`api/router/miniapp.py#L129-L135`](../../api/router/miniapp.py#L129-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappAuthResponse`
 
@@ -117,7 +221,7 @@ Executes core domain logic for `authenticate_miniapp`.
 | `response` | `Response` | Yes | Parameter `response` of type `Response`. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
 Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
@@ -137,7 +241,7 @@ result = await authenticate_miniapp(payload=..., response=...)
 async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L114-L133`](../../api/router/miniapp.py#L114-L133)
+- **Source Reference**: [`api/router/miniapp.py#L139-L158`](../../api/router/miniapp.py#L139-L158)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappCheckResponse`
 
@@ -170,7 +274,7 @@ result = await check_tester_status(para_session=...)
 async def list_api_testers() -> TesterListResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L137-L150`](../../api/router/miniapp.py#L137-L150)
+- **Source Reference**: [`api/router/miniapp.py#L162-L175`](../../api/router/miniapp.py#L162-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterListResponse`
 
@@ -201,7 +305,7 @@ result = await list_api_testers()
 async def api_add_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L154-L168`](../../api/router/miniapp.py#L154-L168)
+- **Source Reference**: [`api/router/miniapp.py#L179-L193`](../../api/router/miniapp.py#L179-L193)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 
@@ -234,7 +338,7 @@ result = await api_add_tester(user_id=...)
 async def api_remove_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L172-L186`](../../api/router/miniapp.py#L172-L186)
+- **Source Reference**: [`api/router/miniapp.py#L197-L211`](../../api/router/miniapp.py#L197-L211)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 

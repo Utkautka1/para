@@ -80,4 +80,3 @@ async def test_classmate_auth_filter_allows_admin(auth_user: User):
     msg = MagicMock(spec=Message)
     msg.from_user = auth_user
     assert await filter_obj(msg) is True
-

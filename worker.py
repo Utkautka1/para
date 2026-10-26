@@ -113,7 +113,6 @@ async def main() -> None:
     setup_scheduler()
     await schedule_today_reminders()
 
-
     try:
         await _start_worker_loops()
     except asyncio.CancelledError:

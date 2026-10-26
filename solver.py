@@ -52,7 +52,6 @@ async def main() -> None:
     await init_redis()
     await recover_stale_hw_tasks()
 
-
     try:
         await run_solver_loop(bot, _SOLVER_SEMAPHORE)
     finally:

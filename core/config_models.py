@@ -197,4 +197,3 @@ class TracingConfig:
     service_name: str = "para"
     jaeger_ui_url: str = "http://jaeger:16686"
     sampling_ratio: float = 1.0
-

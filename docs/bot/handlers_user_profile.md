@@ -21,14 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_miniapp_keyboard`](#_build_miniapp_keyboard) | Function | L29–L36 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_miniapp_keyboard... |
-| [`_format_profile_achievements`](#_format_profile_achievements) | Function | L39–L48 | `str` | Executes core domain logic for `_format_profile_achieve... |
-| [`_render_ascii_progress`](#_render_ascii_progress) | Function | L51–L58 | `str` | Executes core domain logic for `_render_ascii_progress`... |
-| [`_format_profile_message`](#_format_profile_message) | Function | L61–L79 | `str` | Executes core domain logic for `_format_profile_message... |
-| [`handle_profile_command`](#handle_profile_command) | Function | L83–L101 | `None` | Executes core domain logic for `handle_profile_command`... |
-| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L104–L108 | `str` | Executes core domain logic for `_format_leaderboard_row... |
-| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L111–L124 | `str` | Executes core domain logic for `_format_leaderboard_mes... |
-| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L128–L135 | `None` | Executes core domain logic for `handle_leaderboard_comm... |
+| [`_build_miniapp_keyboard`](#_build_miniapp_keyboard) | Function | L31–L38 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_miniapp_keyboard... |
+| [`_format_profile_achievements`](#_format_profile_achievements) | Function | L41–L50 | `str` | Executes core domain logic for `_format_profile_achieve... |
+| [`_render_ascii_progress`](#_render_ascii_progress) | Function | L53–L60 | `str` | Executes core domain logic for `_render_ascii_progress`... |
+| [`_format_profile_message`](#_format_profile_message) | Function | L63–L81 | `str` | Executes core domain logic for `_format_profile_message... |
+| [`handle_profile_command`](#handle_profile_command) | Function | L85–L104 | `None` | Executes core domain logic for `handle_profile_command`... |
+| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L107–L111 | `str` | Executes core domain logic for `_format_leaderboard_row... |
+| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L114–L127 | `str` | Executes core domain logic for `_format_leaderboard_mes... |
+| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L131–L142 | `None` | Executes core domain logic for `handle_leaderboard_comm... |
 
 ---
 
@@ -39,7 +39,7 @@ graph LR
 def _build_miniapp_keyboard() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L29-L36`](../../bot/handlers/user/profile.py#L29-L36)
+- **Source Reference**: [`bot/handlers/user/profile.py#L31-L38`](../../bot/handlers/user/profile.py#L31-L38)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -70,7 +70,7 @@ result = _build_miniapp_keyboard()
 def _format_profile_achievements(ach_ids: list[str]) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L39-L48`](../../bot/handlers/user/profile.py#L39-L48)
+- **Source Reference**: [`bot/handlers/user/profile.py#L41-L50`](../../bot/handlers/user/profile.py#L41-L50)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -103,7 +103,7 @@ result = _format_profile_achievements(ach_ids=...)
 def _render_ascii_progress(current: int, total: int, length: int = 10) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L51-L58`](../../bot/handlers/user/profile.py#L51-L58)
+- **Source Reference**: [`bot/handlers/user/profile.py#L53-L60`](../../bot/handlers/user/profile.py#L53-L60)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -138,7 +138,7 @@ result = _render_ascii_progress(current=..., total=..., length=...)
 def _format_profile_message(p) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L61-L79`](../../bot/handlers/user/profile.py#L61-L79)
+- **Source Reference**: [`bot/handlers/user/profile.py#L63-L81`](../../bot/handlers/user/profile.py#L63-L81)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -171,7 +171,7 @@ result = _format_profile_message(p=...)
 async def handle_profile_command(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L83-L101`](../../bot/handlers/user/profile.py#L83-L101)
+- **Source Reference**: [`bot/handlers/user/profile.py#L85-L104`](../../bot/handlers/user/profile.py#L85-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -204,7 +204,7 @@ result = await handle_profile_command(message=...)
 def _format_leaderboard_row(idx: int, p) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L104-L108`](../../bot/handlers/user/profile.py#L104-L108)
+- **Source Reference**: [`bot/handlers/user/profile.py#L107-L111`](../../bot/handlers/user/profile.py#L107-L111)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -238,7 +238,7 @@ result = _format_leaderboard_row(idx=..., p=...)
 def _format_leaderboard_message(profiles: list) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L111-L124`](../../bot/handlers/user/profile.py#L111-L124)
+- **Source Reference**: [`bot/handlers/user/profile.py#L114-L127`](../../bot/handlers/user/profile.py#L114-L127)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -271,7 +271,7 @@ result = _format_leaderboard_message(profiles=...)
 async def handle_leaderboard_command(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L128-L135`](../../bot/handlers/user/profile.py#L128-L135)
+- **Source Reference**: [`bot/handlers/user/profile.py#L131-L142`](../../bot/handlers/user/profile.py#L131-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

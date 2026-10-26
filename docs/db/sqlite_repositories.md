@@ -21,14 +21,16 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L25–L30 | `set[int]` | Retrieves and resolves domain data for `get_active_chat... |
-| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L33–L47 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L50–L59 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L62–L66 | `int` | Executes core domain logic for `count_active`. |
-| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L73–L92 | `SystemIncident` | Executes core domain logic for `record_incident`. |
-| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L95–L101 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
-| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L108–L127 | `int` | Saves serialized entity data to storage for `save_daily... |
-| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L130–L136 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
+| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L31–L36 | `set[int]` | Retrieves and resolves domain data for `get_active_chat... |
+| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L39–L53 | `bool` | Executes core domain logic for `add_subscriber`. |
+| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L56–L65 | `bool` | Executes core domain logic for `remove_subscriber`. |
+| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L68–L72 | `int` | Executes core domain logic for `count_active`. |
+| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L79–L98 | `SystemIncident` | Executes core domain logic for `record_incident`. |
+| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L101–L107 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
+| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L114–L133 | `int` | Saves serialized entity data to storage for `save_daily... |
+| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L136–L142 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
+| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L149–L161 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
+| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L164–L178 | `bool` | Executes core domain logic for `unlock_achievement`. |
 
 ---
 
@@ -43,7 +45,7 @@ Encapsulates domain entities and data transfer logic for `SubscriberRepository`.
 async def get_active_chat_ids() -> set[int]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L25-L30`](../../db/sqlite/repositories.py#L25-L30)
+- **Source Reference**: [`db/sqlite/repositories.py#L31-L36`](../../db/sqlite/repositories.py#L31-L36)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `set[int]`
 
@@ -74,7 +76,7 @@ result = await get_active_chat_ids()
 async def add_subscriber(chat_id: int, username: str | None = None, full_name: str | None = None) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L33-L47`](../../db/sqlite/repositories.py#L33-L47)
+- **Source Reference**: [`db/sqlite/repositories.py#L39-L53`](../../db/sqlite/repositories.py#L39-L53)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -109,7 +111,7 @@ result = await add_subscriber(chat_id=..., username=..., full_name=...)
 async def remove_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L50-L59`](../../db/sqlite/repositories.py#L50-L59)
+- **Source Reference**: [`db/sqlite/repositories.py#L56-L65`](../../db/sqlite/repositories.py#L56-L65)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -142,7 +144,7 @@ result = await remove_subscriber(chat_id=...)
 async def count_active() -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L62-L66`](../../db/sqlite/repositories.py#L62-L66)
+- **Source Reference**: [`db/sqlite/repositories.py#L68-L72`](../../db/sqlite/repositories.py#L68-L72)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -177,7 +179,7 @@ Encapsulates domain entities and data transfer logic for `IncidentRepository`.
 async def record_incident( incident_type: str, title: str, description: str, severity: str = IncidentSeverity.WARNING, trace_id: str | None = None, ) -> SystemIncident
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L73-L92`](../../db/sqlite/repositories.py#L73-L92)
+- **Source Reference**: [`db/sqlite/repositories.py#L79-L98`](../../db/sqlite/repositories.py#L79-L98)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SystemIncident`
 
@@ -214,7 +216,7 @@ result = await record_incident(incident_type=..., title=..., description=...)
 async def get_recent_incidents(limit: int = 50, unresolved_only: bool = False) -> Sequence[SystemIncident]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L95-L101`](../../db/sqlite/repositories.py#L95-L101)
+- **Source Reference**: [`db/sqlite/repositories.py#L101-L107`](../../db/sqlite/repositories.py#L101-L107)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Sequence[SystemIncident]`
 
@@ -252,7 +254,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceRepository`.
 async def save_daily_snapshots(snapshot_date: date, records: list[dict[str, Any]]) -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L108-L127`](../../db/sqlite/repositories.py#L108-L127)
+- **Source Reference**: [`db/sqlite/repositories.py#L114-L133`](../../db/sqlite/repositories.py#L114-L133)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -286,7 +288,7 @@ result = await save_daily_snapshots(snapshot_date=..., records=...)
 async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L130-L136`](../../db/sqlite/repositories.py#L130-L136)
+- **Source Reference**: [`db/sqlite/repositories.py#L136-L142`](../../db/sqlite/repositories.py#L136-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Sequence[AttendanceSnapshot]`
 
@@ -308,6 +310,75 @@ from db.sqlite.repositories import get_latest_snapshots
 
 # Execute call
 result = await get_latest_snapshots()
+```
+
+---
+
+## Class Model: `GamificationRepository`
+
+Encapsulates domain entities and data transfer logic for `GamificationRepository`.
+
+### `GamificationRepository.get_all_unlocked_map`
+```python
+async def get_all_unlocked_map() -> dict[str, set[str]]
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L149-L161`](../../db/sqlite/repositories.py#L149-L161)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, set[str]]`
+
+#### Overview & Architectural Purpose
+Retrieves and resolves domain data for `get_all_unlocked_map`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import get_all_unlocked_map
+
+# Execute call
+result = await get_all_unlocked_map()
+```
+
+---
+
+### `GamificationRepository.unlock_achievement`
+```python
+async def unlock_achievement(student_fio: str, achievement_id: str) -> bool
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L164-L178`](../../db/sqlite/repositories.py#L164-L178)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `unlock_achievement`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_fio` | `str` | Yes | Parameter `student_fio` of type `str`. |
+| `achievement_id` | `str` | Yes | Unique identifier of academic milestone achievement. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import unlock_achievement
+
+# Execute call
+result = await unlock_achievement(student_fio=..., achievement_id=...)
 ```
 
 ---

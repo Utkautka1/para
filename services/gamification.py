@@ -22,7 +22,6 @@ from services.gamification_registry import (
     ACHIEVEMENTS_MAP,
     RANKS,
     STAROSTA_RANK,
-    get_all_achievements,
 )
 
 log = get_logger("gamification")
@@ -190,11 +189,7 @@ def _evaluate_all_rules(s: dict[str, Any], extra: set[str] | None) -> list[str]:
 
 def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> int:
     """Рассчитывает суммарные очки академического опыта (XP) строго по открытым ачивкам."""
-    return sum(
-        ACHIEVEMENTS_MAP[aid].xp_reward
-        for aid in unlocked_ach_ids
-        if aid in ACHIEVEMENTS_MAP
-    )
+    return sum(ACHIEVEMENTS_MAP[aid].xp_reward for aid in unlocked_ach_ids if aid in ACHIEVEMENTS_MAP)
 
 
 def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, Any]:
@@ -260,6 +255,16 @@ async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None:
         log.warning(f"Ошибка сохранения кэша лидерборда: {exc}")
 
 
+def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]:
+    """Находит все открытые ачивки студента по точному или частичному совпадению ФИО."""
+    clean = fio.strip().lower()
+    res: set[str] = set()
+    for stored_fio, aids in unlocked_map.items():
+        if stored_fio == clean or stored_fio in clean or clean in stored_fio:
+            res.update(aids)
+    return res
+
+
 async def get_group_leaderboard(
     provided_stats: dict[str, Any] | None = None,
     force_refresh: bool = False,
@@ -273,8 +278,7 @@ async def get_group_leaderboard(
     stats = provided_stats or await fetch_all_time_attendance()
     unlocked_map = await GamificationRepository.get_all_unlocked_map()
     profiles = [
-        build_student_profile(fio, data, unlocked_map.get(fio.lower(), set()))
-        for fio, data in stats.items()
+        build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map)) for fio, data in stats.items()
     ]
     profiles.sort(key=lambda s: (1 if is_starosta(s.fio) else 0, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
     if not provided_stats:
@@ -290,11 +294,17 @@ async def get_student_profile_by_fio(fio: str, extra: set[str] | None = None) ->
     if matched and not extra:
         return matched
     if matched and extra:
-        raw = {"total": {"П": matched.present_count, "О": matched.late_count, "У": matched.excused_count, "Н": matched.unexcused_count}}
+        raw = {
+            "total": {
+                "П": matched.present_count,
+                "О": matched.late_count,
+                "У": matched.excused_count,
+                "Н": matched.unexcused_count,
+            }
+        }
         return build_student_profile(matched.fio, raw, extra)
     stats = await fetch_all_time_attendance()
     matched_fio = next((k for k in stats if clean in k.lower() or k.lower() in clean), None)
     if not matched_fio:
         return None
     return build_student_profile(matched_fio, stats[matched_fio], extra)
-

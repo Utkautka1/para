@@ -27,8 +27,8 @@ graph LR
 | [`_build_nav_rows`](#_build_nav_rows) | Function | L71–L110 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_nav_rows`. |
 | [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L113–L144 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_schedule_in... |
 | [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L147–L163 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_tester_cabi... |
-| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L167–L182 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
-| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L185–L202 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
+| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L166–L181 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
+| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L184–L201 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
 
 ---
 
@@ -245,7 +245,7 @@ result = get_tester_cabinet_kb()
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L167-L182`](../../bot/templates/user/keyboards.py#L167-L182)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L166-L181`](../../bot/templates/user/keyboards.py#L166-L181)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup | None`
 
@@ -278,7 +278,7 @@ result = get_topic_inline_kb(lessons=...)
 def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L185-L202`](../../bot/templates/user/keyboards.py#L185-L202)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L184-L201`](../../bot/templates/user/keyboards.py#L184-L201)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

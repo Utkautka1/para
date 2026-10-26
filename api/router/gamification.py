@@ -119,7 +119,4 @@ async def get_achievements_catalog_endpoint() -> AchievementsCatalogResponse:
 @router.get("/ranks")
 async def get_ranks_catalog_endpoint() -> list[dict[str, str]]:
     """Возвращает каталог всех академических рангов системы."""
-    return [
-        {"name": r.name, "icon": r.icon, "description": r.description}
-        for r in RANKS
-    ]
+    return [{"name": r.name, "icon": r.icon, "description": r.description} for r in RANKS]

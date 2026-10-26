@@ -25,9 +25,9 @@ graph LR
 | [`_cleanup_temp_file`](#_cleanup_temp_file) | Function | L40–L49 | `None` | Executes core domain logic for `_cleanup_temp_file`. |
 | [`_handle_task_failure`](#_handle_task_failure) | Function | L52–L63 | `None` | Executes core domain logic for `_handle_task_failure`. |
 | [`execute_single_task`](#execute_single_task) | Function | L66–L89 | `None` | Executes core domain logic for `execute_single_task`. |
-| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L93–L102 | `None` | Executes core domain logic for `_guarded_execute_task`. |
-| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L105–L115 | `None` | Executes core domain logic for `_drain_active_tasks`. |
-| [`run_solver_loop`](#run_solver_loop) | Function | L118–L144 | `None` | Executes core domain logic for `run_solver_loop`. |
+| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L92–L101 | `None` | Executes core domain logic for `_guarded_execute_task`. |
+| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L104–L114 | `None` | Executes core domain logic for `_drain_active_tasks`. |
+| [`run_solver_loop`](#run_solver_loop) | Function | L117–L143 | `None` | Executes core domain logic for `run_solver_loop`. |
 
 ---
 
@@ -174,7 +174,7 @@ result = await execute_single_task(tg_bot=..., task=...)
 async def _guarded_execute_task(tg_bot: Bot, task: dict, semaphore: asyncio.Semaphore) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L93-L102`](../../services/solver/task_processor.py#L93-L102)
+- **Source Reference**: [`services/solver/task_processor.py#L92-L101`](../../services/solver/task_processor.py#L92-L101)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -209,7 +209,7 @@ result = await _guarded_execute_task(tg_bot=..., task=..., semaphore=...)
 async def _drain_active_tasks(active_tasks: set[asyncio.Task]) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L105-L115`](../../services/solver/task_processor.py#L105-L115)
+- **Source Reference**: [`services/solver/task_processor.py#L104-L114`](../../services/solver/task_processor.py#L104-L114)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -242,7 +242,7 @@ result = await _drain_active_tasks(active_tasks=...)
 async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L118-L144`](../../services/solver/task_processor.py#L118-L144)
+- **Source Reference**: [`services/solver/task_processor.py#L117-L143`](../../services/solver/task_processor.py#L117-L143)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

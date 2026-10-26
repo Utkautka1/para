@@ -21,15 +21,15 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_get_attendance_achievements`](#_get_attendance_achievements) | Function | L113–L127 | `list[AchievementDefinition]` | Executes core domain logic for `_get_attendance_achieve... |
-| [`_get_punctuality_achievements`](#_get_punctuality_achievements) | Function | L130–L144 | `list[AchievementDefinition]` | Executes core domain logic for `_get_punctuality_achiev... |
-| [`_get_bot_achievements`](#_get_bot_achievements) | Function | L147–L161 | `list[AchievementDefinition]` | Executes core domain logic for `_get_bot_achievements`. |
-| [`_get_ai_achievements`](#_get_ai_achievements) | Function | L164–L178 | `list[AchievementDefinition]` | Executes core domain logic for `_get_ai_achievements`. |
-| [`_get_student_life_achievements`](#_get_student_life_achievements) | Function | L181–L195 | `list[AchievementDefinition]` | Executes core domain logic for `_get_student_life_achie... |
-| [`_get_social_achievements`](#_get_social_achievements) | Function | L198–L212 | `list[AchievementDefinition]` | Executes core domain logic for `_get_social_achievement... |
-| [`_get_easter_egg_achievements`](#_get_easter_egg_achievements) | Function | L215–L229 | `list[AchievementDefinition]` | Executes core domain logic for `_get_easter_egg_achieve... |
-| [`_get_mastery_achievements`](#_get_mastery_achievements) | Function | L232–L246 | `list[AchievementDefinition]` | Executes core domain logic for `_get_mastery_achievemen... |
-| [`get_all_achievements`](#get_all_achievements) | Function | L249–L264 | `list[AchievementDefinition]` | Retrieves and resolves domain data for `get_all_achieve... |
+| [`_get_attendance_achievements`](#_get_attendance_achievements) | Function | L114–L202 | `list[AchievementDefinition]` | Executes core domain logic for `_get_attendance_achieve... |
+| [`_get_punctuality_achievements`](#_get_punctuality_achievements) | Function | L205–L299 | `list[AchievementDefinition]` | Executes core domain logic for `_get_punctuality_achiev... |
+| [`_get_bot_achievements`](#_get_bot_achievements) | Function | L302–L390 | `list[AchievementDefinition]` | Executes core domain logic for `_get_bot_achievements`. |
+| [`_get_ai_achievements`](#_get_ai_achievements) | Function | L393–L487 | `list[AchievementDefinition]` | Executes core domain logic for `_get_ai_achievements`. |
+| [`_get_student_life_achievements`](#_get_student_life_achievements) | Function | L490–L584 | `list[AchievementDefinition]` | Executes core domain logic for `_get_student_life_achie... |
+| [`_get_social_achievements`](#_get_social_achievements) | Function | L587–L681 | `list[AchievementDefinition]` | Executes core domain logic for `_get_social_achievement... |
+| [`_get_easter_egg_achievements`](#_get_easter_egg_achievements) | Function | L684–L778 | `list[AchievementDefinition]` | Executes core domain logic for `_get_easter_egg_achieve... |
+| [`_get_mastery_achievements`](#_get_mastery_achievements) | Function | L781–L875 | `list[AchievementDefinition]` | Executes core domain logic for `_get_mastery_achievemen... |
+| [`get_all_achievements`](#get_all_achievements) | Function | L878–L893 | `list[AchievementDefinition]` | Retrieves and resolves domain data for `get_all_achieve... |
 
 ---
 
@@ -40,7 +40,7 @@ graph LR
 def _get_attendance_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L113-L127`](../../services/gamification_registry.py#L113-L127)
+- **Source Reference**: [`services/gamification_registry.py#L114-L202`](../../services/gamification_registry.py#L114-L202)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -71,7 +71,7 @@ result = _get_attendance_achievements()
 def _get_punctuality_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L130-L144`](../../services/gamification_registry.py#L130-L144)
+- **Source Reference**: [`services/gamification_registry.py#L205-L299`](../../services/gamification_registry.py#L205-L299)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -102,7 +102,7 @@ result = _get_punctuality_achievements()
 def _get_bot_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L147-L161`](../../services/gamification_registry.py#L147-L161)
+- **Source Reference**: [`services/gamification_registry.py#L302-L390`](../../services/gamification_registry.py#L302-L390)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -133,7 +133,7 @@ result = _get_bot_achievements()
 def _get_ai_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L164-L178`](../../services/gamification_registry.py#L164-L178)
+- **Source Reference**: [`services/gamification_registry.py#L393-L487`](../../services/gamification_registry.py#L393-L487)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -164,7 +164,7 @@ result = _get_ai_achievements()
 def _get_student_life_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L181-L195`](../../services/gamification_registry.py#L181-L195)
+- **Source Reference**: [`services/gamification_registry.py#L490-L584`](../../services/gamification_registry.py#L490-L584)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -195,7 +195,7 @@ result = _get_student_life_achievements()
 def _get_social_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L198-L212`](../../services/gamification_registry.py#L198-L212)
+- **Source Reference**: [`services/gamification_registry.py#L587-L681`](../../services/gamification_registry.py#L587-L681)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -226,7 +226,7 @@ result = _get_social_achievements()
 def _get_easter_egg_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L215-L229`](../../services/gamification_registry.py#L215-L229)
+- **Source Reference**: [`services/gamification_registry.py#L684-L778`](../../services/gamification_registry.py#L684-L778)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -257,7 +257,7 @@ result = _get_easter_egg_achievements()
 def _get_mastery_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L232-L246`](../../services/gamification_registry.py#L232-L246)
+- **Source Reference**: [`services/gamification_registry.py#L781-L875`](../../services/gamification_registry.py#L781-L875)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 
@@ -288,7 +288,7 @@ result = _get_mastery_achievements()
 def get_all_achievements() -> list[AchievementDefinition]
 ```
 
-- **Source Reference**: [`services/gamification_registry.py#L249-L264`](../../services/gamification_registry.py#L249-L264)
+- **Source Reference**: [`services/gamification_registry.py#L878-L893`](../../services/gamification_registry.py#L878-L893)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[AchievementDefinition]`
 

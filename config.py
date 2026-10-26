@@ -588,4 +588,3 @@ OTEL_EXPORTER_OTLP_ENDPOINT: str = tracing_config.otlp_endpoint
 OTEL_SERVICE_NAME: str = tracing_config.service_name
 JAEGER_UI_URL: str = tracing_config.jaeger_ui_url
 OTEL_SAMPLING_RATIO: float = tracing_config.sampling_ratio
-

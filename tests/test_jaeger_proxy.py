@@ -64,7 +64,6 @@ async def test_jaeger_proxy_authorized_forward(app) -> None:
             assert "Jaeger UI Mock" in resp.text
 
 
-
 @pytest.mark.asyncio
 async def test_jaeger_proxy_service_unavailable(app) -> None:
     """Проверяет отдачу 503 Service Unavailable при ошибке сети до контейнера jaeger."""

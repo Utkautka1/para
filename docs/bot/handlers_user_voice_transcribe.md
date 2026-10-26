@@ -36,9 +36,9 @@ graph LR
 | [`send_overflow_chunks`](#send_overflow_chunks) | Function | L285–L297 | `None` | Sends subsequent chunks of long transcription to Telegr... |
 | [`deliver_transcription`](#deliver_transcription) | Function | L300–L324 | `None` | Delivers formatted transcription text with automatic mu... |
 | [`_download_and_transcribe`](#_download_and_transcribe) | Function | L327–L345 | `str` | Executes core domain logic for `_download_and_transcrib... |
-| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L348–L375 | `None` | Executes core domain logic for `process_audio_pipeline`... |
-| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L378–L399 | `bool` | Executes core domain logic for `_check_and_acquire_voic... |
-| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L403–L424 | `None` | Executes core domain logic for `handle_voice_or_video_n... |
+| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L348–L380 | `None` | Executes core domain logic for `process_audio_pipeline`... |
+| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L383–L404 | `bool` | Executes core domain logic for `_check_and_acquire_voic... |
+| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L408–L429 | `None` | Executes core domain logic for `handle_voice_or_video_n... |
 
 ---
 
@@ -560,7 +560,7 @@ result = await _download_and_transcribe(file_id=...)
 async def process_audio_pipeline( file_id: str, sender: str, duration: int, message: Message, status_msg: Message, user_id: int = 0, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L348-L375`](../../bot/handlers/user/voice_transcribe.py#L348-L375)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L348-L380`](../../bot/handlers/user/voice_transcribe.py#L348-L380)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -598,7 +598,7 @@ result = await process_audio_pipeline(file_id=..., sender=..., duration=...)
 async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L378-L399`](../../bot/handlers/user/voice_transcribe.py#L378-L399)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L383-L404`](../../bot/handlers/user/voice_transcribe.py#L383-L404)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -632,7 +632,7 @@ result = await _check_and_acquire_voice(message=..., meta=...)
 async def handle_voice_or_video_note(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L403-L424`](../../bot/handlers/user/voice_transcribe.py#L403-L424)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L408-L429`](../../bot/handlers/user/voice_transcribe.py#L408-L429)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

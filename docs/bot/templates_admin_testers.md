@@ -23,7 +23,7 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`format_testers_text`](#format_testers_text) | Function | L20–L39 | `str` | Formats message payload and presentation markup for `fo... |
 | [`get_swagger_buttons`](#get_swagger_buttons) | Function | L42–L53 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L57–L87 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L56–L86 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -102,7 +102,7 @@ result = get_swagger_buttons()
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L57-L87`](../../bot/templates/admin/testers.py#L57-L87)
+- **Source Reference**: [`bot/templates/admin/testers.py#L56-L86`](../../bot/templates/admin/testers.py#L56-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

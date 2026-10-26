@@ -95,7 +95,6 @@ def get_swagger_launch_btn() -> InlineKeyboardButton:
     return InlineKeyboardButton(text="🚀 Ссылка на веб-портал", callback_data="admin:show_swagger_link")
 
 
-
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру управления списком разрешенных тестеров API.

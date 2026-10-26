@@ -31,13 +31,15 @@ graph LR
 | [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L166–L177 | `None` | Executes core domain logic for `invalidate_attendance_s... |
 | [`_save_sqlite_snapshot`](#_save_sqlite_snapshot) | Function | L180–L197 | `None` | Executes core domain logic for `_save_sqlite_snapshot`. |
 | [`_load_sqlite_snapshot`](#_load_sqlite_snapshot) | Function | L200–L219 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_sqlite_snapshot`. |
-| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L222–L242 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
-| [`find_student_attendance`](#find_student_attendance) | Function | L245–L265 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
-| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L268–L281 | `None` | Executes core domain logic for `_adjust_student_counts`... |
-| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L284–L298 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L301–L310 | `None` | Executes core domain logic for `_save_lesson_marks`. |
-| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L313–L331 | `dict[str, str]` | Executes core domain logic for `_update_session_marks_i... |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L334–L349 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
+| [`_download_and_cache_fresh_stats`](#_download_and_cache_fresh_stats) | Function | L225–L237 | `dict[str, dict[str, Any]]` | Executes core domain logic for `_download_and_cache_fre... |
+| [`_trigger_background_attendance_refresh`](#_trigger_background_attendance_refresh) | Function | L240–L252 | `None` | Executes core domain logic for `_trigger_background_att... |
+| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L255–L281 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
+| [`find_student_attendance`](#find_student_attendance) | Function | L284–L304 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
+| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L307–L320 | `None` | Executes core domain logic for `_adjust_student_counts`... |
+| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L323–L337 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L340–L349 | `None` | Executes core domain logic for `_save_lesson_marks`. |
+| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L352–L370 | `dict[str, str]` | Executes core domain logic for `_update_session_marks_i... |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L373–L388 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
 
 ---
 
@@ -375,12 +377,74 @@ result = await _load_sqlite_snapshot()
 
 ---
 
+### `_download_and_cache_fresh_stats`
+```python
+async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]
+```
+
+- **Source Reference**: [`services/attendance_stats.py#L225-L237`](../../services/attendance_stats.py#L225-L237)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict[str, dict[str, Any]]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_download_and_cache_fresh_stats`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _download_and_cache_fresh_stats
+
+# Execute call
+result = await _download_and_cache_fresh_stats()
+```
+
+---
+
+### `_trigger_background_attendance_refresh`
+```python
+async def _trigger_background_attendance_refresh() -> None
+```
+
+- **Source Reference**: [`services/attendance_stats.py#L240-L252`](../../services/attendance_stats.py#L240-L252)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_trigger_background_attendance_refresh`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from services.attendance_stats import _trigger_background_attendance_refresh
+
+# Execute call
+result = await _trigger_background_attendance_refresh()
+```
+
+---
+
 ### `fetch_all_time_attendance`
 ```python
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L222-L242`](../../services/attendance_stats.py#L222-L242)
+- **Source Reference**: [`services/attendance_stats.py#L255-L281`](../../services/attendance_stats.py#L255-L281)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -413,7 +477,7 @@ result = await fetch_all_time_attendance(force_refresh=...)
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L245-L265`](../../services/attendance_stats.py#L245-L265)
+- **Source Reference**: [`services/attendance_stats.py#L284-L304`](../../services/attendance_stats.py#L284-L304)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -447,7 +511,7 @@ result = find_student_attendance(stats=..., target_name=...)
 def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L268-L281`](../../services/attendance_stats.py#L268-L281)
+- **Source Reference**: [`services/attendance_stats.py#L307-L320`](../../services/attendance_stats.py#L307-L320)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -482,7 +546,7 @@ result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
 async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L284-L298`](../../services/attendance_stats.py#L284-L298)
+- **Source Reference**: [`services/attendance_stats.py#L323-L337`](../../services/attendance_stats.py#L323-L337)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, str]`
 
@@ -516,7 +580,7 @@ result = await _get_saved_lesson_marks(t_date=..., l_num=...)
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L301-L310`](../../services/attendance_stats.py#L301-L310)
+- **Source Reference**: [`services/attendance_stats.py#L340-L349`](../../services/attendance_stats.py#L340-L349)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -551,7 +615,7 @@ result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
 def _update_session_marks_in_stats( session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]] ) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L313-L331`](../../services/attendance_stats.py#L313-L331)
+- **Source Reference**: [`services/attendance_stats.py#L352-L370`](../../services/attendance_stats.py#L352-L370)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -586,7 +650,7 @@ result = _update_session_marks_in_stats(session=..., saved_marks=..., stats=...)
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L334-L349`](../../services/attendance_stats.py#L334-L349)
+- **Source Reference**: [`services/attendance_stats.py#L373-L388`](../../services/attendance_stats.py#L373-L388)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 

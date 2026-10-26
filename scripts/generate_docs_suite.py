@@ -743,8 +743,14 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "api/router/gamification.py": {"out": "docs/api/router_gamification.md", "cat": "Gamification API"},
     "bot/handlers/user/profile.py": {"out": "docs/bot/handlers_user_profile.md", "cat": "Student Profile Flow"},
     "services/gamification.py": {"out": "docs/services/gamification.md", "cat": "Academic Gamification Engine"},
-    "services/gamification_models.py": {"out": "docs/services/gamification_models.md", "cat": "Gamification Domain Models"},
-    "services/gamification_registry.py": {"out": "docs/services/gamification_registry.md", "cat": "Gamification Registry"},
+    "services/gamification_models.py": {
+        "out": "docs/services/gamification_models.md",
+        "cat": "Gamification Domain Models",
+    },
+    "services/gamification_registry.py": {
+        "out": "docs/services/gamification_registry.md",
+        "cat": "Gamification Registry",
+    },
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
 }
 

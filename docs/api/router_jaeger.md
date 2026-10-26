@@ -21,11 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_filter_headers`](#_filter_headers) | Function | L43–L51 | `dict[str, str]` | Executes core domain logic for `_filter_headers`. |
-| [`_build_target_url`](#_build_target_url) | Function | L54–L65 | `str` | Executes core domain logic for `_build_target_url`. |
-| [`_forward_request`](#_forward_request) | Function | L68–L91 | `Response` | Executes core domain logic for `_forward_request`. |
-| [`redirect_jaeger_root`](#redirect_jaeger_root) | Function | L95–L103 | `RedirectResponse` | Executes core domain logic for `redirect_jaeger_root`. |
-| [`proxy_jaeger`](#proxy_jaeger) | Function | L107–L118 | `Response` | Executes core domain logic for `proxy_jaeger`. |
+| [`_filter_headers`](#_filter_headers) | Function | L45–L53 | `dict[str, str]` | Executes core domain logic for `_filter_headers`. |
+| [`_sanitize_proxy_path`](#_sanitize_proxy_path) | Function | L56–L69 | `str` | Executes core domain logic for `_sanitize_proxy_path`. |
+| [`_build_target_url`](#_build_target_url) | Function | L72–L83 | `str` | Executes core domain logic for `_build_target_url`. |
+| [`_forward_request`](#_forward_request) | Function | L86–L109 | `Response` | Executes core domain logic for `_forward_request`. |
+| [`redirect_jaeger_root`](#redirect_jaeger_root) | Function | L113–L121 | `RedirectResponse` | Executes core domain logic for `redirect_jaeger_root`. |
+| [`proxy_jaeger`](#proxy_jaeger) | Function | L125–L136 | `Response` | Executes core domain logic for `proxy_jaeger`. |
 
 ---
 
@@ -36,7 +37,7 @@ graph LR
 def _filter_headers(headers: Any) -> dict[str, str]
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L43-L51`](../../api/router/jaeger.py#L43-L51)
+- **Source Reference**: [`api/router/jaeger.py#L45-L53`](../../api/router/jaeger.py#L45-L53)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -64,12 +65,45 @@ result = _filter_headers(headers=...)
 
 ---
 
+### `_sanitize_proxy_path`
+```python
+def _sanitize_proxy_path(raw_path: str) -> str
+```
+
+- **Source Reference**: [`api/router/jaeger.py#L56-L69`](../../api/router/jaeger.py#L56-L69)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_sanitize_proxy_path`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `raw_path` | `str` | Yes | Parameter `raw_path` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Explicitly raises domain exceptions (e.g., `PermissionError`, `ValueError`) upon invariant violation.
+
+#### Production Usage Example
+```python
+from api.router.jaeger import _sanitize_proxy_path
+
+# Execute call
+result = _sanitize_proxy_path(raw_path=...)
+```
+
+---
+
 ### `_build_target_url`
 ```python
 def _build_target_url(path: str, query: str) -> str
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L54-L65`](../../api/router/jaeger.py#L54-L65)
+- **Source Reference**: [`api/router/jaeger.py#L72-L83`](../../api/router/jaeger.py#L72-L83)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -103,7 +137,7 @@ result = _build_target_url(path=..., query=...)
 async def _forward_request(method: str, url: str, headers: dict[str, str], body: bytes | None) -> Response
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L68-L91`](../../api/router/jaeger.py#L68-L91)
+- **Source Reference**: [`api/router/jaeger.py#L86-L109`](../../api/router/jaeger.py#L86-L109)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 
@@ -140,7 +174,7 @@ result = await _forward_request(method=..., url=..., headers=...)
 async def redirect_jaeger_root() -> RedirectResponse
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L95-L103`](../../api/router/jaeger.py#L95-L103)
+- **Source Reference**: [`api/router/jaeger.py#L113-L121`](../../api/router/jaeger.py#L113-L121)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `RedirectResponse`
 
@@ -171,7 +205,7 @@ result = await redirect_jaeger_root()
 async def proxy_jaeger(request: Request, path: str = "") -> Response
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L107-L118`](../../api/router/jaeger.py#L107-L118)
+- **Source Reference**: [`api/router/jaeger.py#L125-L136`](../../api/router/jaeger.py#L125-L136)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 

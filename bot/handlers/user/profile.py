@@ -7,6 +7,7 @@
   3. Инлайн-кнопки перехода в Telegram Mini App для интерактивного просмотра
 """
 
+import asyncio
 import html
 
 from aiogram import Router
@@ -16,6 +17,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, W
 from bot.filters.auth import ClassmateAuthFilter
 from config import ALLOWED_USER_ID, MINIAPP_URL
 from core.logger import get_logger
+from services.achievement_service import award_achievement
 from services.classmates_auth import find_classmate_by_tg_id
 from services.gamification import get_group_leaderboard, get_student_profile_by_fio
 from services.gamification_registry import ACHIEVEMENTS_MAP
@@ -98,6 +100,7 @@ async def handle_profile_command(message: Message) -> None:
         )
         return
     text = _format_profile_message(profile)
+    asyncio.create_task(award_achievement(user.id, "bot_self_audit", message.bot, user.full_name))
     await message.answer(text=text, parse_mode="HTML", reply_markup=_build_miniapp_keyboard())
 
 
@@ -127,6 +130,10 @@ def _format_leaderboard_message(profiles: list) -> str:
 @router.message(Command("leaderboard", "top", "rating"))
 async def handle_leaderboard_command(message: Message) -> None:
     """Отображает топ-10 студентов группы 1-КПД-3."""
+    if message.from_user:
+        asyncio.create_task(
+            award_achievement(message.from_user.id, "bot_miniapp", message.bot, message.from_user.full_name)
+        )
     profiles = await get_group_leaderboard()
     if not profiles:
         await message.answer("<i>Журнал посещаемости пока загружается...</i>", parse_mode="HTML")

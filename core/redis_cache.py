@@ -69,6 +69,27 @@ async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECO
             log.error(f"Ошибка записи в Redis ({key}): {e}")
 
 
+async def cache_delete(key: str) -> bool:
+    """
+    Удаляет конкретный ключ из кэша Redis.
+
+    Используется для немедленной инвалидации кэша лидерборда и профилей,
+    гарантируя актуальность данных без ожидания истечения TTL.
+
+    Возвращает True если ключ был удален, иначе False.
+    """
+    async with trace_span("redis.cache_delete", attributes={"redis.key": key}):
+        try:
+            client = await init_redis()
+            if client:
+                deleted = await client.delete(key)
+                log.debug(f"Удален ключ из Redis [key={key}, deleted={deleted}]")
+                return bool(deleted)
+        except Exception as e:
+            log.error(f"Ошибка удаления из Redis ({key}): {e}")
+        return False
+
+
 async def cache_flush(pattern: str = "sched:*") -> int:
     """
     Выполняет безопасную точечную очистку ключей по заданному шаблону.

@@ -284,6 +284,7 @@ def send_api_urls_to_remote_env(
         "EXAM_SCHEDULE_API_URL": primary_url,
         "EXAM_SCHEDULE_FALLBACK_API_URL": fallback_url,
     }
+    b64 = base64.b64encode(json.dumps(updates).encode("utf-8")).decode("ascii")
     py = _build_env_update_script(remote_dir, b64)
     subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
 

@@ -45,3 +45,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceSnapshot`.
 ## Class Model: `SystemIncident`
 
 Encapsulates domain entities and data transfer logic for `SystemIncident`.
+
+## Class Model: `StudentAchievement`
+
+Encapsulates domain entities and data transfer logic for `StudentAchievement`.

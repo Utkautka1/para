@@ -25,7 +25,7 @@ graph LR
 | [`_build_action_rows`](#_build_action_rows) | Function | L40–L66 | `list` | Executes core domain logic for `_build_action_rows`. |
 | [`get_admin_main_kb`](#get_admin_main_kb) | Function | L69–L79 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_admin_main_... |
 | [`get_swagger_launch_btn`](#get_swagger_launch_btn) | Function | L82–L95 | `InlineKeyboardButton` | Retrieves and resolves domain data for `get_swagger_lau... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L99–L125 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L98–L124 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -160,7 +160,7 @@ result = get_swagger_launch_btn()
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/keyboards.py#L99-L125`](../../bot/templates/admin/keyboards.py#L99-L125)
+- **Source Reference**: [`bot/templates/admin/keyboards.py#L98-L124`](../../bot/templates/admin/keyboards.py#L98-L124)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

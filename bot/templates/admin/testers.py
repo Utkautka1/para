@@ -53,7 +53,6 @@ def get_swagger_buttons() -> list[InlineKeyboardButton]:
     return []
 
 
-
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру управления списком тестеров Swagger UI.

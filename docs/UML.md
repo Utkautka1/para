@@ -54,6 +54,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 17.2. [Classmate Role-Based Whitelist Gate Flowchart](#172-classmate-role-based-whitelist-gate-flowchart)
    - 17.3. [Gamification Progress Bar & Visual Status Architecture](#173-gamification-progress-bar--visual-status-architecture)
    - 17.4. [Decoupled Starosta Unranked, Lightweight Mini App & Path Traversal Security](#174-decoupled-starosta-unranked-lightweight-mini-app--path-traversal-security)
+   - 17.5. [Instant Achievement Dispatcher & Telegram Push Notification Flow](#175-instant-achievement-dispatcher--telegram-push-notification-flow)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -3186,6 +3187,76 @@ classDiagram
     LightweightMiniAppView ..> LeaderboardResponse : consumes_concurrently
 ```
 
+### 17.5. Instant Achievement Dispatcher & Telegram Push Notification Flow
 
+Architecture of real-time gamification awards triggered by user bot commands, audio notes, button clicks, and Mini App ingress. Newly unlocked achievements are atomically committed to SQLite, immediately invalidate the Redis leaderboard cache, and dispatch celebratory Telegram notifications directly to the student.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as 👤 Student (e.g. Скачков Никита)
+    participant BotHandler as 🤖 Bot Handler / Ingress
+    participant AchService as 🏅 AchievementService (services/achievement_service.py)
+    participant Classmates as 👥 ClassmatesAuth (services/classmates_auth.py)
+    participant SQLite as 🗄️ SQLite GamificationRepository
+    participant Redis as ⚡ Redis Cache (redis_cache.py)
+    participant Telegram as 💬 Telegram Bot API
 
+    Student->>BotHandler: /start, /help, /my_attendance or Voice/Button
+    activate BotHandler
+    BotHandler->>AchService: award_achievement(user_id, ach_id, bot=bot)
+    activate AchService
+
+    AchService->>Classmates: resolve_student_fio(user_id)
+    Classmates-->>AchService: Full name (e.g. "Скачков Никита")
+
+    AchService->>SQLite: GamificationRepository.unlock_achievement(fio, ach_id)
+    activate SQLite
+    SQLite-->>AchService: bool (True if newly unlocked, False if already had)
+    deactivate SQLite
+
+    alt Newly Unlocked
+        AchService->>Redis: cache_delete("gamification:leaderboard:v1")
+        activate Redis
+        Redis-->>AchService: Cache Invalidation OK (Immediate sync for MiniApp)
+        deactivate Redis
+
+        AchService->>Telegram: bot.send_message(user_id, "🏆 НОВОЕ ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО!...")
+        Telegram-->>Student: Push Notification with icon, title, description & XP
+    else Already Unlocked
+        Note over AchService: No duplicate notification or cache churn
+    end
+
+    AchService-->>BotHandler: True / False
+    deactivate AchService
+    BotHandler-->>Student: Render standard command / button response
+    deactivate BotHandler
+```
+
+```mermaid
+classDiagram
+    direction TB
+
+    class AchievementService {
+        +resolve_student_fio(user_id: int, fallback_name: str) str
+        +format_achievement_notification(ach: AchievementDefinition) str
+        +invalidate_leaderboard_cache() None
+        +award_achievement(user_id: int, ach_id: str, bot, fallback_name) bool
+        -_notify_student(bot, user_id: int, ach: AchievementDefinition) None
+    }
+
+    class GamificationRepository {
+        +unlock_achievement(fio: str, ach_id: str) bool
+        +get_student_achievements(fio: str) list~str~
+    }
+
+    class RedisCacheClient {
+        +cache_delete(key: str) bool
+        +cache_flush(pattern: str) int
+        +cache_get(key: str) str
+        +cache_set(key: str, value: str, ttl: int) None
+    }
+
+    AchievementService ..> GamificationRepository : persists_unlock
+    AchievementService ..> RedisCacheClient : invalidates_leaderboard
+```

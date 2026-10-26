@@ -366,6 +366,11 @@ async def process_audio_pipeline(
     try:
         text = await _download_and_transcribe(file_id)
         await deliver_transcription(message, status_msg, sender, duration, text)
+        from services.achievement_service import award_achievement
+
+        asyncio.create_task(award_achievement(user_id, "bot_voice_stt", message.bot, sender))
+        if duration >= 60:
+            asyncio.create_task(award_achievement(user_id, "bot_podcast", message.bot, sender))
         elapsed = time.monotonic() - start_time
         log.info(f"✅ Аудио от {sender} (id={user_id}) обработано за {elapsed:.2f}с ({len(text)} симв.)")
     except Exception as e:

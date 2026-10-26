@@ -22,7 +22,7 @@ graph LR
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
 | [`_shutdown_resources`](#_shutdown_resources) | Function | L24–L35 | `None` | Executes core domain logic for `_shutdown_resources`. |
-| [`main`](#main) | Function | L38–L59 | `None` | Executes core domain logic for `main`. |
+| [`main`](#main) | Function | L38–L58 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -64,7 +64,7 @@ result = await _shutdown_resources()
 async def main() -> None
 ```
 
-- **Source Reference**: [`solver.py#L38-L59`](../../solver.py#L38-L59)
+- **Source Reference**: [`solver.py#L38-L58`](../../solver.py#L38-L58)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -89,7 +89,6 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
             _cleanup_temp_file(doc_path)
 
 
-
 async def _guarded_execute_task(tg_bot: Bot, task: dict, semaphore: asyncio.Semaphore) -> None:
     """
     Исполняет задачу под семафором параллелизма для защиты от перегрузки.

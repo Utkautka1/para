@@ -117,6 +117,11 @@ async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuth
         log.warning(f"🚫 Пользователь {uid} не в группе 1-КПД-3 и не в списке тестеров")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
     _set_tester_cookie(response, uid)
+    import asyncio
+
+    from services.achievement_service import award_achievement
+
+    asyncio.create_task(award_achievement(uid, "bot_miniapp", None, info.get("first_name")))
     return MiniappAuthResponse(user_id=uid, first_name=info.get("first_name"), username=info.get("username"))
 
 

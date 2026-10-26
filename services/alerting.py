@@ -165,4 +165,3 @@ async def send_admin_alert(
         log.debug(f"Алерт {incident_type} пропущен из-за кулдауна троттлинга")
         return False
     return await _deliver_alert_message(incident_type, severity, title, description, trace_id)
-

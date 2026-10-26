@@ -5,8 +5,10 @@
 sched:week, sched:refresh с редактированием существующего сообщения.
 """
 
+import asyncio
 import json
 from datetime import date, datetime, timedelta
+from typing import Any
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -204,6 +206,20 @@ async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> N
     await message.answer(text, reply_markup=kb)
 
 
+async def _check_start_achievements(uid: int, bot: Any, full_name: str | None) -> None:
+    """Проверяет и выдает приветственные и тайминговые ачивки при старте/просмотре расписания."""
+    from services.achievement_service import award_achievement
+
+    await award_achievement(uid, "bot_welcome", bot, full_name)
+    now = datetime.now(TIMEZONE)
+    if now.hour < 8:
+        await award_achievement(uid, "time_early_bird", bot, full_name)
+    elif now.hour >= 21:
+        await award_achievement(uid, "time_night_owl", bot, full_name)
+    if now.weekday() == 6:
+        await award_achievement(uid, "time_sunday_scout", bot, full_name)
+
+
 @router.message(CommandStart())
 @router.message(Command("today"))
 async def cmd_start(message: Message) -> None:
@@ -231,6 +247,11 @@ async def cmd_start(message: Message) -> None:
     if is_just_reg and student:
         await _greet_new_student(message, student)
 
+    import asyncio
+
+    asyncio.create_task(
+        _check_start_achievements(uid, message.bot, message.from_user.full_name if message.from_user else None)
+    )
     await _send_today_schedule(message, uid, is_tester)
 
 
@@ -286,6 +307,13 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
     new_sub = toggle_subscriber(uid)
     ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
     await _ack_callback(callback, ans_text)
+
+    from services.achievement_service import award_achievement
+
+    ach_id = "bot_subscriber" if new_sub else "time_bell_silent"
+    asyncio.create_task(
+        award_achievement(uid, ach_id, callback.bot, callback.from_user.full_name if callback.from_user else None)
+    )
 
     now = datetime.now(TIMEZONE).date()
     _, lessons = await get_day_schedule_cached(now)
@@ -382,6 +410,15 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
 
     log.info("Нажата инлайн-кнопка: Завтра")
     await _ack_callback(callback)
+    uid = callback.from_user.id if callback.from_user else 0
+    from services.achievement_service import award_achievement
+
+    asyncio.create_task(
+        award_achievement(
+            uid, "bot_future_peek", callback.bot, callback.from_user.full_name if callback.from_user else None
+        )
+    )
+
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
     text, lessons = await get_day_schedule_cached(tomorrow)
 
@@ -418,17 +455,18 @@ async def cb_week(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "sched:week_next")
 async def cb_week_next(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием.
-
-    Рассчитывает дату понедельника следующей недели и загружает сетку занятий.
-    Сохраняет отформатированный текст в кэш на 10 минут.
-
-    Ничего не возвращает.
-    """
-
+    """Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Следующая неделя")
     await _ack_callback(callback)
+    uid = callback.from_user.id if callback.from_user else 0
+    from services.achievement_service import award_achievement
+
+    asyncio.create_task(
+        award_achievement(
+            uid, "bot_week_next", callback.bot, callback.from_user.full_name if callback.from_user else None
+        )
+    )
+
     today = datetime.now(TIMEZONE).date()
     next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
     cache_key = f"sched:week_next:{next_monday.isoformat()}"
@@ -474,17 +512,18 @@ async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], in
 
 @router.callback_query(F.data == "sched:refresh")
 async def cb_refresh(callback: CallbackQuery) -> None:
-    """
-    Принудительно скачивает расписание, очищает Redis-кэш и обновляет экран.
-
-    Используется для ручного сброса кэша при оперативных изменениях в колледже.
-    Выводит уведомление со статусом проверки расписания и преподавателей.
-
-    Ничего не возвращает.
-    """
-
+    """Принудительно скачивает расписание, очищает Redis-кэш и обновляет экран."""
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
     await _ack_callback(callback, "Синхронизация с API КТМУ...")
+    uid = callback.from_user.id if callback.from_user else 0
+    from services.achievement_service import award_achievement
+
+    asyncio.create_task(
+        award_achievement(
+            uid, "bot_f5_master", callback.bot, callback.from_user.full_name if callback.from_user else None
+        )
+    )
+
     now = datetime.now(TIMEZONE).date()
     text, lessons, count = await _refresh_and_format_schedule(now)
     text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis обновлен!</i>"
@@ -533,8 +572,13 @@ async def cmd_help(message: Message) -> None:
         return
 
     uid = message.from_user.id if message.from_user else 0
-    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
+    from services.achievement_service import award_achievement
 
+    asyncio.create_task(
+        award_achievement(uid, "bot_manual", message.bot, message.from_user.full_name if message.from_user else None)
+    )
+
+    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
     await message.answer(text)
 
 

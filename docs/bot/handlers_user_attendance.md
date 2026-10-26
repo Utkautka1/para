@@ -21,14 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_calculate_attendance_percent`](#_calculate_attendance_percent) | Function | L36–L52 | `str` | Executes core domain logic for `_calculate_attendance_p... |
-| [`_format_personal_month_breakdown`](#_format_personal_month_breakdown) | Function | L55–L76 | `str` | Executes core domain logic for `_format_personal_month_... |
-| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L79–L108 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L111–L123 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_personal_at... |
-| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L126–L144 | `str | None` | Executes core domain logic for `_resolve_student_fio`. |
-| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L148–L175 | `None` | Processes inbound Telegram slash command for `cmd_my_at... |
-| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L179–L202 | `None` | Handles Telegram inline callback query events for `cb_m... |
-| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L206–L220 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`_calculate_attendance_percent`](#_calculate_attendance_percent) | Function | L38–L54 | `str` | Executes core domain logic for `_calculate_attendance_p... |
+| [`_format_personal_month_breakdown`](#_format_personal_month_breakdown) | Function | L57–L78 | `str` | Executes core domain logic for `_format_personal_month_... |
+| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L81–L110 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L113–L125 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_personal_at... |
+| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L128–L146 | `str | None` | Executes core domain logic for `_resolve_student_fio`. |
+| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L150–L183 | `None` | Processes inbound Telegram slash command for `cmd_my_at... |
+| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L187–L208 | `None` | Handles Telegram inline callback query events for `cb_m... |
+| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L212–L226 | `None` | Handles Telegram inline callback query events for `cb_a... |
 
 ---
 
@@ -39,7 +39,7 @@ graph LR
 def _calculate_attendance_percent(p: int, o: int, u: int, total: int) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L36-L52`](../../bot/handlers/user/attendance.py#L36-L52)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L38-L54`](../../bot/handlers/user/attendance.py#L38-L54)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -75,7 +75,7 @@ result = _calculate_attendance_percent(p=..., o=..., u=...)
 def _format_personal_month_breakdown(months: dict[str, dict[str, int]]) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L55-L76`](../../bot/handlers/user/attendance.py#L55-L76)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L57-L78`](../../bot/handlers/user/attendance.py#L57-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -108,7 +108,7 @@ result = _format_personal_month_breakdown(months=...)
 def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L79-L108`](../../bot/handlers/user/attendance.py#L79-L108)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L81-L110`](../../bot/handlers/user/attendance.py#L81-L110)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -142,7 +142,7 @@ result = format_personal_attendance_card(fio=..., student_data=...)
 def get_personal_attendance_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L111-L123`](../../bot/handlers/user/attendance.py#L111-L123)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L113-L125`](../../bot/handlers/user/attendance.py#L113-L125)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -173,7 +173,7 @@ result = get_personal_attendance_kb()
 def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L126-L144`](../../bot/handlers/user/attendance.py#L126-L144)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L128-L146`](../../bot/handlers/user/attendance.py#L128-L146)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -207,7 +207,7 @@ result = _resolve_student_fio(user=..., student=...)
 async def cmd_my_attendance(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L148-L175`](../../bot/handlers/user/attendance.py#L148-L175)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L150-L183`](../../bot/handlers/user/attendance.py#L150-L183)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -240,7 +240,7 @@ result = await cmd_my_attendance(message=...)
 async def cb_my_attendance_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L179-L202`](../../bot/handlers/user/attendance.py#L179-L202)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L187-L208`](../../bot/handlers/user/attendance.py#L187-L208)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -273,7 +273,7 @@ result = await cb_my_attendance_refresh(callback=...)
 async def cb_att_topic_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L206-L220`](../../bot/handlers/user/attendance.py#L206-L220)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L212-L226`](../../bot/handlers/user/attendance.py#L212-L226)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
