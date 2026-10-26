@@ -480,6 +480,12 @@
     <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
       <span>👤 Профиль</span>
     </button>
+    <button class="tab-btn" id="tab-swagger" style="display:none;" onclick="switchTab('swagger')">
+      <span>⚡ Swagger</span>
+    </button>
+    <button class="tab-btn" id="tab-jaeger" style="display:none;" onclick="switchTab('jaeger')">
+      <span>🔍 Jaeger</span>
+    </button>
   </div>
 
   <!-- LEADERBOARD TAB (DEFAULT FOR ALL CLASSMATES) -->
@@ -598,7 +604,14 @@
           <div class="ach-bar-bg"><div class="ach-bar-fill" id="prof-ach-fill" style="width: 0%;"></div></div>
         </div>
       </div>
-    </div>
+  <!-- SWAGGER TAB (LAZY-LOADED FOR TESTERS) -->
+  <div id="swagger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
+    <iframe id="swagger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
+  </div>
+
+  <!-- JAEGER TAB (LAZY-LOADED FOR TESTERS) -->
+  <div id="jaeger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
+    <iframe id="jaeger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
   </div>
 
   <script>
@@ -851,8 +864,16 @@
       if (tab === 'profile' && myProfile) {
         renderProfile(myProfile);
       }
+      if (tab === 'swagger') {
+        const frame = document.getElementById('swagger-frame');
+        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', '/docs');
+      }
+      if (tab === 'jaeger') {
+        const frame = document.getElementById('jaeger-frame');
+        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', '/jaeger/');
+      }
       currentTab = tab;
-      ['leaderboard', 'achievements', 'profile'].forEach(t => {
+      ['leaderboard', 'achievements', 'profile', 'swagger', 'jaeger'].forEach(t => {
         const btn = document.getElementById('tab-' + t);
         const view = document.getElementById(t + '-view');
         if (btn) btn.classList.toggle('active', t === tab);
@@ -862,13 +883,42 @@
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
+    async function checkTesterRole() {
+      try {
+        const initData = tg?.initData || new URLSearchParams(window.location.search).get('init_data') || '';
+        let isTester = false;
+        if (initData) {
+          const authResp = await fetch('/miniapp/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data: initData }),
+            credentials: 'include',
+          });
+          if (authResp.ok) isTester = true;
+        }
+        const stResp = await fetch('/miniapp/status', { credentials: 'include' });
+        if (stResp.ok) {
+          const st = await stResp.json();
+          if (st.authenticated && st.is_tester) isTester = true;
+        }
+        if (isTester) {
+          const bSw = document.getElementById('tab-swagger');
+          const bJg = document.getElementById('tab-jaeger');
+          if (bSw) bSw.style.display = 'inline-flex';
+          if (bJg) bJg.style.display = 'inline-flex';
+        }
+      } catch (e) {
+        console.warn('Проверка роли тестера:', e);
+      }
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // Параллельная загрузка данных без блокировки главного потока
-    Promise.allSettled([loadLeaderboard(), loadAchievements(), loadMyProfile()]);
+    Promise.allSettled([loadLeaderboard(), loadAchievements(), loadMyProfile(), checkTesterRole()]);
   </script>
 </body>
 </html>
