@@ -67,3 +67,14 @@ class SystemIncident(Base):
     trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     resolved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class StudentAchievement(Base):
+    """Таблица открытых студентами достижений с фиксацией времени получения."""
+
+    __tablename__ = "student_achievements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    student_fio: Mapped[str] = mapped_column(String(128), index=True)
+    achievement_id: Mapped[str] = mapped_column(String(64), index=True)
+    unlocked_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

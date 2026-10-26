@@ -9,9 +9,10 @@ from pydantic import BaseModel, Field
 
 
 class MiniappAuthRequest(BaseModel):
-    """Запрос авторизации из Telegram Mini App с сырой строкой initData."""
+    """Запрос авторизации из Telegram Mini App или с ПК разработчика."""
 
-    init_data: str = Field(..., description="Сырая строка Telegram.WebApp.initData")
+    init_data: str | None = Field(None, description="Сырая строка Telegram.WebApp.initData")
+    api_key: str | None = Field(None, description="API-ключ или пароль разработчика для входа с ПК")
 
 
 class MiniappAuthResponse(BaseModel):

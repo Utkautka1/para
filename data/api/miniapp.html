@@ -3,49 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>para — Портал 1-КПД-3 • Рейтинг и Ачивки</title>
+  <title>para — RPG Гильдия 1-КПД-3 • Рейтинг и Квесты</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(18, 24, 38, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
+      --bg: #070913;
+      --card-bg: rgba(15, 23, 42, 0.78);
+      --card-border: rgba(99, 102, 241, 0.22);
+      --card-hover: rgba(99, 102, 241, 0.38);
       --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.35);
+      --accent-glow: rgba(99, 102, 241, 0.45);
       --gold: #f59e0b;
-      --silver: #94a3b8;
-      --bronze: #d97706;
-      --success: #10b981;
-      --danger: #ef4444;
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
+      --gold-glow: rgba(245, 158, 11, 0.35);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.35);
+      --purple: #a855f7;
+      --ruby: #f43f5e;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg) 80%);
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0d1124 50%, var(--bg) 90%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      padding-bottom: 24px;
+      padding-bottom: 30px;
     }
 
+    /* Ambient RPG Sparks */
+    .sparks-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(1.5px 1.5px at 20% 30%, rgba(245, 158, 11, 0.4), transparent),
+                  radial-gradient(1.5px 1.5px at 75% 15%, rgba(99, 102, 241, 0.45), transparent),
+                  radial-gradient(2px 2px at 85% 65%, rgba(168, 85, 247, 0.4), transparent),
+                  radial-gradient(1.5px 1.5px at 10% 80%, rgba(16, 185, 129, 0.35), transparent);
+      opacity: 0.85;
+    }
+
+    /* Header Bar */
     .header-bar {
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(11, 15, 25, 0.9);
+      background: rgba(7, 9, 19, 0.88);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--card-border);
       position: sticky;
       top: 0;
       z-index: 1000;
+    }
+
+    .guild-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .badge {
@@ -55,18 +85,21 @@
       padding: 4px 10px;
       border-radius: 9999px;
       font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-weight: 700;
+      letter-spacing: 0.03em;
     }
-    .badge-dev { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
-    .badge-gold { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-
-    .pulse {
+    .badge-rpg {
+      background: rgba(99, 102, 241, 0.16);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    }
+    .pulse-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
       background: #10b981;
-      box-shadow: 0 0 10px #10b981;
+      box-shadow: 0 0 8px #10b981;
       animation: pulseAnim 2s infinite;
     }
     @keyframes pulseAnim {
@@ -74,11 +107,11 @@
       50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* Tabs Navigation */
+    /* RPG Tabs Nav */
     .tabs-nav {
       display: flex;
-      background: rgba(18, 24, 38, 0.95);
-      padding: 6px 10px;
+      background: rgba(11, 15, 29, 0.95);
+      padding: 8px 12px;
       gap: 6px;
       border-bottom: 1px solid var(--card-border);
       position: sticky;
@@ -97,388 +130,448 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 12px;
+      padding: 9px 12px;
       border-radius: 12px;
       border: 1px solid transparent;
-      background: transparent;
+      background: rgba(255, 255, 255, 0.02);
       color: var(--text-muted);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .tab-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+    .tab-btn:hover { color: var(--text); background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.25); }
     .tab-btn.active {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(79, 70, 229, 0.4) 100%);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(168, 85, 247, 0.35) 100%);
       color: #ffffff;
-      border-color: rgba(99, 102, 241, 0.5);
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+      border-color: rgba(168, 85, 247, 0.6);
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
     }
 
     .container {
       width: 100%;
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
       padding: 16px 12px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Podium Top-3 */
+    /* RPG Gate Screen for Desktop / Non-Telegram */
+    .gate-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: calc(100vh - 120px);
+      padding: 24px;
+    }
+    .gate-shield {
+      font-size: 64px;
+      margin-bottom: 20px;
+      display: inline-block;
+      animation: floatShield 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.6));
+    }
+    @keyframes floatShield {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .gate-title {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fbbf24;
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+    }
+    .gate-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 420px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .btn-tg-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+      transition: all 0.25s;
+    }
+    .btn-tg-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(124, 58, 237, 0.6);
+    }
+    .gate-dev-link {
+      margin-top: 36px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .gate-dev-link:hover { opacity: 1; color: #a5b4fc; }
+
+    /* Starosta Archmage Banner */
+    .archmage-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(18, 24, 43, 0.85) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.12);
+      transition: all 0.25s;
+    }
+    .archmage-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(245, 158, 11, 0.7);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, 0.22);
+    }
+
+    /* Top-3 RPG Podium */
     .podium-wrap {
       display: flex;
       justify-content: center;
       align-items: flex-end;
       gap: 10px;
-      margin-bottom: 24px;
-      padding-top: 10px;
+      margin-bottom: 26px;
+      padding-top: 14px;
     }
-    .podium-card {
+    .podium-col {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       backdrop-filter: blur(16px);
-      border-radius: 18px;
-      padding: 16px 8px;
-      text-align: center;
+      border-radius: 20px;
+      padding: 16px 8px 12px 8px;
       position: relative;
-      transition: transform 0.2s;
+      cursor: pointer;
+      transition: all 0.25s;
     }
-    .podium-card:hover { transform: translateY(-3px); }
+    .podium-col:hover { transform: translateY(-4px); }
     .podium-1 {
       order: 2;
-      border-color: rgba(245, 158, 11, 0.5);
-      box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
-      transform: scale(1.05);
-      background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, var(--card-bg) 100%);
+      border-color: rgba(245, 158, 11, 0.6);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.18) 0%, var(--card-bg) 100%);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.25);
+      transform: scale(1.06);
+      padding-top: 22px;
+      margin-bottom: 4px;
     }
     .podium-2 {
       order: 1;
-      border-color: rgba(148, 163, 184, 0.4);
-      box-shadow: 0 0 15px rgba(148, 163, 184, 0.15);
+      border-color: rgba(148, 163, 184, 0.5);
+      box-shadow: 0 0 16px rgba(148, 163, 184, 0.15);
     }
     .podium-3 {
       order: 3;
-      border-color: rgba(217, 119, 6, 0.4);
-      box-shadow: 0 0 15px rgba(217, 119, 6, 0.15);
+      border-color: rgba(217, 119, 6, 0.45);
+      box-shadow: 0 0 16px rgba(217, 119, 6, 0.15);
     }
-    .podium-crown { font-size: 24px; margin-bottom: 4px; }
-    .podium-name { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
-    .podium-pct { font-size: 14px; font-weight: 800; color: #10b981; }
-    .podium-xp { font-size: 11px; color: #fbbf24; font-weight: 600; margin-top: 2px; }
 
-    /* Student List */
+    .podium-crown { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+    .podium-name { font-weight: 800; font-size: 13px; color: var(--text); margin-bottom: 4px; }
+    .podium-hp { font-size: 11px; font-weight: 700; color: #10b981; }
+    .podium-xp {
+      display: inline-block;
+      margin-top: 6px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #a5b4fc;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    /* Student RPG Cards List */
     .list-title {
-      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin: 16px 4px 10px 4px;
-      display: flex;
-      justify-content: space-between;
     }
-    .student-item {
+    .hero-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 12px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      backdrop-filter: blur(12px);
-      transition: background 0.2s, transform 0.15s;
       cursor: pointer;
+      backdrop-filter: blur(14px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .student-item:hover { background: rgba(30, 41, 59, 0.8); transform: translateX(2px); }
-    .student-rank-num { font-weight: 800; font-size: 13px; width: 22px; color: var(--text-muted); }
-    .student-info { flex: 1; }
-    .student-name-row { display: flex; align-items: center; gap: 6px; }
-    .student-fio { font-weight: 600; font-size: 13px; }
-    .student-rank-pill {
+    .hero-card:hover {
+      transform: translateX(4px);
+      border-color: var(--card-hover);
+      background: rgba(30, 41, 59, 0.85);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+    .hero-rank-num {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-muted);
+      width: 24px;
+      text-align: center;
+    }
+    .hero-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .hero-info { flex: 1; min-width: 0; }
+    .hero-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .hero-name { font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero-title-pill {
       font-size: 10px;
-      padding: 2px 7px;
+      font-weight: 700;
+      padding: 1px 7px;
       border-radius: 6px;
-      background: rgba(99, 102, 241, 0.18);
+      background: rgba(99, 102, 241, 0.15);
       color: #a5b4fc;
       border: 1px solid rgba(99, 102, 241, 0.3);
-      font-weight: 600;
     }
-    .student-stats-row { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .student-right { text-align: right; }
-    .student-pct-val { font-size: 14px; font-weight: 800; color: #34d399; }
-    .student-xp-val { font-size: 11px; color: #fbbf24; font-weight: 600; }
+    .hero-stats-row { font-size: 11px; color: var(--text-muted); }
+    .hero-right { text-align: right; }
+    .hero-hp-val { font-size: 14px; font-weight: 800; color: #10b981; }
+    .hero-xp-val { font-size: 11px; font-weight: 700; color: #fbbf24; }
 
-    /* Achievements Grid */
+    /* Character Profile Tab */
+    .profile-hero-card {
+      background: linear-gradient(180deg, rgba(30, 27, 75, 0.75) 0%, var(--card-bg) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 24px;
+      padding: 24px 18px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      margin-bottom: 18px;
+    }
+    .btn-back-guild {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-back-guild:hover { color: #fff; background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.4); }
+
+    .char-big-avatar {
+      width: 76px;
+      height: 76px;
+      border-radius: 20px;
+      margin: 10px auto 14px auto;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%);
+      border: 2px solid rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
+    }
+    .char-name { font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+    .char-rank-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    /* RPG Attributes Grid */
+    .char-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 10px 4px;
+      text-align: center;
+    }
+    .stat-val { font-size: 16px; font-weight: 800; }
+    .stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+
+    /* XP Progress Bar */
+    .xp-meter-wrap {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 14px;
+      text-align: left;
+    }
+    .xp-meter-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .xp-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+      border-radius: 9999px;
+      transition: width 0.5s ease-out;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+    }
+
+    /* Quests Achievements Catalog */
     .ach-filters {
       display: flex;
       gap: 6px;
       overflow-x: auto;
-      padding-bottom: 12px;
       scrollbar-width: none;
+      margin-bottom: 14px;
+      padding-bottom: 4px;
     }
     .ach-filters::-webkit-scrollbar { display: none; }
-    .ach-filter-btn {
+    .ach-cat-btn {
       padding: 6px 12px;
       border-radius: 10px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-muted);
       font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
+      font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.2s;
     }
-    .ach-filter-btn.active {
-      background: rgba(99, 102, 241, 0.3);
-      border-color: rgba(99, 102, 241, 0.6);
+    .ach-cat-btn.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
       color: #fff;
     }
-    .ach-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-      gap: 10px;
-    }
 
-    /* Achievement Showcase Box */
-    .ach-showcase-box {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(18, 24, 38, 0.95) 100%);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      backdrop-filter: blur(14px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-    .ach-showcase-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .ach-showcase-title {
-      font-size: 13px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .ach-showcase-badge {
-      background: rgba(99, 102, 241, 0.25);
-      color: #a5b4fc;
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid rgba(99, 102, 241, 0.4);
-    }
-    .ach-showcase-stats {
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      gap: 10px;
-    }
-    .ach-bar-bg {
-      background: rgba(255, 255, 255, 0.08);
-      height: 8px;
-      border-radius: 9999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .ach-bar-fill {
-      background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #f59e0b 100%);
-      height: 100%;
-      border-radius: 9999px;
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-    }
-
-    .ach-status-filters {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .ach-status-filters::-webkit-scrollbar { display: none; }
-    .status-filter-btn {
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 700;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(18, 24, 38, 0.7);
-      color: var(--text-muted);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .status-filter-btn.active {
-      background: rgba(99, 102, 241, 0.3);
-      border-color: #6366f1;
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-    }
-
-    .ach-card {
+    .quest-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 12px 10px;
-      text-align: center;
-      backdrop-filter: blur(14px);
-      transition: all 0.2s;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
       position: relative;
+      transition: all 0.2s;
     }
-    .ach-card.unlocked {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(18, 24, 38, 0.95) 100%);
-      border: 1px solid rgba(245, 158, 11, 0.45);
-      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+    .quest-card.locked { opacity: 0.65; filter: grayscale(0.4); }
+    .quest-card.unlocked {
+      border-color: rgba(16, 185, 129, 0.5);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--card-bg) 100%);
+      box-shadow: 0 4px 18px rgba(16, 185, 129, 0.15);
     }
-    .ach-card.unlocked:hover {
-      transform: translateY(-2px);
-      border-color: rgba(245, 158, 11, 0.8);
-      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
-    }
-    .ach-card.locked {
-      background: rgba(15, 20, 32, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      opacity: 0.65;
-    }
-    .ach-card.locked .ach-icon {
-      filter: grayscale(1);
-      opacity: 0.45;
-    }
-    .ach-card.locked:hover {
-      opacity: 0.9;
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-1px);
-    }
-    .ach-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-bottom: 4px;
-    }
-    .status-unlocked {
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-    .status-locked {
-      background: rgba(148, 163, 184, 0.12);
-      color: #94a3b8;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-    }
-    .ach-icon { font-size: 28px; margin-bottom: 6px; }
-    .ach-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
-    .ach-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; min-height: 38px; }
-    .ach-footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
-    .rarity-pill {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .rarity-common { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-    .rarity-rare { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
-    .rarity-epic { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
-    .rarity-legendary { background: rgba(245, 158, 11, 0.25); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.5); }
-
-    /* Profile View */
-    .profile-hero {
-      background: linear-gradient(180deg, rgba(99, 102, 241, 0.15) 0%, var(--card-bg) 100%);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 20px;
-      padding: 24px 18px;
-      text-align: center;
-      margin-bottom: 18px;
-      backdrop-filter: blur(16px);
-    }
-    .profile-avatar {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      margin: 0 auto 12px auto;
+    .quest-icon {
+      font-size: 26px;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      flex-shrink: 0;
     }
-    .profile-name { font-size: 18px; font-weight: 800; }
-    .profile-rank-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 6px;
-      padding: 5px 14px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 700;
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.4);
-    }
-    .profile-xp-box { margin-top: 14px; font-size: 13px; color: var(--text-muted); }
-    .xp-bar-bg {
-      background: rgba(255, 255, 255, 0.08);
-      height: 8px;
-      border-radius: 4px;
-      margin-top: 6px;
-      overflow: hidden;
-    }
-    .xp-bar-fill {
-      background: linear-gradient(90deg, #6366f1, #34d399);
-      height: 100%;
-      width: 75%;
-      border-radius: 4px;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-top: 16px;
-    }
-    .stat-mini-card {
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 12px;
-      padding: 10px 4px;
-      text-align: center;
-    }
-    .stat-mini-val { font-size: 16px; font-weight: 800; }
-    .stat-mini-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .quest-info { flex: 1; min-width: 0; }
+    .quest-title { font-weight: 800; font-size: 13px; margin-bottom: 2px; }
+    .quest-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 6px; }
+    .quest-meta { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; }
+    .rarity-pill { padding: 2px 7px; border-radius: 6px; text-transform: uppercase; font-size: 9px; }
+    .rarity-Обычное { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+    .rarity-Редкое { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .rarity-Эпическое { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .rarity-Легендарное { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .rarity-Мифическое { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
 
+    /* Empty state */
+    .empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 13px; }
   </style>
 </head>
 <body>
+  <div class="sparks-bg"></div>
+
+  <!-- Header -->
   <div class="header-bar">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-weight:800; font-size:15px; letter-spacing:-0.02em;">🎓 1-КПД-3</span>
-      <span class="badge badge-gold">v2.9.0 • 300 Releases</span>
+    <div class="guild-title">
+      <span>⚔️ 1-КПД-3</span>
+      <span class="badge badge-rpg" id="version-badge" onclick="promptDevLogin()" style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
     </div>
-    <div class="badge badge-dev">
-      <span class="pulse"></span>
+    <div class="badge badge-rpg">
+      <span class="pulse-dot"></span>
       <span id="group-pulse-lbl">Пульс: 75%</span>
     </div>
   </div>
 
-  <div id="app-tabs" class="tabs-nav">
+  <!-- Tabs Navigation (Visible in Telegram or for Authorized Devs) -->
+  <div id="app-tabs" class="tabs-nav" style="display:none;">
     <button class="tab-btn active" id="tab-leaderboard" onclick="switchTab('leaderboard')">
-      <span>🏆 Рейтинг</span>
+      <span>🏆 Зал Славы</span>
     </button>
     <button class="tab-btn" id="tab-achievements" onclick="switchTab('achievements')">
-      <span>🎖️ Ачивки (80)</span>
+      <span>📜 Квесты (80)</span>
     </button>
     <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
-      <span>👤 Профиль</span>
+      <span>🧙 Герой</span>
     </button>
     <button class="tab-btn" id="tab-swagger" style="display:none;" onclick="switchTab('swagger')">
       <span>⚡ Swagger</span>
@@ -488,181 +581,203 @@
     </button>
   </div>
 
-  <!-- LEADERBOARD TAB (DEFAULT FOR ALL CLASSMATES) -->
-  <div id="leaderboard-view" class="container">
-    <!-- Starosta Unranked Banner -->
-    <div id="starosta-card-wrap" style="display:none; margin-bottom: 14px;">
-      <div class="student-item" id="starosta-click-item" style="border-color: rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, var(--card-bg) 100%); box-shadow: 0 4px 16px rgba(245, 158, 11, 0.1);">
-        <div style="font-size:22px; width:28px; text-align:center;">👑</div>
-        <div class="student-info">
-          <div class="student-name-row">
-            <span class="student-fio" id="starosta-fio">Стрыгин Д.</span>
-            <span class="student-rank-pill" style="background:rgba(245, 158, 11, 0.22); color:#fbbf24; border-color:rgba(245, 158, 11, 0.5);">Староста • Вне рейтинга</span>
-          </div>
-          <div class="student-stats-row" id="starosta-stats">
-            П: 0 • О: 0 • У: 0 • Н: 0
+  <!-- GATE SCREEN (SHOWN WHEN OPENED ON PC WITHOUT TELEGRAM) -->
+  <div id="gate-view" class="container gate-screen">
+    <div class="gate-shield">🛡️</div>
+    <div class="gate-title">Академическая RPG 1-КПД-3</div>
+    <div class="gate-desc">
+      Рейтинг гильдии, ранги, персонажи и 80 квестов доступны эксклюзивно внутри Telegram-бота группы.
+    </div>
+    <a href="https://t.me/ktmu_para_bot" target="_blank" class="btn-tg-cta">
+      <span>⚔️ Войти через Telegram-бота</span>
+    </a>
+    <div class="gate-dev-link" onclick="promptDevLogin()">Вход для разработчиков 🔑</div>
+  </div>
+
+  <!-- LEADERBOARD TAB (HALL OF FAME) -->
+  <div id="leaderboard-view" class="container" style="display:none;">
+    <!-- Archmage Starosta Card -->
+    <div id="starosta-card-wrap" style="display:none;">
+      <div class="archmage-card" id="starosta-click-item">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:24px;">👑</div>
+          <div>
+            <div style="font-weight:800; font-size:14px; color:#fbbf24;" id="starosta-fio">Стрыгин Д.</div>
+            <div style="font-size:11px; color:#94a3b8;" id="starosta-stats">П: 0 • О: 0 • У: 0 • Н: 0</div>
           </div>
         </div>
-        <div class="student-right">
-          <div class="student-pct-val" id="starosta-pct" style="color:#fbbf24;">100%</div>
-          <div class="student-xp-val" id="starosta-xp">0 XP</div>
+        <div style="text-align:right;">
+          <div style="font-size:14px; font-weight:800; color:#fbbf24;" id="starosta-pct">100%</div>
+          <div style="font-size:11px; font-weight:700; color:#a5b4fc;" id="starosta-xp">0 XP</div>
         </div>
       </div>
     </div>
 
-    <div class="podium-wrap" id="podium-container">
-      <!-- Top 3 dynamically injected -->
-    </div>
+    <!-- Top-3 Podium -->
+    <div class="podium-wrap" id="podium-container"></div>
 
     <div class="list-title">
-      <span>Все студенты</span>
-      <span style="font-weight:600; color:#a5b4fc;">Посещаемость & XP</span>
+      <span>Герои Гильдии</span>
+      <span style="color:#a5b4fc;">HP & XP</span>
     </div>
     <div id="students-list">
-      <div style="text-align:center; padding:30px; color:var(--text-muted);">Загрузка рейтинга 1-КПД-3... ⏳</div>
+      <div class="empty-state">Свиток славы загружается... ⏳</div>
     </div>
   </div>
 
-  <!-- ACHIEVEMENTS TAB -->
+  <!-- ACHIEVEMENTS TAB (QUESTS CATALOG) -->
   <div id="achievements-view" class="container" style="display:none;">
-    <!-- Showcase Progress Box -->
-    <div class="ach-showcase-box">
-      <div class="ach-showcase-header">
-        <div class="ach-showcase-title">
-          <span>🏆 Коллекция достижений</span>
-          <span class="ach-showcase-badge" id="ach-badge-summary">0 / 80 (0%)</span>
-        </div>
-        <div class="ach-showcase-stats">
-          <span id="ach-unlocked-count" style="color: #34d399;">✅ 0 открыто</span>
-          <span id="ach-locked-count" style="color: #94a3b8;">🔒 80 в процессе</span>
-        </div>
+    <div class="xp-meter-wrap" style="margin-top:0; margin-bottom:14px;">
+      <div class="xp-meter-header">
+        <span>🏆 Прогресс Квестов</span>
+        <span style="color:#fbbf24;" id="ach-badge-summary">0 / 80 (0%)</span>
       </div>
-      <div class="ach-bar-bg">
-        <div class="ach-bar-fill" id="ach-collection-fill" style="width: 0%;"></div>
+      <div class="xp-bar-bg">
+        <div class="xp-bar-fill" id="ach-collection-fill" style="width: 0%;"></div>
       </div>
     </div>
 
-    <!-- Status Filter Buttons -->
-    <div class="ach-status-filters">
-      <button class="status-filter-btn active" id="filter-st-all" onclick="filterStatus('all')">Все (80)</button>
-      <button class="status-filter-btn" id="filter-st-unlocked" onclick="filterStatus('unlocked')">✅ Открытые (0)</button>
-      <button class="status-filter-btn" id="filter-st-locked" onclick="filterStatus('locked')">🔒 В процессе (80)</button>
-    </div>
-
-    <!-- Category Filter Buttons -->
     <div class="ach-filters" id="ach-categories">
-      <button class="ach-filter-btn active" onclick="filterCategory('all')">Все категории</button>
-      <button class="ach-filter-btn" onclick="filterCategory('attendance')">Посещаемость</button>
-      <button class="ach-filter-btn" onclick="filterCategory('punctuality')">Пунктуальность</button>
-      <button class="ach-filter-btn" onclick="filterCategory('bot_interaction')">Бот</button>
-      <button class="ach-filter-btn" onclick="filterCategory('ai_homework')">ИИ и ДЗ</button>
-      <button class="ach-filter-btn" onclick="filterCategory('student_life')">Студ. жизнь</button>
-      <button class="ach-filter-btn" onclick="filterCategory('social')">Социалка</button>
-      <button class="ach-filter-btn" onclick="filterCategory('easter_eggs')">Пасхалки</button>
-      <button class="ach-filter-btn" onclick="filterCategory('mastery')">Мастерство</button>
+      <button class="ach-cat-btn active" onclick="filterCategory('all', event)">Все квесты</button>
+      <button class="ach-cat-btn" onclick="filterCategory('attendance', event)">Посещаемость</button>
+      <button class="ach-cat-btn" onclick="filterCategory('punctuality', event)">Пунктуальность</button>
+      <button class="ach-cat-btn" onclick="filterCategory('bot_interaction', event)">Бот</button>
+      <button class="ach-cat-btn" onclick="filterCategory('ai_homework', event)">ИИ и ДЗ</button>
+      <button class="ach-cat-btn" onclick="filterCategory('student_life', event)">Студ. жизнь</button>
+      <button class="ach-cat-btn" onclick="filterCategory('social', event)">Социалка</button>
+      <button class="ach-cat-btn" onclick="filterCategory('easter_eggs', event)">Пасхалки</button>
+      <button class="ach-cat-btn" onclick="filterCategory('mastery', event)">Мастерство</button>
     </div>
-    <div class="ach-grid" id="achievements-container">
-      <!-- 80 achievements injected -->
+
+    <div id="achievements-container"></div>
+  </div>
+
+  <!-- CHARACTER PROFILE TAB (FIXED: SHOWS CLICKED STUDENT) -->
+  <div id="profile-view" class="container" style="display:none;">
+    <div class="profile-hero-card">
+      <button class="btn-back-guild" onclick="switchTab('leaderboard')">⬅️ В Зал Славы</button>
+      <div class="char-big-avatar" id="prof-avatar">🧙</div>
+      <div class="char-name" id="prof-fio">Студент</div>
+      <div class="char-rank-badge" id="prof-rank">Ранг: Первокурсник</div>
+
+      <div class="xp-meter-wrap">
+        <div class="xp-meter-header">
+          <span id="prof-lvl">Уровень 1</span>
+          <span style="color:#fbbf24;" id="prof-xp-val">0 XP</span>
+        </div>
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill" id="prof-xp-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="char-stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" style="color:#10b981;" id="prof-pct">100%</div>
+          <div class="stat-lbl">HP (Посещ.)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="prof-p">0</div>
+          <div class="stat-lbl">Рейдов (П)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#f59e0b;" id="prof-o">0</div>
+          <div class="stat-lbl">Опозданий</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#ef4444;" id="prof-n">0</div>
+          <div class="stat-lbl">Прогулов</div>
+        </div>
+      </div>
+
+      <div style="text-align:left; margin-top:14px;">
+        <div style="font-weight:700; font-size:12px; margin-bottom:8px; display:flex; justify-content:space-between;">
+          <span>📜 Разблокированные трофеи</span>
+          <span style="color:#fbbf24;" id="prof-ach-summary">0 / 80</span>
+        </div>
+        <div id="prof-unlocked-list">
+          <div class="empty-state" style="padding:16px;">Трофеев пока нет. Время покорять квесты!</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- PROFILE TAB -->
-  <div id="profile-view" class="container" style="display:none;">
-    <div class="profile-hero" id="profile-hero-content">
-      <div class="profile-avatar">🎓</div>
-      <div class="profile-name" id="prof-fio">Студент 1-КПД-3</div>
-      <div class="profile-rank-badge" id="prof-rank">👑 Любимчик старосты</div>
-      <div class="profile-xp-box">
-        <div style="display:flex; justify-content:space-between; font-weight:600;">
-          <span id="prof-xp-val">1,450 XP</span>
-          <span style="color:#a5b4fc;" id="prof-lvl">Уровень 5</span>
-        </div>
-        <div class="xp-bar-bg"><div class="xp-bar-fill"></div></div>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-mini-card">
-          <div class="stat-mini-val" style="color:#10b981;" id="prof-pct">100%</div>
-          <div class="stat-mini-lbl">Посещаемость</div>
-        </div>
-        <div class="stat-mini-card">
-          <div class="stat-mini-val" id="prof-p">0</div>
-          <div class="stat-mini-lbl">Присутствовал</div>
-        </div>
-        <div class="stat-mini-card">
-          <div class="stat-mini-val" style="color:#f59e0b;" id="prof-o">0</div>
-          <div class="stat-mini-lbl">Опозданий</div>
-        </div>
-        <div class="stat-mini-card">
-          <div class="stat-mini-val" style="color:#ef4444;" id="prof-n">0</div>
-          <div class="stat-mini-lbl">Прогулов</div>
-        </div>
-        <div class="stat-mini-card" style="grid-column: span 2; text-align: left; padding: 12px 14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-            <span style="font-weight:700; font-size:12px;">🏆 Достижения студента</span>
-            <span style="font-weight:800; font-size:12px; color:#fbbf24;" id="prof-ach-count">0 / 80 (0%)</span>
-          </div>
-          <div class="ach-bar-bg"><div class="ach-bar-fill" id="prof-ach-fill" style="width: 0%;"></div></div>
-        </div>
-      </div>
-  <!-- SWAGGER TAB (LAZY-LOADED FOR TESTERS) -->
+  <!-- SWAGGER TAB -->
   <div id="swagger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
     <iframe id="swagger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
   </div>
 
-  <!-- JAEGER TAB (LAZY-LOADED FOR TESTERS) -->
+  <!-- JAEGER TAB -->
   <div id="jaeger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
     <iframe id="jaeger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
   </div>
 
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      if (tg.setHeaderColor) tg.setHeaderColor('#0b0f19');
-      if (tg.setBackgroundColor) tg.setBackgroundColor('#0b0f19');
-    }
-
     let allAchievements = [];
     let myProfile = null;
-    let unlockedSet = new Set();
-    let currentTab = 'leaderboard';
-    let currentStatusFilter = 'all';
+    let viewingProfile = null;
+    let studentsCache = [];
     let currentCatFilter = 'all';
 
-    function updateAchievementProgress() {
-      const total = allAchievements.length || 80;
-      const count = unlockedSet.size;
-      const pct = Math.round((count / total) * 100);
-
-      const badge = document.getElementById('ach-badge-summary');
-      if (badge) badge.innerText = `${count} / ${total} (${pct}%)`;
-      const unlEl = document.getElementById('ach-unlocked-count');
-      if (unlEl) unlEl.innerText = `✅ ${count} открыто`;
-      const lckEl = document.getElementById('ach-locked-count');
-      if (lckEl) lckEl.innerText = `🔒 ${total - count} в процессе`;
-      const fill = document.getElementById('ach-collection-fill');
-      if (fill) fill.style.width = `${pct}%`;
-      const btnUnl = document.getElementById('filter-st-unlocked');
-      if (btnUnl) btnUnl.innerText = `✅ Открытые (${count})`;
-      const btnLck = document.getElementById('filter-st-locked');
-      if (btnLck) btnLck.innerText = `🔒 В процессе (${total - count})`;
+    function initTelegram() {
+      if (!tg) return;
+      tg.ready();
+      tg.expand();
+      if (tg.setHeaderColor) tg.setHeaderColor('#070913');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#070913');
     }
 
-    async function loadMyProfile() {
-      try {
-        const myTgId = tg?.initDataUnsafe?.user?.id;
-        const url = myTgId ? `/gamification/profile?tg_id=${myTgId}` : `/gamification/profile?fio=Стрыгин`;
-        const resp = await fetch(url, { credentials: 'include' });
-        if (!resp.ok) return;
-        myProfile = await resp.json();
-        unlockedSet = new Set(myProfile.unlocked_achievements || []);
-        renderProfile(myProfile);
-        updateAchievementProgress();
-        renderAchievements();
-      } catch (e) {
-        console.error('Ошибка загрузки личного профиля:', e);
+    function checkAccessGate() {
+      const isTg = Boolean(tg?.initData);
+      const devKey = localStorage.getItem('para_dev_key') || new URLSearchParams(window.location.search).get('key');
+      if (isTg || devKey) {
+        document.getElementById('gate-view').style.display = 'none';
+        document.getElementById('app-tabs').style.display = 'flex';
+        document.getElementById('leaderboard-view').style.display = 'block';
+        return true;
       }
+      return false;
+    }
+
+    function promptDevLogin() {
+      const curKey = localStorage.getItem('para_dev_key') || '';
+      const key = prompt('Введите ключ разработчика для доступа к MiniApp & Swagger:', curKey);
+      if (key && key.trim()) {
+        localStorage.setItem('para_dev_key', key.trim());
+        window.location.search = `?key=${encodeURIComponent(key.trim())}`;
+      }
+    }
+
+    async function checkTesterStatus() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const key = params.get('key') || localStorage.getItem('para_dev_key');
+        if (key) {
+          await fetch('/miniapp/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: key }),
+            credentials: 'include',
+          });
+        }
+        const resp = await fetch('/miniapp/status', { credentials: 'include' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.authenticated && data.is_tester) {
+          enableTesterUI();
+        }
+      } catch (e) {
+        console.warn('Статус тестера:', e);
+      }
+    }
+
+    function enableTesterUI() {
+      const bSw = document.getElementById('tab-swagger');
+      const bJg = document.getElementById('tab-jaeger');
+      if (bSw) bSw.style.display = 'inline-flex';
+      if (bJg) bJg.style.display = 'inline-flex';
+      const badge = document.getElementById('version-badge');
+      if (badge) badge.innerText = 'v2.9 • 🔑 Dev';
     }
 
     async function loadLeaderboard() {
@@ -670,93 +785,124 @@
         const resp = await fetch('/gamification/leaderboard', { credentials: 'include' });
         if (!resp.ok) return;
         const data = await resp.json();
+        studentsCache = data.leaderboard || [];
         document.getElementById('group-pulse-lbl').innerText = `Пульс: ${data.group_pulse}%`;
-
-        if (data.starosta) {
-          renderStarostaCard(data.starosta);
-        }
-        renderPodium(data.leaderboard.slice(0, 3));
-        renderStudentsList(data.leaderboard);
+        if (data.starosta) renderStarosta(data.starosta);
+        renderPodium(studentsCache.slice(0, 3));
+        renderStudentsList(studentsCache);
       } catch (e) {
-        console.error('Ошибка загрузки лидерборда:', e);
+        console.error('Ошибка лидерборда:', e);
       }
     }
 
-    function renderStarostaCard(s) {
+    function renderStarosta(s) {
       const wrap = document.getElementById('starosta-card-wrap');
       if (!wrap) return;
-      document.getElementById('starosta-fio').innerText = s.short_fio;
+      document.getElementById('starosta-fio').innerText = `${s.short_fio} (Староста)`;
       document.getElementById('starosta-stats').innerText = `П: ${s.present_count} • О: ${s.late_count} • У: ${s.excused_count} • Н: ${s.unexcused_count}`;
       document.getElementById('starosta-pct').innerText = `${s.attendance_pct}%`;
       document.getElementById('starosta-xp').innerText = `${s.xp} XP`;
-      document.getElementById('starosta-click-item').onclick = () => showProfile(s);
+      document.getElementById('starosta-click-item').onclick = () => openStudentProfile(s);
       wrap.style.display = 'block';
     }
 
     function renderPodium(top3) {
-      if (top3.length < 3) return;
+      if (!top3 || top3.length < 3) return;
       const html = `
-        <div class="podium-card podium-2" onclick="showProfileByIdx(1)">
+        <div class="podium-col podium-2" onclick="openStudentProfileByIdx(1)">
           <div class="podium-crown">🥈</div>
           <div class="podium-name">${escapeHtml(top3[1].short_fio)}</div>
-          <div class="podium-pct">${top3[1].attendance_pct}%</div>
+          <div class="podium-hp">${top3[1].attendance_pct}% HP</div>
           <div class="podium-xp">${top3[1].xp} XP</div>
         </div>
-        <div class="podium-card podium-1" onclick="showProfileByIdx(0)">
+        <div class="podium-col podium-1" onclick="openStudentProfileByIdx(0)">
           <div class="podium-crown">👑 🥇</div>
           <div class="podium-name">${escapeHtml(top3[0].short_fio)}</div>
-          <div class="podium-pct">${top3[0].attendance_pct}%</div>
+          <div class="podium-hp">${top3[0].attendance_pct}% HP</div>
           <div class="podium-xp">${top3[0].xp} XP</div>
         </div>
-        <div class="podium-card podium-3" onclick="showProfileByIdx(2)">
+        <div class="podium-col podium-3" onclick="openStudentProfileByIdx(2)">
           <div class="podium-crown">🥉</div>
           <div class="podium-name">${escapeHtml(top3[2].short_fio)}</div>
-          <div class="podium-pct">${top3[2].attendance_pct}%</div>
+          <div class="podium-hp">${top3[2].attendance_pct}% HP</div>
           <div class="podium-xp">${top3[2].xp} XP</div>
         </div>
       `;
       document.getElementById('podium-container').innerHTML = html;
-      window._lastTop3 = top3;
-    }
-
-    function showProfileByIdx(idx) {
-      if (window._lastTop3 && window._lastTop3[idx]) {
-        showProfile(window._lastTop3[idx]);
-      }
     }
 
     function renderStudentsList(list) {
-      window._studentsListCache = list;
       const container = document.getElementById('students-list');
-      const itemsHtml = list.map((s, idx) => {
-        const num = idx + 1;
+      if (!container) return;
+      const html = list.map((s, idx) => {
         const rankColor = s.attendance_pct >= 95 ? '#10b981' : (s.attendance_pct >= 70 ? '#fbbf24' : '#ef4444');
         return `
-          <div class="student-item" onclick="showProfileByIdxList(${idx})">
-            <div class="student-rank-num">${num}</div>
-            <div class="student-info">
-              <div class="student-name-row">
-                <span class="student-fio">${escapeHtml(s.short_fio)}</span>
-                <span class="student-rank-pill">${s.rank_icon} ${escapeHtml(s.rank_name)}</span>
+          <div class="hero-card" onclick="openStudentProfileByIdx(${idx})">
+            <div class="hero-rank-num">#${idx + 1}</div>
+            <div class="hero-avatar">🎓</div>
+            <div class="hero-info">
+              <div class="hero-name-row">
+                <span class="hero-name">${escapeHtml(s.short_fio)}</span>
+                <span class="hero-title-pill">${s.rank_icon} ${escapeHtml(s.rank_name)}</span>
               </div>
-              <div class="student-stats-row">
-                П: ${s.present_count} • О: ${s.late_count} • У: ${s.excused_count} • Н: ${s.unexcused_count}
-              </div>
+              <div class="hero-stats-row">П: ${s.present_count} • О: ${s.late_count} • У: ${s.excused_count} • Н: ${s.unexcused_count}</div>
             </div>
-            <div class="student-right">
-              <div class="student-pct-val" style="color:${rankColor}">${s.attendance_pct}%</div>
-              <div class="student-xp-val">${s.xp} XP</div>
+            <div class="hero-right">
+              <div class="hero-hp-val" style="color:${rankColor}">${s.attendance_pct}%</div>
+              <div class="hero-xp-val">${s.xp} XP</div>
             </div>
           </div>
         `;
       }).join('');
-      container.innerHTML = itemsHtml;
+      container.innerHTML = html;
     }
 
-    function showProfileByIdxList(idx) {
-      if (window._studentsListCache && window._studentsListCache[idx]) {
-        showProfile(window._studentsListCache[idx]);
+    function openStudentProfileByIdx(idx) {
+      if (studentsCache[idx]) openStudentProfile(studentsCache[idx]);
+    }
+
+    function openStudentProfile(student) {
+      viewingProfile = student;
+      renderProfileData(student);
+      switchTab('profile', false);
+    }
+
+    function renderProfileData(s) {
+      document.getElementById('prof-fio').innerText = s.fio;
+      document.getElementById('prof-rank').innerText = `${s.rank_icon} ${s.rank_name}`;
+      document.getElementById('prof-xp-val').innerText = `${s.xp.toLocaleString()} XP`;
+      document.getElementById('prof-pct').innerText = `${s.attendance_pct}%`;
+      document.getElementById('prof-p').innerText = s.present_count;
+      document.getElementById('prof-o').innerText = s.late_count;
+      document.getElementById('prof-n').innerText = s.unexcused_count;
+
+      const lvl = Math.max(1, Math.floor(s.xp / 100) + 1);
+      document.getElementById('prof-lvl').innerText = `Уровень ${lvl}`;
+      const fillPct = Math.min(100, (s.xp % 100));
+      document.getElementById('prof-xp-fill').style.width = `${fillPct}%`;
+
+      const unl = s.unlocked_achievements || [];
+      document.getElementById('prof-ach-summary').innerText = `${unl.length} / 80`;
+      renderStudentUnlockedList(unl);
+    }
+
+    function renderStudentUnlockedList(unl) {
+      const container = document.getElementById('prof-unlocked-list');
+      if (!container) return;
+      if (!unl || unl.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:16px;">Трофеев пока нет. Время покорять квесты!</div>';
+        return;
       }
+      container.innerHTML = unl.map(aid => {
+        const a = allAchievements.find(x => x.id === aid) || { title: aid, icon: '⭐', xp_reward: 0 };
+        return `
+          <div class="hero-card" style="margin-bottom:6px; padding:8px 12px;">
+            <div style="font-size:20px;">${a.icon}</div>
+            <div style="flex:1;"><div style="font-weight:700; font-size:12px;">${escapeHtml(a.title)}</div></div>
+            <div style="color:#fbbf24; font-weight:800; font-size:12px;">+${a.xp_reward} XP</div>
+          </div>
+        `;
+      }).join('');
     }
 
     async function loadAchievements() {
@@ -764,105 +910,47 @@
         const resp = await fetch('/gamification/achievements', { credentials: 'include' });
         if (!resp.ok) return;
         const data = await resp.json();
-        allAchievements = data.achievements;
-        updateAchievementProgress();
-        renderAchievements();
+        allAchievements = data.achievements || [];
+        renderAchievementsCatalog();
       } catch (e) {
-        console.error('Ошибка загрузки ачивок:', e);
+        console.error('Ошибка квестов:', e);
       }
     }
 
-    function renderAchievements() {
+    function renderAchievementsCatalog() {
       const container = document.getElementById('achievements-container');
       if (!container) return;
-
       let list = allAchievements;
       if (currentCatFilter !== 'all') {
         list = list.filter(a => a.category === currentCatFilter);
       }
-      if (currentStatusFilter === 'unlocked') {
-        list = list.filter(a => unlockedSet.has(a.id));
-      } else if (currentStatusFilter === 'locked') {
-        list = list.filter(a => !unlockedSet.has(a.id));
-      }
-
-      if (!list || list.length === 0) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-muted);">Достижения не найдены в этой выборке</div>';
-        return;
-      }
-
-      container.innerHTML = list.map(a => {
-        const isUnlocked = unlockedSet.has(a.id);
-        const cardClass = isUnlocked ? 'ach-card unlocked' : 'ach-card locked';
-        const statusBadge = isUnlocked
-          ? '<span class="ach-status-badge status-unlocked">✅ Открыто</span>'
-          : '<span class="ach-status-badge status-locked">🔒 В процессе</span>';
-
-        return `
-          <div class="${cardClass}">
-            <div class="ach-icon">${a.icon}</div>
-            ${statusBadge}
-            <div class="ach-title">${escapeHtml(a.title)}</div>
-            <div class="ach-desc">${escapeHtml(a.description)}</div>
-            <div class="ach-footer">
+      container.innerHTML = list.map(a => `
+        <div class="quest-card locked">
+          <div class="quest-icon">${a.icon}</div>
+          <div class="quest-info">
+            <div class="quest-title">${escapeHtml(a.title)}</div>
+            <div class="quest-desc">${escapeHtml(a.description)}</div>
+            <div class="quest-meta">
               <span class="rarity-pill rarity-${a.rarity}">${a.rarity}</span>
-              <span style="color:#fbbf24; font-weight:700;">+${a.xp_reward} XP</span>
+              <span style="color:#fbbf24;">+${a.xp_reward} XP</span>
+              <span style="color:#94a3b8;">🔒 Доступен</span>
             </div>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
     }
 
-    function filterStatus(st) {
-      currentStatusFilter = st;
-      document.querySelectorAll('.status-filter-btn').forEach(b => b.classList.remove('active'));
-      const activeBtn = document.getElementById('filter-st-' + st);
-      if (activeBtn) activeBtn.classList.add('active');
-      renderAchievements();
-    }
-
-    function filterCategory(cat) {
+    function filterCategory(cat, ev) {
       currentCatFilter = cat;
-      const btns = document.querySelectorAll('.ach-filter-btn');
-      btns.forEach(b => b.classList.remove('active'));
-      if (event && event.target) event.target.classList.add('active');
-      renderAchievements();
+      document.querySelectorAll('.ach-cat-btn').forEach(b => b.classList.remove('active'));
+      if (ev && ev.target) ev.target.classList.add('active');
+      renderAchievementsCatalog();
     }
 
-    function showProfile(student) {
-      renderProfile(student);
-      switchTab('profile');
-    }
-
-    function renderProfile(student) {
-      document.getElementById('prof-fio').innerText = student.fio;
-      document.getElementById('prof-rank').innerText = `${student.rank_icon} ${student.rank_name}`;
-      document.getElementById('prof-xp-val').innerText = `${student.xp.toLocaleString()} XP`;
-      document.getElementById('prof-pct').innerText = `${student.attendance_pct}%`;
-      document.getElementById('prof-p').innerText = student.present_count;
-      document.getElementById('prof-o').innerText = student.late_count;
-      document.getElementById('prof-n').innerText = student.unexcused_count;
-
-      const level = Math.max(1, Math.floor(student.xp / 400) + 1);
-      const lvlEl = document.getElementById('prof-lvl');
-      if (lvlEl) lvlEl.innerText = `Уровень ${level}`;
-      const fillBar = document.querySelector('.xp-bar-fill');
-      if (fillBar) {
-        const fillPct = Math.min(100, Math.max(15, Math.round(((student.xp % 400) / 400) * 100)));
-        fillBar.style.width = `${fillPct}%`;
-      }
-
-      const achCount = (student.unlocked_achievements || []).length;
-      const achPct = Math.min(100, Math.round((achCount / 80) * 100));
-      const achEl = document.getElementById('prof-ach-count');
-      if (achEl) achEl.innerText = `${achCount} / 80 (${achPct}%)`;
-      const achBar = document.getElementById('prof-ach-fill');
-      if (achBar) achBar.style.width = `${achPct}%`;
-    }
-
-    function switchTab(tab) {
-      if (tab === 'profile' && myProfile) {
-        renderProfile(myProfile);
+    function switchTab(tab, resetProfile = true) {
+      if (tab === 'profile' && resetProfile && !viewingProfile && studentsCache.length) {
+        viewingProfile = studentsCache[0];
+        renderProfileData(viewingProfile);
       }
       if (tab === 'swagger') {
         const frame = document.getElementById('swagger-frame');
@@ -872,44 +960,13 @@
         const frame = document.getElementById('jaeger-frame');
         if (frame && !frame.getAttribute('src')) frame.setAttribute('src', '/jaeger/');
       }
-      currentTab = tab;
       ['leaderboard', 'achievements', 'profile', 'swagger', 'jaeger'].forEach(t => {
         const btn = document.getElementById('tab-' + t);
         const view = document.getElementById(t + '-view');
         if (btn) btn.classList.toggle('active', t === tab);
         if (view) view.style.display = (t === tab) ? 'block' : 'none';
       });
-
-      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    async function checkTesterRole() {
-      try {
-        const initData = tg?.initData || new URLSearchParams(window.location.search).get('init_data') || '';
-        let isTester = false;
-        if (initData) {
-          const authResp = await fetch('/miniapp/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ init_data: initData }),
-            credentials: 'include',
-          });
-          if (authResp.ok) isTester = true;
-        }
-        const stResp = await fetch('/miniapp/status', { credentials: 'include' });
-        if (stResp.ok) {
-          const st = await stResp.json();
-          if (st.authenticated && st.is_tester) isTester = true;
-        }
-        if (isTester) {
-          const bSw = document.getElementById('tab-swagger');
-          const bJg = document.getElementById('tab-jaeger');
-          if (bSw) bSw.style.display = 'inline-flex';
-          if (bJg) bJg.style.display = 'inline-flex';
-        }
-      } catch (e) {
-        console.warn('Проверка роли тестера:', e);
-      }
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
     function escapeHtml(str) {
@@ -917,8 +974,10 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Параллельная загрузка данных без блокировки главного потока
-    Promise.allSettled([loadLeaderboard(), loadAchievements(), loadMyProfile(), checkTesterRole()]);
+    initTelegram();
+    if (checkAccessGate()) {
+      Promise.allSettled([loadLeaderboard(), loadAchievements(), checkTesterStatus()]);
+    }
   </script>
 </body>
 </html>

@@ -13,7 +13,13 @@ from sqlalchemy import func, select
 
 from core.database import get_async_session
 from core.logger import get_logger
-from db.sqlite.models import AttendanceSnapshot, IncidentSeverity, Subscriber, SystemIncident
+from db.sqlite.models import (
+    AttendanceSnapshot,
+    IncidentSeverity,
+    StudentAchievement,
+    Subscriber,
+    SystemIncident,
+)
 
 log = get_logger("repositories")
 
@@ -134,3 +140,39 @@ class AttendanceRepository:
             stmt = select(AttendanceSnapshot).where(AttendanceSnapshot.snapshot_date == subq)
             result = await session.execute(stmt)
             return result.scalars().all()
+
+
+class GamificationRepository:
+    """Репозиторий прогресса геймификации и открытых достижений студентов."""
+
+    @staticmethod
+    async def get_all_unlocked_map() -> dict[str, set[str]]:
+        """Возвращает карту открытых достижений по студентам {ФИО: {id_ачивки}}."""
+        try:
+            async with get_async_session() as session:
+                stmt = select(StudentAchievement.student_fio, StudentAchievement.achievement_id)
+                rows = (await session.execute(stmt)).all()
+                mapping: dict[str, set[str]] = {}
+                for fio, aid in rows:
+                    mapping.setdefault(fio.lower(), set()).add(aid)
+                return mapping
+        except Exception as exc:
+            log.debug(f"Таблица достижений еще не создана: {exc}")
+            return {}
+
+    @staticmethod
+    async def unlock_achievement(student_fio: str, achievement_id: str) -> bool:
+        """Атомарно сохраняет открытое достижение студента в SQLite."""
+        try:
+            async with get_async_session() as session:
+                stmt = select(StudentAchievement).where(
+                    StudentAchievement.student_fio == student_fio,
+                    StudentAchievement.achievement_id == achievement_id,
+                )
+                if (await session.execute(stmt)).scalars().first():
+                    return False
+                session.add(StudentAchievement(student_fio=student_fio, achievement_id=achievement_id))
+                return True
+        except Exception as exc:
+            log.warning(f"Ошибка разблокировки достижения: {exc}")
+            return False

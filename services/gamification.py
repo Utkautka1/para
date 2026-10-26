@@ -14,6 +14,7 @@ from typing import Any
 
 from core.logger import get_logger
 from core.redis_cache import cache_get, cache_set
+from db.sqlite.repositories import GamificationRepository
 from services.attendance_stats import fetch_all_time_attendance
 from services.attendance_topic_updater import extract_short_fio
 from services.gamification_models import RankDefinition, StudentProfile
@@ -26,7 +27,7 @@ from services.gamification_registry import (
 
 log = get_logger("gamification")
 LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v1"
-LEADERBOARD_CACHE_TTL = 300
+LEADERBOARD_CACHE_TTL = 3600  # 1 час для быстрого отклика UI MiniApp
 
 
 def resolve_student_rank(pct: float, n_count: int, o_count: int) -> RankDefinition:
@@ -188,25 +189,12 @@ def _evaluate_all_rules(s: dict[str, Any], extra: set[str] | None) -> list[str]:
 
 
 def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> int:
-    """Рассчитывает суммарные очки академического опыта (XP) студента."""
-    base_xp = stat.get("p", 0) * 10 + stat.get("u", 0) * 5
-    penalty = stat.get("n", 0) * 5
-    ach_xp = sum(
+    """Рассчитывает суммарные очки академического опыта (XP) строго по открытым ачивкам."""
+    return sum(
         ACHIEVEMENTS_MAP[aid].xp_reward
         for aid in unlocked_ach_ids
         if aid in ACHIEVEMENTS_MAP
     )
-    return max(0, base_xp - penalty) + ach_xp
-
-
-def _apply_xp_milestones(xp: int, unlocked: list[str]) -> list[str]:
-    """Присваивает достижения за преодоление порогов опыта (1000 и 2500 XP)."""
-    res = set(unlocked)
-    if xp >= 1000:
-        res.add("mast_xp_1000")
-    if xp >= 2500:
-        res.add("mast_xp_5000")
-    return sorted(list(res))
 
 
 def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, Any]:
@@ -225,13 +213,12 @@ def is_starosta(fio: str) -> bool:
 
 
 def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | None = None) -> StudentProfile:
-    """Создает объект профиля студента со званием, ачивками и опытом."""
+    """Создает объект профиля студента с нуля или с реально открытыми достижениями."""
     m = _extract_student_metrics(fio, raw_data)
     starosta = is_starosta(fio)
     rank = STAROSTA_RANK if starosta else resolve_student_rank(m["pct"], m["n"], m["o"])
-    achs = _evaluate_all_rules(m, extra)
-    xp = calculate_student_xp(m, achs)
-    final_achs = _apply_xp_milestones(xp, achs)
+    unlocked = sorted(list(extra)) if extra else []
+    xp = calculate_student_xp(m, unlocked)
 
     return StudentProfile(
         fio=fio,
@@ -246,7 +233,7 @@ def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | 
         rank_icon=rank.icon,
         rank_description=rank.description,
         xp=xp,
-        unlocked_achievements=final_achs,
+        unlocked_achievements=unlocked,
     )
 
 
@@ -284,7 +271,11 @@ async def get_group_leaderboard(
             return cached
 
     stats = provided_stats or await fetch_all_time_attendance()
-    profiles = [build_student_profile(fio, data) for fio, data in stats.items()]
+    unlocked_map = await GamificationRepository.get_all_unlocked_map()
+    profiles = [
+        build_student_profile(fio, data, unlocked_map.get(fio.lower(), set()))
+        for fio, data in stats.items()
+    ]
     profiles.sort(key=lambda s: (1 if is_starosta(s.fio) else 0, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
     if not provided_stats:
         await _save_cached_leaderboard(profiles)

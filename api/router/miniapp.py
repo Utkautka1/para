@@ -5,10 +5,11 @@
 валидацию HMAC-SHA256 подписи Telegram initData и управление сессионными куками.
 """
 
+import secrets
 from pathlib import Path
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.miniapp import (
@@ -20,6 +21,7 @@ from api.schemas.miniapp import (
 )
 from config import (
     ALLOWED_USER_ID,
+    API_SECRET_KEY,
     DEPUTY_USER_ID,
     MINIAPP_HTML_FILE_PATH,
     SESSION_MAX_AGE_SECONDS,
@@ -83,31 +85,49 @@ async def serve_miniapp_page() -> HTMLResponse:
     return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)
 
 
-@router.post("/auth", response_model=MiniappAuthResponse)
-async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse:
-    """
-    Аутентифицирует пользователя по Telegram initData и устанавливает сессионную куку.
+@router.get("/dev-login")
+async def dev_login(key: str = Query(..., description="API Secret Key")) -> Response:
+    """Выполняет вход разработчика по API ключу и перенаправляет в MiniApp."""
+    if not secrets.compare_digest(key.strip(), API_SECRET_KEY):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
+    redirect = RedirectResponse(url="/miniapp", status_code=status.HTTP_303_SEE_OTHER)
+    _set_tester_cookie(redirect, ALLOWED_USER_ID)
+    log.info(f"🔑 Успешный dev-login разработчика (user_id={ALLOWED_USER_ID})")
+    return redirect
 
-    Проверяет валидность HMAC-SHA256 подписи данных веб-приложения и принадлежность к группе.
-    Выбрасывает HTTP 401 при неверной подписи и HTTP 403 при отсутствии доступа.
 
-    Возвращает MiniappAuthResponse с базовым профилем пользователя.
-    """
+def _auth_developer_key(api_key: str, response: Response) -> MiniappAuthResponse:
+    """Проверяет ключ разработчика и устанавливает сессионную куку тестера."""
+    if not secrets.compare_digest(api_key.strip(), API_SECRET_KEY):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
+    _set_tester_cookie(response, ALLOWED_USER_ID)
+    log.info(f"✅ Вход тестера с ПК по API-ключу (user_id={ALLOWED_USER_ID})")
+    return MiniappAuthResponse(user_id=ALLOWED_USER_ID, first_name="Разработчик", username="dev")
 
-    info = validate_telegram_init_data(payload.init_data)
+
+async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuthResponse:
+    """Валидирует подпись Telegram initData и проверяет права студента или тестера."""
+    info = validate_telegram_init_data(init_data)
     if not info or "id" not in info:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram signature")
-
-    user_id = int(info["id"])
-    is_classmate = bool(user_id == ALLOWED_USER_ID or find_classmate_by_tg_id(user_id) is not None)
-    is_tester = await is_tester_allowed(user_id)
+    uid = int(info["id"])
+    is_classmate = bool(uid == ALLOWED_USER_ID or find_classmate_by_tg_id(uid) is not None)
+    is_tester = await is_tester_allowed(uid)
     if not is_classmate and not is_tester:
-        log.warning(f"🚫 Пользователь {user_id} не в группе 1-КПД-3 и не в списке тестеров")
+        log.warning(f"🚫 Пользователь {uid} не в группе 1-КПД-3 и не в списке тестеров")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
+    _set_tester_cookie(response, uid)
+    return MiniappAuthResponse(user_id=uid, first_name=info.get("first_name"), username=info.get("username"))
 
-    _set_tester_cookie(response, user_id)
 
-    return MiniappAuthResponse(user_id=user_id, first_name=info.get("first_name"), username=info.get("username"))
+@router.post("/auth", response_model=MiniappAuthResponse)
+async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse:
+    """Аутентифицирует пользователя по Telegram initData или ключу разработчика."""
+    if payload.api_key:
+        return _auth_developer_key(payload.api_key, response)
+    if payload.init_data:
+        return await _auth_telegram_init(payload.init_data, response)
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing auth credentials")
 
 
 @router.get("/status", response_model=MiniappCheckResponse)

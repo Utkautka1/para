@@ -2772,18 +2772,33 @@ classDiagram
         +get_snapshots_by_date(snapshot_date) list[AttendanceSnapshot]
     }
 
+    class StudentAchievement {
+        +int id PK
+        +string student_fio
+        +string achievement_id
+        +datetime unlocked_at
+    }
+
+    class GamificationRepository {
+        +get_all_unlocked_map() dict
+        +unlock_achievement(student_fio, achievement_id) bool
+    }
+
     Base <|-- Subscriber
     Base <|-- AttendanceSnapshot
     Base <|-- SystemIncident
+    Base <|-- StudentAchievement
     SystemIncident --> IncidentSeverity : uses
 
     DatabaseManager --> Subscriber : manages
     DatabaseManager --> AttendanceSnapshot : manages
     DatabaseManager --> SystemIncident : manages
+    DatabaseManager --> StudentAchievement : manages
 
     SubscriberRepository ..> Subscriber : queries/persists
     IncidentRepository ..> SystemIncident : queries/persists
     AttendanceRepository ..> AttendanceSnapshot : queries/persists
+    GamificationRepository ..> StudentAchievement : queries/persists
 ```
 
 ### 15.2. System Incident Alerting Pipeline & Distributed Throttling

@@ -73,7 +73,7 @@ def test_registry_contains_exactly_80_achievements() -> None:
 
 
 def test_student_profile_and_xp_calculation() -> None:
-    """Проверяет генерацию профиля студента и начисление очков опыта."""
+    """Проверяет генерацию профиля студента и чистый старт с 0 достижений."""
     raw_data = {
         "total": {"П": 50, "О": 1, "У": 2, "Н": 0},
     }
@@ -83,18 +83,21 @@ def test_student_profile_and_xp_calculation() -> None:
     assert profile.short_fio == "Конышев Сергей"
     assert profile.attendance_pct == 100.0
     assert profile.rank_name == "Легальный отличник"
-    assert "att_100" in profile.unlocked_achievements
-    assert "late_first" in profile.unlocked_achievements
-    assert "egg_jubilee_300" in profile.unlocked_achievements
-    assert profile.xp > 500
+    assert profile.unlocked_achievements == []
+    assert profile.xp == 0
+
+    # С открытыми достижениями
+    with_ach = build_student_profile("Конышев Сергей", raw_data, extra={"att_100", "late_first"})
+    assert "att_100" in with_ach.unlocked_achievements
+    assert with_ach.xp > 0
 
 
 def test_calculate_xp_rewards_and_penalties() -> None:
-    """Проверяет формулу начисления и штрафов очков академического опыта."""
+    """Проверяет начисление очков опыта строго по открытым достижениям."""
     stat = {"p": 10, "u": 2, "n": 4}
     unlocked = ["att_survivor_6"]  # 50 XP
     xp = calculate_student_xp(stat, unlocked)
-    assert xp == 140
+    assert xp == 50
 
 
 def test_starosta_unranked_status() -> None:
@@ -102,7 +105,7 @@ def test_starosta_unranked_status() -> None:
     raw = {"total": {"П": 34, "О": 0, "У": 2, "Н": 0}}
     p = build_student_profile("Стрыгин Дмитрий Вячеславович", raw)
     assert p.rank_name == "Староста группы (Вне рейтинга)" and p.rank_icon == "👑"
-    assert "att_100" in p.unlocked_achievements
+    assert p.unlocked_achievements == []
 
 
 @pytest.mark.asyncio

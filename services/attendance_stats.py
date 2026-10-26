@@ -219,27 +219,66 @@ async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None:
         return None
 
 
+_FETCH_LOCK = asyncio.Lock()
+
+
+async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]:
+    """
+    Загружает актуальный XLSX-файл из Яндекса и кэширует в Redis и SQLite.
+
+    Вызывается синхронно при холодном старте или в фоновой задаче Stale-While-Revalidate.
+    """
+    wopi = await init_wopi_session()
+    wb = await download_workbook(wopi)
+    fresh_stats = await asyncio.to_thread(parse_workbook_attendance, wb)
+    await _save_to_redis_cache(fresh_stats)
+    await _save_sqlite_snapshot(fresh_stats)
+    log.info(f"✅ Данные посещаемости обновлены из Яндекс Документов ({len(fresh_stats)} студентов)")
+    return fresh_stats
+
+
+async def _trigger_background_attendance_refresh() -> None:
+    """
+    Запускает обновление посещаемости в фоновом режиме без блокировки вызывающего потока.
+
+    Использует Lock для предотвращения лавины параллельных тяжелых загрузок XLSX.
+    """
+    if _FETCH_LOCK.locked():
+        return
+    async with _FETCH_LOCK:
+        try:
+            await _download_and_cache_fresh_stats()
+        except Exception as exc:
+            log.warning(f"Фоновое обновление посещаемости завершилось ошибкой: {exc}")
+
+
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]:
-    """Возвращает сквозную статистику посещаемости с кэшированием в Redis и снимком в SQLite."""
+    """
+    Возвращает сквозную статистику посещаемости по стратегии Stale-While-Revalidate.
+
+    Сначала отдает кэш Redis или снимок SQLite (1-2 мс), обновляя данные в фоне.
+    """
     if not force_refresh:
         cached = await _load_from_redis_cache()
         if cached:
             return cached
+        snapshot = await _load_sqlite_snapshot()
+        if snapshot:
+            asyncio.create_task(_trigger_background_attendance_refresh())
+            return snapshot
 
-    log.info("Загрузка и пересчёт статистики посещаемости из Яндекс Документов...")
-    try:
-        wopi = await init_wopi_session()
-        wb = await download_workbook(wopi)
-        stats = await asyncio.to_thread(parse_workbook_attendance, wb)
-        await _save_to_redis_cache(stats)
-        await _save_sqlite_snapshot(stats)
-        return stats
-    except Exception as exc:
-        log.error(f"Сбой загрузки Яндекс Документов ({exc}), попытка фолбэка на SQLite...")
-        fallback_stats = await _load_sqlite_snapshot()
-        if fallback_stats:
-            return fallback_stats
-        raise
+    async with _FETCH_LOCK:
+        cached = await _load_from_redis_cache()
+        if cached and not force_refresh:
+            return cached
+        try:
+            return await _download_and_cache_fresh_stats()
+        except Exception as exc:
+            log.error(f"Сбой загрузки Яндекс Документов ({exc}), фолбэк на SQLite")
+            fallback = await _load_sqlite_snapshot()
+            if fallback:
+                return fallback
+            raise
 
 
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None:
