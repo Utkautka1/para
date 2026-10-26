@@ -54,13 +54,21 @@ def _check_attendance_rules(s: dict[str, Any], unlocked: set[str]) -> None:
         unlocked.add("att_100")
     if s["n"] == 0:
         unlocked.add("att_no_unexcused")
-    if s["n"] >= 20:
+    if s["p"] >= 6:
+        unlocked.add("att_survivor_6")
+    if s["total"] >= 10 and s["n"] == 0:
+        unlocked.add("att_full_week")
+    if s["total"] >= 20 and s["n"] == 0:
+        unlocked.add("att_month_streak")
+    if s["p"] >= 30:
         unlocked.add("att_ghost")
-    if s["n"] == 9:
+    if s["p"] >= 50:
         unlocked.add("att_critical_9")
-    if s["u"] >= 5:
+    if s["u"] >= 1 and s["n"] > 0:
+        unlocked.add("att_comeback")
+    if s["u"] >= 3:
         unlocked.add("att_doc_master")
-    if s["u"] >= 10:
+    if s["u"] >= 6:
         unlocked.add("att_doc_legend")
 
 
@@ -68,27 +76,111 @@ def _check_punctuality_rules(s: dict[str, Any], unlocked: set[str]) -> None:
     """Проверяет условия достижений пунктуальности."""
     if s["o"] >= 1:
         unlocked.add("late_first")
-    if s["o"] >= 3:
+    if s["p"] >= 10 and s["o"] == 0:
         unlocked.add("late_serial")
-    if s["o"] == 0:
+    if s["o"] == 0 and s["total"] >= 15:
         unlocked.add("late_zero")
+    if s["o"] == 0 and s["total"] >= 10:
+        unlocked.add("time_exact_arrival")
+    if s["p"] >= 5:
+        unlocked.update({"time_early_bird", "time_night_owl", "time_second_shift", "time_bell_silent"})
+    if s["p"] >= 15:
+        unlocked.update({"time_sunday_scout", "time_bell_on"})
+
+
+def _check_bot_rules(s: dict[str, Any], unlocked: set[str]) -> None:
+    """Проверяет условия взаимодействия студента с ботом и MiniApp."""
+    unlocked.update({"bot_welcome", "bot_self_audit", "bot_miniapp", "bot_manual"})
+    if s["p"] >= 15:
+        unlocked.update({"bot_subscriber", "bot_f5_master", "bot_future_peek"})
+    if s["p"] >= 25:
+        unlocked.update({"bot_week_next", "bot_voice_stt"})
+    if s["p"] >= 40:
+        unlocked.add("bot_podcast")
+
+
+def _check_ai_rules(s: dict[str, Any], unlocked: set[str]) -> None:
+    """Проверяет условия выполнения академических заданий через DeepSeek."""
+    if s["p"] >= 5:
+        unlocked.update({"ai_first_task", "ai_prompt_pro"})
+    if s["p"] >= 20:
+        unlocked.update({"ai_gost_docx", "ai_speedrun", "ai_title_page"})
+    if s["p"] >= 35:
+        unlocked.update({"ai_deepseek_fan", "ai_night_grind", "ai_clean_code", "ai_hero"})
+    if s["p"] >= 50:
+        unlocked.add("ai_polymath")
+
+
+def _check_student_life_rules(s: dict[str, Any], unlocked: set[str]) -> None:
+    """Проверяет академические вехи студенческой жизни 1-КПД-3."""
+    if s["p"] >= 40:
+        unlocked.add("life_mdk_pro")
+    if s["pct"] >= 90.0 and s["total"] >= 10:
+        unlocked.add("life_sport_king")
+    if s["p"] >= 15:
+        unlocked.update({"life_monday_win", "life_window_chill", "life_zoom_click"})
+    if s["p"] >= 30:
+        unlocked.update({"life_exam_ready", "life_faculty_guide", "life_friday_party"})
+    if s["p"] >= 60:
+        unlocked.add("life_math_god")
+    if s["pct"] >= 85.0 and s["p"] >= 50:
+        unlocked.add("life_future_senior")
+
+
+def _check_social_rules(s: dict[str, Any], unlocked: set[str]) -> None:
+    """Проверяет социальные активности и вклад студента в группу."""
+    unlocked.add("soc_birthday")
+    if s["p"] >= 10:
+        unlocked.update({"soc_heart", "soc_ping_muster", "soc_solidarity"})
+    if s["p"] >= 25:
+        unlocked.update({"soc_headman_ally", "soc_poll_citizen", "soc_colloquium"})
+    if s["pct"] >= 75.0:
+        unlocked.add("soc_pulse_boost")
+    if 79.5 <= s["pct"] <= 80.9:
+        unlocked.add("soc_meme_lord")
+    if s["total"] >= 30:
+        unlocked.add("soc_veteran")
+
+
+def _check_easter_egg_rules(s: dict[str, Any], unlocked: set[str]) -> None:
+    """Проверяет пасхалки и скрытые активности интерфейса."""
+    unlocked.update({"egg_jubilee_300", "egg_speed_click", "egg_cleaner"})
+    if s["p"] >= 15:
+        unlocked.update({"egg_tea_break", "egg_matrix", "egg_tracer"})
+    if s["p"] >= 25:
+        unlocked.update({"egg_tapper", "egg_api_hacker"})
+    if s["pct"] >= 95.0 and s["total"] >= 15:
+        unlocked.add("egg_vip")
+    if s["p"] >= 45:
+        unlocked.add("egg_konami")
 
 
 def _check_mastery_rules(s: dict[str, Any], unlocked: set[str]) -> None:
-    """Проверяет высшие статусные достижения."""
+    """Проверяет высшие статусные достижения и ранговые рубежи."""
     if 79.5 <= s["pct"] <= 80.9:
         unlocked.add("mast_first_course")
     if 81.0 <= s["pct"] <= 89.9:
         unlocked.add("mast_normis_life")
     if s["pct"] >= 99.9 and s["n"] == 0 and s["o"] == 0:
         unlocked.add("mast_favorite")
+    if len(unlocked) >= 10:
+        unlocked.add("mast_badge_collector")
+    if len(unlocked) >= 15:
+        unlocked.add("mast_grandmaster")
+    if len(unlocked) >= 20:
+        unlocked.add("mast_all_rounder")
 
 
 def _evaluate_all_rules(s: dict[str, Any], extra: set[str] | None) -> list[str]:
-    """Агрегирует проверку всех правил и добавляет юбилейную ачивку 300."""
-    unlocked: set[str] = {"egg_jubilee_300"}
+    """Агрегирует последовательную проверку всех категорий достижений."""
+    unlocked: set[str] = set()
     _check_attendance_rules(s, unlocked)
     _check_punctuality_rules(s, unlocked)
+    _check_bot_rules(s, unlocked)
+    _check_ai_rules(s, unlocked)
+    _check_student_life_rules(s, unlocked)
+    _check_social_rules(s, unlocked)
+    _check_easter_egg_rules(s, unlocked)
     _check_mastery_rules(s, unlocked)
     if extra:
         unlocked.update(extra)
@@ -96,11 +188,7 @@ def _evaluate_all_rules(s: dict[str, Any], extra: set[str] | None) -> list[str]:
 
 
 def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> int:
-    """
-    Рассчитывает суммарные очки академического опыта (XP) студента.
-
-    Учитывает посещенные пары, уважительные справки и награды за ачивки.
-    """
+    """Рассчитывает суммарные очки академического опыта (XP) студента."""
     base_xp = stat.get("p", 0) * 10 + stat.get("u", 0) * 5
     penalty = stat.get("n", 0) * 5
     ach_xp = sum(
@@ -109,6 +197,16 @@ def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> i
         if aid in ACHIEVEMENTS_MAP
     )
     return max(0, base_xp - penalty) + ach_xp
+
+
+def _apply_xp_milestones(xp: int, unlocked: list[str]) -> list[str]:
+    """Присваивает достижения за преодоление порогов опыта (1000 и 2500 XP)."""
+    res = set(unlocked)
+    if xp >= 1000:
+        res.add("mast_xp_1000")
+    if xp >= 2500:
+        res.add("mast_xp_5000")
+    return sorted(list(res))
 
 
 def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, Any]:
@@ -131,9 +229,9 @@ def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | 
     m = _extract_student_metrics(fio, raw_data)
     starosta = is_starosta(fio)
     rank = STAROSTA_RANK if starosta else resolve_student_rank(m["pct"], m["n"], m["o"])
-    all_achs = [a.id for a in get_all_achievements()]
-    achs = all_achs if starosta else _evaluate_all_rules(m, extra)
+    achs = _evaluate_all_rules(m, extra)
     xp = calculate_student_xp(m, achs)
+    final_achs = _apply_xp_milestones(xp, achs)
 
     return StudentProfile(
         fio=fio,
@@ -148,7 +246,7 @@ def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | 
         rank_icon=rank.icon,
         rank_description=rank.description,
         xp=xp,
-        unlocked_achievements=achs,
+        unlocked_achievements=final_achs,
     )
 
 
@@ -187,7 +285,7 @@ async def get_group_leaderboard(
 
     stats = provided_stats or await fetch_all_time_attendance()
     profiles = [build_student_profile(fio, data) for fio, data in stats.items()]
-    profiles.sort(key=lambda s: (0 if is_starosta(s.fio) else 1, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
+    profiles.sort(key=lambda s: (1 if is_starosta(s.fio) else 0, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
     if not provided_stats:
         await _save_cached_leaderboard(profiles)
     return profiles

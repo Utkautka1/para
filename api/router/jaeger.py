@@ -7,10 +7,12 @@
 закрывая доступ от посторонних через зависимость verify_api_or_tester.
 """
 
+import posixpath
+import urllib.parse
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from api.deps import verify_api_or_tester
@@ -51,16 +53,32 @@ def _filter_headers(headers: Any) -> dict[str, str]:
     return {k: v for k, v in headers.items() if k.lower() not in _HOP_BY_HOP_HEADERS}
 
 
+def _sanitize_proxy_path(raw_path: str) -> str:
+    """
+    Очищает и нормализует путь проксирования, блокируя попытки Path Traversal.
+
+    Декодирует URL-символы и отсекает переходы вверх по каталогу ('..').
+    Предотвращает побег за пределы префикса /jaeger на внутреннем хосте.
+
+    Возвращает безопасный строковый путь или выбрасывает HTTPException 400.
+    """
+    decoded = urllib.parse.unquote(raw_path)
+    normalized = posixpath.normpath("/" + decoded.lstrip("/")).lstrip("/")
+    if ".." in normalized.split("/"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid traversal path")
+    return "" if normalized == "." else normalized
+
+
 def _build_target_url(path: str, query: str) -> str:
     """
-    Формирует целевой адрес сервиса Jaeger с учетом пути и query-параметров.
+    Формирует проверенный целевой адрес Jaeger с учетом безопасного пути.
 
-    Добавляет префикс /jaeger/ и сохраняет исходные GET-параметры поиска трейсов.
+    Изолирует запросы внутри префикса /jaeger/ и сохраняет исходные GET-параметры.
 
     Возвращает полный строковый URL назначения.
     """
     base = JAEGER_UI_URL.rstrip("/")
-    clean_path = path.lstrip("/")
+    clean_path = _sanitize_proxy_path(path)
     url = f"{base}/jaeger/{clean_path}" if clean_path else f"{base}/jaeger/"
     return f"{url}?{query}" if query else url
 

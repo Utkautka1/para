@@ -97,17 +97,17 @@ def test_calculate_xp_rewards_and_penalties() -> None:
     assert xp == 140
 
 
-def test_starosta_privileges_all_80_achievements() -> None:
-    """Проверяет, что Староста получает все 80 ачивок и максимальный ранг."""
+def test_starosta_unranked_status() -> None:
+    """Проверяет, что Староста получает почетный статус вне рейтинга."""
     raw = {"total": {"П": 34, "О": 0, "У": 2, "Н": 0}}
     p = build_student_profile("Стрыгин Дмитрий Вячеславович", raw)
-    assert p.rank_name == "Староста группы" and p.rank_icon == "👑"
-    assert len(p.unlocked_achievements) == 80 and p.xp > 10000
+    assert p.rank_name == "Староста группы (Вне рейтинга)" and p.rank_icon == "👑"
+    assert "att_100" in p.unlocked_achievements
 
 
 @pytest.mark.asyncio
 async def test_get_group_leaderboard_sorting() -> None:
-    """Проверяет сортировку лидерборда с 1-м местом Старосты."""
+    """Проверяет сортировку лидерборда: соревнующиеся студенты занимают верх таблицы."""
     fake_stats = {
         "Иванов Иван": {"total": {"П": 10, "О": 0, "У": 0, "Н": 10}},
         "Петров Петр": {"total": {"П": 30, "О": 0, "У": 0, "Н": 0}},
@@ -115,21 +115,30 @@ async def test_get_group_leaderboard_sorting() -> None:
     }
     board = await get_group_leaderboard(fake_stats)
     assert len(board) == 3
-    assert board[0].fio == "Стрыгин Дмитрий"
-    assert len(board[0].unlocked_achievements) == 80
+    # Петров Петр (100% посещаемости) на 1 месте соревновательного зачета
+    assert board[0].fio == "Петров Петр"
+    # Староста идет в отдельном зачете вне соревновательного подиума
+    assert board[-1].fio == "Стрыгин Дмитрий"
 
 
 @pytest.mark.asyncio
 async def test_gamification_api_leaderboard() -> None:
     """Проверяет эндпоинты лидерборда и каталога ачивок через FastAPI."""
     app = create_app()
-    fake_stats = {"Конышев Сергей": {"total": {"П": 40, "О": 0, "У": 0, "Н": 0}}}
+    fake_stats = {
+        "Конышев Сергей": {"total": {"П": 40, "О": 0, "У": 0, "Н": 0}},
+        "Стрыгин Дмитрий": {"total": {"П": 34, "О": 0, "У": 2, "Н": 0}},
+    }
     with patch("services.gamification.fetch_all_time_attendance", AsyncMock(return_value=fake_stats)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp_lb = await client.get("/gamification/leaderboard")
             assert resp_lb.status_code == 200
             data_lb = resp_lb.json()
-            assert data_lb["total_students"] == 1 and data_lb["group_pulse"] == 100.0
+            assert data_lb["total_students"] == 2
+            assert len(data_lb["leaderboard"]) == 1
+            assert data_lb["leaderboard"][0]["fio"] == "Конышев Сергей"
+            assert data_lb["starosta"] is not None
+            assert data_lb["starosta"]["fio"] == "Стрыгин Дмитрий"
 
             resp_ach = await client.get("/gamification/achievements")
             assert resp_ach.status_code == 200
@@ -138,7 +147,7 @@ async def test_gamification_api_leaderboard() -> None:
 
 @pytest.mark.asyncio
 async def test_gamification_api_profile_and_ranks() -> None:
-    """Проверяет эндпоинты рангов и профиля студента."""
+    """Проверяет эндпоинты рангов и профиля студента, включая валидацию параметров."""
     app = create_app()
     fake_stats = {"Конышев Сергей": {"total": {"П": 40, "О": 0, "У": 0, "Н": 0}}}
     with patch("services.gamification.fetch_all_time_attendance", AsyncMock(return_value=fake_stats)):
@@ -149,3 +158,6 @@ async def test_gamification_api_profile_and_ranks() -> None:
             resp_prof = await client.get("/gamification/profile?fio=Конышев")
             assert resp_prof.status_code == 200
             assert resp_prof.json()["fio"] == "Конышев Сергей"
+
+            resp_bad = await client.get("/gamification/profile")
+            assert resp_bad.status_code == 400

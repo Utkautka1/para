@@ -49,6 +49,11 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 16.1. [Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)](#161-distributed-tracing-span-topology-telegram---grpc---redis---sqlite)
    - 16.2. [Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation](#162-locust-dual-protocol-load-testing-architecture--morning-peak-simulation)
    - 16.3. [Dual-Tab Mini App & Jaeger Reverse Proxy Architecture](#163-dual-tab-mini-app--jaeger-reverse-proxy-architecture)
+17. [High-Performance Reliability, PII Protection & Gamification Showcase](#17-high-performance-reliability-pii-protection--gamification-showcase)
+   - 17.1. [Telegram Bot Ingress & WOPI L2 Cache Sequence](#171-telegram-bot-ingress--wopi-l2-cache-sequence)
+   - 17.2. [Classmate Role-Based Whitelist Gate Flowchart](#172-classmate-role-based-whitelist-gate-flowchart)
+   - 17.3. [Gamification Progress Bar & Visual Status Architecture](#173-gamification-progress-bar--visual-status-architecture)
+   - 17.4. [Decoupled Starosta Unranked, Lightweight Mini App & Path Traversal Security](#174-decoupled-starosta-unranked-lightweight-mini-app--path-traversal-security)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -3115,6 +3120,57 @@ classDiagram
     StudentProfile "1" --> "*" AchievementVisualCard : owns
     MiniAppShowcaseView "1" --> "*" AchievementVisualCard : displays
 ```
+
+### 17.4. Decoupled Starosta Unranked, Lightweight Mini App & Path Traversal Security
+
+Architecture diagram of the unranked headman design, security sanitization gates for reverse proxy endpoints, and decoupled high-performance Mini App execution without blocking devtools bundles:
+
+```mermaid
+classDiagram
+    direction TB
+
+    class LeaderboardResponse {
+        +int total_students
+        +float group_pulse
+        +list~StudentProfile~ leaderboard
+        +StudentProfile starosta
+    }
+
+    class GamificationDecomposition {
+        +_check_attendance_rules(stat, rules)
+        +_check_punctuality_rules(stat, rules)
+        +_check_bot_rules(stat, rules)
+        +_check_ai_rules(stat, rules)
+        +_check_student_life_rules(stat, rules)
+        +_check_social_rules(stat, rules)
+        +_check_easter_egg_rules(stat, rules)
+        +_check_mastery_rules(stat, rules)
+    }
+
+    class JaegerPathSanitizer {
+        +_sanitize_proxy_path(path: str) str
+        +detect_traversal_attempts(path: str) bool
+    }
+
+    class SecureSyncExecution {
+        +send_cookie_to_remote_env(cookie) void
+        +send_api_urls_to_remote_env(urls) void
+        -run_via_ssh_stdin_pipe(script_bytes) void
+    }
+
+    class LightweightMiniAppView {
+        +Promise_allSettled_Ingress()
+        +Set_O1_Status_Filtering()
+        +Isolated_Swagger_Docs_Route()
+    }
+
+    LeaderboardResponse "1" *-- "many" StudentProfile : competing_students
+    LeaderboardResponse "1" *-- "0..1" StudentProfile : starosta_unranked
+    GamificationDecomposition ..> LeaderboardResponse : builds_ranked_profiles
+    JaegerPathSanitizer --> FastApiApplication : guards /jaeger/{path}
+    LightweightMiniAppView ..> LeaderboardResponse : consumes_concurrently
+```
+
 
 
 

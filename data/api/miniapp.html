@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -457,28 +456,6 @@
     .stat-mini-val { font-size: 16px; font-weight: 800; }
     .stat-mini-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
-    /* Swagger & Jaeger Views (Strictly hidden for students) */
-    #swagger-wrapper, #jaeger-wrapper { display: none; width: 100%; }
-    .swagger-ui .info .url { display: none !important; }
-    .jaeger-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      background: rgba(18, 24, 38, 0.95);
-      border-bottom: 1px solid var(--card-border);
-    }
-    #jaeger-frame { width: 100%; height: calc(100vh - 120px); border: none; background: #fff; }
-    .filter-chip {
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      color: #a5b4fc;
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -503,23 +480,36 @@
     <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
       <span>👤 Профиль</span>
     </button>
-    <!-- Hidden by default for students; shown only to admin & testers -->
-    <button class="tab-btn" id="tab-swagger" style="display:none !important;" onclick="switchTab('swagger')">
-      <span>⚡ Swagger UI</span>
-    </button>
-    <button class="tab-btn" id="tab-jaeger" style="display:none !important;" onclick="switchTab('jaeger')">
-      <span>🔍 Jaeger Traces</span>
-    </button>
   </div>
 
   <!-- LEADERBOARD TAB (DEFAULT FOR ALL CLASSMATES) -->
   <div id="leaderboard-view" class="container">
+    <!-- Starosta Unranked Banner -->
+    <div id="starosta-card-wrap" style="display:none; margin-bottom: 14px;">
+      <div class="student-item" id="starosta-click-item" style="border-color: rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, var(--card-bg) 100%); box-shadow: 0 4px 16px rgba(245, 158, 11, 0.1);">
+        <div style="font-size:22px; width:28px; text-align:center;">👑</div>
+        <div class="student-info">
+          <div class="student-name-row">
+            <span class="student-fio" id="starosta-fio">Стрыгин Д.</span>
+            <span class="student-rank-pill" style="background:rgba(245, 158, 11, 0.22); color:#fbbf24; border-color:rgba(245, 158, 11, 0.5);">Староста • Вне рейтинга</span>
+          </div>
+          <div class="student-stats-row" id="starosta-stats">
+            П: 0 • О: 0 • У: 0 • Н: 0
+          </div>
+        </div>
+        <div class="student-right">
+          <div class="student-pct-val" id="starosta-pct" style="color:#fbbf24;">100%</div>
+          <div class="student-xp-val" id="starosta-xp">0 XP</div>
+        </div>
+      </div>
+    </div>
+
     <div class="podium-wrap" id="podium-container">
       <!-- Top 3 dynamically injected -->
     </div>
 
     <div class="list-title">
-      <span>Все студенты (26)</span>
+      <span>Все студенты</span>
       <span style="font-weight:600; color:#a5b4fc;">Посещаемость & XP</span>
     </div>
     <div id="students-list">
@@ -611,23 +601,6 @@
     </div>
   </div>
 
-  <!-- SWAGGER TAB (ONLY TESTERS) -->
-  <div id="swagger-wrapper">
-    <div id="swagger-ui"></div>
-  </div>
-
-  <!-- JAEGER TAB (ONLY TESTERS) -->
-  <div id="jaeger-wrapper">
-    <div class="jaeger-toolbar">
-      <span style="font-size:12px; font-weight:600; color:var(--text-muted);">Быстрый фильтр:</span>
-      <button class="filter-chip" onclick="filterJaegerService('para-bot')">para-bot</button>
-      <button class="filter-chip" onclick="filterJaegerService('para-worker')">para-worker</button>
-      <button class="filter-chip" onclick="filterJaegerService('para-api')">para-api</button>
-    </div>
-    <iframe id="jaeger-frame" src=""></iframe>
-  </div>
-
-  <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js"></script>
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) {
@@ -638,54 +611,42 @@
     }
 
     let allAchievements = [];
-    let currentTab = 'leaderboard';
-    let isTester = false;
-    let jaegerLoaded = false;
-    let swaggerLoaded = false;
     let myProfile = null;
-
+    let unlockedSet = new Set();
+    let currentTab = 'leaderboard';
     let currentStatusFilter = 'all';
     let currentCatFilter = 'all';
 
     function updateAchievementProgress() {
-      const unlockedIds = (myProfile && myProfile.unlocked_achievements) ? myProfile.unlocked_achievements : [];
       const total = allAchievements.length || 80;
-      const count = unlockedIds.length;
+      const count = unlockedSet.size;
       const pct = Math.round((count / total) * 100);
 
       const badge = document.getElementById('ach-badge-summary');
       if (badge) badge.innerText = `${count} / ${total} (${pct}%)`;
-
       const unlEl = document.getElementById('ach-unlocked-count');
       if (unlEl) unlEl.innerText = `✅ ${count} открыто`;
-
       const lckEl = document.getElementById('ach-locked-count');
       if (lckEl) lckEl.innerText = `🔒 ${total - count} в процессе`;
-
       const fill = document.getElementById('ach-collection-fill');
       if (fill) fill.style.width = `${pct}%`;
-
       const btnUnl = document.getElementById('filter-st-unlocked');
       if (btnUnl) btnUnl.innerText = `✅ Открытые (${count})`;
-
       const btnLck = document.getElementById('filter-st-locked');
       if (btnLck) btnLck.innerText = `🔒 В процессе (${total - count})`;
     }
 
     async function loadMyProfile() {
       try {
-        let myTgId = null;
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-          myTgId = tg.initDataUnsafe.user.id;
-        }
+        const myTgId = tg?.initDataUnsafe?.user?.id;
         const url = myTgId ? `/gamification/profile?tg_id=${myTgId}` : `/gamification/profile?fio=Стрыгин`;
         const resp = await fetch(url, { credentials: 'include' });
-        if (resp.ok) {
-          myProfile = await resp.json();
-          renderProfile(myProfile);
-          updateAchievementProgress();
-          renderAchievements();
-        }
+        if (!resp.ok) return;
+        myProfile = await resp.json();
+        unlockedSet = new Set(myProfile.unlocked_achievements || []);
+        renderProfile(myProfile);
+        updateAchievementProgress();
+        renderAchievements();
       } catch (e) {
         console.error('Ошибка загрузки личного профиля:', e);
       }
@@ -697,30 +658,44 @@
         if (!resp.ok) return;
         const data = await resp.json();
         document.getElementById('group-pulse-lbl').innerText = `Пульс: ${data.group_pulse}%`;
+
+        if (data.starosta) {
+          renderStarostaCard(data.starosta);
+        }
         renderPodium(data.leaderboard.slice(0, 3));
         renderStudentsList(data.leaderboard);
-        loadMyProfile();
       } catch (e) {
         console.error('Ошибка загрузки лидерборда:', e);
       }
     }
 
+    function renderStarostaCard(s) {
+      const wrap = document.getElementById('starosta-card-wrap');
+      if (!wrap) return;
+      document.getElementById('starosta-fio').innerText = s.short_fio;
+      document.getElementById('starosta-stats').innerText = `П: ${s.present_count} • О: ${s.late_count} • У: ${s.excused_count} • Н: ${s.unexcused_count}`;
+      document.getElementById('starosta-pct').innerText = `${s.attendance_pct}%`;
+      document.getElementById('starosta-xp').innerText = `${s.xp} XP`;
+      document.getElementById('starosta-click-item').onclick = () => showProfile(s);
+      wrap.style.display = 'block';
+    }
+
     function renderPodium(top3) {
       if (top3.length < 3) return;
       const html = `
-        <div class="podium-card podium-2">
+        <div class="podium-card podium-2" onclick="showProfileByIdx(1)">
           <div class="podium-crown">🥈</div>
           <div class="podium-name">${escapeHtml(top3[1].short_fio)}</div>
           <div class="podium-pct">${top3[1].attendance_pct}%</div>
           <div class="podium-xp">${top3[1].xp} XP</div>
         </div>
-        <div class="podium-card podium-1">
+        <div class="podium-card podium-1" onclick="showProfileByIdx(0)">
           <div class="podium-crown">👑 🥇</div>
           <div class="podium-name">${escapeHtml(top3[0].short_fio)}</div>
           <div class="podium-pct">${top3[0].attendance_pct}%</div>
           <div class="podium-xp">${top3[0].xp} XP</div>
         </div>
-        <div class="podium-card podium-3">
+        <div class="podium-card podium-3" onclick="showProfileByIdx(2)">
           <div class="podium-crown">🥉</div>
           <div class="podium-name">${escapeHtml(top3[2].short_fio)}</div>
           <div class="podium-pct">${top3[2].attendance_pct}%</div>
@@ -728,15 +703,23 @@
         </div>
       `;
       document.getElementById('podium-container').innerHTML = html;
+      window._lastTop3 = top3;
+    }
+
+    function showProfileByIdx(idx) {
+      if (window._lastTop3 && window._lastTop3[idx]) {
+        showProfile(window._lastTop3[idx]);
+      }
     }
 
     function renderStudentsList(list) {
+      window._studentsListCache = list;
       const container = document.getElementById('students-list');
       const itemsHtml = list.map((s, idx) => {
         const num = idx + 1;
         const rankColor = s.attendance_pct >= 95 ? '#10b981' : (s.attendance_pct >= 70 ? '#fbbf24' : '#ef4444');
         return `
-          <div class="student-item" onclick="renderProfile(${JSON.stringify(s).replace(/"/g, '&quot;')}); switchTab('profile');">
+          <div class="student-item" onclick="showProfileByIdxList(${idx})">
             <div class="student-rank-num">${num}</div>
             <div class="student-info">
               <div class="student-name-row">
@@ -757,6 +740,12 @@
       container.innerHTML = itemsHtml;
     }
 
+    function showProfileByIdxList(idx) {
+      if (window._studentsListCache && window._studentsListCache[idx]) {
+        showProfile(window._studentsListCache[idx]);
+      }
+    }
+
     async function loadAchievements() {
       try {
         const resp = await fetch('/gamification/achievements', { credentials: 'include' });
@@ -773,16 +762,15 @@
     function renderAchievements() {
       const container = document.getElementById('achievements-container');
       if (!container) return;
-      const unlockedIds = (myProfile && myProfile.unlocked_achievements) ? myProfile.unlocked_achievements : [];
 
       let list = allAchievements;
       if (currentCatFilter !== 'all') {
         list = list.filter(a => a.category === currentCatFilter);
       }
       if (currentStatusFilter === 'unlocked') {
-        list = list.filter(a => unlockedIds.includes(a.id));
+        list = list.filter(a => unlockedSet.has(a.id));
       } else if (currentStatusFilter === 'locked') {
-        list = list.filter(a => !unlockedIds.includes(a.id));
+        list = list.filter(a => !unlockedSet.has(a.id));
       }
 
       if (!list || list.length === 0) {
@@ -791,7 +779,7 @@
       }
 
       container.innerHTML = list.map(a => {
-        const isUnlocked = unlockedIds.includes(a.id);
+        const isUnlocked = unlockedSet.has(a.id);
         const cardClass = isUnlocked ? 'ach-card unlocked' : 'ach-card locked';
         const statusBadge = isUnlocked
           ? '<span class="ach-status-badge status-unlocked">✅ Открыто</span>'
@@ -828,6 +816,11 @@
       renderAchievements();
     }
 
+    function showProfile(student) {
+      renderProfile(student);
+      switchTab('profile');
+    }
+
     function renderProfile(student) {
       document.getElementById('prof-fio').innerText = student.fio;
       document.getElementById('prof-rank').innerText = `${student.rank_icon} ${student.rank_name}`;
@@ -855,75 +848,18 @@
     }
 
     function switchTab(tab) {
-      if ((tab === 'swagger' || tab === 'jaeger') && !isTester) {
-        console.warn('Доступ запрещен: панель доступна только администратору и тестерам.');
-        return;
-      }
       if (tab === 'profile' && myProfile) {
         renderProfile(myProfile);
       }
       currentTab = tab;
-      const tabs = ['leaderboard', 'achievements', 'profile', 'swagger', 'jaeger'];
-      tabs.forEach(t => {
+      ['leaderboard', 'achievements', 'profile'].forEach(t => {
         const btn = document.getElementById('tab-' + t);
-        const view = document.getElementById(t + '-view') || document.getElementById(t + '-wrapper');
+        const view = document.getElementById(t + '-view');
         if (btn) btn.classList.toggle('active', t === tab);
-        if (view) view.style.display = (t === tab) ? (t === 'jaeger' ? 'flex' : 'block') : 'none';
+        if (view) view.style.display = (t === tab) ? 'block' : 'none';
       });
 
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-      if (tab === 'swagger' && !swaggerLoaded) initSwagger();
-      if (tab === 'jaeger' && !jaegerLoaded) {
-        document.getElementById('jaeger-frame').src = '/jaeger/';
-        jaegerLoaded = true;
-      }
-    }
-
-    function filterJaegerService(svc) {
-      const frame = document.getElementById('jaeger-frame');
-      if (frame) {
-        frame.src = '/jaeger/search?service=' + encodeURIComponent(svc);
-        jaegerLoaded = true;
-      }
-    }
-
-    function initSwagger() {
-      swaggerLoaded = true;
-      const CleanSwaggerPlugin = () => ({
-        wrapComponents: {
-          InfoUrl: () => () => null
-        }
-      });
-
-      SwaggerUIBundle({
-        url: "/openapi.json",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-        plugins: [CleanSwaggerPlugin],
-        layout: "BaseLayout",
-        requestInterceptor: (req) => {
-          req.credentials = 'include';
-          if (req.url) {
-            req.url = req.url.replace(/^https?:\/\/[^\/]+/, '');
-          }
-          return req;
-        }
-      });
-
-      const hostSanitizer = new MutationObserver(() => {
-        const root = document.getElementById('swagger-ui');
-        if (!root) return;
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        let node;
-        while ((node = walker.nextNode())) {
-          if (node.nodeValue && (node.nodeValue.includes('45-81-154-175') || node.nodeValue.includes('sslip.io'))) {
-            node.nodeValue = node.nodeValue.replace(/https?:\/\/45[-.]81[-.]154[-.]175[^\/\s'"]*/g, '');
-          }
-        }
-      });
-      hostSanitizer.observe(document.getElementById('swagger-ui'), { childList: true, subtree: true, characterData: true });
     }
 
     function escapeHtml(str) {
@@ -931,40 +867,8 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    async function checkTesterRole() {
-      try {
-        const initData = tg && tg.initData ? tg.initData : new URLSearchParams(window.location.search).get('init_data') || '';
-        let authorized = false;
-        if (initData) {
-          const resp = await fetch('/miniapp/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ init_data: initData })
-          });
-          if (resp.ok) authorized = true;
-        }
-        if (!authorized) {
-          const stResp = await fetch('/miniapp/status');
-          if (stResp.ok) {
-            const st = await stResp.json();
-            if (st.authenticated && st.is_tester) authorized = true;
-          }
-        }
-        if (authorized) {
-          isTester = true;
-          const btnSw = document.getElementById('tab-swagger');
-          const btnJg = document.getElementById('tab-jaeger');
-          if (btnSw) btnSw.style.setProperty('display', 'inline-flex', 'important');
-          if (btnJg) btnJg.style.setProperty('display', 'inline-flex', 'important');
-        }
-      } catch (e) {
-        isTester = false;
-      }
-    }
-
-    loadLeaderboard();
-    loadAchievements();
-    checkTesterRole();
+    // Параллельная загрузка данных без блокировки главного потока
+    Promise.allSettled([loadLeaderboard(), loadAchievements(), loadMyProfile()]);
   </script>
 </body>
 </html>

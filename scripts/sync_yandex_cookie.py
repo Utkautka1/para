@@ -241,7 +241,7 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
         f"res = re.sub(r'YANDEX_COOKIE=.*\\n', v, s) if 'YANDEX_COOKIE=' in s else s + v; "
         f"open(p, 'w').write(res)"
     )
-    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
 
 
 def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
@@ -266,8 +266,7 @@ def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
         '        out.append(f"{k}={v}")\n'
         "open(p, 'w', encoding='utf-8').write(chr(10).join(out) + chr(10))\n"
     )
-    b64_code = base64.b64encode(script.encode("utf-8")).decode("ascii")
-    return f"import base64; exec(base64.b64decode('{b64_code}').decode('utf-8'))"
+    return script
 
 
 def send_api_urls_to_remote_env(
@@ -285,9 +284,8 @@ def send_api_urls_to_remote_env(
         "EXAM_SCHEDULE_API_URL": primary_url,
         "EXAM_SCHEDULE_FALLBACK_API_URL": fallback_url,
     }
-    b64 = base64.b64encode(json.dumps(updates).encode("utf-8")).decode("ascii")
     py = _build_env_update_script(remote_dir, b64)
-    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
 
 
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:

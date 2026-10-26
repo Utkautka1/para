@@ -82,11 +82,10 @@ async def test_jaeger_proxy_service_unavailable(app) -> None:
 
 
 def test_miniapp_html_tabs_structure() -> None:
-    """Проверяет наличие вкладок Swagger UI и Jaeger Traces в HTML-шаблоне miniapp."""
+    """Проверяет чистоту табов miniapp: Swagger/Jaeger вынесены на выделенные роуты."""
     html_content = Path("data/api/miniapp.html").read_text(encoding="utf-8")
-    assert "tab-swagger" in html_content
-    assert "tab-jaeger" in html_content
-    assert "jaeger-frame" in html_content
-    assert "switchTab('swagger')" in html_content
-    assert "switchTab('jaeger')" in html_content
-    assert "filterJaegerService" in html_content
+    assert "tab-leaderboard" in html_content
+    assert "tab-achievements" in html_content
+    assert "tab-profile" in html_content
+    assert "tab-swagger" not in html_content
+    assert "tab-jaeger" not in html_content

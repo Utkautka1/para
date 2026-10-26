@@ -17,7 +17,11 @@ from api.schemas.gamification import (
 )
 from core.logger import get_logger
 from services.classmates_auth import find_classmate_by_tg_id
-from services.gamification import get_group_leaderboard, get_student_profile_by_fio
+from services.gamification import (
+    get_group_leaderboard,
+    get_student_profile_by_fio,
+    is_starosta,
+)
 from services.gamification_registry import RANKS, get_all_achievements
 
 log = get_logger("gamification_router")
@@ -32,26 +36,39 @@ def _calculate_group_pulse(profiles: list) -> float:
     return round(sum(p.attendance_pct for p in profiles) / len(profiles), 1)
 
 
-def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str:
-    """Определяет ФИО студента по переданной строке или Telegram ID."""
-    if fio:
-        return fio
+def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str | None:
+    """
+    Разрешает ФИО студента по переданному параметру fio или идентификатору Telegram.
+
+    Возвращает строку с ФИО или None, если параметры не переданы или tg_id не найден.
+    Не подставляет дефолтных пользователей во избежание утечки чужих данных.
+    """
+    if fio and fio.strip():
+        return fio.strip()
     if tg_id:
         classmate = find_classmate_by_tg_id(tg_id)
         if classmate and classmate.get("full_name"):
             return str(classmate["full_name"])
-    return "Стрыгин Дмитрий"
+    return None
 
 
 @router.get("/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard_endpoint() -> LeaderboardResponse:
-    """Возвращает актуальный рейтинг всех 26 студентов группы 1-КПД-3."""
+    """
+    Возвращает рейтинг соревнующихся студентов с выделенным старостой вне конкурса.
+
+    Разделение позволяет студентам честно соревноваться за 1-3 места на подиуме,
+    в то время как староста группы вынесен в отдельный почетный блок.
+    """
     profiles = await get_group_leaderboard()
     pulse = _calculate_group_pulse(profiles)
+    starosta_prof = next((p for p in profiles if is_starosta(p.fio)), None)
+    competing = [p for p in profiles if not is_starosta(p.fio)]
     return LeaderboardResponse(
         total_students=len(profiles),
         group_pulse=pulse,
-        leaderboard=[StudentProfileSchema.model_validate(p) for p in profiles],
+        leaderboard=[StudentProfileSchema.model_validate(p) for p in competing],
+        starosta=StudentProfileSchema.model_validate(starosta_prof) if starosta_prof else None,
     )
 
 
@@ -62,6 +79,11 @@ async def get_student_profile_endpoint(
 ) -> StudentProfileSchema:
     """Возвращает персональный профиль студента по ФИО или Telegram ID."""
     target_fio = _resolve_target_fio(fio, tg_id)
+    if not target_fio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Необходимо указать параметр 'fio' или 'tg_id'",
+        )
     profile = await get_student_profile_by_fio(target_fio)
     if not profile:
         raise HTTPException(

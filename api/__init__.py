@@ -12,8 +12,9 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from api.deps import verify_api_or_tester
@@ -137,11 +138,9 @@ def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
 
 def _register_protected_docs(app: FastAPI) -> None:
     """
-    Регистрирует защищенную отдачу спецификации и редирект на Mini App.
+    Регистрирует защищенную отдачу спецификации и Swagger UI для тестеров.
 
-    Закрывает доступ к схеме от неавторизованных пользователей через зависимость.
-
-    Ничего не возвращает.
+    Закрывает доступ к схеме и интерактивной документации от неавторизованных пользователей.
     """
 
     @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
@@ -149,10 +148,13 @@ def _register_protected_docs(app: FastAPI) -> None:
         """Отдает схему OpenAPI только авторизованным тестировщикам."""
         return JSONResponse(content=_custom_openapi_schema(app))
 
-    @app.get("/docs", include_in_schema=False)
-    async def get_docs_portal() -> RedirectResponse:
-        """Перенаправляет пользователя в защищенный Mini App портал."""
-        return RedirectResponse(url="/miniapp")
+    @app.get("/docs", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
+    async def get_docs_swagger() -> Any:
+        """Отдает полноценный Swagger UI для авторизованных тестировщиков."""
+        return get_swagger_ui_html(
+            openapi_url="/openapi.json",
+            title="para-api — Swagger UI Documentation",
+        )
 
 
 def _register_observability_middleware(app: FastAPI) -> None:

@@ -19,7 +19,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api import create_app
-from config import ALLOWED_USER_ID, BOT_TOKEN, DEPUTY_USER_ID
+from config import ALLOWED_USER_ID, API_SECRET_KEY, BOT_TOKEN, DEPUTY_USER_ID
 from services.testers_manager import (
     add_tester,
     get_all_testers,
@@ -159,23 +159,24 @@ async def test_openapi_spec_protection_and_servers_masking() -> None:
 
 
 @pytest.mark.asyncio
-async def test_docs_redirect_to_miniapp() -> None:
-    """Проверяет перенаправление со стандартного /docs на защищенный /miniapp."""
+async def test_docs_protected_swagger() -> None:
+    """Проверяет защиту маршрута /docs со Swagger UI: 401 без ключа и 200 с ключом."""
     app = create_app()
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=False) as client:
-        resp = await client.get("/docs")
-        assert resp.status_code == 307
-        assert resp.headers["location"] == "/miniapp"
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp_unauth = await client.get("/docs")
+        assert resp_unauth.status_code == 401
+
+        resp_auth = await client.get("/docs", headers={"X-API-Key": API_SECRET_KEY})
+        assert resp_auth.status_code == 200
+        assert "swagger-ui" in resp_auth.text.lower()
 
 
-def test_miniapp_html_security_elements() -> None:
-    """Проверяет правила скрытия ссылки openapi.json и IP-маскирования в miniapp.html."""
+def test_miniapp_html_lightweight_and_clean() -> None:
+    """Проверяет, что тяжелый Swagger UI вынесен из клиентского HTML MiniApp."""
     from pathlib import Path
 
     html_content = Path("data/api/miniapp.html").read_text(encoding="utf-8")
-    assert ".swagger-ui .info .url" in html_content
-    assert "CleanSwaggerPlugin" in html_content
-    assert "InfoUrl" in html_content
-    assert "req.url = req.url.replace" in html_content
-    assert "hostSanitizer" in html_content
+    assert "swagger-ui-bundle.js" not in html_content
+    assert "swagger-ui.css" not in html_content
+    assert "Promise.allSettled" in html_content

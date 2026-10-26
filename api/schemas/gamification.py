@@ -50,6 +50,7 @@ class LeaderboardResponse(BaseModel):
     total_students: int
     group_pulse: float
     leaderboard: list[StudentProfileSchema]
+    starosta: StudentProfileSchema | None = None
 
 
 class AchievementsCatalogResponse(BaseModel):
