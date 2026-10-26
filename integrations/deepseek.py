@@ -6,7 +6,7 @@
 """
 
 import base64
-from typing import Any
+from typing import Any, cast
 
 from openai import AsyncOpenAI
 
@@ -80,7 +80,7 @@ async def _call_deepseek_api(messages: list[dict[str, Any]]) -> str:
     client = get_deepseek_client()
     response = await client.chat.completions.create(
         model=config.DEEPSEEK_MODEL_NAME,
-        messages=messages,  # type: ignore[arg-type]
+        messages=cast(Any, messages),
         temperature=0.0,
         timeout=config.DEEPSEEK_TIMEOUT_SECONDS,
     )
