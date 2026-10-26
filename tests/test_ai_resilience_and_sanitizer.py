@@ -2,8 +2,6 @@
 Тесты модулей защиты AI-пайплайна: prompt sanitizer, Circuit Breaker и retry backoff.
 """
 
-import asyncio
-
 import pytest
 
 from core.circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitState, async_retry_with_backoff
@@ -65,7 +63,7 @@ def test_sanitize_prompt_empty_fallback() -> None:
 @pytest.mark.asyncio
 async def test_circuit_breaker_transitions() -> None:
     """Проверяет переход Circuit Breaker в OPEN при сбоях и в HALF_OPEN по таймауту."""
-    cb = CircuitBreaker("test_cb", failure_threshold=2, recovery_timeout=0.1)
+    cb = CircuitBreaker("test_cb", failure_threshold=2, recovery_timeout=10.0)
     assert cb.state == CircuitState.CLOSED
     await cb.check_permission()
 
@@ -77,7 +75,7 @@ async def test_circuit_breaker_transitions() -> None:
     with pytest.raises(CircuitOpenError):
         await cb.check_permission()
 
-    await asyncio.sleep(0.12)
+    cb._last_state_change -= 11.0
     assert cb.state == CircuitState.HALF_OPEN
     await cb.record_success()
     assert cb.state == CircuitState.CLOSED

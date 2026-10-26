@@ -17,14 +17,19 @@ from services.gamification_registry import ACHIEVEMENTS_MAP
 
 def test_resolve_student_fio_registered() -> None:
     """Проверяет поиск студента в реестре по TG ID."""
-    name = resolve_student_fio(6427213141, "Fallback")
-    assert "Скачков" in name
+    with patch(
+        "services.achievement_service.find_classmate_by_tg_id",
+        return_value={"full_name": "Скачков Никита", "tg_id": 6427213141},
+    ):
+        name = resolve_student_fio(6427213141, "Fallback")
+        assert "Скачков" in name
 
 
 def test_resolve_student_fio_fallback() -> None:
     """Проверяет возврат запасного имени для незарегистрированного ID."""
-    name = resolve_student_fio(999999999, "Запасной Студент")
-    assert name == "Запасной Студент"
+    with patch("services.achievement_service.find_classmate_by_tg_id", return_value=None):
+        name = resolve_student_fio(999999999, "Запасной Студент")
+        assert name == "Запасной Студент"
 
 
 def test_format_achievement_notification() -> None:
@@ -42,6 +47,10 @@ async def test_award_achievement_success() -> None:
     mock_bot = AsyncMock()
     with (
         patch(
+            "services.achievement_service.find_classmate_by_tg_id",
+            return_value={"full_name": "Скачков Никита", "tg_id": 6427213141},
+        ),
+        patch(
             "db.sqlite.repositories.GamificationRepository.unlock_achievement", new_callable=AsyncMock
         ) as mock_unlock,
         patch("services.achievement_service.cache_delete", new_callable=AsyncMock) as mock_delete,
@@ -58,9 +67,15 @@ async def test_award_achievement_success() -> None:
 async def test_award_achievement_already_unlocked() -> None:
     """Проверяет возврат False, если достижение уже было разблокировано ранее."""
     mock_bot = AsyncMock()
-    with patch(
-        "db.sqlite.repositories.GamificationRepository.unlock_achievement", new_callable=AsyncMock
-    ) as mock_unlock:
+    with (
+        patch(
+            "services.achievement_service.find_classmate_by_tg_id",
+            return_value={"full_name": "Скачков Никита", "tg_id": 6427213141},
+        ),
+        patch(
+            "db.sqlite.repositories.GamificationRepository.unlock_achievement", new_callable=AsyncMock
+        ) as mock_unlock,
+    ):
         mock_unlock.return_value = False
         result = await award_achievement(6427213141, "bot_welcome", bot=mock_bot)
         assert result is False
