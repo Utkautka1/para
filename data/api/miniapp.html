@@ -790,6 +790,7 @@
         if (data.starosta) renderStarosta(data.starosta);
         renderPodium(studentsCache.slice(0, 3));
         renderStudentsList(studentsCache);
+        await autoDetectMyProfile();
       } catch (e) {
         console.error('Ошибка лидерборда:', e);
       }
@@ -857,6 +858,31 @@
       container.innerHTML = html;
     }
 
+    async function autoDetectMyProfile() {
+      const tgUser = tg?.initDataUnsafe?.user;
+      if (tgUser && tgUser.id) {
+        try {
+          const resp = await fetch(`/gamification/profile?tg_id=${tgUser.id}`, { credentials: 'include' });
+          if (resp.ok) {
+            myProfile = await resp.json();
+            if (!viewingProfile) {
+              viewingProfile = myProfile;
+              renderProfileData(myProfile);
+            }
+            renderAchievementsCatalog();
+            return;
+          }
+        } catch (e) {
+          console.warn('Авто-поиск профиля:', e);
+        }
+      }
+      if (!viewingProfile && studentsCache.length) {
+        viewingProfile = studentsCache[0];
+        renderProfileData(viewingProfile);
+        renderAchievementsCatalog();
+      }
+    }
+
     function openStudentProfileByIdx(idx) {
       if (studentsCache[idx]) openStudentProfile(studentsCache[idx]);
     }
@@ -864,6 +890,7 @@
     function openStudentProfile(student) {
       viewingProfile = student;
       renderProfileData(student);
+      renderAchievementsCatalog();
       switchTab('profile', false);
     }
 
@@ -920,24 +947,42 @@
     function renderAchievementsCatalog() {
       const container = document.getElementById('achievements-container');
       if (!container) return;
+      const activeProf = viewingProfile || myProfile;
+      const unlockedSet = new Set(activeProf?.unlocked_achievements || []);
+      const totalAch = allAchievements.length || 80;
+      const unlCount = unlockedSet.size;
+      const pct = totalAch > 0 ? Math.round((unlCount / totalAch) * 100) : 0;
+
+      const sumElem = document.getElementById('ach-badge-summary');
+      if (sumElem) sumElem.innerText = `${unlCount} / ${totalAch} (${pct}%)`;
+      const fillElem = document.getElementById('ach-collection-fill');
+      if (fillElem) fillElem.style.width = `${pct}%`;
+
       let list = allAchievements;
       if (currentCatFilter !== 'all') {
         list = list.filter(a => a.category === currentCatFilter);
       }
-      container.innerHTML = list.map(a => `
-        <div class="quest-card locked">
-          <div class="quest-icon">${a.icon}</div>
-          <div class="quest-info">
-            <div class="quest-title">${escapeHtml(a.title)}</div>
-            <div class="quest-desc">${escapeHtml(a.description)}</div>
-            <div class="quest-meta">
-              <span class="rarity-pill rarity-${a.rarity}">${a.rarity}</span>
-              <span style="color:#fbbf24;">+${a.xp_reward} XP</span>
-              <span style="color:#94a3b8;">🔒 Доступен</span>
+      container.innerHTML = list.map(a => {
+        const isUnlocked = unlockedSet.has(a.id);
+        const cardClass = isUnlocked ? 'quest-card unlocked' : 'quest-card locked';
+        const statusBadge = isUnlocked
+          ? '<span style="color:#10b981; font-weight:700;">✅ Выполнено</span>'
+          : '<span style="color:#94a3b8;">🔒 Доступен</span>';
+        return `
+          <div class="${cardClass}">
+            <div class="quest-icon">${a.icon}</div>
+            <div class="quest-info">
+              <div class="quest-title">${escapeHtml(a.title)}</div>
+              <div class="quest-desc">${escapeHtml(a.description)}</div>
+              <div class="quest-meta">
+                <span class="rarity-pill rarity-${a.rarity}">${a.rarity}</span>
+                <span style="color:#fbbf24; font-weight:700;">+${a.xp_reward} XP</span>
+                ${statusBadge}
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function filterCategory(cat, ev) {
@@ -948,9 +993,13 @@
     }
 
     function switchTab(tab, resetProfile = true) {
+      if (tab === 'achievements') {
+        renderAchievementsCatalog();
+      }
       if (tab === 'profile' && resetProfile && !viewingProfile && studentsCache.length) {
-        viewingProfile = studentsCache[0];
+        viewingProfile = myProfile || studentsCache[0];
         renderProfileData(viewingProfile);
+        renderAchievementsCatalog();
       }
       if (tab === 'swagger') {
         const frame = document.getElementById('swagger-frame');

@@ -26,7 +26,8 @@ graph LR
 | [`get_session_factory`](#get_session_factory) | Function | L54–L65 | `async_sessionmaker[AsyncSession]` | Retrieves and resolves domain data for `get_session_fac... |
 | [`get_async_session`](#get_async_session) | Function | L69–L78 | `AsyncGenerator[AsyncSession, None]` | Retrieves and resolves domain data for `get_async_sessi... |
 | [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L81–L94 | `None` | Executes core domain logic for `_migrate_subscribers_fr... |
-| [`init_db`](#init_db) | Function | L97–L107 | `None` | Executes core domain logic for `init_db`. |
+| [`_migrate_attendance_snapshot_columns`](#_migrate_attendance_snapshot_columns) | Function | L97–L106 | `None` | Executes core domain logic for `_migrate_attendance_sna... |
+| [`init_db`](#init_db) | Function | L109–L120 | `None` | Executes core domain logic for `init_db`. |
 
 ---
 
@@ -192,12 +193,45 @@ result = await _migrate_subscribers_from_json(session=...)
 
 ---
 
+### `_migrate_attendance_snapshot_columns`
+```python
+def _migrate_attendance_snapshot_columns(conn: Any) -> None
+```
+
+- **Source Reference**: [`core/database.py#L97-L106`](../../core/database.py#L97-L106)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_migrate_attendance_snapshot_columns`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `conn` | `Any` | Yes | Parameter `conn` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.database import _migrate_attendance_snapshot_columns
+
+# Execute call
+result = _migrate_attendance_snapshot_columns(conn=...)
+```
+
+---
+
 ### `init_db`
 ```python
 async def init_db() -> None
 ```
 
-- **Source Reference**: [`core/database.py#L97-L107`](../../core/database.py#L97-L107)
+- **Source Reference**: [`core/database.py#L109-L120`](../../core/database.py#L109-L120)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

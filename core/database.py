@@ -10,7 +10,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from sqlalchemy import event, select
+from sqlalchemy import event, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -94,6 +94,18 @@ async def _migrate_subscribers_from_json(session: AsyncSession) -> None:
         log.info(f"✅ Успешно мигрировано {len(data)} подписчиков из JSON в SQLite")
 
 
+def _migrate_attendance_snapshot_columns(conn: Any) -> None:
+    """Добавляет недостающие столбцы посещаемости (late_hours, excused_hours, unexcused_hours)."""
+    try:
+        cursor = conn.execute(text("PRAGMA table_info(attendance_snapshots)"))
+        existing = {row[1] for row in cursor.fetchall()}
+        for col in ("late_hours", "excused_hours", "unexcused_hours"):
+            if col not in existing:
+                conn.execute(text(f"ALTER TABLE attendance_snapshots ADD COLUMN {col} INTEGER DEFAULT 0"))
+    except Exception as exc:
+        log.debug(f"Миграция колонок attendance_snapshots пропущена: {exc}")
+
+
 async def init_db() -> None:
     """Создает все необходимые таблицы в SQLite и проводит стартовую миграцию."""
     from db.sqlite.models import Base
@@ -101,6 +113,7 @@ async def init_db() -> None:
     engine = get_database_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_migrate_attendance_snapshot_columns)
     log.info("Реляционные схемы SQLite успешно инициализированы")
 
     async with get_async_session() as session:

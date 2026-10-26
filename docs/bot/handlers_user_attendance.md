@@ -23,12 +23,14 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`_calculate_attendance_percent`](#_calculate_attendance_percent) | Function | L38–L54 | `str` | Executes core domain logic for `_calculate_attendance_p... |
 | [`_format_personal_month_breakdown`](#_format_personal_month_breakdown) | Function | L57–L78 | `str` | Executes core domain logic for `_format_personal_month_... |
-| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L81–L110 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L113–L125 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_personal_at... |
-| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L128–L146 | `str | None` | Executes core domain logic for `_resolve_student_fio`. |
-| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L150–L183 | `None` | Processes inbound Telegram slash command for `cmd_my_at... |
-| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L187–L208 | `None` | Handles Telegram inline callback query events for `cb_m... |
-| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L212–L226 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`_format_card_header_and_summary`](#_format_card_header_and_summary) | Function | L81–L91 | `str` | Executes core domain logic for `_format_card_header_and... |
+| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L94–L106 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L109–L121 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_personal_at... |
+| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L124–L142 | `str | None` | Executes core domain logic for `_resolve_student_fio`. |
+| [`_respond_personal_attendance`](#_respond_personal_attendance) | Function | L145–L151 | `None` | Executes core domain logic for `_respond_personal_atten... |
+| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L155–L170 | `None` | Processes inbound Telegram slash command for `cmd_my_at... |
+| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L174–L195 | `None` | Handles Telegram inline callback query events for `cb_m... |
+| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L199–L213 | `None` | Handles Telegram inline callback query events for `cb_a... |
 
 ---
 
@@ -103,12 +105,49 @@ result = _format_personal_month_breakdown(months=...)
 
 ---
 
+### `_format_card_header_and_summary`
+```python
+def _format_card_header_and_summary(fio: str, p: int, o: int, u: int, n: int) -> str
+```
+
+- **Source Reference**: [`bot/handlers/user/attendance.py#L81-L91`](../../bot/handlers/user/attendance.py#L81-L91)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_format_card_header_and_summary`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
+| `p` | `int` | Yes | Parameter `p` of type `int`. |
+| `o` | `int` | Yes | Parameter `o` of type `int`. |
+| `u` | `int` | Yes | Parameter `u` of type `int`. |
+| `n` | `int` | Yes | Parameter `n` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.attendance import _format_card_header_and_summary
+
+# Execute call
+result = _format_card_header_and_summary(fio=..., p=..., o=...)
+```
+
+---
+
 ### `format_personal_attendance_card`
 ```python
 def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L81-L110`](../../bot/handlers/user/attendance.py#L81-L110)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L94-L106`](../../bot/handlers/user/attendance.py#L94-L106)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -142,7 +181,7 @@ result = format_personal_attendance_card(fio=..., student_data=...)
 def get_personal_attendance_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L113-L125`](../../bot/handlers/user/attendance.py#L113-L125)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L109-L121`](../../bot/handlers/user/attendance.py#L109-L121)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -173,7 +212,7 @@ result = get_personal_attendance_kb()
 def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L128-L146`](../../bot/handlers/user/attendance.py#L128-L146)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L124-L142`](../../bot/handlers/user/attendance.py#L124-L142)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -202,12 +241,47 @@ result = _resolve_student_fio(user=..., student=...)
 
 ---
 
+### `_respond_personal_attendance`
+```python
+async def _respond_personal_attendance(message: Message, fio: str, data: dict[str, Any]) -> None
+```
+
+- **Source Reference**: [`bot/handlers/user/attendance.py#L145-L151`](../../bot/handlers/user/attendance.py#L145-L151)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_respond_personal_attendance`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
+| `data` | `dict[str, Any]` | Yes | Parameter `data` of type `dict[str, Any]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.attendance import _respond_personal_attendance
+
+# Execute call
+result = await _respond_personal_attendance(message=..., fio=..., data=...)
+```
+
+---
+
 ### `cmd_my_attendance`
 ```python
 async def cmd_my_attendance(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L150-L183`](../../bot/handlers/user/attendance.py#L150-L183)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L155-L170`](../../bot/handlers/user/attendance.py#L155-L170)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -240,7 +314,7 @@ result = await cmd_my_attendance(message=...)
 async def cb_my_attendance_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L187-L208`](../../bot/handlers/user/attendance.py#L187-L208)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L174-L195`](../../bot/handlers/user/attendance.py#L174-L195)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -273,7 +347,7 @@ result = await cb_my_attendance_refresh(callback=...)
 async def cb_att_topic_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/attendance.py#L212-L226`](../../bot/handlers/user/attendance.py#L212-L226)
+- **Source Reference**: [`bot/handlers/user/attendance.py#L199-L213`](../../bot/handlers/user/attendance.py#L199-L213)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

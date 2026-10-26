@@ -177,43 +177,65 @@ async def invalidate_attendance_stats_cache() -> None:
     log.info("Кэш сквозной статистики посещаемости и лидерборда сброшен")
 
 
+def _build_snapshot_record(name: str, data: dict[str, Any]) -> dict[str, Any]:
+    """Формирует нормализованную запись посещаемости для сохранения в БД."""
+    tot = data.get("total", {})
+    p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)
+    all_h = p + o + u + n
+    pct = ((p + o + u) / all_h * 100.0) if all_h > 0 else 100.0
+    return {
+        "student_name": name,
+        "total_hours": all_h,
+        "attended_hours": p,
+        "late_hours": o,
+        "excused_hours": u,
+        "unexcused_hours": n,
+        "percent": pct,
+    }
+
+
 async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None:
-    """Сохраняет срез посещаемости в реляционную базу данных SQLite."""
+    """Сохраняет срез посещаемости в SQLite и локальный дисковый кэш."""
     try:
         from datetime import date
 
         from db.sqlite.repositories import AttendanceRepository
+        from utils.storage import sync_atomic_save_json
 
-        records = []
-        for name, data in stats.items():
-            tot = data.get("total", {})
-            p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)
-            all_h = p + o + u + n
-            pct = (p / all_h * 100) if all_h > 0 else 0.0
-            records.append({"student_name": name, "total_hours": all_h, "attended_hours": p, "percent": pct})
-
+        records = [_build_snapshot_record(name, data) for name, data in stats.items()]
         await AttendanceRepository.save_daily_snapshots(date.today(), records)
+        sync_atomic_save_json("data/attendance_cache.json", stats)
     except Exception as exc:
         log.debug(f"Сохранение среза посещаемости в SQLite пропущено: {exc}")
 
 
+def _extract_snapshot_dict(snapshots: list[Any]) -> dict[str, dict[str, Any]]:
+    """Преобразует объекты AttendanceSnapshot в словарь сквозной посещаемости."""
+    res: dict[str, dict[str, Any]] = {}
+    for s in snapshots:
+        p, o = getattr(s, "attended_hours", 0), getattr(s, "late_hours", 0)
+        u = getattr(s, "excused_hours", 0)
+        n = getattr(s, "unexcused_hours", max(0, s.total_hours - p - o - u))
+        res[s.student_name] = {
+            "fio": s.student_name,
+            "total": {"П": p, "О": o, "У": u, "Н": n},
+            "months": {},
+        }
+    return res
+
+
 async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None:
-    """Восстанавливает срез посещаемости из SQLite при сетевой недоступности Яндекса."""
+    """Восстанавливает срез посещаемости из локального кэша или SQLite при недоступности Яндекса."""
     try:
+        from utils.storage import sync_load_json
+
+        cached = sync_load_json("data/attendance_cache.json", default=None)
+        if cached and isinstance(cached, dict):
+            return cached
         from db.sqlite.repositories import AttendanceRepository
 
         snapshots = await AttendanceRepository.get_latest_snapshots()
-        if not snapshots:
-            return None
-        res: dict[str, dict[str, Any]] = {}
-        for s in snapshots:
-            res[s.student_name] = {
-                "fio": s.student_name,
-                "total": {"П": s.attended_hours, "О": 0, "У": 0, "Н": max(0, s.total_hours - s.attended_hours)},
-                "months": {},
-            }
-        log.info(f"✅ Восстановлен срез посещаемости из SQLite ({len(res)} студентов)")
-        return res
+        return _extract_snapshot_dict(list(snapshots)) if snapshots else None
     except Exception as exc:
         log.warning(f"Не удалось прочитать срез посещаемости из SQLite: {exc}")
         return None
@@ -233,6 +255,7 @@ async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]:
     fresh_stats = await asyncio.to_thread(parse_workbook_attendance, wb)
     await _save_to_redis_cache(fresh_stats)
     await _save_sqlite_snapshot(fresh_stats)
+    await cache_flush("gamification:leaderboard*")
     log.info(f"✅ Данные посещаемости обновлены из Яндекс Документов ({len(fresh_stats)} студентов)")
     return fresh_stats
 
@@ -252,6 +275,22 @@ async def _trigger_background_attendance_refresh() -> None:
             log.warning(f"Фоновое обновление посещаемости завершилось ошибкой: {exc}")
 
 
+async def _fetch_with_sync_lock(force_refresh: bool) -> dict[str, dict[str, Any]]:
+    """Синхронизированная загрузка актуальной посещаемости с защитой от лавины запросов."""
+    async with _FETCH_LOCK:
+        cached = await _load_from_redis_cache()
+        if cached and not force_refresh:
+            return cached
+        try:
+            return await _download_and_cache_fresh_stats()
+        except Exception as exc:
+            log.error(f"Сбой загрузки Яндекс Документов ({exc}), фолбэк на SQLite")
+            fallback = await _load_sqlite_snapshot()
+            if fallback:
+                return fallback
+            raise
+
+
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]:
     """
     Возвращает сквозную статистику посещаемости по стратегии Stale-While-Revalidate.
@@ -266,19 +305,7 @@ async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, di
         if snapshot:
             asyncio.create_task(_trigger_background_attendance_refresh())
             return snapshot
-
-    async with _FETCH_LOCK:
-        cached = await _load_from_redis_cache()
-        if cached and not force_refresh:
-            return cached
-        try:
-            return await _download_and_cache_fresh_stats()
-        except Exception as exc:
-            log.error(f"Сбой загрузки Яндекс Документов ({exc}), фолбэк на SQLite")
-            fallback = await _load_sqlite_snapshot()
-            if fallback:
-                return fallback
-            raise
+    return await _fetch_with_sync_lock(force_refresh)
 
 
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None:

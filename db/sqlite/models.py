@@ -50,6 +50,9 @@ class AttendanceSnapshot(Base):
     student_name: Mapped[str] = mapped_column(String(128), index=True)
     total_hours: Mapped[int] = mapped_column(Integer)
     attended_hours: Mapped[int] = mapped_column(Integer)
+    late_hours: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    excused_hours: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    unexcused_hours: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     percent: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

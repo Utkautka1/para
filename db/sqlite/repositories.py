@@ -125,6 +125,9 @@ class AttendanceRepository:
                         student_name=str(name),
                         total_hours=int(item.get("total_hours", 0)),
                         attended_hours=int(item.get("attended_hours", 0)),
+                        late_hours=int(item.get("late_hours", 0)),
+                        excused_hours=int(item.get("excused_hours", 0)),
+                        unexcused_hours=int(item.get("unexcused_hours", 0)),
                         percent=float(item.get("percent", 0.0)),
                     )
                 )

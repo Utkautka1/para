@@ -2734,7 +2734,10 @@ classDiagram
         +string student_name
         +int total_hours
         +int attended_hours
-        +float attendance_percent
+        +int late_hours
+        +int excused_hours
+        +int unexcused_hours
+        +float percent
         +datetime created_at
     }
 

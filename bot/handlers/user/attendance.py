@@ -78,22 +78,8 @@ def _format_personal_month_breakdown(months: dict[str, dict[str, int]]) -> str:
     return "\n".join(lines)
 
 
-def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> str:
-    """
-    Формирует персональную HTML-карточку посещаемости конкретного студента.
-
-    Агрегирует суммарные отметки, вычисляет процент и добавляет помесячный блок.
-    Экранирует ФИО для безопасного рендеринга в Telegram HTML.
-
-    Возвращает готовую к отправке HTML-строку карточки.
-    """
-
-    tot = student_data.get("total", {})
-    p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)
-    total_classes = p + o + u + n
-    pct_str = _calculate_attendance_percent(p, o, u, total_classes)
-    months_block = _format_personal_month_breakdown(student_data.get("months", {}))
-
+def _format_card_header_and_summary(fio: str, p: int, o: int, u: int, n: int) -> str:
+    """Формирует шапку и сводный блок отметок персональной карточки."""
     return (
         f"👤 <b>ТВОЯ ПОСЕЩАЕМОСТЬ: {html.escape(fio)}</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -102,11 +88,21 @@ def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> s
         f"• ⏰ Опоздания: <b>{o}</b>\n"
         f"• 📋 Уважительная причина: <b>{u}</b>\n"
         f"• ❌ Пропуски (Н): <b>{n}</b>\n\n"
-        f"📈 <b>Процент посещения:</b> <b>{pct_str}</b> (из {total_classes} пар)\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📅 <b>По месяцам:</b>\n{months_block}\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 <i>Если отметка неверна — обратись к старосте.</i>"
+    )
+
+
+def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> str:
+    """Формирует персональную HTML-карточку посещаемости конкретного студента."""
+    tot = student_data.get("total", {})
+    p, o, u, n = tot.get("П", 0), tot.get("О", 0), tot.get("У", 0), tot.get("Н", 0)
+    total_classes = p + o + u + n
+    pct_str = _calculate_attendance_percent(p, o, u, total_classes)
+    months = _format_personal_month_breakdown(student_data.get("months", {}))
+    summary = _format_card_header_and_summary(fio, p, o, u, n)
+    return (
+        f"{summary}📈 <b>Процент посещения:</b> <b>{pct_str}</b> (из {total_classes} пар)\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📅 <b>По месяцам:</b>\n{months}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 <i>Если отметка неверна — обратись к старосте.</i>"
     )
 
 
@@ -146,41 +142,32 @@ def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | N
     return user.full_name if user else None
 
 
+async def _respond_personal_attendance(message: Message, fio: str, data: dict[str, Any]) -> None:
+    """Отправляет карточку посещаемости и фиксирует ачивку самопроверки."""
+    uid = message.from_user.id if message.from_user else 0
+    full_name = message.from_user.full_name if message.from_user else None
+    asyncio.create_task(award_achievement(uid, "bot_self_audit", message.bot, full_name))
+    text = format_personal_attendance_card(data.get("fio", fio), data)
+    await message.answer(text, reply_markup=get_personal_attendance_kb())
+
+
 @router.message(Command("my_attendance"))
 async def cmd_my_attendance(message: Message) -> None:
-    """
-    Отображает персональную карточку посещаемости авторизованного студента.
-
-    Ограничивает вызов только личными сообщениями для конфиденциальности оценок.
-    Запрашивает статистику из кэша и формирует детальную карточку.
-
-    Ничего не возвращает.
-    """
-
+    """Отображает персональную карточку посещаемости авторизованного студента."""
     if message.chat.type != "private":
         await message.reply("🔒 <i>Персональная посещаемость доступна только в личных сообщениях.</i>")
         return
-
     is_auth, _, student = process_user_auth(message.from_user)
     if not is_auth:
         await message.answer("⛔ Доступ ограничен. Бот работает только для студентов группы 1-КПД-3.")
         return
-
     fio = _resolve_student_fio(message.from_user, student)
     stats = await fetch_all_time_attendance(force_refresh=False)
     data = find_student_attendance(stats, fio) if fio else None
     if not data:
         await message.answer(f"⚠️ Данные для <b>{html.escape(fio or 'студента')}</b> не найдены в журнале.")
         return
-
-    uid = message.from_user.id if message.from_user else 0
-    asyncio.create_task(
-        award_achievement(
-            uid, "bot_self_audit", message.bot, message.from_user.full_name if message.from_user else None
-        )
-    )
-    text = format_personal_attendance_card(data.get("fio", fio), data)
-    await message.answer(text, reply_markup=get_personal_attendance_kb())
+    await _respond_personal_attendance(message, str(fio), data)
 
 
 @router.callback_query(F.data == "att:my_refresh")

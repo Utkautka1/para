@@ -27,10 +27,10 @@ graph LR
 | [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L68–L72 | `int` | Executes core domain logic for `count_active`. |
 | [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L79–L98 | `SystemIncident` | Executes core domain logic for `record_incident`. |
 | [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L101–L107 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
-| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L114–L133 | `int` | Saves serialized entity data to storage for `save_daily... |
-| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L136–L142 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
-| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L149–L161 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
-| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L164–L178 | `bool` | Executes core domain logic for `unlock_achievement`. |
+| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L114–L136 | `int` | Saves serialized entity data to storage for `save_daily... |
+| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L139–L145 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
+| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L152–L164 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
+| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L167–L181 | `bool` | Executes core domain logic for `unlock_achievement`. |
 
 ---
 
@@ -254,7 +254,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceRepository`.
 async def save_daily_snapshots(snapshot_date: date, records: list[dict[str, Any]]) -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L114-L133`](../../db/sqlite/repositories.py#L114-L133)
+- **Source Reference**: [`db/sqlite/repositories.py#L114-L136`](../../db/sqlite/repositories.py#L114-L136)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -288,7 +288,7 @@ result = await save_daily_snapshots(snapshot_date=..., records=...)
 async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L136-L142`](../../db/sqlite/repositories.py#L136-L142)
+- **Source Reference**: [`db/sqlite/repositories.py#L139-L145`](../../db/sqlite/repositories.py#L139-L145)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Sequence[AttendanceSnapshot]`
 
@@ -323,7 +323,7 @@ Encapsulates domain entities and data transfer logic for `GamificationRepository
 async def get_all_unlocked_map() -> dict[str, set[str]]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L149-L161`](../../db/sqlite/repositories.py#L149-L161)
+- **Source Reference**: [`db/sqlite/repositories.py#L152-L164`](../../db/sqlite/repositories.py#L152-L164)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, set[str]]`
 
@@ -354,7 +354,7 @@ result = await get_all_unlocked_map()
 async def unlock_achievement(student_fio: str, achievement_id: str) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L164-L178`](../../db/sqlite/repositories.py#L164-L178)
+- **Source Reference**: [`db/sqlite/repositories.py#L167-L181`](../../db/sqlite/repositories.py#L167-L181)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
