@@ -88,6 +88,13 @@ services:
     env_file:
       - .env
     volumes:
+      - ./api:/app/api
+      - ./core:/app/core
+      - ./services:/app/services
+      - ./utils:/app/utils
+      - ./db:/app/db
+      - ./config.py:/app/config.py
+      - ./api.py:/app/api.py
       - ./data:/app/data
       - ./logs:/app/logs
     deploy:
@@ -124,6 +131,13 @@ services:
     env_file:
       - .env
     volumes:
+      - ./bot:/app/bot
+      - ./core:/app/core
+      - ./services:/app/services
+      - ./utils:/app/utils
+      - ./db:/app/db
+      - ./config.py:/app/config.py
+      - ./bot.py:/app/bot.py
       - ./data:/app/data
       - ./logs:/app/logs
     deploy:
@@ -163,6 +177,12 @@ services:
     env_file:
       - .env
     volumes:
+      - ./core:/app/core
+      - ./services:/app/services
+      - ./utils:/app/utils
+      - ./db:/app/db
+      - ./config.py:/app/config.py
+      - ./worker.py:/app/worker.py
       - ./data:/app/data
       - ./logs:/app/logs
     deploy:
