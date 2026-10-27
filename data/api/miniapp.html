@@ -604,8 +604,8 @@
     /* RPG Attributes Grid */
     .char-stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
       margin: 16px 0;
     }
 
@@ -932,19 +932,23 @@
       <div class="char-stats-grid">
         <div class="stat-box">
           <div class="stat-val" style="color:#10b981;" id="prof-pct">100%</div>
-          <div class="stat-lbl">HP (Посещ.)</div>
+          <div class="stat-lbl">HP</div>
         </div>
         <div class="stat-box">
-          <div class="stat-val" id="prof-p">0</div>
+          <div class="stat-val" style="color:#60a5fa;" id="prof-p">0</div>
           <div class="stat-lbl">Рейдов (П)</div>
         </div>
         <div class="stat-box">
           <div class="stat-val" style="color:#f59e0b;" id="prof-o">0</div>
-          <div class="stat-lbl">Опозданий</div>
+          <div class="stat-lbl">Опозданий (О)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#a855f7;" id="prof-u">0</div>
+          <div class="stat-lbl">Справок (У)</div>
         </div>
         <div class="stat-box">
           <div class="stat-val" style="color:#ef4444;" id="prof-n">0</div>
-          <div class="stat-lbl">Прогулов</div>
+          <div class="stat-lbl">Прогулов (Н)</div>
         </div>
       </div>
 
@@ -1181,6 +1185,7 @@
       document.getElementById('prof-pct').innerText = `${s.attendance_pct}%`;
       document.getElementById('prof-p').innerText = s.present_count;
       document.getElementById('prof-o').innerText = s.late_count;
+      document.getElementById('prof-u').innerText = s.excused_count ?? 0;
       document.getElementById('prof-n').innerText = s.unexcused_count;
 
       const lvl = Math.max(1, Math.floor(s.xp / 100) + 1);
