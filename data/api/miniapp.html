@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>para — RPG Гильдия 1-КПД-3 • Рейтинг и Квесты</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -26,8 +29,14 @@
       --text-muted: #94a3b8;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0d1124 50%, var(--bg) 90%);
       color: var(--text);
@@ -45,9 +54,9 @@
       pointer-events: none;
       z-index: 0;
       background: radial-gradient(1.5px 1.5px at 20% 30%, rgba(245, 158, 11, 0.4), transparent),
-                  radial-gradient(1.5px 1.5px at 75% 15%, rgba(99, 102, 241, 0.45), transparent),
-                  radial-gradient(2px 2px at 85% 65%, rgba(168, 85, 247, 0.4), transparent),
-                  radial-gradient(1.5px 1.5px at 10% 80%, rgba(16, 185, 129, 0.35), transparent);
+        radial-gradient(1.5px 1.5px at 75% 15%, rgba(99, 102, 241, 0.45), transparent),
+        radial-gradient(2px 2px at 85% 65%, rgba(168, 85, 247, 0.4), transparent),
+        radial-gradient(1.5px 1.5px at 10% 80%, rgba(16, 185, 129, 0.35), transparent);
       opacity: 0.85;
     }
 
@@ -121,6 +130,7 @@
       text-align: center;
       pointer-events: none;
     }
+
     .toast-popup.show {
       transform: translateX(-50%) translateY(0);
       opacity: 1;
@@ -136,12 +146,14 @@
       font-weight: 700;
       letter-spacing: 0.03em;
     }
+
     .badge-rpg {
       background: rgba(99, 102, 241, 0.16);
       color: #a5b4fc;
       border: 1px solid rgba(99, 102, 241, 0.35);
       box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
     }
+
     .pulse-dot {
       width: 7px;
       height: 7px;
@@ -150,9 +162,19 @@
       box-shadow: 0 0 8px #10b981;
       animation: pulseAnim 2s infinite;
     }
+
     @keyframes pulseAnim {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.85);
+      }
     }
 
     /* RPG Tabs Nav */
@@ -169,7 +191,10 @@
       overflow-x: auto;
       scrollbar-width: none;
     }
-    .tabs-nav::-webkit-scrollbar { display: none; }
+
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
 
     .tab-btn {
       flex: 1;
@@ -189,7 +214,13 @@
       white-space: nowrap;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .tab-btn:hover { color: var(--text); background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.25); }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+
     .tab-btn.active {
       background: linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(168, 85, 247, 0.35) 100%);
       color: #ffffff;
@@ -216,6 +247,7 @@
       min-height: calc(100vh - 120px);
       padding: 24px;
     }
+
     .gate-shield {
       font-size: 64px;
       margin-bottom: 20px;
@@ -223,10 +255,19 @@
       animation: floatShield 3s ease-in-out infinite;
       filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.6));
     }
+
     @keyframes floatShield {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
     }
+
     .gate-title {
       font-family: 'Cinzel', serif;
       font-size: 24px;
@@ -235,6 +276,7 @@
       margin-bottom: 10px;
       letter-spacing: 0.04em;
     }
+
     .gate-desc {
       font-size: 14px;
       color: var(--text-muted);
@@ -242,6 +284,7 @@
       line-height: 1.6;
       margin-bottom: 28px;
     }
+
     .btn-tg-cta {
       display: inline-flex;
       align-items: center;
@@ -257,10 +300,12 @@
       box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
       transition: all 0.25s;
     }
+
     .btn-tg-cta:hover {
       transform: translateY(-2px);
       box-shadow: 0 12px 30px rgba(124, 58, 237, 0.6);
     }
+
     .gate-dev-link {
       margin-top: 36px;
       font-size: 12px;
@@ -270,7 +315,11 @@
       opacity: 0.7;
       transition: opacity 0.2s;
     }
-    .gate-dev-link:hover { opacity: 1; color: #a5b4fc; }
+
+    .gate-dev-link:hover {
+      opacity: 1;
+      color: #a5b4fc;
+    }
 
     /* Starosta Archmage Banner */
     .archmage-card {
@@ -286,6 +335,7 @@
       box-shadow: 0 4px 20px rgba(245, 158, 11, 0.12);
       transition: all 0.25s;
     }
+
     .archmage-card:hover {
       transform: translateY(-2px);
       border-color: rgba(245, 158, 11, 0.7);
@@ -301,6 +351,7 @@
       margin-bottom: 26px;
       padding-top: 14px;
     }
+
     .podium-col {
       flex: 1;
       display: flex;
@@ -316,7 +367,11 @@
       cursor: pointer;
       transition: all 0.25s;
     }
-    .podium-col:hover { transform: translateY(-4px); }
+
+    .podium-col:hover {
+      transform: translateY(-4px);
+    }
+
     .podium-1 {
       order: 2;
       border-color: rgba(245, 158, 11, 0.6);
@@ -326,20 +381,38 @@
       padding-top: 22px;
       margin-bottom: 4px;
     }
+
     .podium-2 {
       order: 1;
       border-color: rgba(148, 163, 184, 0.5);
       box-shadow: 0 0 16px rgba(148, 163, 184, 0.15);
     }
+
     .podium-3 {
       order: 3;
       border-color: rgba(217, 119, 6, 0.45);
       box-shadow: 0 0 16px rgba(217, 119, 6, 0.15);
     }
 
-    .podium-crown { font-size: 28px; line-height: 1; margin-bottom: 6px; }
-    .podium-name { font-weight: 800; font-size: 13px; color: var(--text); margin-bottom: 4px; }
-    .podium-hp { font-size: 11px; font-weight: 700; color: #10b981; }
+    .podium-crown {
+      font-size: 28px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .podium-name {
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .podium-hp {
+      font-size: 11px;
+      font-weight: 700;
+      color: #10b981;
+    }
+
     .podium-xp {
       display: inline-block;
       margin-top: 6px;
@@ -364,6 +437,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
     .hero-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -377,12 +451,14 @@
       backdrop-filter: blur(14px);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     .hero-card:hover {
       transform: translateX(4px);
       border-color: var(--card-hover);
       background: rgba(30, 41, 59, 0.85);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
+
     .hero-rank-num {
       font-family: 'Cinzel', serif;
       font-size: 14px;
@@ -391,6 +467,7 @@
       width: 24px;
       text-align: center;
     }
+
     .hero-avatar {
       width: 38px;
       height: 38px;
@@ -403,9 +480,28 @@
       font-size: 18px;
       flex-shrink: 0;
     }
-    .hero-info { flex: 1; min-width: 0; }
-    .hero-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-    .hero-name { font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .hero-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hero-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+
+    .hero-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .hero-title-pill {
       font-size: 10px;
       font-weight: 700;
@@ -415,10 +511,27 @@
       color: #a5b4fc;
       border: 1px solid rgba(99, 102, 241, 0.3);
     }
-    .hero-stats-row { font-size: 11px; color: var(--text-muted); }
-    .hero-right { text-align: right; }
-    .hero-hp-val { font-size: 14px; font-weight: 800; color: #10b981; }
-    .hero-xp-val { font-size: 11px; font-weight: 700; color: #fbbf24; }
+
+    .hero-stats-row {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .hero-right {
+      text-align: right;
+    }
+
+    .hero-hp-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #10b981;
+    }
+
+    .hero-xp-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+    }
 
     /* Character Profile Tab */
     .profile-hero-card {
@@ -431,6 +544,7 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
       margin-bottom: 18px;
     }
+
     .btn-back-guild {
       position: absolute;
       top: 14px;
@@ -448,7 +562,12 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-back-guild:hover { color: #fff; background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.4); }
+
+    .btn-back-guild:hover {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
 
     .char-big-avatar {
       width: 76px;
@@ -463,7 +582,13 @@
       font-size: 38px;
       box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
     }
-    .char-name { font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+
+    .char-name {
+      font-weight: 800;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
     .char-rank-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -483,6 +608,7 @@
       gap: 8px;
       margin: 16px 0;
     }
+
     .stat-box {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -490,8 +616,18 @@
       padding: 10px 4px;
       text-align: center;
     }
-    .stat-val { font-size: 16px; font-weight: 800; }
-    .stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+
+    .stat-val {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-weight: 600;
+    }
 
     /* XP Progress Bar */
     .xp-meter-wrap {
@@ -502,6 +638,7 @@
       margin-top: 14px;
       text-align: left;
     }
+
     .xp-meter-header {
       display: flex;
       justify-content: space-between;
@@ -509,12 +646,14 @@
       font-weight: 700;
       margin-bottom: 6px;
     }
+
     .xp-bar-bg {
       height: 8px;
       background: rgba(255, 255, 255, 0.08);
       border-radius: 9999px;
       overflow: hidden;
     }
+
     .xp-bar-fill {
       height: 100%;
       background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
@@ -532,7 +671,11 @@
       margin-bottom: 14px;
       padding-bottom: 4px;
     }
-    .ach-filters::-webkit-scrollbar { display: none; }
+
+    .ach-filters::-webkit-scrollbar {
+      display: none;
+    }
+
     .ach-cat-btn {
       padding: 6px 12px;
       border-radius: 10px;
@@ -545,6 +688,7 @@
       white-space: nowrap;
       transition: all 0.2s;
     }
+
     .ach-cat-btn.active {
       background: rgba(99, 102, 241, 0.25);
       border-color: rgba(99, 102, 241, 0.5);
@@ -563,12 +707,18 @@
       position: relative;
       transition: all 0.2s;
     }
-    .quest-card.locked { opacity: 0.65; filter: grayscale(0.4); }
+
+    .quest-card.locked {
+      opacity: 0.65;
+      filter: grayscale(0.4);
+    }
+
     .quest-card.unlocked {
       border-color: rgba(16, 185, 129, 0.5);
       background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--card-bg) 100%);
       box-shadow: 0 4px 18px rgba(16, 185, 129, 0.15);
     }
+
     .quest-icon {
       font-size: 26px;
       width: 42px;
@@ -580,32 +730,90 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .quest-info { flex: 1; min-width: 0; }
-    .quest-title { font-weight: 800; font-size: 13px; margin-bottom: 2px; }
-    .quest-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 6px; }
-    .quest-meta { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; }
-    .rarity-pill { padding: 2px 7px; border-radius: 6px; text-transform: uppercase; font-size: 9px; }
-    .rarity-Обычное { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
-    .rarity-Редкое { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .rarity-Эпическое { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-    .rarity-Легендарное { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    .rarity-Мифическое { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+    .quest-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .quest-title {
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .quest-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .quest-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .rarity-pill {
+      padding: 2px 7px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      font-size: 9px;
+    }
+
+    .rarity-Обычное {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+    }
+
+    .rarity-Редкое {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .rarity-Эпическое {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+    }
+
+    .rarity-Легендарное {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .rarity-Мифическое {
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
 
     /* Empty state */
-    .empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 13px; }
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
   </style>
 </head>
+
 <body>
   <div class="sparks-bg"></div>
 
   <!-- Header -->
   <div class="header-bar">
-    <div class="guild-title" onclick="handleEasterEggTap()" style="cursor:pointer;" title="⚔️ Академическая Гильдия 1-КПД-3">
+    <div class="guild-title" onclick="handleEasterEggTap()" style="cursor:pointer;"
+      title="⚔️ Академическая Гильдия 1-КПД-3">
       <span>⚔️ 1-КПД-3</span>
-      <span class="badge badge-rpg" id="version-badge" onclick="event.stopPropagation(); promptDevLogin();" style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
+      <span class="badge badge-rpg" id="version-badge" onclick="event.stopPropagation(); promptDevLogin();"
+        style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <button id="btn-theme-toggle" class="badge badge-rpg" onclick="toggleMatrixTheme()" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); cursor:pointer; font-size:13px;" title="Ночная тема Матрица КТМУ">🕶️</button>
+      <button id="btn-theme-toggle" class="badge badge-rpg" onclick="toggleMatrixTheme()"
+        style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); cursor:pointer; font-size:13px;"
+        title="Ночная тема Матрица КТМУ">🕶️</button>
       <div class="badge badge-rpg">
         <span class="pulse-dot"></span>
         <span id="group-pulse-lbl">Пульс: 75%</span>
@@ -639,7 +847,7 @@
     <div class="gate-desc">
       Рейтинг гильдии, ранги, персонажи и 80 квестов доступны эксклюзивно внутри Telegram-бота группы.
     </div>
-    <a href="https://t.me/ktmu_para_bot" target="_blank" class="btn-tg-cta">
+    <a href="https://t.me/AI_pomochnik_lol_bot" target="_blank" class="btn-tg-cta">
       <span>⚔️ Войти через Telegram-бота</span>
     </a>
     <div class="gate-dev-link" onclick="promptDevLogin()">Вход для разработчиков 🔑</div>
@@ -754,12 +962,14 @@
 
   <!-- SWAGGER TAB -->
   <div id="swagger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
-    <iframe id="swagger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
+    <iframe id="swagger-frame"
+      style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
   </div>
 
   <!-- JAEGER TAB -->
   <div id="jaeger-view" class="container" style="display:none; padding:8px 4px; max-width:100%;">
-    <iframe id="jaeger-frame" style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
+    <iframe id="jaeger-frame"
+      style="width:100%; height:calc(100vh - 110px); border:none; background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></iframe>
   </div>
 
   <script>
@@ -778,42 +988,50 @@
       if (tg.setBackgroundColor) tg.setBackgroundColor('#070913');
     }
 
-    function checkAccessGate() {
-      const isTg = Boolean(tg?.initData);
-      const devKey = localStorage.getItem('para_dev_key') || new URLSearchParams(window.location.search).get('key');
-      if (isTg || devKey) {
-        document.getElementById('gate-view').style.display = 'none';
-        document.getElementById('app-tabs').style.display = 'flex';
-        document.getElementById('leaderboard-view').style.display = 'block';
-        return true;
-      }
-      return false;
+    function unlockApp() {
+      document.getElementById('gate-view').style.display = 'none';
+      document.getElementById('app-tabs').style.display = 'flex';
+      document.getElementById('leaderboard-view').style.display = 'block';
     }
 
-    function promptDevLogin() {
-      const curKey = localStorage.getItem('para_dev_key') || '';
-      const key = prompt('Введите ключ тестера или разработчика для доступа к Swagger & Jaeger:', curKey);
-      if (key && key.trim()) {
+    async function verifyAndApplyKey(key) {
+      if (!key || !key.trim()) return false;
+      try {
+        const resp = await fetch('/miniapp/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key.trim() }),
+          credentials: 'include',
+        });
+        if (!resp.ok) {
+          localStorage.removeItem('para_dev_key');
+          return false;
+        }
         localStorage.setItem('para_dev_key', key.trim());
-        window.location.search = `?key=${encodeURIComponent(key.trim())}`;
+        return true;
+      } catch (e) {
+        console.error('Ошибка проверки ключа:', e);
+        return false;
       }
+    }
+
+    async function promptDevLogin() {
+      const curKey = localStorage.getItem('para_dev_key') || '';
+      const key = prompt('Введите ключ тестера или разработчика для доступа к MiniApp & Swagger:', curKey);
+      if (!key || !key.trim()) return;
+      const ok = await verifyAndApplyKey(key.trim());
+      if (!ok) {
+        alert('❌ Неверный ключ доступа! Проверьте ключ тестера или мастер-ключ старосты.');
+        return;
+      }
+      unlockApp();
+      enableTesterUI();
+      await Promise.allSettled([loadLeaderboard(), loadAchievements()]);
+      showToast('🔓 Успешный вход в режим тестера!');
     }
 
     async function checkTesterStatus() {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const key = params.get('key') || localStorage.getItem('para_dev_key');
-        if (key) {
-          const authResp = await fetch('/miniapp/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ api_key: key }),
-            credentials: 'include',
-          });
-          if (!authResp.ok) {
-            localStorage.removeItem('para_dev_key');
-          }
-        }
         if (tg?.initData) {
           await fetch('/miniapp/auth', {
             method: 'POST',
@@ -1176,10 +1394,27 @@
       if (b) b.innerText = '🟢';
     }
 
-    initTelegram();
-    if (checkAccessGate()) {
-      Promise.allSettled([loadLeaderboard(), loadAchievements(), checkTesterStatus()]);
+    async function initApp() {
+      initTelegram();
+      if (Boolean(tg?.initData)) {
+        unlockApp();
+        await Promise.allSettled([loadLeaderboard(), loadAchievements(), checkTesterStatus()]);
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const testKey = params.get('key') || localStorage.getItem('para_dev_key');
+      if (testKey) {
+        const ok = await verifyAndApplyKey(testKey);
+        if (ok) {
+          unlockApp();
+          enableTesterUI();
+          await Promise.allSettled([loadLeaderboard(), loadAchievements()]);
+          return;
+        }
+      }
     }
+    initApp();
   </script>
 </body>
+
 </html>

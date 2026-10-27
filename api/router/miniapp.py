@@ -91,7 +91,7 @@ async def serve_miniapp_page() -> HTMLResponse:
 async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None:
     """Определяет Telegram ID и профиль пользователя по мастер-ключу или ключу тестера."""
     clean = key.strip()
-    if secrets.compare_digest(clean, API_SECRET_KEY):
+    if secrets.compare_digest(clean.encode("utf-8"), API_SECRET_KEY.encode("utf-8")):
         return ALLOWED_USER_ID, "Староста (Admin)", "admin"
     uid = await get_tester_by_key(clean)
     if uid and await is_tester_allowed(uid):

@@ -21,29 +21,34 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_day_schedule_cached`](#get_day_schedule_cached) | Function | L48–L73 | `tuple[str, list[Lesson]]` | Retrieves and resolves domain data for `get_day_schedul... |
-| [`_ack_callback`](#_ack_callback) | Function | L76–L92 | `None` | Executes core domain logic for `_ack_callback`. |
-| [`edit_or_answer`](#edit_or_answer) | Function | L95–L121 | `None` | Executes core domain logic for `edit_or_answer`. |
-| [`_greet_new_student`](#_greet_new_student) | Function | L124–L142 | `None` | Executes core domain logic for `_greet_new_student`. |
-| [`_show_access_denied`](#_show_access_denied) | Function | L145–L162 | `None` | Executes core domain logic for `_show_access_denied`. |
-| [`_show_tester_cabinet`](#_show_tester_cabinet) | Function | L165–L183 | `None` | Executes core domain logic for `_show_tester_cabinet`. |
-| [`_send_today_schedule`](#_send_today_schedule) | Function | L186–L206 | `None` | Executes core domain logic for `_send_today_schedule`. |
-| [`_check_start_achievements`](#_check_start_achievements) | Function | L209–L220 | `None` | Executes core domain logic for `_check_start_achievemen... |
-| [`cmd_start`](#cmd_start) | Function | L225–L255 | `None` | Processes inbound Telegram slash command for `cmd_start... |
-| [`cmd_my_api_key`](#cmd_my_api_key) | Function | L260–L275 | `None` | Processes inbound Telegram slash command for `cmd_my_ap... |
-| [`cb_show_tester_key`](#cb_show_tester_key) | Function | L279–L292 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`cb_toggle_notify`](#cb_toggle_notify) | Function | L296–L332 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cmd_notice`](#cmd_notice) | Function | L336–L354 | `None` | Processes inbound Telegram slash command for `cmd_notic... |
-| [`cb_notice_toggle`](#cb_notice_toggle) | Function | L358–L378 | `None` | Handles Telegram inline callback query events for `cb_n... |
-| [`cb_today`](#cb_today) | Function | L382–L397 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cb_tomorrow`](#cb_tomorrow) | Function | L401–L425 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cb_week`](#cb_week) | Function | L429–L453 | `None` | Handles Telegram inline callback query events for `cb_w... |
-| [`cb_week_next`](#cb_week_next) | Function | L457–L482 | `None` | Handles Telegram inline callback query events for `cb_w... |
-| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L485–L510 | `tuple[str, list[Lesson], int]` | Executes core domain logic for `_refresh_and_format_sch... |
-| [`cb_refresh`](#cb_refresh) | Function | L514–L531 | `None` | Handles Telegram inline callback query events for `cb_r... |
-| [`format_help_text`](#format_help_text) | Function | L534–L557 | `str` | Formats message payload and presentation markup for `fo... |
-| [`cmd_help`](#cmd_help) | Function | L561–L582 | `None` | Processes inbound Telegram slash command for `cmd_help`... |
-| [`handle_user_text_message`](#handle_user_text_message) | Function | L586–L611 | `None` | Executes core domain logic for `handle_user_text_messag... |
+| [`get_day_schedule_cached`](#get_day_schedule_cached) | Function | L48–L63 | `tuple[str, list[Lesson]]` | Retrieves and resolves domain data for `get_day_schedul... |
+| [`_ack_callback`](#_ack_callback) | Function | L66–L74 | `None` | Executes core domain logic for `_ack_callback`. |
+| [`edit_or_answer`](#edit_or_answer) | Function | L77–L94 | `None` | Executes core domain logic for `edit_or_answer`. |
+| [`_greet_new_student`](#_greet_new_student) | Function | L97–L115 | `None` | Executes core domain logic for `_greet_new_student`. |
+| [`_show_access_denied`](#_show_access_denied) | Function | L118–L135 | `None` | Executes core domain logic for `_show_access_denied`. |
+| [`_show_tester_cabinet`](#_show_tester_cabinet) | Function | L138–L156 | `None` | Executes core domain logic for `_show_tester_cabinet`. |
+| [`_send_today_schedule`](#_send_today_schedule) | Function | L159–L179 | `None` | Executes core domain logic for `_send_today_schedule`. |
+| [`_check_start_achievements`](#_check_start_achievements) | Function | L182–L193 | `None` | Executes core domain logic for `_check_start_achievemen... |
+| [`_handle_unauthorized_user`](#_handle_unauthorized_user) | Function | L196–L204 | `bool` | Executes core domain logic for `_handle_unauthorized_us... |
+| [`cmd_start`](#cmd_start) | Function | L209–L223 | `None` | Processes inbound Telegram slash command for `cmd_start... |
+| [`cmd_my_api_key`](#cmd_my_api_key) | Function | L228–L243 | `None` | Processes inbound Telegram slash command for `cmd_my_ap... |
+| [`cb_show_tester_key`](#cb_show_tester_key) | Function | L247–L260 | `None` | Handles Telegram inline callback query events for `cb_s... |
+| [`_trigger_notify_achievements`](#_trigger_notify_achievements) | Function | L263–L271 | `None` | Executes core domain logic for `_trigger_notify_achieve... |
+| [`_update_schedule_inline_markup`](#_update_schedule_inline_markup) | Function | L274–L289 | `None` | Executes core domain logic for `_update_schedule_inline... |
+| [`cb_toggle_notify`](#cb_toggle_notify) | Function | L293–L302 | `None` | Handles Telegram inline callback query events for `cb_t... |
+| [`cmd_notice`](#cmd_notice) | Function | L306–L324 | `None` | Processes inbound Telegram slash command for `cmd_notic... |
+| [`cb_notice_toggle`](#cb_notice_toggle) | Function | L328–L348 | `None` | Handles Telegram inline callback query events for `cb_n... |
+| [`cb_today`](#cb_today) | Function | L352–L367 | `None` | Handles Telegram inline callback query events for `cb_t... |
+| [`cb_tomorrow`](#cb_tomorrow) | Function | L371–L395 | `None` | Handles Telegram inline callback query events for `cb_t... |
+| [`cb_week`](#cb_week) | Function | L399–L423 | `None` | Handles Telegram inline callback query events for `cb_w... |
+| [`_get_next_week_monday`](#_get_next_week_monday) | Function | L426–L429 | `date` | Executes core domain logic for `_get_next_week_monday`. |
+| [`cb_week_next`](#cb_week_next) | Function | L433–L453 | `None` | Handles Telegram inline callback query events for `cb_w... |
+| [`_safe_fetch_lessons_for_refresh`](#_safe_fetch_lessons_for_refresh) | Function | L456–L462 | `list[Lesson]` | Executes core domain logic for `_safe_fetch_lessons_for... |
+| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L465–L475 | `tuple[str, list[Lesson], int]` | Executes core domain logic for `_refresh_and_format_sch... |
+| [`cb_refresh`](#cb_refresh) | Function | L479–L496 | `None` | Handles Telegram inline callback query events for `cb_r... |
+| [`format_help_text`](#format_help_text) | Function | L499–L522 | `str` | Formats message payload and presentation markup for `fo... |
+| [`cmd_help`](#cmd_help) | Function | L526–L547 | `None` | Processes inbound Telegram slash command for `cmd_help`... |
+| [`handle_user_text_message`](#handle_user_text_message) | Function | L551–L567 | `None` | Executes core domain logic for `handle_user_text_messag... |
 
 ---
 
@@ -54,7 +59,7 @@ graph LR
 async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L48-L73`](../../bot/handlers/user/schedule.py#L48-L73)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L48-L63`](../../bot/handlers/user/schedule.py#L48-L63)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[str, list[Lesson]]`
 
@@ -87,7 +92,7 @@ result = await get_day_schedule_cached(target_date=...)
 async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L76-L92`](../../bot/handlers/user/schedule.py#L76-L92)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L66-L74`](../../bot/handlers/user/schedule.py#L66-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -121,7 +126,7 @@ result = await _ack_callback(callback=..., text=...)
 async def edit_or_answer( callback: CallbackQuery, text: str, lessons: list[Lesson] | None = None, week_offset: int = 0 ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L95-L121`](../../bot/handlers/user/schedule.py#L95-L121)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L77-L94`](../../bot/handlers/user/schedule.py#L77-L94)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -157,7 +162,7 @@ result = await edit_or_answer(callback=..., text=..., lessons=...)
 async def _greet_new_student(message: Message, student: dict) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L124-L142`](../../bot/handlers/user/schedule.py#L124-L142)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L97-L115`](../../bot/handlers/user/schedule.py#L97-L115)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -191,7 +196,7 @@ result = await _greet_new_student(message=..., student=...)
 async def _show_access_denied(message: Message, uid: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L145-L162`](../../bot/handlers/user/schedule.py#L145-L162)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L118-L135`](../../bot/handlers/user/schedule.py#L118-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -225,7 +230,7 @@ result = await _show_access_denied(message=..., uid=...)
 async def _show_tester_cabinet(message: Message, uid: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L165-L183`](../../bot/handlers/user/schedule.py#L165-L183)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L138-L156`](../../bot/handlers/user/schedule.py#L138-L156)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -259,7 +264,7 @@ result = await _show_tester_cabinet(message=..., uid=...)
 async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L186-L206`](../../bot/handlers/user/schedule.py#L186-L206)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L159-L179`](../../bot/handlers/user/schedule.py#L159-L179)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -294,7 +299,7 @@ result = await _send_today_schedule(message=..., uid=..., is_tester=...)
 async def _check_start_achievements(uid: int, bot: Any, full_name: str | None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L209-L220`](../../bot/handlers/user/schedule.py#L209-L220)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L182-L193`](../../bot/handlers/user/schedule.py#L182-L193)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -324,12 +329,48 @@ result = await _check_start_achievements(uid=..., bot=..., full_name=...)
 
 ---
 
+### `_handle_unauthorized_user`
+```python
+async def _handle_unauthorized_user(message: Message, is_auth: bool, is_tester: bool, uid: int) -> bool
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L196-L204`](../../bot/handlers/user/schedule.py#L196-L204)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_handle_unauthorized_user`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `is_auth` | `bool` | Yes | Parameter `is_auth` of type `bool`. |
+| `is_tester` | `bool` | Yes | Parameter `is_tester` of type `bool`. |
+| `uid` | `int` | Yes | Parameter `uid` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _handle_unauthorized_user
+
+# Execute call
+result = await _handle_unauthorized_user(message=..., is_auth=..., is_tester=...)
+```
+
+---
+
 ### `cmd_start`
 ```python
 async def cmd_start(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L225-L255`](../../bot/handlers/user/schedule.py#L225-L255)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L209-L223`](../../bot/handlers/user/schedule.py#L209-L223)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -362,7 +403,7 @@ result = await cmd_start(message=...)
 async def cmd_my_api_key(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L260-L275`](../../bot/handlers/user/schedule.py#L260-L275)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L228-L243`](../../bot/handlers/user/schedule.py#L228-L243)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -395,7 +436,7 @@ result = await cmd_my_api_key(message=...)
 async def cb_show_tester_key(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L279-L292`](../../bot/handlers/user/schedule.py#L279-L292)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L247-L260`](../../bot/handlers/user/schedule.py#L247-L260)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -423,12 +464,83 @@ result = await cb_show_tester_key(callback=...)
 
 ---
 
+### `_trigger_notify_achievements`
+```python
+def _trigger_notify_achievements(uid: int, bot: Any, new_sub: bool, full_name: str | None) -> None
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L263-L271`](../../bot/handlers/user/schedule.py#L263-L271)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_trigger_notify_achievements`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `uid` | `int` | Yes | Parameter `uid` of type `int`. |
+| `bot` | `Any` | Yes | Parameter `bot` of type `Any`. |
+| `new_sub` | `bool` | Yes | Parameter `new_sub` of type `bool`. |
+| `full_name` | `str | None` | Yes | Parameter `full_name` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _trigger_notify_achievements
+
+# Execute call
+result = _trigger_notify_achievements(uid=..., bot=..., new_sub=...)
+```
+
+---
+
+### `_update_schedule_inline_markup`
+```python
+async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_sub: bool) -> None
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L274-L289`](../../bot/handlers/user/schedule.py#L274-L289)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_update_schedule_inline_markup`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `callback` | `CallbackQuery` | Yes | Parameter `callback` of type `CallbackQuery`. |
+| `uid` | `int` | Yes | Parameter `uid` of type `int`. |
+| `new_sub` | `bool` | Yes | Parameter `new_sub` of type `bool`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _update_schedule_inline_markup
+
+# Execute call
+result = await _update_schedule_inline_markup(callback=..., uid=..., new_sub=...)
+```
+
+---
+
 ### `cb_toggle_notify`
 ```python
 async def cb_toggle_notify(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L296-L332`](../../bot/handlers/user/schedule.py#L296-L332)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L293-L302`](../../bot/handlers/user/schedule.py#L293-L302)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -441,10 +553,10 @@ Handles Telegram inline callback query events for `cb_toggle_notify`.
 | `callback` | `CallbackQuery` | Yes | Parameter `callback` of type `CallbackQuery`. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -461,7 +573,7 @@ result = await cb_toggle_notify(callback=...)
 async def cmd_notice(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L336-L354`](../../bot/handlers/user/schedule.py#L336-L354)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L306-L324`](../../bot/handlers/user/schedule.py#L306-L324)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -494,7 +606,7 @@ result = await cmd_notice(message=...)
 async def cb_notice_toggle(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L358-L378`](../../bot/handlers/user/schedule.py#L358-L378)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L328-L348`](../../bot/handlers/user/schedule.py#L328-L348)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -527,7 +639,7 @@ result = await cb_notice_toggle(callback=...)
 async def cb_today(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L382-L397`](../../bot/handlers/user/schedule.py#L382-L397)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L352-L367`](../../bot/handlers/user/schedule.py#L352-L367)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -560,7 +672,7 @@ result = await cb_today(callback=...)
 async def cb_tomorrow(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L401-L425`](../../bot/handlers/user/schedule.py#L401-L425)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L371-L395`](../../bot/handlers/user/schedule.py#L371-L395)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -593,7 +705,7 @@ result = await cb_tomorrow(callback=...)
 async def cb_week(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L429-L453`](../../bot/handlers/user/schedule.py#L429-L453)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L399-L423`](../../bot/handlers/user/schedule.py#L399-L423)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -621,12 +733,43 @@ result = await cb_week(callback=...)
 
 ---
 
+### `_get_next_week_monday`
+```python
+def _get_next_week_monday() -> date
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L426-L429`](../../bot/handlers/user/schedule.py#L426-L429)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_get_next_week_monday`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _get_next_week_monday
+
+# Execute call
+result = _get_next_week_monday()
+```
+
+---
+
 ### `cb_week_next`
 ```python
 async def cb_week_next(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L457-L482`](../../bot/handlers/user/schedule.py#L457-L482)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L433-L453`](../../bot/handlers/user/schedule.py#L433-L453)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -654,12 +797,45 @@ result = await cb_week_next(callback=...)
 
 ---
 
+### `_safe_fetch_lessons_for_refresh`
+```python
+async def _safe_fetch_lessons_for_refresh(now: date) -> list[Lesson]
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L456-L462`](../../bot/handlers/user/schedule.py#L456-L462)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `list[Lesson]`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_safe_fetch_lessons_for_refresh`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `now` | `date` | Yes | Parameter `now` of type `date`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _safe_fetch_lessons_for_refresh
+
+# Execute call
+result = await _safe_fetch_lessons_for_refresh(now=...)
+```
+
+---
+
 ### `_refresh_and_format_schedule`
 ```python
 async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], int]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L485-L510`](../../bot/handlers/user/schedule.py#L485-L510)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L465-L475`](../../bot/handlers/user/schedule.py#L465-L475)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[str, list[Lesson], int]`
 
@@ -672,10 +848,10 @@ Executes core domain logic for `_refresh_and_format_schedule`.
 | `now` | `date` | Yes | Parameter `now` of type `date`. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -692,7 +868,7 @@ result = await _refresh_and_format_schedule(now=...)
 async def cb_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L514-L531`](../../bot/handlers/user/schedule.py#L514-L531)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L479-L496`](../../bot/handlers/user/schedule.py#L479-L496)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -725,7 +901,7 @@ result = await cb_refresh(callback=...)
 def format_help_text(is_admin: bool) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L534-L557`](../../bot/handlers/user/schedule.py#L534-L557)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L499-L522`](../../bot/handlers/user/schedule.py#L499-L522)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -758,7 +934,7 @@ result = format_help_text(is_admin=...)
 async def cmd_help(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L561-L582`](../../bot/handlers/user/schedule.py#L561-L582)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L526-L547`](../../bot/handlers/user/schedule.py#L526-L547)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -791,7 +967,7 @@ result = await cmd_help(message=...)
 async def handle_user_text_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L586-L611`](../../bot/handlers/user/schedule.py#L586-L611)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L551-L567`](../../bot/handlers/user/schedule.py#L551-L567)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

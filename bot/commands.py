@@ -70,6 +70,7 @@ async def register_bot_commands(bot: Bot) -> None:
         await bot.set_my_commands(get_default_user_commands(), scope=BotCommandScopeDefault())
         await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=ALLOWED_USER_ID))
         from aiogram.types import MenuButtonWebApp, WebAppInfo
+
         from config import MINIAPP_URL
 
         if MINIAPP_URL:

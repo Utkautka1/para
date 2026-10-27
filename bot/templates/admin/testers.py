@@ -28,7 +28,11 @@ def format_testers_text(testers: list[int], admin_key: str = "") -> str:
     """
 
     items = "\n".join(f"  • <code>{uid}</code>" for uid in testers) or "  <i>(Список пуст)</i>"
-    doc_url = f"<code>{SWAGGER_URL}?key={admin_key}</code>" if admin_key else (f"<code>{SWAGGER_URL}</code>" if SWAGGER_URL else "<i>(Не задан)</i>")
+    doc_url = (
+        f"<code>{SWAGGER_URL}?key={admin_key}</code>"
+        if admin_key
+        else (f"<code>{SWAGGER_URL}</code>" if SWAGGER_URL else "<i>(Не задан)</i>")
+    )
     key_line = f"🔑 <b>Ваш мастер-ключ (Admin):</b>\n<code>{admin_key}</code>\n\n" if admin_key else ""
 
     return (

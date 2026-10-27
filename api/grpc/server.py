@@ -96,7 +96,7 @@ class ApiKeyAuthInterceptor(grpc.aio.ServerInterceptor):
         metadata = dict(handler_call_details.invocation_metadata or ())
         api_key = metadata.get("x-api-key")
 
-        if not api_key or not secrets.compare_digest(api_key, API_SECRET_KEY):
+        if not api_key or not secrets.compare_digest(api_key.encode("utf-8"), API_SECRET_KEY.encode("utf-8")):
             return grpc.unary_unary_rpc_method_handler(self._abort_unauthenticated)
 
         return await continuation(handler_call_details)

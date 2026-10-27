@@ -24,9 +24,10 @@ graph LR
 | [`_resolve_key_identity`](#_resolve_key_identity) | Function | L29–L47 | `str | None` | Executes core domain logic for `_resolve_key_identity`. |
 | [`_resolve_token_identity`](#_resolve_token_identity) | Function | L50–L70 | `str | None` | Executes core domain logic for `_resolve_token_identity... |
 | [`_log_audit_access`](#_log_audit_access) | Function | L73–L82 | `None` | Executes core domain logic for `_log_audit_access`. |
-| [`verify_api_or_tester`](#verify_api_or_tester) | Function | L85–L109 | `str` | Executes core domain logic for `verify_api_or_tester`. |
-| [`verify_admin_access`](#verify_admin_access) | Function | L112–L129 | `str` | Executes core domain logic for `verify_admin_access`. |
-| [`verify_api_key`](#verify_api_key) | Function | L132–L144 | `str` | Executes core domain logic for `verify_api_key`. |
+| [`_extract_identity_candidates`](#_extract_identity_candidates) | Function | L85–L94 | `str | None` | Executes core domain logic for `_extract_identity_candi... |
+| [`verify_api_or_tester`](#verify_api_or_tester) | Function | L97–L115 | `str` | Executes core domain logic for `verify_api_or_tester`. |
+| [`verify_admin_access`](#verify_admin_access) | Function | L118–L135 | `str` | Executes core domain logic for `verify_admin_access`. |
+| [`verify_api_key`](#verify_api_key) | Function | L138–L150 | `str` | Executes core domain logic for `verify_api_key`. |
 
 ---
 
@@ -132,12 +133,48 @@ result = _log_audit_access(identity=..., request=...)
 
 ---
 
+### `_extract_identity_candidates`
+```python
+async def _extract_identity_candidates( request: Request, key: str | None, bearer: HTTPAuthorizationCredentials | None, para_session: str | None ) -> str | None
+```
+
+- **Source Reference**: [`api/deps.py#L85-L94`](../../api/deps.py#L85-L94)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_extract_identity_candidates`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `request` | `Request` | Yes | Parameter `request` of type `Request`. |
+| `key` | `str | None` | Yes | Parameter `key` of type `str | None`. |
+| `bearer` | `HTTPAuthorizationCredentials | None` | Yes | Parameter `bearer` of type `HTTPAuthorizationCredentials | None`. |
+| `para_session` | `str | None` | Yes | Parameter `para_session` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.deps import _extract_identity_candidates
+
+# Execute call
+result = await _extract_identity_candidates(request=..., key=..., bearer=...)
+```
+
+---
+
 ### `verify_api_or_tester`
 ```python
 async def verify_api_or_tester( request: Request, key: str | None = Security(_api_key_header), bearer: HTTPAuthorizationCredentials | None = Security(_bearer_scheme), para_session: str | None = Cookie(default=None), ) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L85-L109`](../../api/deps.py#L85-L109)
+- **Source Reference**: [`api/deps.py#L97-L115`](../../api/deps.py#L97-L115)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -173,7 +210,7 @@ result = await verify_api_or_tester(request=..., key=..., bearer=...)
 async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L112-L129`](../../api/deps.py#L112-L129)
+- **Source Reference**: [`api/deps.py#L118-L135`](../../api/deps.py#L118-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -206,7 +243,7 @@ result = await verify_admin_access(auth_identity=...)
 async def verify_api_key(key: str | None = Security(_api_key_header)) -> str
 ```
 
-- **Source Reference**: [`api/deps.py#L132-L144`](../../api/deps.py#L132-L144)
+- **Source Reference**: [`api/deps.py#L138-L150`](../../api/deps.py#L138-L150)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 

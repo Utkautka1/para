@@ -19,7 +19,6 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from api.deps import verify_api_or_tester
 from api.handlers import register_exception_handlers
-from config import ALLOWED_USER_ID
 from api.router.attendance import router as attendance_router
 from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
@@ -36,6 +35,7 @@ from api.router.system import router as system_router
 from api.router.teachers import router as teachers_router
 from api.schemas.errors import COMMON_API_RESPONSES
 from config import (
+    ALLOWED_USER_ID,
     GZIP_MIN_SIZE_BYTES,
     SWAGGER_SERVERS_DESCRIPTION,
     SWAGGER_SERVERS_URL,

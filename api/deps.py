@@ -37,7 +37,7 @@ async def _resolve_key_identity(key: str | None) -> str | None:
     if not key:
         return None
 
-    if hmac.compare_digest(key, API_SECRET_KEY):
+    if hmac.compare_digest(key.encode("utf-8"), API_SECRET_KEY.encode("utf-8")):
         return "master_admin"
 
     uid = await get_tester_by_key(key)
@@ -143,7 +143,7 @@ async def verify_api_key(key: str | None = Security(_api_key_header)) -> str:
 
     Возвращает строку ключа или выбрасывает HTTP 403 Forbidden.
     """
-    if not key or not hmac.compare_digest(key, API_SECRET_KEY):
+    if not key or not hmac.compare_digest(key.encode("utf-8"), API_SECRET_KEY.encode("utf-8")):
         log.warning("⚠️ Неверный или отсутствующий статический API-ключ")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing API key")
 

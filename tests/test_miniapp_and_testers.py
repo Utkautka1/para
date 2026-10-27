@@ -228,3 +228,17 @@ async def test_auth_by_tester_key() -> None:
             assert status_resp.status_code == 200
             assert status_resp.json()["authenticated"] is True
             assert status_resp.json()["is_tester"] is True
+
+
+@pytest.mark.asyncio
+async def test_auth_by_non_ascii_or_invalid_key_rejected() -> None:
+    """Проверяет отклонение случайных и не-ASCII ключей со статусом 401 без падения сервера."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
+        resp_cyrillic = await client.post("/miniapp/auth", json={"api_key": "рандомный ключ 123"})
+        assert resp_cyrillic.status_code == 401
+        assert resp_cyrillic.json()["detail"] == "Invalid API Key"
+
+        resp_garbage = await client.post("/miniapp/auth", json={"api_key": "invalid_token_xyz"})
+        assert resp_garbage.status_code == 401

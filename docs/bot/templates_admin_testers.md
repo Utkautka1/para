@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_testers_text`](#format_testers_text) | Function | L20–L39 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L42–L53 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L56–L86 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`format_testers_text`](#format_testers_text) | Function | L20–L45 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L48–L65 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L68–L98 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -35,10 +35,10 @@ Encapsulates domain entities and data transfer logic for `AddTesterState`.
 
 ### `format_testers_text`
 ```python
-def format_testers_text(testers: list[int]) -> str
+def format_testers_text(testers: list[int], admin_key: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L20-L39`](../../bot/templates/admin/testers.py#L20-L39)
+- **Source Reference**: [`bot/templates/admin/testers.py#L20-L45`](../../bot/templates/admin/testers.py#L20-L45)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -49,6 +49,7 @@ Formats message payload and presentation markup for `format_testers_text`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `testers` | `list[int]` | Yes | Parameter `testers` of type `list[int]`. |
+| `admin_key` | `str` | Yes | Parameter `admin_key` of type `str`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -61,17 +62,17 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.admin.testers import format_testers_text
 
 # Execute call
-result = format_testers_text(testers=...)
+result = format_testers_text(testers=..., admin_key=...)
 ```
 
 ---
 
 ### `get_swagger_buttons`
 ```python
-def get_swagger_buttons() -> list[InlineKeyboardButton]
+def get_swagger_buttons(admin_key: str = "") -> list[InlineKeyboardButton]
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L42-L53`](../../bot/templates/admin/testers.py#L42-L53)
+- **Source Reference**: [`bot/templates/admin/testers.py#L48-L65`](../../bot/templates/admin/testers.py#L48-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[InlineKeyboardButton]`
 
@@ -79,7 +80,9 @@ def get_swagger_buttons() -> list[InlineKeyboardButton]
 Retrieves and resolves domain data for `get_swagger_buttons`.
 
 #### Parameters Contract
-*This method takes no input parameters.*
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `admin_key` | `str` | Yes | Parameter `admin_key` of type `str`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -92,17 +95,17 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.admin.testers import get_swagger_buttons
 
 # Execute call
-result = get_swagger_buttons()
+result = get_swagger_buttons(admin_key=...)
 ```
 
 ---
 
 ### `get_testers_management_kb`
 ```python
-def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
+def get_testers_management_kb(testers: list[int], admin_key: str = "") -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L56-L86`](../../bot/templates/admin/testers.py#L56-L86)
+- **Source Reference**: [`bot/templates/admin/testers.py#L68-L98`](../../bot/templates/admin/testers.py#L68-L98)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -113,6 +116,7 @@ Retrieves and resolves domain data for `get_testers_management_kb`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `testers` | `list[int]` | Yes | Parameter `testers` of type `list[int]`. |
+| `admin_key` | `str` | Yes | Parameter `admin_key` of type `str`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -125,7 +129,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.admin.testers import get_testers_management_kb
 
 # Execute call
-result = get_testers_management_kb(testers=...)
+result = get_testers_management_kb(testers=..., admin_key=...)
 ```
 
 ---
