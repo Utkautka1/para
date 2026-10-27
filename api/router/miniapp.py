@@ -96,7 +96,7 @@ async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None:
     uid = await get_tester_by_key(clean)
     if uid and await is_tester_allowed(uid):
         cm = find_classmate_by_tg_id(uid)
-        name = cm.full_name if cm else f"Тестер {uid}"
+        name = (cm.get("full_name") if isinstance(cm, dict) else getattr(cm, "full_name", None)) or f"Тестер {uid}"
         return uid, name, f"tester_{uid}"
     return None
 
