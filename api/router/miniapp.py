@@ -13,6 +13,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.miniapp import (
+    MiniappActionRequest,
+    MiniappActionResult,
     MiniappAuthRequest,
     MiniappAuthResponse,
     MiniappCheckResponse,
@@ -31,6 +33,7 @@ from services.classmates_auth import find_classmate_by_tg_id
 from services.testers_manager import (
     add_tester,
     get_all_testers,
+    get_tester_by_key,
     is_tester_allowed,
     remove_tester,
 )
@@ -85,24 +88,41 @@ async def serve_miniapp_page() -> HTMLResponse:
     return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)
 
 
+async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None:
+    """Определяет Telegram ID и профиль пользователя по мастер-ключу или ключу тестера."""
+    clean = key.strip()
+    if secrets.compare_digest(clean, API_SECRET_KEY):
+        return ALLOWED_USER_ID, "Староста (Admin)", "admin"
+    uid = await get_tester_by_key(clean)
+    if uid and await is_tester_allowed(uid):
+        cm = find_classmate_by_tg_id(uid)
+        name = cm.full_name if cm else f"Тестер {uid}"
+        return uid, name, f"tester_{uid}"
+    return None
+
+
 @router.get("/dev-login")
 async def dev_login(key: str = Query(..., description="API Secret Key")) -> Response:
-    """Выполняет вход разработчика по API ключу и перенаправляет в MiniApp."""
-    if not secrets.compare_digest(key.strip(), API_SECRET_KEY):
+    """Выполняет вход разработчика или тестера по API ключу и перенаправляет в MiniApp."""
+    resolved = await _resolve_api_key_user(key)
+    if not resolved:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
+    uid, _, _ = resolved
     redirect = RedirectResponse(url="/miniapp", status_code=status.HTTP_303_SEE_OTHER)
-    _set_tester_cookie(redirect, ALLOWED_USER_ID)
-    log.info(f"🔑 Успешный dev-login разработчика (user_id={ALLOWED_USER_ID})")
+    _set_tester_cookie(redirect, uid)
+    log.info(f"🔑 Успешный dev-login в MiniApp (user_id={uid})")
     return redirect
 
 
-def _auth_developer_key(api_key: str, response: Response) -> MiniappAuthResponse:
-    """Проверяет ключ разработчика и устанавливает сессионную куку тестера."""
-    if not secrets.compare_digest(api_key.strip(), API_SECRET_KEY):
+async def _auth_by_key(api_key: str, response: Response) -> MiniappAuthResponse:
+    """Проверяет ключ доступа и устанавливает сессионную куку тестера."""
+    resolved = await _resolve_api_key_user(api_key)
+    if not resolved:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
-    _set_tester_cookie(response, ALLOWED_USER_ID)
-    log.info(f"✅ Вход тестера с ПК по API-ключу (user_id={ALLOWED_USER_ID})")
-    return MiniappAuthResponse(user_id=ALLOWED_USER_ID, first_name="Разработчик", username="dev")
+    uid, name, uname = resolved
+    _set_tester_cookie(response, uid)
+    log.info(f"🔑 Успешный вход по API-ключу в MiniApp (user_id={uid}, name={name})")
+    return MiniappAuthResponse(user_id=uid, first_name=name, username=uname)
 
 
 async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuthResponse:
@@ -127,9 +147,9 @@ async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuth
 
 @router.post("/auth", response_model=MiniappAuthResponse)
 async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse:
-    """Аутентифицирует пользователя по Telegram initData или ключу разработчика."""
+    """Аутентифицирует пользователя по Telegram initData или ключу доступа."""
     if payload.api_key:
-        return _auth_developer_key(payload.api_key, response)
+        return await _auth_by_key(payload.api_key, response)
     if payload.init_data:
         return await _auth_telegram_init(payload.init_data, response)
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing auth credentials")
@@ -154,8 +174,47 @@ async def check_tester_status(para_session: str = Cookie(default=None)) -> Minia
         return MiniappCheckResponse(authenticated=False, is_tester=False)
 
     allowed = await is_tester_allowed(uid)
-
     return MiniappCheckResponse(authenticated=True, user_id=uid, is_tester=allowed)
+
+
+def _resolve_action_uid(payload: MiniappActionRequest, session: str | None) -> int | None:
+    """Определяет Telegram ID инициатора действия из сессии или init_data."""
+    if session:
+        uid = verify_tester_session(session)
+        if uid:
+            return uid
+    if payload.init_data:
+        info = validate_telegram_init_data(payload.init_data)
+        if info and "id" in info:
+            return int(info["id"])
+    return None
+
+
+@router.post("/action", response_model=MiniappActionResult)
+async def trigger_miniapp_action(
+    payload: MiniappActionRequest, para_session: str | None = Cookie(default=None)
+) -> MiniappActionResult:
+    """Разблокирует клиентские достижения Mini App (пасхалки, темы интерфейса)."""
+    uid = _resolve_action_uid(payload, para_session)
+    if not uid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    action_map = {"matrix_theme": "egg_matrix", "konami_code": "egg_konami", "open_miniapp": "bot_miniapp"}
+    ach_id = action_map.get(payload.action)
+    if not ach_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown action")
+
+    from services.achievement_service import award_achievement
+    from services.gamification_registry import ACHIEVEMENTS_MAP
+
+    unlocked = await award_achievement(uid, ach_id)
+    ach = ACHIEVEMENTS_MAP.get(ach_id)
+    return MiniappActionResult(
+        status="ok",
+        unlocked=unlocked,
+        achievement=ach.title if ach else None,
+        xp=ach.xp_reward if ach else 0,
+    )
 
 
 @router.get("/testers", response_model=TesterListResponse, dependencies=[Depends(verify_api_or_tester)])

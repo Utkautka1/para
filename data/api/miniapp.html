@@ -72,10 +72,58 @@
       letter-spacing: 0.05em;
       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+
+    /* Matrix Cyberpunk Theme */
+    body.matrix-theme {
+      --bg: #030705;
+      --card-bg: rgba(6, 26, 14, 0.75);
+      --card-border: rgba(34, 197, 94, 0.35);
+      --card-hover: rgba(34, 197, 94, 0.55);
+      --accent: #22c55e;
+      --accent-glow: rgba(34, 197, 94, 0.5);
+      --gold: #10b981;
+      --gold-glow: rgba(16, 185, 129, 0.4);
+      --emerald: #00ff66;
+      --emerald-glow: rgba(0, 255, 102, 0.5);
+      --purple: #14b8a6;
+      --text: #f0fdf4;
+      --text-muted: #86efac;
+      background: radial-gradient(circle at 50% 0%, #064e3b 0%, #022c22 45%, #030705 90%);
+    }
+
+    /* Toast popup for achievements */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px var(--accent-glow);
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 90%;
+      text-align: center;
+      pointer-events: none;
+    }
+    .toast-popup.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
 
     .badge {
@@ -552,13 +600,16 @@
 
   <!-- Header -->
   <div class="header-bar">
-    <div class="guild-title">
+    <div class="guild-title" onclick="handleEasterEggTap()" style="cursor:pointer;" title="⚔️ Академическая Гильдия 1-КПД-3">
       <span>⚔️ 1-КПД-3</span>
-      <span class="badge badge-rpg" id="version-badge" onclick="promptDevLogin()" style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
+      <span class="badge badge-rpg" id="version-badge" onclick="event.stopPropagation(); promptDevLogin();" style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
     </div>
-    <div class="badge badge-rpg">
-      <span class="pulse-dot"></span>
-      <span id="group-pulse-lbl">Пульс: 75%</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="btn-theme-toggle" class="badge badge-rpg" onclick="toggleMatrixTheme()" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); cursor:pointer; font-size:13px;" title="Ночная тема Матрица КТМУ">🕶️</button>
+      <div class="badge badge-rpg">
+        <span class="pulse-dot"></span>
+        <span id="group-pulse-lbl">Пульс: 75%</span>
+      </div>
     </div>
   </div>
 
@@ -741,7 +792,7 @@
 
     function promptDevLogin() {
       const curKey = localStorage.getItem('para_dev_key') || '';
-      const key = prompt('Введите ключ разработчика для доступа к MiniApp & Swagger:', curKey);
+      const key = prompt('Введите ключ тестера или разработчика для доступа к Swagger & Jaeger:', curKey);
       if (key && key.trim()) {
         localStorage.setItem('para_dev_key', key.trim());
         window.location.search = `?key=${encodeURIComponent(key.trim())}`;
@@ -753,10 +804,21 @@
         const params = new URLSearchParams(window.location.search);
         const key = params.get('key') || localStorage.getItem('para_dev_key');
         if (key) {
-          await fetch('/miniapp/auth', {
+          const authResp = await fetch('/miniapp/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: key }),
+            credentials: 'include',
+          });
+          if (!authResp.ok) {
+            localStorage.removeItem('para_dev_key');
+          }
+        }
+        if (tg?.initData) {
+          await fetch('/miniapp/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data: tg.initData }),
             credentials: 'include',
           });
         }
@@ -777,7 +839,7 @@
       if (bSw) bSw.style.display = 'inline-flex';
       if (bJg) bJg.style.display = 'inline-flex';
       const badge = document.getElementById('version-badge');
-      if (badge) badge.innerText = 'v2.9 • 🔑 Dev';
+      if (badge) badge.innerText = 'v2.9 • 🔑 Tester';
     }
 
     async function loadLeaderboard() {
@@ -1003,7 +1065,11 @@
       }
       if (tab === 'swagger') {
         const frame = document.getElementById('swagger-frame');
-        if (frame && !frame.getAttribute('src')) frame.setAttribute('src', '/docs');
+        if (frame && !frame.getAttribute('src')) {
+          const params = new URLSearchParams(window.location.search);
+          const k = params.get('key') || localStorage.getItem('para_dev_key') || '';
+          frame.setAttribute('src', k ? ('/docs?key=' + encodeURIComponent(k)) : '/docs');
+        }
       }
       if (tab === 'jaeger') {
         const frame = document.getElementById('jaeger-frame');
@@ -1021,6 +1087,93 @@
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg) {
+      let toast = document.getElementById('rpg-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'rpg-toast';
+        toast.className = 'toast-popup';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = msg;
+      toast.classList.add('show');
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    async function triggerClientAction(actionName) {
+      try {
+        const resp = await fetch('/miniapp/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: actionName, init_data: tg?.initData }),
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          const res = await resp.json();
+          if (res.unlocked) {
+            showToast(`🏆 <b>${escapeHtml(res.achievement)}</b> разблокирован! (+${res.xp} XP)`);
+            if (myProfile) {
+              myProfile.unlocked_achievements.push(actionName);
+              myProfile.xp += res.xp;
+            }
+            renderAchievementsCatalog();
+          }
+        }
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    function toggleMatrixTheme() {
+      const isMatrix = document.body.classList.toggle('matrix-theme');
+      localStorage.setItem('para_matrix_theme', isMatrix ? '1' : '0');
+      const btn = document.getElementById('btn-theme-toggle');
+      if (btn) btn.innerText = isMatrix ? '🟢' : '🕶️';
+      if (isMatrix) {
+        showToast('🕶️ Ночная киберпанк тема включена!');
+        triggerClientAction('matrix_theme');
+      } else {
+        showToast('✨ Классическая тема гильдии возвращена');
+      }
+    }
+
+    let konamiIdx = 0;
+    const konamiKeys = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === konamiKeys[konamiIdx].toLowerCase() || e.code === konamiKeys[konamiIdx]) {
+        konamiIdx++;
+        if (konamiIdx === konamiKeys.length) {
+          konamiIdx = 0;
+          showToast('🎮 <b>Код Конами!</b> Скрытая пасхалка найдена!');
+          triggerClientAction('konami_code');
+        }
+      } else {
+        konamiIdx = 0;
+      }
+    });
+
+    let titleTapCount = 0;
+    let titleTapTimer = null;
+    function handleEasterEggTap() {
+      titleTapCount++;
+      clearTimeout(titleTapTimer);
+      if (titleTapCount >= 5) {
+        titleTapCount = 0;
+        showToast('🎮 <b>Код Конами!</b> Скрытая пасхалка найдена!');
+        triggerClientAction('konami_code');
+      } else {
+        titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 1500);
+      }
+    }
+
+    if (localStorage.getItem('para_matrix_theme') === '1') {
+      document.body.classList.add('matrix-theme');
+      const b = document.getElementById('btn-theme-toggle');
+      if (b) b.innerText = '🟢';
     }
 
     initTelegram();

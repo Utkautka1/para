@@ -69,6 +69,13 @@ async def register_bot_commands(bot: Bot) -> None:
     try:
         await bot.set_my_commands(get_default_user_commands(), scope=BotCommandScopeDefault())
         await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=ALLOWED_USER_ID))
-        log.info("✅ Системное меню команд бота успешно зарегистрировано в Telegram")
+        from aiogram.types import MenuButtonWebApp, WebAppInfo
+        from config import MINIAPP_URL
+
+        if MINIAPP_URL:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(text="🎮 Mini App", web_app=WebAppInfo(url=MINIAPP_URL))
+            )
+        log.info("✅ Системное меню команд бота и кнопка Mini App успешно зарегистрированы в Telegram")
     except Exception as e:
         log.warning(f"⚠️ Не удалось зарегистрировать системное меню команд: {e}")

@@ -180,3 +180,51 @@ def test_miniapp_html_lightweight_and_clean() -> None:
     assert "swagger-ui-bundle.js" not in html_content
     assert "swagger-ui.css" not in html_content
     assert "Promise.allSettled" in html_content
+
+
+@pytest.mark.asyncio
+async def test_docs_query_key_and_action() -> None:
+    """Проверяет доступ к /docs по query-параметру key и вызов /miniapp/action."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(f"/docs?key={API_SECRET_KEY}")
+        assert resp.status_code == 200
+        assert "para_session" in resp.cookies
+
+        now_ts = int(datetime.now(UTC).timestamp())
+        init_data = _build_test_init_data({"id": ALLOWED_USER_ID, "first_name": "Admin"}, now_ts)
+        action_resp = await client.post(
+            "/miniapp/action",
+            json={"action": "matrix_theme", "init_data": init_data},
+        )
+        assert action_resp.status_code == 200
+        data = action_resp.json()
+        assert data["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_auth_by_tester_key() -> None:
+    """Проверяет аутентификацию в MiniApp по персональному ключу тестера."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    tester_uid = 403378239
+    tester_key = "api_tester_testkey12345"
+
+    with (
+        patch("api.router.miniapp.get_tester_by_key", new_callable=AsyncMock) as mock_get_tester,
+        patch("api.router.miniapp.is_tester_allowed", new_callable=AsyncMock) as mock_allowed,
+    ):
+        mock_get_tester.return_value = tester_uid
+        mock_allowed.return_value = True
+
+        async with AsyncClient(transport=transport, base_url="https://test") as client:
+            resp = await client.post("/miniapp/auth", json={"api_key": tester_key})
+            assert resp.status_code == 200
+            assert resp.json()["user_id"] == tester_uid
+            assert "para_session" in resp.cookies
+
+            status_resp = await client.get("/miniapp/status")
+            assert status_resp.status_code == 200
+            assert status_resp.json()["authenticated"] is True
+            assert status_resp.json()["is_tester"] is True

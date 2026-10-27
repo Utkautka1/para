@@ -16,8 +16,10 @@ from bot.templates.admin.testers import (
     format_testers_text,
     get_testers_management_kb,
 )
+from config import API_SECRET_KEY
 from core.logger import get_logger
 from services.testers_manager import (
+    ADMIN_TESTERS,
     add_tester,
     generate_or_get_tester_key,
     get_all_testers,
@@ -31,21 +33,27 @@ router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
 
 
+def _get_admin_key(user_id: int) -> str:
+    """Возвращает мастер-ключ для старосты или пустую строку."""
+    return API_SECRET_KEY if user_id in ADMIN_TESTERS else ""
+
+
 @router.message(Command("testers"))
 async def cmd_list_testers(message: Message) -> None:
     """
     Отображает список всех авторизованных тестеров Swagger UI и ссылку на портал.
 
     Считывает список Telegram ID из Redis-множества тестеров.
-    Отправляет интерактивную клавиатуру управления тестерами.
+    Отправляет интерактивную клавиатуру управления тестерами с мастер-ключом.
 
     Ничего не возвращает (отправляет сообщение в чат).
     """
 
     testers = await get_all_testers()
-    text = format_testers_text(testers)
+    key = _get_admin_key(message.from_user.id if message.from_user else 0)
+    text = format_testers_text(testers, key)
 
-    await message.answer(text, reply_markup=get_testers_management_kb(testers))
+    await message.answer(text, reply_markup=get_testers_management_kb(testers, key))
 
 
 @router.message(Command("add_tester"))
@@ -109,8 +117,9 @@ async def cmd_open_swagger(message: Message) -> None:
     """
 
     testers = await get_all_testers()
+    key = _get_admin_key(message.from_user.id if message.from_user else 0)
 
-    await message.answer("🚀 <b>Swagger UI Портал para-api</b>", reply_markup=get_testers_management_kb(testers))
+    await message.answer("🚀 <b>Swagger UI Портал para-api</b>", reply_markup=get_testers_management_kb(testers, key))
 
 
 @router.callback_query(F.data == "admin:testers")
@@ -125,9 +134,10 @@ async def cb_admin_testers(callback: CallbackQuery) -> None:
     """
 
     testers = await get_all_testers()
-    text = format_testers_text(testers)
+    key = _get_admin_key(callback.from_user.id if callback.from_user else 0)
+    text = format_testers_text(testers, key)
 
-    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers))
+    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers, key))
     await callback.answer()
 
 
@@ -168,9 +178,10 @@ async def process_tester_id_input(message: Message, state: FSMContext) -> None:
     key = await generate_or_get_tester_key(uid)
     await state.clear()
     testers = await get_all_testers()
+    admin_key = _get_admin_key(message.from_user.id if message.from_user else 0)
     msg = f"✅ Пользователь <code>{uid}</code> добавлен!\n🔑 Персональный <b>API-ключ</b>:\n<code>{key}</code>"
 
-    await message.answer(msg, reply_markup=get_testers_management_kb(testers))
+    await message.answer(msg, reply_markup=get_testers_management_kb(testers, admin_key))
 
 
 @router.callback_query(F.data.startswith("admin:del_tester:"))
@@ -189,7 +200,8 @@ async def cb_delete_tester(callback: CallbackQuery) -> None:
         await remove_tester(int(raw_id))
 
     testers = await get_all_testers()
-    text = format_testers_text(testers)
+    key = _get_admin_key(callback.from_user.id if callback.from_user else 0)
+    text = format_testers_text(testers, key)
 
-    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers))
+    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers, key))
     await callback.answer("Тестер удален")

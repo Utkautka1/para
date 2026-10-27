@@ -68,26 +68,12 @@ def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[lis
     return rows
 
 
-def _build_nav_rows(
-    week_offset: int,
-    is_admin: bool = False,
-    is_subscribed: bool = True,
-    is_attendance_admin: bool = False,
-    is_tester: bool = False,
-) -> list[list[InlineKeyboardButton]]:
-    """
-    Формирует основные кнопки навигации по календарю и переключатели настроек.
-
-    Включает кнопки перехода сегодня/завтра, недели, обновления и тумблер пушей.
-    Добавляет кнопку Swagger Mini App для авторизованных тестеров.
-
-    Возвращает скомпонованную матрицу рядов кнопок.
-    """
-
+def _build_calendar_rows(week_offset: int, is_subscribed: bool) -> list[list[InlineKeyboardButton]]:
+    """Формирует базовые ряды кнопок календаря (сегодня, завтра, смена недели, пуши)."""
     w_text = "⏭ Неделя (След.)" if week_offset == 0 else "⏮ Неделя (Тек.)"
     w_data = "sched:week_next" if week_offset == 0 else "sched:week"
     n_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
-    rows = [
+    return [
         [
             InlineKeyboardButton(text="📅 Сегодня", callback_data="sched:today", style="success"),
             InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success"),
@@ -102,11 +88,21 @@ def _build_nav_rows(
             )
         ],
     ]
+
+
+def _build_nav_rows(
+    week_offset: int,
+    is_admin: bool = False,
+    is_subscribed: bool = True,
+    is_attendance_admin: bool = False,
+    is_tester: bool = False,
+) -> list[list[InlineKeyboardButton]]:
+    """Формирует основные кнопки навигации по календарю и переключатели настроек."""
+    rows = _build_calendar_rows(week_offset, is_subscribed)
+    rows.append([InlineKeyboardButton(text="🎮 Рейтинг и Квесты (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
     if is_tester:
-        rows.append([InlineKeyboardButton(text="🧪 Веб-портал API (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))])
-
+        rows.append([InlineKeyboardButton(text="🧪 Веб-портал API (Swagger UI)", web_app=WebAppInfo(url=MINIAPP_URL))])
     rows.extend(_build_admin_nav_rows(is_admin, is_attendance_admin))
-
     return rows
 
 
@@ -118,33 +114,13 @@ def get_schedule_inline_kb(
     is_attendance_admin: bool = False,
     is_tester: bool = False,
 ) -> InlineKeyboardMarkup:
-    """
-    Генерирует полную навигационную клавиатуру для экрана расписания в ЛС.
-
-    Комбинирует ссылки на пары текущего дня и базовые кнопки навигации.
-    Динамически адаптирует кнопки под роль пользователя.
-
-    Возвращает готовый объект InlineKeyboardMarkup.
-    """
-
-    rows = []
-    if lessons:
-        rows.extend(chunk_link_buttons(lessons))
-
-    rows.extend(
-        _build_nav_rows(
-            week_offset,
-            is_admin=is_admin,
-            is_subscribed=is_subscribed,
-            is_attendance_admin=is_attendance_admin,
-            is_tester=is_tester,
-        )
-    )
-
+    """Генерирует полную навигационную клавиатуру для экрана расписания в ЛС."""
+    rows = list(chunk_link_buttons(lessons)) if lessons else []
+    rows.extend(_build_nav_rows(week_offset, is_admin, is_subscribed, is_attendance_admin, is_tester))
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
+def get_tester_cabinet_kb(tester_key: str | None = None) -> InlineKeyboardMarkup:
     """
     Формирует инлайн-клавиатуру персонального кабинета тестера API.
 
@@ -153,11 +129,12 @@ def get_tester_cabinet_kb() -> InlineKeyboardMarkup:
 
     Возвращает объект InlineKeyboardMarkup.
     """
+    swagger_url = f"{SWAGGER_URL}?key={tester_key}" if tester_key and SWAGGER_URL else SWAGGER_URL
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="🚀 Запустить веб-портал (Mini App)", web_app=WebAppInfo(url=MINIAPP_URL))],
-            [InlineKeyboardButton(text="🌐 Открыть веб-портал в браузере", url=SWAGGER_URL)],
+            [InlineKeyboardButton(text="🌐 Открыть веб-портал в браузере", url=swagger_url)],
             [InlineKeyboardButton(text="🔑 Показать мой API-ключ", callback_data="tester:my_key", style="primary")],
         ]
     )

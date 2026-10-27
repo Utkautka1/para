@@ -17,43 +17,51 @@ class AddTesterState(StatesGroup):
     waiting_for_user_id = State()
 
 
-def format_testers_text(testers: list[int]) -> str:
+def format_testers_text(testers: list[int], admin_key: str = "") -> str:
     """
     Формирует информационный текст экрана управления доступом к Swagger UI.
 
-    Выводит внешний URL портала документации и список Telegram ID тестеров.
+    Выводит внешний URL портала документации, ключ доступа и список Telegram ID тестеров.
     Используется в диалоге управления тестировщиками в панели старосты.
 
     Возвращает отформатированную HTML-строку.
     """
 
     items = "\n".join(f"  • <code>{uid}</code>" for uid in testers) or "  <i>(Список пуст)</i>"
-    web_url = f"<code>{SWAGGER_URL}</code>" if SWAGGER_URL else "<i>(Не задан)</i>"
+    doc_url = f"<code>{SWAGGER_URL}?key={admin_key}</code>" if admin_key else (f"<code>{SWAGGER_URL}</code>" if SWAGGER_URL else "<i>(Не задан)</i>")
+    key_line = f"🔑 <b>Ваш мастер-ключ (Admin):</b>\n<code>{admin_key}</code>\n\n" if admin_key else ""
 
     return (
         "🧪 <b>УПРАВЛЕНИЕ SWAGGER UI И ТЕСТЕРАМИ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌐 <b>Swagger UI:</b> {web_url}\n\n"
+        f"{key_line}"
+        f"🌐 <b>Swagger UI:</b> {doc_url}\n\n"
         f"👥 <b>Авторизованные тестеры ({len(testers)}):</b>\n{items}\n\n"
-        "💡 <i>Нажмите кнопку ниже, чтобы открыть веб-интерфейс Swagger UI.</i>"
+        "💡 <i>Используйте кнопки ниже для быстрого входа в Mini App или Swagger UI.</i>"
     )
 
 
-def get_swagger_buttons() -> list[InlineKeyboardButton]:
+def get_swagger_buttons(admin_key: str = "") -> list[InlineKeyboardButton]:
     """
-    Формирует инлайн-кнопку для перехода в защищенный веб-портал Mini App.
+    Формирует инлайн-кнопки для перехода в Mini App и прямого открытия Swagger UI.
 
-    Проверяет наличие сконфигурированного HTTPS-адреса веб-приложения.
+    При наличии ключа добавляет его в query-параметры для бесшовной авторизации.
 
-    Возвращает список с кнопкой перехода в веб-портал.
+    Возвращает список инлайн-кнопок перехода в веб-порталы.
     """
+    buttons: list[InlineKeyboardButton] = []
     if MINIAPP_URL.startswith("https://"):
-        return [InlineKeyboardButton(text="📱 Открыть веб-портал", web_app=WebAppInfo(url=MINIAPP_URL))]
+        app_url = f"{MINIAPP_URL}?key={admin_key}" if admin_key else MINIAPP_URL
+        buttons.append(InlineKeyboardButton(text="📱 Mini App", web_app=WebAppInfo(url=app_url)))
 
-    return []
+    if SWAGGER_URL.startswith("http"):
+        doc_url = f"{SWAGGER_URL}?key={admin_key}" if admin_key else SWAGGER_URL
+        buttons.append(InlineKeyboardButton(text="🌐 Swagger UI", url=doc_url))
+
+    return buttons
 
 
-def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
+def get_testers_management_kb(testers: list[int], admin_key: str = "") -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру управления списком тестеров Swagger UI.
 
@@ -64,7 +72,7 @@ def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """
 
     rows: list = []
-    top_btns = get_swagger_buttons()
+    top_btns = get_swagger_buttons(admin_key)
     if top_btns:
         rows.append(top_btns)
 

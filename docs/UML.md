@@ -2019,13 +2019,14 @@ sequenceDiagram
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access.
+1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access. The headman control panel (`/testers` and `/swagger`) automatically displays the admin master key and generates 1-click links for `📱 Mini App` and `🌐 Swagger UI` with attached `?key=` authentication.
 2. **Atomic Whitelist & Key Minting**: The `/add_tester <id>` command adds the user ID to `api:testers:whitelist` and generates an cryptographically secure 16-byte hex token prefixed with `API_TESTER_KEY_PREFIX`.
 3. **Bidirectional O(1) Indexing**: Redis stores dual keys:
    - `{REDIS_TESTER_UID_TO_KEY_PREFIX}{uid}` -> `api_key`
    - `{REDIS_TESTER_KEY_TO_UID_PREFIX}{api_key}` -> `uid`
-4. **Security Audit Logging**: Every incoming request passing through `verify_api_or_tester()` resolves the caller to `tester:<uid>` or `master_admin` and writes an audit record to the structured log: `[AUDIT] {identity} -> {method} {path} (IP: {client_ip})`.
-5. **Cabinet Access for Non-Students**: If an authorized tester is not a student in group 1-КПД-3, `cmd_start` does not reject them, but automatically displays their Tester Cabinet with Swagger UI and API key.
+4. **Dual Authentication in MiniApp**: `POST /miniapp/auth` supports both Telegram `init_data` (HMAC-SHA256 signature) and `api_key` (Master Admin key or personal tester key). Successful validation issues a `para_session` cookie and activates `enableTesterUI()` with `⚡ Swagger` and `🔍 Jaeger` tabs.
+5. **Security Audit Logging**: Every incoming request passing through `verify_api_or_tester()` resolves the caller to `tester:<uid>` or `master_admin` and writes an audit record to the structured log: `[AUDIT] {identity} -> {method} {path} (IP: {client_ip})`.
+6. **Cabinet Access for Non-Students**: If an authorized tester is not a student in group 1-КПД-3, `cmd_start` does not reject them, but automatically displays their Tester Cabinet with Swagger UI and API key.
 
 ---
 
@@ -2133,7 +2134,9 @@ classDiagram
 
     class MiniappRouter {
         +GET /miniapp
+        +GET /miniapp/dev-login
         +POST /miniapp/auth
+        +POST /miniapp/action
         +GET /miniapp/status
         +GET /miniapp/testers
         +POST /miniapp/testers/:uid

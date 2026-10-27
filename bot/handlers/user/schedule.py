@@ -46,22 +46,13 @@ router.callback_query.filter(ClassmateAuthFilter())
 
 
 async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]:
-    """
-    Возвращает отформатированный текст расписания и список пар с кэшированием в Redis.
-
-    Кэширует сериализованный payload на 180 секунд для ускорения отклика инлайн-кнопок.
-    При промахе кэша запрашивает расписание из API КТМУ и форматирует карточку.
-
-    Возвращает кортеж (HTML-текст расписания, список объектов Lesson).
-    """
-
+    """Возвращает форматированный текст расписания и список пар с кэшированием в Redis на 180с."""
     cache_key = f"sched:day_pack:{target_date.isoformat()}"
     cached = await cache_get(cache_key)
     if cached:
         try:
             data = json.loads(cached)
-            lessons = [Lesson(**item) for item in data.get("lessons", [])]
-            return data["text"], lessons
+            return data["text"], [Lesson(**item) for item in data.get("lessons", [])]
         except Exception as e:
             log.warning(f"Ошибка десериализации кэша дня ({cache_key}): {e}")
 
@@ -69,20 +60,11 @@ async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]
     text = format_day_schedule(target_date, lessons)
     payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
     await cache_set(cache_key, payload, ttl=180)
-
     return text, lessons
 
 
 async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> None:
-    """
-    Мгновенно подтверждает callback-запрос от инлайн-кнопок Telegram.
-
-    Игнорирует ошибки устаревания callback ('query is too old'), предотвращая сбои.
-    Логирует прочие ошибки связи с Telegram Bot API.
-
-    Ничего не возвращает.
-    """
-
+    """Мгновенно подтверждает callback-запрос от инлайн-кнопок Telegram."""
     try:
         await callback.answer(text)
     except TelegramBadRequest as e:
@@ -95,15 +77,7 @@ async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> Non
 async def edit_or_answer(
     callback: CallbackQuery, text: str, lessons: list[Lesson] | None = None, week_offset: int = 0
 ) -> None:
-    """
-    Безопасно обновляет содержимое текущего сообщения расписания в чате.
-
-    Учитывает персональные права пользователя (администратор, тестер, подписчик).
-    Игнорирует TelegramBadRequest ('not modified'), если контент идентичен.
-
-    Ничего не возвращает.
-    """
-
+    """Безопасно обновляет содержимое текущего сообщения расписания в чате."""
     uid = callback.from_user.id if callback.from_user else 0
     kb = get_schedule_inline_kb(
         lessons,
@@ -113,7 +87,6 @@ async def edit_or_answer(
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),
     )
-
     try:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
@@ -180,7 +153,7 @@ async def _show_tester_cabinet(message: Message, uid: int) -> None:
         "💡 <i>Вставьте ключ в Swagger UI (Authorize -> ApiKeyAuth).</i>"
     )
 
-    await message.answer(text, reply_markup=get_tester_cabinet_kb())
+    await message.answer(text, reply_markup=get_tester_cabinet_kb(key))
 
 
 async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> None:
@@ -220,38 +193,33 @@ async def _check_start_achievements(uid: int, bot: Any, full_name: str | None) -
         await award_achievement(uid, "time_sunday_scout", bot, full_name)
 
 
+async def _handle_unauthorized_user(message: Message, is_auth: bool, is_tester: bool, uid: int) -> bool:
+    """Обрабатывает отказ в доступе или показ кабинета тестера для неавторизованных студентов."""
+    if not is_auth and not is_tester:
+        await _show_access_denied(message, uid)
+        return True
+    if not is_auth and is_tester:
+        await _show_tester_cabinet(message, uid)
+        return True
+    return False
+
+
 @router.message(CommandStart())
 @router.message(Command("today"))
 async def cmd_start(message: Message) -> None:
-    """
-    Авторизует пользователя, проверяет права тестера и отправляет меню расписания.
-
-    Обрабатывает первичное знакомство, отправляет карточку на сегодня с кнопками.
-    Тестерам без студенческого доступа открывает экран кабинета тестера.
-
-    Ничего не возвращает.
-    """
-
+    """Авторизует пользователя, проверяет права тестера и отправляет меню расписания."""
     is_auth, is_just_reg, student = process_user_auth(message.from_user)
     uid = message.from_user.id if message.from_user else 0
     is_tester = await is_tester_allowed(uid)
 
-    if not is_auth and not is_tester:
-        await _show_access_denied(message, uid)
-        return
-
-    if not is_auth and is_tester:
-        await _show_tester_cabinet(message, uid)
+    if await _handle_unauthorized_user(message, is_auth, is_tester, uid):
         return
 
     if is_just_reg and student:
         await _greet_new_student(message, student)
 
-    import asyncio
-
-    asyncio.create_task(
-        _check_start_achievements(uid, message.bot, message.from_user.full_name if message.from_user else None)
-    )
+    fname = message.from_user.full_name if message.from_user else None
+    asyncio.create_task(_check_start_achievements(uid, message.bot, fname))
     await _send_today_schedule(message, uid, is_tester)
 
 
@@ -292,29 +260,19 @@ async def cb_show_tester_key(callback: CallbackQuery) -> None:
     await callback.answer(f"Ваш ключ: {key}", show_alert=True)
 
 
-@router.callback_query(F.data == "sched:toggle_notify")
-async def cb_toggle_notify(callback: CallbackQuery) -> None:
-    """
-    Переключает статус подписки на 10-минутные напоминания о парах в ЛС.
-
-    Инвертирует флаг подписки в базе данных и обновляет инлайн-клавиатуру.
-    Выводит всплывающее подтверждение о включении/выключении рассылки.
-
-    Ничего не возвращает.
-    """
-
-    uid = callback.from_user.id if callback.from_user else 0
-    new_sub = toggle_subscriber(uid)
-    ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
-    await _ack_callback(callback, ans_text)
-
+def _trigger_notify_achievements(uid: int, bot: Any, new_sub: bool, full_name: str | None) -> None:
+    """Асинхронно разблокирует достижения при смене статуса напоминаний о парах."""
     from services.achievement_service import award_achievement
 
-    ach_id = "bot_subscriber" if new_sub else "time_bell_silent"
-    asyncio.create_task(
-        award_achievement(uid, ach_id, callback.bot, callback.from_user.full_name if callback.from_user else None)
-    )
+    if new_sub:
+        asyncio.create_task(award_achievement(uid, "time_bell_on", bot, full_name))
+        asyncio.create_task(award_achievement(uid, "bot_subscriber", bot, full_name))
+    else:
+        asyncio.create_task(award_achievement(uid, "time_bell_silent", bot, full_name))
 
+
+async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_sub: bool) -> None:
+    """Обновляет инлайн-клавиатуру в сообщении расписания после переключения напоминаний."""
     now = datetime.now(TIMEZONE).date()
     _, lessons = await get_day_schedule_cached(now)
     kb = get_schedule_inline_kb(
@@ -324,12 +282,24 @@ async def cb_toggle_notify(callback: CallbackQuery) -> None:
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),
     )
-
     try:
         if callback.message:
             await callback.message.edit_reply_markup(reply_markup=kb)
     except TelegramBadRequest as e:
         log.debug(f"Клавиатура расписания не изменилась: {e}")
+
+
+@router.callback_query(F.data == "sched:toggle_notify")
+async def cb_toggle_notify(callback: CallbackQuery) -> None:
+    """Переключает статус подписки на 10-минутные напоминания о парах в ЛС."""
+    uid = callback.from_user.id if callback.from_user else 0
+    new_sub = toggle_subscriber(uid)
+    ans_text = "🔔 Напоминания за 10 мин включены!" if new_sub else "🔕 Напоминания отключены."
+    await _ack_callback(callback, ans_text)
+
+    fname = callback.from_user.full_name if callback.from_user else None
+    _trigger_notify_achievements(uid, callback.bot, new_sub, fname)
+    await _update_schedule_inline_markup(callback, uid, new_sub)
 
 
 @router.message(Command("notice"))
@@ -453,6 +423,12 @@ async def cb_week(callback: CallbackQuery) -> None:
     await edit_or_answer(callback, text, week_offset=0)
 
 
+def _get_next_week_monday() -> date:
+    """Вычисляет дату понедельника следующей недели."""
+    today = datetime.now(TIMEZONE).date()
+    return today - timedelta(days=today.weekday()) + timedelta(weeks=1)
+
+
 @router.callback_query(F.data == "sched:week_next")
 async def cb_week_next(callback: CallbackQuery) -> None:
     """Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием."""
@@ -461,17 +437,12 @@ async def cb_week_next(callback: CallbackQuery) -> None:
     uid = callback.from_user.id if callback.from_user else 0
     from services.achievement_service import award_achievement
 
-    asyncio.create_task(
-        award_achievement(
-            uid, "bot_week_next", callback.bot, callback.from_user.full_name if callback.from_user else None
-        )
-    )
+    fname = callback.from_user.full_name if callback.from_user else None
+    asyncio.create_task(award_achievement(uid, "bot_week_next", callback.bot, fname))
 
-    today = datetime.now(TIMEZONE).date()
-    next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
+    next_monday = _get_next_week_monday()
     cache_key = f"sched:week_next:{next_monday.isoformat()}"
     cached_text = await cache_get(cache_key)
-
     if cached_text:
         await edit_or_answer(callback, cached_text, week_offset=1)
         return
@@ -482,32 +453,26 @@ async def cb_week_next(callback: CallbackQuery) -> None:
     await edit_or_answer(callback, text, week_offset=1)
 
 
+async def _safe_fetch_lessons_for_refresh(now: date) -> list[Lesson]:
+    """Запрашивает расписание из API с fallback на кэш при сбое сети."""
+    try:
+        return await get_api_schedule_for_date(now, force_refresh=True)
+    except Exception as e:
+        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
+        return await get_api_schedule_for_date(now, force_refresh=False)
+
+
 async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], int]:
-    """
-    Сбрасывает UI-кэш представлений и загружает свежее расписание из API.
-
-    Очищает кэши дней и недель в Redis, принудительно запрашивая API колледжа.
-    В случае сбоя сети откатывается на безопасное локальное кэшированное значение.
-
-    Возвращает кортеж (текст расписания, список уроков, количество преподавателей).
-    """
-
+    """Сбрасывает UI-кэш представлений и загружает свежее расписание из API."""
     await cache_flush("sched:day_pack*")
     await cache_flush("sched:week*")
     teachers_res = await fetch_teachers(force_refresh=False)
-    count = teachers_res.get("count", 0)
 
-    try:
-        lessons = await get_api_schedule_for_date(now, force_refresh=True)
-    except Exception as e:
-        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
-        lessons = await get_api_schedule_for_date(now, force_refresh=False)
-
+    lessons = await _safe_fetch_lessons_for_refresh(now)
     text = format_day_schedule(now, lessons)
     payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
     await cache_set(f"sched:day_pack:{now.isoformat()}", payload, ttl=180)
-
-    return text, lessons, count
+    return text, lessons, teachers_res.get("count", 0)
 
 
 @router.callback_query(F.data == "sched:refresh")
@@ -584,15 +549,7 @@ async def cmd_help(message: Message) -> None:
 
 @router.message(F.chat.type == "private")
 async def handle_user_text_message(message: Message) -> None:
-    """
-    Отвечает на произвольный текст авторизованного пользователя расписанием.
-
-    Ориентирует пользователя в интерфейсе при отправке неожиданных текстовых сообщений.
-    Прикрепляет кнопки навигации по расписанию и переключения уведомлений.
-
-    Ничего не возвращает.
-    """
-
+    """Отвечает на произвольный текст авторизованного пользователя расписанием."""
     if not is_authorized_user(message.from_user):
         return
 
@@ -607,5 +564,4 @@ async def handle_user_text_message(message: Message) -> None:
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),
     )
-
     await message.answer(text, reply_markup=kb)

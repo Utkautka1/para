@@ -82,6 +82,18 @@ def _log_audit_access(identity: str, request: Request) -> None:
     log.info(f"🔎 [AUDIT] {identity} -> {request.method} {request.url.path} (IP: {client_ip})")
 
 
+async def _extract_identity_candidates(
+    request: Request, key: str | None, bearer: HTTPAuthorizationCredentials | None, para_session: str | None
+) -> str | None:
+    """Извлекает и верифицирует идентификатор из заголовков, query-параметров или cookies."""
+    target_key = key or request.query_params.get("key") or request.query_params.get("api_key")
+    ident = await _resolve_key_identity(target_key)
+    if not ident:
+        token = bearer.credentials if bearer else para_session
+        ident = await _resolve_token_identity(token)
+    return ident
+
+
 async def verify_api_or_tester(
     request: Request,
     key: str | None = Security(_api_key_header),
@@ -89,18 +101,12 @@ async def verify_api_or_tester(
     para_session: str | None = Cookie(default=None),
 ) -> str:
     """
-    Универсальная зависимость авторизации по API-ключу, Bearer-токену или cookie.
+    Универсальная зависимость авторизации по API-ключу, query-параметру, токену или cookie.
 
     Защищает API-эндпоинты и регистрирует аудит-событие для каждого запроса.
-
     Возвращает строку идентификатора субъекта или вызывает HTTP 401 Unauthorized.
     """
-    ident = await _resolve_key_identity(key)
-
-    if not ident:
-        token = bearer.credentials if bearer else para_session
-        ident = await _resolve_token_identity(token)
-
+    ident = await _extract_identity_candidates(request, key, bearer, para_session)
     if ident:
         _log_audit_access(ident, request)
         return ident

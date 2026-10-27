@@ -19,6 +19,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from api.deps import verify_api_or_tester
 from api.handlers import register_exception_handlers
+from config import ALLOWED_USER_ID
 from api.router.attendance import router as attendance_router
 from api.router.birthdays import router as birthdays_router
 from api.router.classmates import router as classmates_router
@@ -79,46 +80,40 @@ def _configure_openapi_servers(schema: dict[str, Any]) -> None:
     schema["servers"] = [{"url": SWAGGER_SERVERS_URL, "description": SWAGGER_SERVERS_DESCRIPTION}]
 
 
+PUBLIC_API_PATHS = {
+    "/health",
+    "/metrics",
+    "/miniapp",
+    "/miniapp/auth",
+    "/miniapp/action",
+    "/miniapp/status",
+    "/gamification/leaderboard",
+    "/gamification/profile",
+    "/gamification/achievements",
+    "/gamification/ranks",
+}
+
+
+def _apply_security_to_operations(schema: dict[str, Any]) -> None:
+    """Применяет требования безопасности к операциям API, исключая публичные пути."""
+    for path, methods in schema.get("paths", {}).items():
+        for m, op in methods.items():
+            if m.lower() in {"get", "post", "put", "delete", "patch"}:
+                op["security"] = [] if path in PUBLIC_API_PATHS else [{"ApiKeyAuth": []}, {"BearerAuth": []}]
+
+
 def _configure_openapi_security(schema: dict[str, Any]) -> None:
-    """
-    Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме.
-
-    Исключает публичные пути здоровья и авторизации из требований токенов.
-
-    Ничего не возвращает; мутирует переданный словарь схемы.
-    """
+    """Настраивает декларации ApiKeyAuth / BearerAuth и публичные пути в схеме."""
     schema.setdefault("components", {})["securitySchemes"] = {
         "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API-ключ тестера"},
         "BearerAuth": {"type": "http", "scheme": "bearer", "description": "Bearer токен тестера"},
     }
-    public_paths = {
-        "/health",
-        "/metrics",
-        "/miniapp",
-        "/miniapp/auth",
-        "/miniapp/status",
-        "/gamification/leaderboard",
-        "/gamification/profile",
-        "/gamification/achievements",
-        "/gamification/ranks",
-    }
-
-    for path, methods in schema.get("paths", {}).items():
-        for m, op in methods.items():
-            if m.lower() in {"get", "post", "put", "delete", "patch"}:
-                op["security"] = [] if path in public_paths else [{"ApiKeyAuth": []}, {"BearerAuth": []}]
-
+    _apply_security_to_operations(schema)
     schema.pop("security", None)
 
 
 def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
-    """
-    Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием.
-
-    Создает схему один раз и сохраняет в атрибут app.openapi_schema.
-
-    Возвращает словарь схемы OpenAPI.
-    """
+    """Генерирует чистую OpenAPI 3.1 спецификацию приложения с кэшированием."""
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -128,43 +123,39 @@ def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         routes=app.routes,
     )
-
     _configure_openapi_security(schema)
     _configure_openapi_servers(schema)
     app.openapi_schema = schema
-
     return app.openapi_schema
 
 
-def _register_protected_docs(app: FastAPI) -> None:
-    """
-    Регистрирует защищенную отдачу спецификации и Swagger UI для тестеров.
+async def _attach_swagger_session_if_keyed(request: Request, resp: Any) -> None:
+    """Прикрепляет сессионную куку при авторизации Swagger по query API-ключу."""
+    query_key = request.query_params.get("key") or request.query_params.get("api_key")
+    if query_key:
+        from api.router.miniapp import _set_tester_cookie
+        from services.testers_manager import get_tester_by_key
 
-    Закрывает доступ к схеме и интерактивной документации от неавторизованных пользователей.
-    """
+        uid = await get_tester_by_key(query_key) or ALLOWED_USER_ID
+        _set_tester_cookie(resp, uid)
+
+
+def _register_protected_docs(app: FastAPI) -> None:
+    """Регистрирует защищенную отдачу спецификации и Swagger UI для тестеров."""
 
     @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
     async def get_openapi_spec() -> JSONResponse:
-        """Отдает схему OpenAPI только авторизованным тестировщикам."""
         return JSONResponse(content=_custom_openapi_schema(app))
 
     @app.get("/docs", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
-    async def get_docs_swagger() -> Any:
-        """Отдает полноценный Swagger UI для авторизованных тестировщиков."""
-        return get_swagger_ui_html(
-            openapi_url="/openapi.json",
-            title="para-api — Swagger UI Documentation",
-        )
+    async def get_docs_swagger(request: Request) -> Any:
+        resp = get_swagger_ui_html(openapi_url="/openapi.json", title="para-api — Swagger UI Documentation")
+        await _attach_swagger_session_if_keyed(request, resp)
+        return resp
 
 
 def _register_observability_middleware(app: FastAPI) -> None:
-    """
-    Регистрирует HTTP middleware для замера времени ответа и внедрения trace_id.
-
-    Генерирует или пробрасывает заголовок X-Request-ID и обновляет метрики Prometheus.
-
-    Ничего не возвращает.
-    """
+    """Регистрирует HTTP middleware для замера времени ответа и внедрения trace_id."""
 
     @app.middleware("http")
     async def observability_middleware(request: Request, call_next):
@@ -182,16 +173,9 @@ def _register_observability_middleware(app: FastAPI) -> None:
         return response
 
 
-def create_app() -> FastAPI:
-    """
-    Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами.
-
-    Настраивает OpenTelemetry, сжатие GZip, маршрутизацию, обработчики ошибок.
-
-    Возвращает сконфигурированный экземпляр FastAPI.
-    """
-    setup_telemetry("para-api")
-    app = FastAPI(
+def _init_fastapi_instance() -> FastAPI:
+    """Создает базовый экземпляр FastAPI с отключенными публичными эндпоинтами документации."""
+    return FastAPI(
         title="para-api",
         description="Высокопроизводительный сервис КТМУ (gRPC + OpenAPI + Swagger UI)",
         version="2.9.0",
@@ -200,6 +184,12 @@ def create_app() -> FastAPI:
         openapi_url=None,
         responses=COMMON_API_RESPONSES,
     )
+
+
+def create_app() -> FastAPI:
+    """Фабрика создания высокоскоростного FastAPI приложения с закрытыми docs-эндпоинтами."""
+    setup_telemetry("para-api")
+    app = _init_fastapi_instance()
     FastAPIInstrumentor.instrument_app(app)
     _register_observability_middleware(app)
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_SIZE_BYTES)
@@ -207,5 +197,4 @@ def create_app() -> FastAPI:
     _register_protected_docs(app)
     register_exception_handlers(app)
     app.openapi = lambda: _custom_openapi_schema(app)
-
     return app

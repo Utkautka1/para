@@ -45,3 +45,19 @@ class TesterListResponse(BaseModel):
 
     count: int
     testers: list[TesterItemResponse]
+
+
+class MiniappActionRequest(BaseModel):
+    """Запрос фиксации клиентского действия или пасхалки в Mini App."""
+
+    action: str = Field(..., description="Идентификатор действия (matrix_theme, konami_code)")
+    init_data: str | None = Field(None, description="Сырая строка Telegram.WebApp.initData")
+
+
+class MiniappActionResult(BaseModel):
+    """Результат выполнения клиентского действия в Mini App."""
+
+    status: str = "ok"
+    unlocked: bool = False
+    achievement: str | None = None
+    xp: int = 0
