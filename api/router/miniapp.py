@@ -181,11 +181,11 @@ def _resolve_action_uid(payload: MiniappActionRequest, session: str | None) -> i
     """Определяет Telegram ID инициатора действия из сессии или init_data."""
     if session:
         uid = verify_tester_session(session)
-        if uid:
+        if uid is not None:
             return uid
     if payload.init_data:
         info = validate_telegram_init_data(payload.init_data)
-        if info and "id" in info:
+        if info and "id" in info and info["id"] is not None:
             return int(info["id"])
     return None
 
@@ -196,7 +196,7 @@ async def trigger_miniapp_action(
 ) -> MiniappActionResult:
     """Разблокирует клиентские достижения Mini App (пасхалки, темы интерфейса)."""
     uid = _resolve_action_uid(payload, para_session)
-    if not uid:
+    if uid is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     action_map = {"matrix_theme": "egg_matrix", "konami_code": "egg_konami", "open_miniapp": "bot_miniapp"}
