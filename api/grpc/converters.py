@@ -98,6 +98,10 @@ def exam_item_to_proto(exam: ExamItem) -> ExamItemProto:
         weeks=list(exam.weeks),
         subgroup=exam.subgroup,
         format_str=exam.format_str,
+        exam_date=exam.exam_date.isoformat() if exam.exam_date else "",
+        pair_number=exam.pair_number or 0,
+        time_str=exam.time_str or "",
+        is_preliminary=exam.is_preliminary,
     )
 
 
@@ -118,6 +122,11 @@ def proto_to_exam_item(proto: ExamItemProto) -> ExamItem:
         weeks=list(proto.weeks),
         subgroup=proto.subgroup,
         format_str=proto.format_str,
+        # proto3 не различает «не задано» и пустое значение — пустое считаем None
+        exam_date=date.fromisoformat(proto.exam_date) if proto.exam_date else None,
+        pair_number=proto.pair_number or None,
+        time_str=proto.time_str or None,
+        is_preliminary=proto.is_preliminary,
     )
 
 

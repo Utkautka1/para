@@ -7,6 +7,7 @@ Unit-тесты для gRPC сервисов и конвертеров para-api.
   3. Взаимодействие через реальный асинхронный gRPC канал.
 """
 
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -75,6 +76,24 @@ def test_exam_converters() -> None:
     restored = proto_to_exam_item(proto)
     assert restored.subject == exam.subject
     assert restored.weeks == [15, 16]
+    assert (restored.exam_date, restored.pair_number, restored.time_str) == (None, None, None)
+
+
+def test_exam_converters_keep_exact_slot() -> None:
+    """Дата, пара, звонки и признак черновика переживают круг ExamItem -> proto -> ExamItem."""
+    exam = ExamItem(
+        subject="Основы философии",
+        exam_type="Диф. зачёт",
+        teacher="Ерисов А.П.",
+        room="50",
+        address="ул. Цветочная, д. 8",
+        weeks=[14],
+        exam_date=date(2026, 12, 3),
+        pair_number=5,
+        time_str="15:40–17:10",
+        is_preliminary=True,
+    )
+    assert proto_to_exam_item(exam_item_to_proto(exam)) == exam
 
 
 def test_teachers_converters() -> None:

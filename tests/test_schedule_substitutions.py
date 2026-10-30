@@ -7,6 +7,7 @@ Unit-тесты применения замен КТМУ к расписанию
   3. stream_group_cancel снимает пару только у исключённых групп потока
   4. Перенос «сюда» (moved + targetDate) добавляет пару с новым кабинетом
   5. Фильтрацию замен по занятиям группы и сброс ETag у снапшота старого формата
+     (нет substitutions или publishedWeeks)
 """
 
 from datetime import date
@@ -138,7 +139,12 @@ def test_filter_snapshot_keeps_substitutions() -> None:
 
 
 @pytest.mark.parametrize(
-    ("snap", "expected"), [({"substitutions": []}, ("etag-1", "lm-1")), ({"schedule": {}}, (None, None))]
+    ("snap", "expected"),
+    [
+        ({"substitutions": [], "publishedWeeks": []}, ("etag-1", "lm-1")),
+        ({"substitutions": []}, (None, None)),
+        ({"schedule": {}}, (None, None)),
+    ],
 )
 def test_restorable_cache_headers_resets_legacy_snapshot(snap: dict[str, Any], expected: tuple) -> None:
     meta = {"etag": "etag-1", "last_modified": "lm-1"}

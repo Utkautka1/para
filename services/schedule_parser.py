@@ -63,6 +63,9 @@ _LOCAL_VERSION: str | None = None
 # Время последней сверки версии с Redis (секунды, time.time())
 _LAST_SYNC_CHECK: float = 0.0
 
+# Ключи, которых нет в снапшотах старых версий кода — такой снапшот перекачиваем
+SNAPSHOT_REQUIRED_KEYS: frozenset[str] = frozenset({"substitutions", "publishedWeeks"})
+
 
 def enable_schedule_fetch_ownership() -> None:
     """
@@ -164,6 +167,21 @@ def calculate_week_number(target_date: date, semester_start_str: str) -> int:
         return 1
 
     return (days_diff // 7) + 1
+
+
+def week_day_to_date(week_num: int, day_idx: int, semester_start_str: str) -> date:
+    """
+    Переводит номер учебной недели и день недели в календарную дату.
+
+    Обратная операция к calculate_week_number: неделя 1 начинается
+    с понедельника недели старта семестра.
+
+    Возвращает дату (day_idx: 0 — понедельник, 5 — суббота).
+    """
+    start_date = date.fromisoformat(semester_start_str)
+    start_monday = start_date - timedelta(days=start_date.weekday())
+
+    return start_monday + timedelta(weeks=week_num - 1, days=day_idx)
 
 
 def is_instance_active_for_week(inst: dict[str, Any], week_num: int) -> bool:
@@ -408,6 +426,8 @@ def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]
         "loads": group_loads,
         "schedule": {"instances": group_insts, "assignment": group_assigns},
         "substitutions": filter_group_substitutions(snapshot.get("substitutions", []), group_insts),
+        # Недели, видимые на сайте: всё позже — черновик (аттестации помечаем «предварительно»)
+        "publishedWeeks": snapshot.get("publishedWeeks", []),
     }
 
 
@@ -639,14 +659,15 @@ def _restorable_cache_headers(snap: dict[str, Any], meta: dict[str, Any]) -> tup
     """
     Отдаёт ETag/Last-Modified снапшота, если его формат актуален.
 
-    Снапшот, сохранённый до поддержки замен, не содержит 'substitutions'. С его ETag
-    КТМУ ответит 304 и замены не появятся до новой публикации — поэтому заголовки
-    сбрасываем, и следующий запрос скачает расписание целиком.
+    Снапшот, сохранённый старой версией кода, не содержит новых ключей
+    (SNAPSHOT_REQUIRED_KEYS). С его ETag КТМУ ответит 304 и ключи не появятся
+    до новой публикации — поэтому заголовки сбрасываем, и следующий запрос
+    скачает расписание целиком.
 
     Возвращает кортеж (etag, last_modified) или (None, None) для устаревшего формата.
     """
-    if "substitutions" not in snap:
-        log.warning("⚠️  Снапшот в Redis без замен (старый формат) — форсируем полную загрузку")
+    if missing := SNAPSHOT_REQUIRED_KEYS - snap.keys():
+        log.warning("⚠️  Снапшот в Redis старого формата (нет %s) — форсируем полную загрузку", sorted(missing))
         return None, None
 
     return meta.get("etag"), meta.get("last_modified")

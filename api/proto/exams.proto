@@ -20,6 +20,14 @@ message ExamItemProto {
   int32 subgroup = 7;
   // Format descriptor (e.g., "Очно" or "Дистанционно").
   string format_str = 8;
+  // ISO date of the assessment slot; empty when only the week is known.
+  string exam_date = 9;
+  // Academic pair number (1..7); 0 when the slot is not assigned.
+  int32 pair_number = 10;
+  // Bell times of the pair (e.g., "13:45–15:10"); empty when not assigned.
+  string time_str = 11;
+  // True when the week is not published on the KTMU site yet (draft data).
+  bool is_preliminary = 12;
 }
 
 // ExamsRequest initiates query for all upcoming group examinations.

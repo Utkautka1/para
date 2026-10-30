@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -152,11 +152,22 @@ classDiagram
         +process_user_auth(user) tuple
     }
 
+    class ExamParser {
+        <<module services/exam_parser.py>>
+        +get_group_exams() List~ExamItem~
+        +parse_exam_from_load(load, maps, links) tuple
+        +enrich_exam_from_instance(inst, data, maps, exams) void
+        +apply_exam_slot(item, inst, asgn, data) void
+        +resolve_exam_room(asgn, rms, is_remote) str
+        +mark_preliminary(exams, published_weeks) void
+    }
+
     class ExamTopicUpdater {
         +sync_exam_topic_message(force_refresh) bool
         +get_effective_semester_start() date
         +get_default_semester_start() date
         +format_exams_schedule_message(exams, sem_start) str
+        +format_exam_card(exam, sem_start) str
     }
 
     class DeepSeekIntegrationModule {
@@ -295,6 +306,10 @@ classDiagram
         +List~int~ weeks
         +int subgroup
         +str format_str
+        +date exam_date
+        +int pair_number
+        +str time_str
+        +bool is_preliminary
     }
 
     class DayScheduleResponse {

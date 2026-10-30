@@ -5,6 +5,8 @@
 без импорта тяжёлых модулей парсинга (httpx, docx, etc).
 """
 
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -51,6 +53,10 @@ class Lesson(BaseModel):
         return self.period + 1
 
 
+# Кабинет аттестации ещё не назначен в сетке — корпус тоже неизвестен
+EXAM_ROOM_TBD = "Кабинет уточняется"
+
+
 class ExamItem(BaseModel):
     """Модель контрольного мероприятия, зачета или экзаменационной сессии."""
 
@@ -62,7 +68,7 @@ class ExamItem(BaseModel):
     teacher: str
     # Аудитория проведения
     room: str
-    # Адрес корпуса
+    # Адрес корпуса; пустой, если кабинет ещё не назначен (EXAM_ROOM_TBD)
     address: str
     # Список учебных недель проведения мероприятия
     weeks: list[int]
@@ -70,3 +76,11 @@ class ExamItem(BaseModel):
     subgroup: int = 0
     # Текстовый формат проведения ('Очно' / 'Дистанционно')
     format_str: str = "Очно"
+    # Дата аттестации, если она уже поставлена в сетку; None — известна только неделя
+    exam_date: date | None = None
+    # Академический номер пары (1..7) в день аттестации; None — слот не назначен
+    pair_number: int | None = None
+    # Звонки пары ('13:45–15:10'); None — слот не назначен
+    time_str: str | None = None
+    # Неделя ещё не опубликована на сайте КТМУ — данные из черновика и могут измениться
+    is_preliminary: bool = False

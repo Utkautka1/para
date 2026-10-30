@@ -8,6 +8,7 @@ Unit-тесты для форматирования топика экзамен�
   4. Сохранение и загрузку состояния главного сообщения (load_exam_topic_state / save_exam_topic_state)
 """
 
+from datetime import date
 from unittest.mock import patch
 
 import pytest
@@ -133,3 +134,25 @@ def test_exam_topic_state_roundtrip(tmp_path) -> None:
         assert load_exam_topic_state() == 12345
         save_exam_topic_state(None)
         assert load_exam_topic_state() is None
+
+
+def test_format_exam_card_with_exact_slot() -> None:
+    """Аттестация, поставленная в сетку, показывает день, дату и пару вместо периода недели."""
+    exam = make_dummy_exam(exam_date=date(2026, 12, 3), pair_number=5, time_str="15:40–17:10", weeks=[14])
+    card = format_exam_card(exam)
+
+    assert "🗓 <b>Четверг, 03.12.2026</b> • 5 пара (15:40–17:10)" in card
+    assert "Период сдачи" not in card
+
+
+@pytest.mark.parametrize(("is_preliminary", "expected"), [(True, True), (False, False)])
+def test_format_exam_card_preliminary_mark(is_preliminary: bool, expected: bool) -> None:
+    """Пометка «Предварительно» выводится только для неопубликованных недель."""
+    card = format_exam_card(make_dummy_exam(is_preliminary=is_preliminary))
+    assert ("Предварительно" in card) is expected
+
+
+def test_format_exam_card_without_room_hides_address() -> None:
+    """Без назначенного кабинета корпус неизвестен — адрес по умолчанию не подставляется."""
+    card = format_exam_card(make_dummy_exam(room="Кабинет уточняется", address=""))
+    assert card.endswith("Очно • 🏢 Кабинет уточняется")

@@ -17,7 +17,7 @@ _sym_db = _symbol_database.Default()
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x15\x61pi/proto/exams.proto\x12\x04para"\x98\x01\n\rExamItemProto\x12\x0f\n\x07subject\x18\x01 \x01(\t\x12\x11\n\texam_type\x18\x02 \x01(\t\x12\x0f\n\x07teacher\x18\x03 \x01(\t\x12\x0c\n\x04room\x18\x04 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x05 \x01(\t\x12\r\n\x05weeks\x18\x06 \x03(\x05\x12\x10\n\x08subgroup\x18\x07 \x01(\x05\x12\x12\n\nformat_str\x18\x08 \x01(\t"%\n\x0c\x45xamsRequest\x12\x15\n\rforce_refresh\x18\x01 \x01(\x08"B\n\rExamsResponse\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12"\n\x05\x65xams\x18\x02 \x03(\x0b\x32\x13.para.ExamItemProto2C\n\x0c\x45xamsService\x12\x33\n\x08GetExams\x12\x12.para.ExamsRequest\x1a\x13.para.ExamsResponseb\x06proto3'
+    b'\n\x15\x61pi/proto/exams.proto\x12\x04para"\xea\x01\n\rExamItemProto\x12\x0f\n\x07subject\x18\x01 \x01(\t\x12\x11\n\texam_type\x18\x02 \x01(\t\x12\x0f\n\x07teacher\x18\x03 \x01(\t\x12\x0c\n\x04room\x18\x04 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x05 \x01(\t\x12\r\n\x05weeks\x18\x06 \x03(\x05\x12\x10\n\x08subgroup\x18\x07 \x01(\x05\x12\x12\n\nformat_str\x18\x08 \x01(\t\x12\x11\n\texam_date\x18\t \x01(\t\x12\x13\n\x0bpair_number\x18\n \x01(\x05\x12\x10\n\x08time_str\x18\x0b \x01(\t\x12\x16\n\x0eis_preliminary\x18\x0c \x01(\x08"%\n\x0c\x45xamsRequest\x12\x15\n\rforce_refresh\x18\x01 \x01(\x08"B\n\rExamsResponse\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12"\n\x05\x65xams\x18\x02 \x03(\x0b\x32\x13.para.ExamItemProto2C\n\x0c\x45xamsService\x12\x33\n\x08GetExams\x12\x12.para.ExamsRequest\x1a\x13.para.ExamsResponseb\x06proto3'
 )
 
 _globals = globals()
@@ -26,11 +26,11 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "api.proto.exams_pb2", _glob
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
     _globals["_EXAMITEMPROTO"]._serialized_start = 32
-    _globals["_EXAMITEMPROTO"]._serialized_end = 184
-    _globals["_EXAMSREQUEST"]._serialized_start = 186
-    _globals["_EXAMSREQUEST"]._serialized_end = 223
-    _globals["_EXAMSRESPONSE"]._serialized_start = 225
-    _globals["_EXAMSRESPONSE"]._serialized_end = 291
-    _globals["_EXAMSSERVICE"]._serialized_start = 293
-    _globals["_EXAMSSERVICE"]._serialized_end = 360
+    _globals["_EXAMITEMPROTO"]._serialized_end = 266
+    _globals["_EXAMSREQUEST"]._serialized_start = 268
+    _globals["_EXAMSREQUEST"]._serialized_end = 305
+    _globals["_EXAMSRESPONSE"]._serialized_start = 307
+    _globals["_EXAMSRESPONSE"]._serialized_end = 373
+    _globals["_EXAMSSERVICE"]._serialized_start = 375
+    _globals["_EXAMSSERVICE"]._serialized_end = 442
 # @@protoc_insertion_point(module_scope)

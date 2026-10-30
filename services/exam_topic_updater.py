@@ -16,6 +16,7 @@ from config import (
     EXAM_TOPIC_THREAD_ID,
     TIMEZONE,
     TOPIC_CHAT_ID,
+    WEEKDAYS_RU,
 )
 from core.api_client import get_api_exams
 from core.bot import bot
@@ -121,6 +122,20 @@ def _format_exam_weeks_label(weeks: list[int], semester_start: date | None) -> s
     return f"{', '.join(map(str, weeks))} нед. (🗓 <b>{', '.join(date_ranges)}</b>)"
 
 
+def _format_exam_when(ex: ExamItem, semester_start: date | None) -> str:
+    """
+    Формирует строку «когда»: точный слот из сетки или период недели.
+
+    Возвращает HTML-строку без перевода строки в конце.
+    """
+    if ex.exam_date and ex.pair_number:
+        weekday = WEEKDAYS_RU[ex.exam_date.weekday()]
+        slot = f"{ex.pair_number} пара" + (f" ({ex.time_str})" if ex.time_str else "")
+        return f"🗓 <b>{weekday}, {ex.exam_date.strftime('%d.%m.%Y')}</b> • {html.escape(slot)}"
+
+    return f"⏳ <b>Период сдачи:</b> {_format_exam_weeks_label(ex.weeks, semester_start)}"
+
+
 def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str:
     """
     Формирует отдельную карточку аттестации или экзамена с экранированием HTML.
@@ -129,20 +144,21 @@ def format_exam_card(ex: ExamItem, semester_start: date | None = None) -> str:
 
     Возвращает отформатированный HTML-фрагмент карточки.
     """
-    weeks_str = _format_exam_weeks_label(ex.weeks, semester_start)
+    when_str = _format_exam_when(ex, semester_start)
+    draft_str = "\n⚠️ <i>Предварительно: неделя ещё не опубликована, возможны изменения</i>" if ex.is_preliminary else ""
     sg_str = f" • 👥 Подгруппа {ex.subgroup}" if ex.subgroup > 0 else ""
 
     subj = html.escape(ex.subject)
     e_type = html.escape(ex.exam_type)
     teacher = html.escape(ex.teacher)
-    addr = html.escape(ex.address)
     room = html.escape(ex.room)
+    place = f"{html.escape(ex.address)} ({room})" if ex.address else room
 
     return (
         f"📌 <b>{subj}</b> ({e_type}){sg_str}\n"
-        f"⏳ <b>Период сдачи:</b> {weeks_str}\n"
+        f"{when_str}{draft_str}\n"
         f"👨‍🏫 <i>{teacher}</i>\n"
-        f"{ex.format_str} • 🏢 {addr} ({room})"
+        f"{ex.format_str} • 🏢 {place}"
     )
 
 

@@ -9375,6 +9375,45 @@
             "type": "string",
             "title": "Format Str",
             "default": "\u041e\u0447\u043d\u043e"
+          },
+          "exam_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exam Date"
+          },
+          "pair_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pair Number"
+          },
+          "time_str": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Str"
+          },
+          "is_preliminary": {
+            "type": "boolean",
+            "title": "Is Preliminary",
+            "default": false
           }
         },
         "type": "object",
