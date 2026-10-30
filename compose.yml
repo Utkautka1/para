@@ -124,7 +124,6 @@ services:
     container_name: para-bot
     restart: always
     stop_grace_period: 10s
-    shm_size: '512m'
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -148,17 +147,15 @@ services:
       - ./bot.py:/app/bot.py
       - ./data:/app/data
       - ./logs:/app/logs
+      - stt_audio:/app/stt_audio
     deploy:
       resources:
+        # Модель Whisper и GPU переехали в сервис stt — боту хватает 1 ГБ
         limits:
-          memory: 4096M
-          cpus: '2.00'
+          memory: 1024M
+          cpus: '1.00'
         reservations:
           memory: 256M
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     logging:
       driver: "json-file"
       options:
@@ -248,3 +245,59 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  stt:
+    image: para-stt:latest
+    build:
+      context: .
+      dockerfile: stt.dockerfile
+    container_name: para-stt
+    restart: always
+    stop_grace_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./core:/app/core
+      - ./services:/app/services
+      - ./integrations:/app/integrations
+      - ./utils:/app/utils
+      - ./db:/app/db
+      - ./config.py:/app/config.py
+      - ./stt.py:/app/stt.py
+      # data — веса Whisper (data/whisper_models)
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - stt_audio:/app/stt_audio
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+          cpus: '2.00'
+        reservations:
+          memory: 512M
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # Общий RAM-диск для голосовых между bot (пишет) и stt (читает): без износа диска,
+  # права 0700 на uid приложения (1000) — другие процессы хоста файлы не видят
+  stt_audio:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=256m,uid=1000,gid=1000,mode=0700"

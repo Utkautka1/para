@@ -125,28 +125,9 @@ def setup_all_middlewares() -> None:
     dp.callback_query.middleware(CallbackThrottleMiddleware())
 
 
-async def _warmup_stt() -> None:
-    """
-    Асинхронно прогревает модель распознавания речи в фоновом режиме.
-
-    Инициализирует веса модели в памяти GPU до прихода первого аудиосообщения.
-    Изолирует ошибки прогрева, чтобы бот продолжал функционировать.
-
-    Ничего не возвращает.
-    """
-
-    from services.transcriber import transcriber_service
-
-    try:
-        await transcriber_service.warmup()
-        log.info("✅ STT модель (faster-whisper) прогрета и готова к работе")
-    except Exception as e:
-        log.warning("⚠️ Ошибка фонового прогрева STT модели: %s", e)
-
-
 async def _init_bot_subsystems() -> None:
     """
-    Инициализирует роутеры, middleware, соединения и фоновый прогрев моделей.
+    Инициализирует роутеры, middleware и соединения (модель STT живёт в сервисе stt).
 
     Выделяет фазу предварительной конфигурации перед стартом polling.
     Упрощает сопровождение процедуры запуска бота.
@@ -164,7 +145,6 @@ async def _init_bot_subsystems() -> None:
     await init_redis()
     await init_db()
     await register_bot_commands(bot)
-    asyncio.create_task(_warmup_stt())
 
 
 async def main() -> None:

@@ -9,7 +9,6 @@
 import asyncio
 import html
 import os
-import tempfile
 import time
 import uuid
 
@@ -32,17 +31,14 @@ from config import (
     MAX_AUDIO_SIZE,
     MAX_CONCURRENT_PER_USER,
     TOPIC_CHAT_ID,
-    TRANSCRIBE_TIMEOUT,
 )
 from core.bot import bot
 from core.logger import get_logger
-from services.transcriber import split_text_to_chunks, transcriber_service
+from services.stt_queue import resolve_audio_dir, transcribe_via_stt
+from services.transcriber import split_text_to_chunks
 
 log = get_logger("bot_voice")
 router = Router(name="voice_transcribe")
-
-# Приватный каталог процесса для временного аудио (создаётся лениво через mkdtemp)
-_temp_audio_dir: str | None = None
 
 
 class AudioMeta:
@@ -210,26 +206,6 @@ def log_voice_request(meta: AudioMeta) -> None:
     log.info("=" * 55)
 
 
-def _resolve_temp_audio_dir() -> str:
-    """
-    Возвращает приватный каталог процесса для временных аудиофайлов.
-
-    Создаётся через mkdtemp (права 0700, случайное имя) на RAM-диске /dev/shm,
-    а не по фиксированному пути /dev/shm/para_audio: общий предсказуемый каталог
-    другой пользователь хоста мог бы создать заранее или подменить в нём файлы.
-    Если каталог удалили извне (очистка tmpfs), создаёт новый.
-
-    Возвращает строковый путь к готовой директории.
-    """
-    global _temp_audio_dir
-    if _temp_audio_dir is None or not os.path.isdir(_temp_audio_dir):
-        # B108 ложный: /dev/shm здесь только родитель — сам каталог создаёт mkdtemp со случайным именем и правами 0700
-        parent = "/dev/shm" if os.path.isdir("/dev/shm") else None  # nosec B108
-        _temp_audio_dir = tempfile.mkdtemp(prefix="para_audio_", dir=parent)
-        log.debug("Создан приватный каталог для аудио: %s", _temp_audio_dir)
-    return _temp_audio_dir
-
-
 def _determine_audio_extension(file_path: str | None) -> str:
     """
     Извлекает расширение исходного медиафайла Telegram из его пути.
@@ -248,7 +224,7 @@ def _determine_audio_extension(file_path: str | None) -> str:
 
 async def download_temp_audio(file_id: str) -> str:
     """
-    Скачивает медиафайл из Telegram во временное хранилище на RAM-диске.
+    Скачивает медиафайл из Telegram в общий с сервисом stt tmpfs-том.
 
     Загружает файл через Bot API с контролем таймаута (DOWNLOAD_TIMEOUT).
     Формирует уникальное имя файла на основе UUID для избежания коллизий.
@@ -256,7 +232,8 @@ async def download_temp_audio(file_id: str) -> str:
     Возвращает абсолютный путь к скачанному временному файлу.
     """
 
-    base_dir = _resolve_temp_audio_dir()
+    # Каталог общий с сервисом stt (tmpfs-том): stt читает файл по этому же пути
+    base_dir = resolve_audio_dir()
     dl_start = time.monotonic()
     tg_file = await asyncio.wait_for(bot.get_file(file_id), timeout=DOWNLOAD_TIMEOUT)
     ext = _determine_audio_extension(tg_file.file_path)
@@ -277,7 +254,7 @@ def cleanup_temp_file(path: str) -> None:
     """
     Удаляет временный аудиофайл с диска с безопасным подавлением ошибок.
 
-    Предотвращает утечки памяти RAM-диска /dev/shm.
+    Предотвращает утечки памяти общего tmpfs-тома stt_audio.
     Логирует предупреждение при сбоях файловой системы.
 
     Ничего не возвращает.
@@ -345,10 +322,8 @@ async def _download_and_transcribe(file_id: str) -> str:
     temp_path = ""
     try:
         temp_path = await download_temp_audio(file_id)
-        return await asyncio.wait_for(
-            transcriber_service.transcribe_file(temp_path),
-            timeout=TRANSCRIBE_TIMEOUT,
-        )
+        # Таймаут TRANSCRIBE_TIMEOUT соблюдается внутри ожидания ответа от stt
+        return await transcribe_via_stt(temp_path)
     finally:
         cleanup_temp_file(temp_path)
 

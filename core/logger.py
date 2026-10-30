@@ -24,7 +24,7 @@ BACKUP_LOG_COUNT = LOG_BACKUP_COUNT
 _TRACE_ID_CTX: contextvars.ContextVar[str] = contextvars.ContextVar("trace_id", default="")
 
 # Сервисы с собственным лог-файлом; всё остальное (pytest, скрипты) пишет в logs/app.log
-_SERVICE_NAMES: frozenset[str] = frozenset({"api", "bot", "worker", "solver"})
+_SERVICE_NAMES: frozenset[str] = frozenset({"api", "bot", "worker", "solver", "stt"})
 
 # Хэндлеры процесса, общие для всех логгеров (создаются лениво при первом get_logger)
 _SHARED_HANDLERS: list[logging.Handler] | None = None

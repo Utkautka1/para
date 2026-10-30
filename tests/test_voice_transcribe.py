@@ -159,7 +159,7 @@ async def test_process_audio_pipeline_success() -> None:
     with (
         patch("bot.handlers.user.voice_transcribe.download_temp_audio", new=AsyncMock(return_value="/tmp/fake.ogg")),
         patch(
-            "bot.handlers.user.voice_transcribe.transcriber_service.transcribe_file",
+            "bot.handlers.user.voice_transcribe.transcribe_via_stt",
             new=AsyncMock(return_value="Текст"),
         ),
         patch("bot.handlers.user.voice_transcribe.cleanup_temp_file") as mock_clean,

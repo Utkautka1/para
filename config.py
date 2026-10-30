@@ -472,6 +472,17 @@ MAX_CONCURRENT_PER_USER: int = whisper_config.max_concurrent_per_user
 DOWNLOAD_TIMEOUT: float = whisper_config.download_timeout
 TRANSCRIBE_TIMEOUT: float = whisper_config.transcribe_timeout
 
+# Распознавание речи вынесено в сервис stt: бот кладёт файл в общий tmpfs-том
+# и задание в Redis-очередь, stt отвечает в персональный ключ результата.
+STT_QUEUE_KEY: str = "stt:queue"
+STT_RESULT_KEY_PREFIX: str = "stt:result:"
+# Результат живёт 10 минут: если бот не дождался (таймаут), ключ не копится вечно
+STT_RESULT_TTL_SECONDS: int = 600
+# Общий для bot и stt каталог с аудио (tmpfs-том stt_audio в compose.yml)
+STT_AUDIO_DIR: str = get_env("STT_AUDIO_DIR", "stt_audio")
+# BLPOP короче socket_timeout пула Redis (5 сек), иначе блокирующий вызов оборвётся по таймауту сокета
+STT_BLPOP_SECONDS: int = 4
+
 _USER_IN_FLIGHT: dict[int, int] = {}
 
 
