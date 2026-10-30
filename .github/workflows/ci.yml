@@ -338,7 +338,7 @@ jobs:
       - name: "Install Pip-Audit"
         run: pip install pip-audit
       - name: "Run Vulnerability Audit"
-        run: pip-audit -r requirements.txt
+        run: pip-audit -r requirements.lock -r requirements-stt.lock
 
   security-secrets-leak:
     name: "🔐 Static Secret & API Token Leakage Prevention"

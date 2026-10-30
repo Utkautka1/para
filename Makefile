@@ -30,8 +30,13 @@ test-cov: ## Execute test suite with terminal and XML coverage report
 load-test: ## Execute 500+ RPS load benchmark suite via Locust
 	./scripts/run_load_test.sh
 
-compile-deps: ## Compile deterministic requirements.lock from requirements.txt via pip-compile
-	$(VENV)/bin/pip-compile --output-file=requirements.lock --strip-extras requirements.txt
+BASE_IMAGE ?= $(shell sed -n 's/^FROM //p' api.dockerfile)
+LOCK_ARGS = --generate-hashes --allow-unsafe --strip-extras
+
+compile-deps: ## Recompile hashed requirements.lock / requirements-stt.lock for the image Python (3.11)
+	docker run --rm -v "$(CURDIR)":/w -w /w $(BASE_IMAGE) sh -c 'pip install -q pip-tools && \
+		pip-compile $(LOCK_ARGS) --output-file=requirements.lock requirements.txt && \
+		pip-compile $(LOCK_ARGS) --output-file=requirements-stt.lock requirements.txt requirements-bot.txt'
 
 lint: ## Execute strict Ruff linter and Bandit security AST analysis
 	$(RUFF) check .

@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Образ сервиса распознавания речи (para-stt): faster-whisper + CUDA-библиотеки.
 # Единственный образ проекта с GPU — бот и остальные сервисы остаются лёгкими.
-FROM python:3.11-slim
+# Базовый образ закреплён по digest: тег 3.11-slim переписывается, а сборка должна быть воспроизводимой
+FROM python:3.11-slim@sha256:673719e071ecf27434fd2635bbd8d00f49f4fdd81f243143438a42ced8bedf60
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -16,18 +17,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -s /bin/sh -m appuser
 
-# Слой 1: Тяжелые CUDA-библиотеки (кэшируются намертво, 0.0s при правках кода)
-COPY requirements-bot.txt ./
+# Слой 1: все зависимости, включая CUDA-библиотеки, из requirements-stt.lock
+# (requirements.txt + requirements-bot.txt). Кэш pip переживает пересборки.
+# Только версии из lock с проверкой sha256 (--require-hashes): подменённый пакет на PyPI не установится
+COPY requirements-stt.lock ./
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip && \
-    pip install -r requirements-bot.txt
+    pip install --require-hashes -r requirements-stt.lock
 
-# Слой 2: Легкие Python-зависимости бота
-COPY requirements.txt ./
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
-
-# Слой 3: Код приложения (собирается за 0.3s)
+# Слой 2: Код приложения (собирается за 0.3s)
 COPY . ./
 RUN mkdir -p /app/data /app/logs /app/stt_audio && chown -R appuser:appuser /app
 
