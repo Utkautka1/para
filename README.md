@@ -278,7 +278,8 @@ Student homework tasks (prompts, photos, PDF/DOCX problem sets) are processed th
 Para introduces native, autonomous processing of incoming Telegram voice notes (`voice`) and circular video notes (`video_note`):
 
 * **Local Turing GPU Inference**: Leverages `faster-whisper` (`large-v3-turbo`) with CUDA acceleration on dedicated NVIDIA hardware (GTX 1660 Ti), achieving real-time inference times of **0.36 seconds** for standard 14-second audio notes.
-* **Ephemeral In-Memory Processing (`/dev/shm`)**: All downloaded audio files stream into `/dev/shm` Linux RAM-disk buffers. Media files are parsed in memory and destroyed atomically via `finally` unlink blocks, guaranteeing zero SSD write fatigue and zero unencrypted disk leakage.
+* **Dedicated GPU Microservice (`para-stt`)**: Whisper, CUDA and the GPU live only in `para-stt`; the bot enqueues jobs in Redis (`services/stt_queue.py`) and stays a ~0.5 GB image, so bot restarts never reload the model into VRAM.
+* **Ephemeral In-Memory Processing (`stt_audio` tmpfs)**: Downloaded audio streams into a Docker tmpfs volume shared by `para-bot` and `para-stt` (`mode=0700`, uid 1000). Media files are parsed in memory and destroyed atomically via `finally` unlink blocks, guaranteeing zero SSD write fatigue and zero unencrypted disk leakage.
 * **Dual-Tier Hardware Fallback**: If CUDA drivers or GPU VRAM encounter out-of-memory limits, the engine gracefully transitions to an on-demand CPU `int8` model without dropping the user's transcription request.
 * **Rate-Limiting & Anti-Spam Gate**: Implements `_USER_IN_FLIGHT` tracking limiting simultaneous requests to 2 per user, with hard ceilings on duration (`<= 300s`) and file size (`<= 20MB`).
 * **Forum Thread & Quoting Affinity**: Formats speech into sanitized HTML blockquotes with exact duration metadata and preserves `message_thread_id` across forum supergroup topics.
@@ -715,6 +716,27 @@ docker compose logs -f bot     # Telegram bot gateway logs
 docker compose logs -f api     # FastAPI & gRPC server logs
 docker compose logs -f worker  # Telemetry scheduler & topic updater logs
 docker compose logs -f solver  # AI homework consumer queue logs
+docker compose logs -f stt     # Speech-to-text GPU service logs
+```
+
+### Continuous Deployment
+
+Every push to `main` runs the full CI. If **all** jobs pass, the `deploy-gate` job moves branch `ci-passed` to that commit. The server polls it every 2 minutes (`para-autodeploy.timer` → `scripts/autodeploy.sh`) and deploys by itself — GitHub holds no server credentials. The result arrives as a Telegram alert (`DEPLOY_SUCCESS` / `DEPLOY_FAILED`); history is in `logs/deploy.log`.
+
+Manual deploy of the current `origin/main` (same checks, same lock):
+
+```bash
+./scripts/deploy.sh                     # via ssh home-tunnel
+DEPLOY_HOST=home-v6 ./scripts/deploy.sh # alternative route over IPv6
+```
+
+`deploy_remote.sh` fast-forwards with timeouts, restarts only services whose mounted code changed, rebuilds images only when `requirements*.txt` or a Dockerfile changed, then verifies healthchecks, `/health`, restart counts and new `ERROR` lines in `logs/*.log`.
+
+Install the timer on a new server once:
+
+```bash
+install -m 0644 scripts/systemd/para-autodeploy.* /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now para-autodeploy.timer
 ```
 
 ### Local Development Setup
