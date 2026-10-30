@@ -6,6 +6,7 @@
 """
 
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ErrorEvent
 
 from core.logger import get_logger
@@ -66,6 +67,16 @@ async def _dispatch_error_alert(exc: Exception) -> None:
         log.debug("Не удалось отправить алерт об ошибке: %s", e)
 
 
+def _is_stale_callback(exc: Exception) -> bool:
+    """
+    Проверяет, что Telegram отверг ответ на устаревшее нажатие кнопки.
+
+    Так бывает после перезапуска бота: нажатия, накопленные за время простоя,
+    приходят позже 15-секундного окна ответа. Это не сбой кода, а следствие простоя.
+    """
+    return isinstance(exc, TelegramBadRequest) and "query is too old" in str(exc)
+
+
 @router.error()
 async def global_error_handler(event: ErrorEvent) -> bool:
     """
@@ -76,6 +87,10 @@ async def global_error_handler(event: ErrorEvent) -> bool:
 
     Возвращает True для подтверждения успешной обработки события сбоя.
     """
+    if _is_stale_callback(event.exception):
+        log.warning("⚠️  Ответ на устаревшее нажатие кнопки отклонён Telegram (бот был недоступен)")
+        return True
+
     log.error("❌ Необработанная ошибка в хэндлере: %s", event.exception)
     await _dispatch_error_alert(event.exception)
     update = event.update

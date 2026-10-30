@@ -21,10 +21,11 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_notify_callback_error`](#_notify_callback_error) | Function | L17–L30 | `None` | Executes core domain logic for `_notify_callback_error`... |
-| [`_notify_message_error`](#_notify_message_error) | Function | L33–L46 | `None` | Executes core domain logic for `_notify_message_error`. |
-| [`_dispatch_error_alert`](#_dispatch_error_alert) | Function | L49–L66 | `None` | Executes core domain logic for `_dispatch_error_alert`. |
-| [`global_error_handler`](#global_error_handler) | Function | L70–L88 | `bool` | Executes core domain logic for `global_error_handler`. |
+| [`_notify_callback_error`](#_notify_callback_error) | Function | L18–L31 | `None` | Executes core domain logic for `_notify_callback_error`... |
+| [`_notify_message_error`](#_notify_message_error) | Function | L34–L47 | `None` | Executes core domain logic for `_notify_message_error`. |
+| [`_dispatch_error_alert`](#_dispatch_error_alert) | Function | L50–L67 | `None` | Executes core domain logic for `_dispatch_error_alert`. |
+| [`_is_stale_callback`](#_is_stale_callback) | Function | L70–L77 | `bool` | Executes core domain logic for `_is_stale_callback`. |
+| [`global_error_handler`](#global_error_handler) | Function | L81–L103 | `bool` | Executes core domain logic for `global_error_handler`. |
 
 ---
 
@@ -35,7 +36,7 @@ graph LR
 async def _notify_callback_error(cb) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/errors.py#L17-L30`](../../bot/handlers/errors.py#L17-L30)
+- **Source Reference**: [`bot/handlers/errors.py#L18-L31`](../../bot/handlers/errors.py#L18-L31)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -68,7 +69,7 @@ result = await _notify_callback_error(cb=...)
 async def _notify_message_error(msg) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/errors.py#L33-L46`](../../bot/handlers/errors.py#L33-L46)
+- **Source Reference**: [`bot/handlers/errors.py#L34-L47`](../../bot/handlers/errors.py#L34-L47)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -101,7 +102,7 @@ result = await _notify_message_error(msg=...)
 async def _dispatch_error_alert(exc: Exception) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/errors.py#L49-L66`](../../bot/handlers/errors.py#L49-L66)
+- **Source Reference**: [`bot/handlers/errors.py#L50-L67`](../../bot/handlers/errors.py#L50-L67)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -129,12 +130,45 @@ result = await _dispatch_error_alert(exc=...)
 
 ---
 
+### `_is_stale_callback`
+```python
+def _is_stale_callback(exc: Exception) -> bool
+```
+
+- **Source Reference**: [`bot/handlers/errors.py#L70-L77`](../../bot/handlers/errors.py#L70-L77)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_is_stale_callback`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `exc` | `Exception` | Yes | Parameter `exc` of type `Exception`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.errors import _is_stale_callback
+
+# Execute call
+result = _is_stale_callback(exc=...)
+```
+
+---
+
 ### `global_error_handler`
 ```python
 async def global_error_handler(event: ErrorEvent) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/errors.py#L70-L88`](../../bot/handlers/errors.py#L70-L88)
+- **Source Reference**: [`bot/handlers/errors.py#L81-L103`](../../bot/handlers/errors.py#L81-L103)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

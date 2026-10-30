@@ -56,3 +56,22 @@ async def test_global_error_handler_suppresses_send_failure():
 
     result = await global_error_handler(event)
     assert result is True
+
+
+@pytest.mark.asyncio
+async def test_stale_callback_is_warning_without_alert():
+    """Устаревшее нажатие после простоя бота — warning без алерта админу и без ответа пользователю."""
+    from unittest.mock import patch
+
+    from aiogram.exceptions import TelegramBadRequest
+
+    cb = MagicMock(spec=CallbackQuery)
+    cb.answer = AsyncMock()
+    update = MagicMock(spec=Update, callback_query=cb, message=None)
+    exc = TelegramBadRequest(method=MagicMock(), message="Bad Request: query is too old and response timeout expired")
+    event = ErrorEvent(update=update, exception=exc)
+
+    with patch("bot.handlers.errors._dispatch_error_alert", AsyncMock()) as alert:
+        assert await global_error_handler(event) is True
+    alert.assert_not_called()
+    cb.answer.assert_not_called()
