@@ -32,6 +32,9 @@ log = get_logger("admin_testers")
 router = Router()
 router.message.filter(AuthFilter())
 router.callback_query.filter(AuthFilter())
+# Панель печатает мастер-ключ и ключи тестеров — в групповом чате их увидят все и навсегда
+router.message.filter(F.chat.type == "private")
+router.callback_query.filter(F.message.chat.type == "private")
 
 
 def _get_admin_key(user_id: int) -> str:

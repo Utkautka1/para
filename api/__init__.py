@@ -40,7 +40,7 @@ from config import (
     SWAGGER_SERVERS_URL,
 )
 from core.logger import set_trace_id
-from core.metrics import record_http_request
+from core.metrics import normalize_http_method, record_http_request
 from core.telemetry import format_trace_id, setup_telemetry
 
 
@@ -138,6 +138,19 @@ def _register_protected_docs(app: FastAPI) -> None:
         return get_swagger_ui_html(openapi_url="/openapi.json", title="para-api — Swagger UI Documentation")
 
 
+def _route_template(request: Request) -> str:
+    """
+    Возвращает шаблон маршрута ('/attendance/student/{fio}') для лейбла метрик.
+
+    Сырой путь в лейбле — неограниченная кардинальность (каждый случайный URL
+    навсегда занимает память) и утечка ФИО/tg_id из путей в /metrics.
+
+    Возвращает шаблон пути или 'unmatched' для запросов мимо роутов.
+    """
+    route = request.scope.get("route")
+    return getattr(route, "path", None) or "unmatched"
+
+
 def _register_observability_middleware(app: FastAPI) -> None:
     """Регистрирует HTTP middleware для замера времени ответа и внедрения trace_id."""
 
@@ -151,7 +164,9 @@ def _register_observability_middleware(app: FastAPI) -> None:
         response = await call_next(request)
         duration = time.perf_counter() - start_time
 
-        record_http_request(request.method, request.url.path, response.status_code, duration)
+        record_http_request(
+            normalize_http_method(request.method), _route_template(request), response.status_code, duration
+        )
         response.headers["X-Request-ID"] = req_id
         response.headers["X-Trace-ID"] = format_trace_id() or req_id
         return response

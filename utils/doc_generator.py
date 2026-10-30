@@ -14,6 +14,7 @@ import os
 import re
 import tempfile
 from datetime import datetime
+from xml.sax.saxutils import escape as xml_escape
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -218,6 +219,22 @@ def add_bookmark_to_paragraph(p, bookmark_name: str, bookmark_id: int) -> None:
     p._p.append(bm_end)
 
 
+# Управляющие символы, запрещённые в XML 1.0 — LLM иногда их выдаёт, и parse_xml падает
+_XML_FORBIDDEN_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def to_xml_text(text: str) -> str:
+    """
+    Готовит произвольную строку к вставке в текстовый узел WordprocessingML.
+
+    Заголовки приходят из ответа LLM: без экранирования '&'/'<' ломают сборку docx,
+    а prompt injection может вставить собственные XML-узлы (например, поле с внешним URL).
+
+    Возвращает экранированную строку без запрещённых символов.
+    """
+    return xml_escape(_XML_FORBIDDEN_CHARS_RE.sub("", text))
+
+
 def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None:
     """
     Добавляет строку в раздел СОДЕРЖАНИЕ с активной кликабельной гиперссылкой.
@@ -236,7 +253,7 @@ def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None:
     r_xml = parse_xml(
         f'<w:r {nsdecls("w")}><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
         f'<w:sz w:val="28"/><w:color w:val="000000"/><w:u w:val="none"/></w:rPr>'
-        f"<w:t>{text}</w:t></w:r>"
+        f'<w:t xml:space="preserve">{to_xml_text(text)}</w:t></w:r>'
     )
     h_xml.append(r_xml)
     p._p.append(h_xml)

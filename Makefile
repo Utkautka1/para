@@ -18,7 +18,7 @@ install: ## Initialize virtual environment and install production & dev dependen
 	$(VENV)/bin/pip install --upgrade pip
 	$(VENV)/bin/pip install -r requirements.txt -r requirements-dev.txt
 
-test: ## Execute complete test suite (744 tests)
+test: ## Execute complete test suite (754 tests)
 	PYTHONPATH=. $(PYTEST) tests/ -v
 
 test-fast: ## Execute test suite in quiet summary mode

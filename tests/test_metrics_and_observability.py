@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import create_app
+from config import API_SECRET_KEY
 from core.logger import get_logger, get_trace_id, set_trace_id
 from core.metrics import (
     generate_metrics_payload,
@@ -27,7 +28,7 @@ def client():
 
 def test_get_metrics_endpoint_returns_prometheus_format(client):
     """Проверяет отдачу метрик Prometheus через эндпоинт GET /metrics."""
-    response = client.get("/metrics")
+    response = client.get("/metrics", headers={"X-API-Key": API_SECRET_KEY})
     assert response.status_code == 200
     assert "text/plain" in response.headers.get("content-type", "")
     content = response.text
@@ -105,3 +106,18 @@ def test_loggers_share_single_file_handler():
     second = get_logger("test_shared_handlers_b")
     file_handlers = {id(h) for lg in (first, second) for h in lg.handlers if isinstance(h, logging.FileHandler)}
     assert len(file_handlers) == 1
+
+
+def test_metrics_endpoint_requires_admin(client):
+    """Без ключа метрики не отдаются: в них маршруты и нагрузка API."""
+    assert client.get("/metrics").status_code in (401, 403)
+
+
+def test_metrics_use_route_template_not_raw_path(client):
+    """Случайные пути не плодят серии метрик, а ФИО из пути не попадает в лейблы."""
+    client.get("/no-such-path-123456")
+    client.get("/attendance/student/Иванов Иван")
+    content = client.get("/metrics", headers={"X-API-Key": API_SECRET_KEY}).text
+    assert "no-such-path-123456" not in content
+    assert "Иванов" not in content
+    assert 'endpoint="unmatched"' in content

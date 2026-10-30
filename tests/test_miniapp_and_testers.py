@@ -289,3 +289,15 @@ async def test_auth_by_non_ascii_or_invalid_key_rejected() -> None:
 
         resp_garbage = await client.post("/miniapp/auth", json={"api_key": "invalid_token_xyz"})
         assert resp_garbage.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_action_rejects_non_member_init_data() -> None:
+    """Валидный initData постороннего пользователя Telegram не даёт ачивок группы."""
+    app = create_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        now_ts = int(datetime.now(UTC).timestamp())
+        init_data = _build_test_init_data({"id": 999000111, "first_name": "Stranger"}, now_ts)
+        with patch("api.router.miniapp.find_classmate_by_tg_id", return_value=None):
+            resp = await client.post("/miniapp/action", json={"action": "matrix_theme", "init_data": init_data})
+        assert resp.status_code == 403

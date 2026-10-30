@@ -213,6 +213,9 @@ async def trigger_miniapp_action(
     uid = _resolve_action_uid(payload, para_session)
     if uid is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    # Валидный initData есть у любого, кто открыл Mini App бота — ачивки только для группы
+    if uid != ALLOWED_USER_ID and find_classmate_by_tg_id(uid) is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a group member")
 
     action_map = {"matrix_theme": "egg_matrix", "konami_code": "egg_konami", "open_miniapp": "bot_miniapp"}
     ach_id = action_map.get(payload.action)

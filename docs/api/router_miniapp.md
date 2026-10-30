@@ -30,10 +30,10 @@ graph LR
 | [`authenticate_miniapp`](#authenticate_miniapp) | Function | L164–L170 | `MiniappAuthResponse` | Executes core domain logic for `authenticate_miniapp`. |
 | [`check_tester_status`](#check_tester_status) | Function | L174–L192 | `MiniappCheckResponse` | Executes core domain logic for `check_tester_status`. |
 | [`_resolve_action_uid`](#_resolve_action_uid) | Function | L195–L205 | `int | None` | Executes core domain logic for `_resolve_action_uid`. |
-| [`trigger_miniapp_action`](#trigger_miniapp_action) | Function | L209–L232 | `MiniappActionResult` | Executes core domain logic for `trigger_miniapp_action`... |
-| [`list_api_testers`](#list_api_testers) | Function | L236–L249 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
-| [`api_add_tester`](#api_add_tester) | Function | L253–L267 | `dict` | Executes core domain logic for `api_add_tester`. |
-| [`api_remove_tester`](#api_remove_tester) | Function | L271–L285 | `dict` | Executes core domain logic for `api_remove_tester`. |
+| [`trigger_miniapp_action`](#trigger_miniapp_action) | Function | L209–L235 | `MiniappActionResult` | Executes core domain logic for `trigger_miniapp_action`... |
+| [`list_api_testers`](#list_api_testers) | Function | L239–L252 | `TesterListResponse` | Executes core domain logic for `list_api_testers`. |
+| [`api_add_tester`](#api_add_tester) | Function | L256–L270 | `dict` | Executes core domain logic for `api_add_tester`. |
+| [`api_remove_tester`](#api_remove_tester) | Function | L274–L288 | `dict` | Executes core domain logic for `api_remove_tester`. |
 
 ---
 
@@ -345,7 +345,7 @@ result = _resolve_action_uid(payload=..., session=...)
 async def trigger_miniapp_action( payload: MiniappActionRequest, para_session: str | None = Cookie(default=None) ) -> MiniappActionResult
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L209-L232`](../../api/router/miniapp.py#L209-L232)
+- **Source Reference**: [`api/router/miniapp.py#L209-L235`](../../api/router/miniapp.py#L209-L235)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappActionResult`
 
@@ -379,7 +379,7 @@ result = await trigger_miniapp_action(payload=..., para_session=...)
 async def list_api_testers() -> TesterListResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L236-L249`](../../api/router/miniapp.py#L236-L249)
+- **Source Reference**: [`api/router/miniapp.py#L239-L252`](../../api/router/miniapp.py#L239-L252)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterListResponse`
 
@@ -410,7 +410,7 @@ result = await list_api_testers()
 async def api_add_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L253-L267`](../../api/router/miniapp.py#L253-L267)
+- **Source Reference**: [`api/router/miniapp.py#L256-L270`](../../api/router/miniapp.py#L256-L270)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 
@@ -443,7 +443,7 @@ result = await api_add_tester(user_id=...)
 async def api_remove_tester(user_id: int) -> dict
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L271-L285`](../../api/router/miniapp.py#L271-L285)
+- **Source Reference**: [`api/router/miniapp.py#L274-L288`](../../api/router/miniapp.py#L274-L288)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict`
 

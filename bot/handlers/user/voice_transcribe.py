@@ -34,7 +34,9 @@ from config import (
 )
 from core.bot import bot
 from core.logger import get_logger
+from services.classmates_auth import is_authorized_user
 from services.stt_queue import resolve_audio_dir, transcribe_via_stt
+from services.testers_manager import is_tester_allowed
 from services.transcriber import split_text_to_chunks
 
 log = get_logger("bot_voice")
@@ -97,6 +99,28 @@ def is_allowed_chat(chat_id: int, chat_type: str) -> bool:
     """
 
     return chat_id == TOPIC_CHAT_ID or chat_type == "private"
+
+
+async def is_voice_request_allowed(message: Message) -> bool:
+    """
+    Проверяет, можно ли тратить GPU-очередь STT на это сообщение.
+
+    В чате группы участники уже свои. В личке — только одногруппники и тестеры:
+    иначе любой пользователь Telegram забивает единственную очередь распознавания.
+
+    Возвращает True, если сообщение нужно распознать.
+    """
+    if not is_allowed_chat(message.chat.id, message.chat.type):
+        return False
+    if message.chat.id == TOPIC_CHAT_ID:
+        return True
+
+    user = message.from_user
+    if is_authorized_user(user) or (user is not None and await is_tester_allowed(user.id)):
+        return True
+
+    log.debug("STT: голосовое от постороннего uid=%s проигнорировано", user.id if user else None)
+    return False
 
 
 def extract_audio_meta(message: Message) -> AudioMeta:
@@ -398,7 +422,7 @@ async def handle_voice_or_video_note(message: Message) -> None:
     Ничего не возвращает.
     """
 
-    if not is_allowed_chat(message.chat.id, message.chat.type):
+    if not await is_voice_request_allowed(message):
         return
 
     meta = extract_audio_meta(message)

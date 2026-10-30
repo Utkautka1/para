@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qsl
 
-from config import API_SECRET_KEY, BOT_TOKEN, SESSION_MAX_AGE_SECONDS
+from config import BOT_TOKEN, SESSION_MAX_AGE_SECONDS, SESSION_SECRET
 from core.logger import get_logger
 
 log = get_logger("miniapp_auth")
@@ -105,13 +105,13 @@ def generate_tester_session(user_id: int) -> str:
     Генерирует подписанный сессионный токен для авторизации тестера в Swagger UI.
 
     Формирует полезную нагрузку вида user_id:timestamp и подписывает ее секретным
-    ключом API_SECRET_KEY для безопасного прохождения аутентификации.
+    ключом SESSION_SECRET (отдельным от мастер-ключа API) для прохождения аутентификации.
 
     Возвращает токен формата '<user_id>:<timestamp>:<signature>'.
     """
     ts = int(datetime.now(UTC).timestamp())
     payload = f"{user_id}:{ts}"
-    sig = hmac.new(API_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    sig = hmac.new(SESSION_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
 
 
@@ -128,7 +128,7 @@ def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) ->
         return None
     raw_uid, raw_ts, signature = token.split(":")
     payload = f"{raw_uid}:{raw_ts}"
-    expected_sig = hmac.new(API_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    expected_sig = hmac.new(SESSION_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(signature, expected_sig):
         return None
     if not _is_auth_date_valid(raw_ts, max_age=max_age):

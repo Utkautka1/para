@@ -5,20 +5,22 @@
 и состояния очередей для скрейпинга агентом мониторинга Prometheus.
 """
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 
+from api.deps import verify_admin_access
 from core.metrics import generate_metrics_payload
 
 router = APIRouter(tags=["Metrics"])
 
 
-@router.get("/metrics", include_in_schema=False)
+# Только админ: в метриках видны маршруты и нагрузка, а внешнего скрейпера у проекта нет
+@router.get("/metrics", include_in_schema=False, dependencies=[Depends(verify_admin_access)])
 async def get_prometheus_metrics() -> Response:
     """
     Экспортирует системные метрики в формате текстового протокола Prometheus.
 
-    Используется системами мониторинга (Prometheus, Grafana, VictoriaMetrics)
-    без требования предварительной авторизации.
+    Доступ — мастер-ключ (X-API-Key) или админ-сессия; скрейпер Prometheus
+    должен передавать ключ заголовком.
 
     Возвращает HTTP Response с бинарным телом метрик и соответствующим Content-Type.
     """

@@ -37,6 +37,20 @@ REDIS_QUEUE_LENGTH = Gauge(
 )
 
 
+# Методы, которые попадают в лейбл как есть; остальное (мусор от сканеров) — в "OTHER"
+_KNOWN_HTTP_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
+
+
+def normalize_http_method(method: str) -> str:
+    """
+    Сводит HTTP-метод к ограниченному набору значений лейбла.
+
+    Возвращает метод в верхнем регистре или 'OTHER'.
+    """
+    upper = method.upper()
+    return upper if upper in _KNOWN_HTTP_METHODS else "OTHER"
+
+
 def record_http_request(method: str, endpoint: str, status: int, duration: float) -> None:
     """
     Фиксирует завершенный HTTP-запрос в счетчиках и гистограмме Prometheus.

@@ -21,21 +21,55 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`record_http_request`](#record_http_request) | Function | L40–L49 | `None` | Executes core domain logic for `record_http_request`. |
-| [`record_ai_inference`](#record_ai_inference) | Function | L52–L60 | `None` | Executes core domain logic for `record_ai_inference`. |
-| [`set_redis_queue_length`](#set_redis_queue_length) | Function | L63–L71 | `None` | Persists state updates for `set_redis_queue_length`. |
-| [`generate_metrics_payload`](#generate_metrics_payload) | Function | L74–L82 | `tuple[bytes, str]` | Executes core domain logic for `generate_metrics_payloa... |
+| [`normalize_http_method`](#normalize_http_method) | Function | L44–L51 | `str` | Executes core domain logic for `normalize_http_method`. |
+| [`record_http_request`](#record_http_request) | Function | L54–L63 | `None` | Executes core domain logic for `record_http_request`. |
+| [`record_ai_inference`](#record_ai_inference) | Function | L66–L74 | `None` | Executes core domain logic for `record_ai_inference`. |
+| [`set_redis_queue_length`](#set_redis_queue_length) | Function | L77–L85 | `None` | Persists state updates for `set_redis_queue_length`. |
+| [`generate_metrics_payload`](#generate_metrics_payload) | Function | L88–L96 | `tuple[bytes, str]` | Executes core domain logic for `generate_metrics_payloa... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `normalize_http_method`
+```python
+def normalize_http_method(method: str) -> str
+```
+
+- **Source Reference**: [`core/metrics.py#L44-L51`](../../core/metrics.py#L44-L51)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `normalize_http_method`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `method` | `str` | Yes | Parameter `method` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.metrics import normalize_http_method
+
+# Execute call
+result = normalize_http_method(method=...)
+```
+
+---
 
 ### `record_http_request`
 ```python
 def record_http_request(method: str, endpoint: str, status: int, duration: float) -> None
 ```
 
-- **Source Reference**: [`core/metrics.py#L40-L49`](../../core/metrics.py#L40-L49)
+- **Source Reference**: [`core/metrics.py#L54-L63`](../../core/metrics.py#L54-L63)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -71,7 +105,7 @@ result = record_http_request(method=..., endpoint=..., status=...)
 def record_ai_inference(subsystem: str, model: str, duration: float) -> None
 ```
 
-- **Source Reference**: [`core/metrics.py#L52-L60`](../../core/metrics.py#L52-L60)
+- **Source Reference**: [`core/metrics.py#L66-L74`](../../core/metrics.py#L66-L74)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -106,7 +140,7 @@ result = record_ai_inference(subsystem=..., model=..., duration=...)
 def set_redis_queue_length(queue_name: str, length: int) -> None
 ```
 
-- **Source Reference**: [`core/metrics.py#L63-L71`](../../core/metrics.py#L63-L71)
+- **Source Reference**: [`core/metrics.py#L77-L85`](../../core/metrics.py#L77-L85)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -140,7 +174,7 @@ result = set_redis_queue_length(queue_name=..., length=...)
 def generate_metrics_payload() -> tuple[bytes, str]
 ```
 
-- **Source Reference**: [`core/metrics.py#L74-L82`](../../core/metrics.py#L74-L82)
+- **Source Reference**: [`core/metrics.py#L88-L96`](../../core/metrics.py#L88-L96)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[bytes, str]`
 

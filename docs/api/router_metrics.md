@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_prometheus_metrics`](#get_prometheus_metrics) | Function | L16–L26 | `Response` | Retrieves and resolves domain data for `get_prometheus_... |
+| [`get_prometheus_metrics`](#get_prometheus_metrics) | Function | L18–L28 | `Response` | Retrieves and resolves domain data for `get_prometheus_... |
 
 ---
 
@@ -32,7 +32,7 @@ graph LR
 async def get_prometheus_metrics() -> Response
 ```
 
-- **Source Reference**: [`api/router/metrics.py#L16-L26`](../../api/router/metrics.py#L16-L26)
+- **Source Reference**: [`api/router/metrics.py#L18-L28`](../../api/router/metrics.py#L18-L28)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 

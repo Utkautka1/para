@@ -328,6 +328,7 @@ MARKS_CACHE_TTL_SECONDS: int = get_env_int("MARKS_CACHE_TTL_SECONDS", 2592000)
 
 api_config = ApiConfig(
     secret_key=get_required_env("API_SECRET_KEY"),
+    session_secret=get_env("SESSION_SECRET", ""),
     base_url=get_required_env("API_BASE_URL"),
     host=get_required_env("API_HOST"),
     port=get_env_int("API_PORT"),
@@ -358,6 +359,8 @@ api_config = ApiConfig(
 )
 
 API_SECRET_KEY: str = api_config.secret_key
+# Отдельный секрет сессий: утечка мастер-ключа не должна позволять подделать сессию любого uid
+SESSION_SECRET: str = api_config.session_secret or api_config.secret_key
 API_BASE_URL: str = api_config.base_url
 API_HOST: str = api_config.host
 API_PORT: int = api_config.port

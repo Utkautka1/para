@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
-    <img src="https://img.shields.io/badge/TESTS-744%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 744 Passed">
+    <img src="https://img.shields.io/badge/TESTS-754%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 754 Passed">
   </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/PYTHON-3.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Versions">
@@ -79,7 +79,7 @@
 </div>
 
 > [!IMPORTANT]
-> **Production Status**: Deployed in production handling real-time academic operations for academic group `1-КПД-3` (KTMU College). System enforces strict **≤ 25 lines per method** single-responsibility decomposition, unprivileged `appuser` containers, zero host port exposure, end-to-end OpenTelemetry distributed tracing, ACID SQLite WAL persistence with automated hot backups, and 100% test pass rate (744/744 passing).
+> **Production Status**: Deployed in production handling real-time academic operations for academic group `1-КПД-3` (KTMU College). System enforces strict **≤ 25 lines per method** single-responsibility decomposition, unprivileged `appuser` containers, zero host port exposure, end-to-end OpenTelemetry distributed tracing, ACID SQLite WAL persistence with automated hot backups, and 100% test pass rate (754/754 passing).
 
 ---
 
@@ -98,7 +98,7 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 | **Distributed Observability** | Print statements or untraceable text logs | **Full-Stack Distributed Tracing**: OpenTelemetry SDK + OTLP gRPC collector + Jaeger all-in-one + authenticated dual-tab Telegram Mini App portal (Swagger & Jaeger) + Prometheus `/metrics` |
 | **Incident Management** | Silent crashes and unhandled outages | **Proactive System Incident Engine**: Circuit Breaker trips, Yandex cookie expiry, and timetable degradation immediately dispatch severity-routed alerts to Debug Forum topics (`Fatal` #7, `Warning` #5, `Debug` #3) with distributed Redis cooldown throttling |
 | **Voice / STT Ingress** | Unsupported or manual playback | **GPU-Accelerated faster-whisper** (`large-v3-turbo`, 0.36s inference) + `/dev/shm` RAM-disk ephemeral streaming + automatic CPU int8 fallback |
-| **Quality Assurance** | "Tested in production" (manual testing) | **744 Automated Tests (100% passing)**, **Locust 846+ RPS stress testing** (sub-10ms gRPC p99), strict Ruff, Bandit AST security & GitHub Actions CI |
+| **Quality Assurance** | "Tested in production" (manual testing) | **754 Automated Tests (100% passing)**, **Locust 846+ RPS stress testing** (sub-10ms gRPC p99), strict Ruff, Bandit AST security & GitHub Actions CI |
 
 ---
 
@@ -454,7 +454,7 @@ Distributed Tracing Overhead:
 5. **Bounded Concurrency & Memory Guards**:
    * Memory leaks are prevented via strict container limits (`deploy.resources.limits`), while AI processing concurrency is capped to 3 tasks via `asyncio.Semaphore(3)` to eliminate out-of-memory kernel traps.
 6. **Automated Test Suite Execution Speed**:
-   * Complete test suite (**744 tests**, 100% passing) executes in **~23 s** locally and in GitHub Actions CI matrixes.
+   * Complete test suite (**754 tests**, 100% passing) executes in **~23 s** locally and in GitHub Actions CI matrixes.
 
 ---
 
@@ -689,7 +689,7 @@ para/
 │   ├── PRIVACY.md            # Data privacy & user telemetry policy (GDPR / 152-ФЗ compliant)
 │   └── reports/load_test/    # Locust stress test reports (HTML, CSV distributions)
 │
-└── tests/                    # Comprehensive Test Suite (744 tests, 100% passing)
+└── tests/                    # Comprehensive Test Suite (754 tests, 100% passing)
     ├── load/locustfile.py    # Locust dual-protocol (HTTP REST + gRPC) load test scenario
     └── test_*.py             # 25+ unit and integration test modules
 ```
@@ -783,7 +783,7 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
    * `ruff check .` — validates strict PEP compliance, import sorting, and Python 3.12+ syntax.
    * `bandit -r services/ bot/ core/ api/ -c pyproject.toml` — verifies zero cryptographic flaws, socket vulnerabilities, or injection vectors.
 2. **Stage 2 (Isolated Matrix Testing)**:
-   * Python 3.11 & 3.12 test execution across all 744 unit and integration test suites (100% passing).
+   * Python 3.11 & 3.12 test execution across all 754 unit and integration test suites (100% passing).
 3. **Stage 3 (Container Delivery Verification)**:
    * `docker compose build --parallel` — confirms that all four microservice Dockerfiles compile cleanly.
 

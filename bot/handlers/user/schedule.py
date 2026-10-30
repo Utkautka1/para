@@ -146,6 +146,11 @@ async def _show_tester_cabinet(message: Message, uid: int) -> None:
     Ничего не возвращает.
     """
 
+    # Ключ печатается текстом — в группе его увидят все участники и он останется в истории
+    if message.chat.type != "private":
+        await message.answer("🔒 API-ключ выдаётся только в личных сообщениях с ботом.")
+        return
+
     key = await generate_or_get_tester_key(uid)
     text = (
         "🧪 <b>Кабинет тестировщика para-api</b>\n\n"

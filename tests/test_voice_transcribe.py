@@ -18,6 +18,7 @@ from bot.handlers.user.voice_transcribe import (
     extract_audio_meta,
     handle_voice_or_video_note,
     is_allowed_chat,
+    is_voice_request_allowed,
     process_audio_pipeline,
     send_overflow_chunks,
 )
@@ -339,3 +340,33 @@ def test_transcriber_clean_hallucinations() -> None:
     assert AudioTranscriber._clean_hallucinations("Спасибо за просмотр!") == ""
     assert AudioTranscriber._clean_hallucinations("Продолжение следует...") == ""
     assert AudioTranscriber._clean_hallucinations("Привет, это пара!") == "Привет, это пара!"
+
+
+def _voice_message(chat_id: int, chat_type: str, user_id: int) -> MagicMock:
+    """Мок входящего голосового с нужным чатом и отправителем."""
+    msg = MagicMock()
+    msg.chat.id, msg.chat.type = chat_id, chat_type
+    msg.from_user = User(id=user_id, is_bot=False, first_name="U")
+    return msg
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("chat_id", "chat_type", "is_member", "is_tester", "expected"),
+    [
+        (TOPIC_CHAT_ID, "supergroup", False, False, True),
+        (555, "private", True, False, True),
+        (555, "private", False, True, True),
+        (555, "private", False, False, False),
+        (-999, "group", True, True, False),
+    ],
+)
+async def test_is_voice_request_allowed(
+    chat_id: int, chat_type: str, is_member: bool, is_tester: bool, expected: bool
+) -> None:
+    """В личке STT только для одногруппников и тестеров, в чужих группах — никому."""
+    with (
+        patch("bot.handlers.user.voice_transcribe.is_authorized_user", return_value=is_member),
+        patch("bot.handlers.user.voice_transcribe.is_tester_allowed", AsyncMock(return_value=is_tester)),
+    ):
+        assert await is_voice_request_allowed(_voice_message(chat_id, chat_type, 555)) is expected

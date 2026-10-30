@@ -102,6 +102,8 @@ class ApiConfig:
     """Конфигурация двухпротокольного API-шлюза (HTTP/REST и gRPC HTTP/2)."""
 
     secret_key: str
+    # Ключ подписи сессий Mini App/Swagger; пустой — подписываем secret_key (обратная совместимость)
+    session_secret: str
     base_url: str
     host: str
     port: int
