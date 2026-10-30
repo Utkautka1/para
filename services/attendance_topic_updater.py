@@ -348,7 +348,8 @@ async def _edit_attendance_msg(text: str) -> bool:
         message_id=_ATT_MAIN_MSG_ID,
         text=text,
     )
-    log.info("✅ Реестр посещаемости обновлен: MSG_ID=%s", _ATT_MAIN_MSG_ID)
+    # Штатное обновление — debug, чтобы не засорять лог
+    log.debug("Реестр посещаемости обновлен: MSG_ID=%s", _ATT_MAIN_MSG_ID)
     return True
 
 

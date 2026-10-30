@@ -1,8 +1,13 @@
 """
 Единый модуль логирования платформы с поддержкой распределенного трейсинга.
 
-Предоставляет настроенный логгер с выводом в консоль и ротируемый файл logs/bot.log.
+Предоставляет настроенный логгер с выводом в консоль и ротируемый файл logs/{service}.log.
 Поддерживает контекстные переменные trace_id / request_id для сквозной корреляции логов.
+
+Каждый сервис пишет в свой файл (api.log, bot.log, worker.log, solver.log): все контейнеры
+монтируют общий ./logs, а RotatingFileHandler корректно ротирует файл, только если в него
+пишет один процесс через один хэндлер. Поэтому хэндлеры — синглтоны процесса, общие
+для всех именованных логгеров, а не новый файловый хэндлер на каждый get_logger().
 """
 
 import contextvars
@@ -17,6 +22,12 @@ MAX_LOG_BYTES = LOG_MAX_BYTES
 BACKUP_LOG_COUNT = LOG_BACKUP_COUNT
 
 _TRACE_ID_CTX: contextvars.ContextVar[str] = contextvars.ContextVar("trace_id", default="")
+
+# Сервисы с собственным лог-файлом; всё остальное (pytest, скрипты) пишет в logs/app.log
+_SERVICE_NAMES: frozenset[str] = frozenset({"api", "bot", "worker", "solver"})
+
+# Хэндлеры процесса, общие для всех логгеров (создаются лениво при первом get_logger)
+_SHARED_HANDLERS: list[logging.Handler] | None = None
 
 
 def set_trace_id(trace_id: str) -> None:
@@ -78,6 +89,19 @@ def _create_stream_handler(formatter: logging.Formatter) -> logging.StreamHandle
     return handler
 
 
+def _resolve_log_file() -> str:
+    """
+    Определяет лог-файл текущего сервиса.
+
+    Имя берётся из LOG_SERVICE, иначе из entrypoint (`python api.py` -> api),
+    чтобы не требовать отдельной настройки в каждом контейнере.
+
+    Возвращает путь вида logs/api.log; для неизвестных процессов — logs/app.log.
+    """
+    service = os.getenv("LOG_SERVICE") or os.path.splitext(os.path.basename(sys.argv[0]))[0]
+    return f"logs/{service if service in _SERVICE_NAMES else 'app'}.log"
+
+
 def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileHandler | None:
     """
     Создает ротируемый файловый обработчик журналов с ограничением размера.
@@ -85,12 +109,13 @@ def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileH
     Защищает дисковое пространство сервера от переполнения при активной отладке.
     При ошибках доступа безопасно возвращает None с предупреждением в stderr.
 
-    Возвращает экземпляр RotatingFileHandler для файла logs/bot.log или None.
+    Возвращает экземпляр RotatingFileHandler для файла сервиса или None.
     """
+    log_file = _resolve_log_file()
     try:
         os.makedirs("logs", exist_ok=True)
         handler = RotatingFileHandler(
-            "logs/bot.log",
+            log_file,
             maxBytes=MAX_LOG_BYTES,
             backupCount=BACKUP_LOG_COUNT,
             encoding="utf-8",
@@ -100,8 +125,25 @@ def _create_rotating_file_handler(formatter: logging.Formatter) -> RotatingFileH
         handler.setLevel(logging.DEBUG)
         return handler
     except (PermissionError, OSError) as e:
-        sys.stderr.write(f"WARNING: Не удалось открыть logs/bot.log ({e}), логи идут в stdout\n")
+        sys.stderr.write(f"WARNING: Не удалось открыть {log_file} ({e}), логи идут в stdout\n")
         return None
+
+
+def _get_shared_handlers() -> list[logging.Handler]:
+    """
+    Возвращает хэндлеры процесса (stdout + файл сервиса), создавая их один раз.
+
+    Раньше каждый логгер открывал свой RotatingFileHandler на тот же файл: при ротации
+    один переименовывал файл, а остальные продолжали писать в старый.
+
+    Возвращает список хэндлеров.
+    """
+    global _SHARED_HANDLERS
+    if _SHARED_HANDLERS is None:
+        formatter = _create_formatter()
+        file_handler = _create_rotating_file_handler(formatter)
+        _SHARED_HANDLERS = [_create_stream_handler(formatter), *([file_handler] if file_handler else [])]
+    return _SHARED_HANDLERS
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -110,16 +152,13 @@ def get_logger(name: str) -> logging.Logger:
 
     Проверяет наличие уже зарегистрированных хэндлеров во избежание дублирования.
 
-    Возвращает настроенный логгер с потоковым и ротируемым файловым обработчиками.
+    Возвращает логгер, подключённый к общим хэндлерам процесса.
     """
     logger = logging.getLogger(name)
     if logger.handlers:
         return logger
 
     logger.setLevel(logging.DEBUG)
-    formatter = _create_formatter()
-    logger.addHandler(_create_stream_handler(formatter))
-    file_handler = _create_rotating_file_handler(formatter)
-    if file_handler:
-        logger.addHandler(file_handler)
+    for handler in _get_shared_handlers():
+        logger.addHandler(handler)
     return logger

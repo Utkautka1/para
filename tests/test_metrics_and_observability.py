@@ -74,3 +74,34 @@ def test_logger_trace_id_context_lifecycle():
 
     set_trace_id("")
     assert get_trace_id() == ""
+
+
+@pytest.mark.parametrize(
+    ("argv0", "env", "expected"),
+    [
+        ("/app/api.py", None, "logs/api.log"),
+        ("worker.py", None, "logs/worker.log"),
+        ("/usr/bin/pytest", None, "logs/app.log"),
+        ("/usr/bin/pytest", "solver", "logs/solver.log"),
+    ],
+)
+def test_log_file_resolved_per_service(monkeypatch, argv0, env, expected):
+    """Каждый сервис пишет в свой файл: по LOG_SERVICE или по имени entrypoint."""
+    from core import logger as core_logger
+
+    monkeypatch.setattr("sys.argv", [argv0])
+    if env:
+        monkeypatch.setenv("LOG_SERVICE", env)
+    else:
+        monkeypatch.delenv("LOG_SERVICE", raising=False)
+    assert core_logger._resolve_log_file() == expected
+
+
+def test_loggers_share_single_file_handler():
+    """Все логгеры процесса используют один файловый хэндлер — иначе ротация ломается."""
+    import logging
+
+    first = get_logger("test_shared_handlers_a")
+    second = get_logger("test_shared_handlers_b")
+    file_handlers = {id(h) for lg in (first, second) for h in lg.handlers if isinstance(h, logging.FileHandler)}
+    assert len(file_handlers) == 1

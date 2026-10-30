@@ -38,13 +38,13 @@ graph LR
 | [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L277–L292 | `None` | Executes core domain logic for `_pin_attendance_silentl... |
 | [`create_attendance_message`](#create_attendance_message) | Function | L295–L312 | `int` | Initializes and constructs a new instance of `create_at... |
 | [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L315–L337 | `bool` | Executes core domain logic for `handle_attendance_edit_... |
-| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L340–L352 | `bool` | Executes core domain logic for `_edit_attendance_msg`. |
-| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L355–L375 | `bool` | Dispatches notification message via Telegram API for `s... |
-| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L378–L391 | `None` | Executes core domain logic for `_delete_old_attendance_... |
-| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L394–L410 | `bool` | Executes core domain logic for `recreate_attendance_top... |
-| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L413–L437 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
-| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L440–L453 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
-| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L456–L473 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
+| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L340–L353 | `bool` | Executes core domain logic for `_edit_attendance_msg`. |
+| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L356–L376 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L379–L392 | `None` | Executes core domain logic for `_delete_old_attendance_... |
+| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L395–L411 | `bool` | Executes core domain logic for `recreate_attendance_top... |
+| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L414–L438 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
+| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L441–L454 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
+| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L457–L474 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
 
 ---
 
@@ -619,7 +619,7 @@ result = await handle_attendance_edit_error(text=..., err_str=..., retry=...)
 async def _edit_attendance_msg(text: str) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L340-L352`](../../services/attendance_topic_updater.py#L340-L352)
+- **Source Reference**: [`services/attendance_topic_updater.py#L340-L353`](../../services/attendance_topic_updater.py#L340-L353)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -652,7 +652,7 @@ result = await _edit_attendance_msg(text=...)
 async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L355-L375`](../../services/attendance_topic_updater.py#L355-L375)
+- **Source Reference**: [`services/attendance_topic_updater.py#L356-L376`](../../services/attendance_topic_updater.py#L356-L376)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -686,7 +686,7 @@ result = await send_or_edit_attendance_msg(text=..., _retry=...)
 async def _delete_old_attendance_msg(old_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L378-L391`](../../services/attendance_topic_updater.py#L378-L391)
+- **Source Reference**: [`services/attendance_topic_updater.py#L379-L392`](../../services/attendance_topic_updater.py#L379-L392)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -719,7 +719,7 @@ result = await _delete_old_attendance_msg(old_id=...)
 async def recreate_attendance_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L394-L410`](../../services/attendance_topic_updater.py#L394-L410)
+- **Source Reference**: [`services/attendance_topic_updater.py#L395-L411`](../../services/attendance_topic_updater.py#L395-L411)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -750,7 +750,7 @@ result = await recreate_attendance_topic_message()
 async def sync_attendance_topic_message(force_refresh: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L413-L437`](../../services/attendance_topic_updater.py#L413-L437)
+- **Source Reference**: [`services/attendance_topic_updater.py#L414-L438`](../../services/attendance_topic_updater.py#L414-L438)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -784,7 +784,7 @@ result = await sync_attendance_topic_message(force_refresh=...)
 def _get_attendance_sync_sleep_seconds() -> int
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L440-L453`](../../services/attendance_topic_updater.py#L440-L453)
+- **Source Reference**: [`services/attendance_topic_updater.py#L441-L454`](../../services/attendance_topic_updater.py#L441-L454)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -815,7 +815,7 @@ result = _get_attendance_sync_sleep_seconds()
 async def attendance_topic_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/attendance_topic_updater.py#L456-L473`](../../services/attendance_topic_updater.py#L456-L473)
+- **Source Reference**: [`services/attendance_topic_updater.py#L457-L474`](../../services/attendance_topic_updater.py#L457-L474)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -30,23 +30,23 @@ graph LR
 | [`_should_switch_to_next_day`](#_should_switch_to_next_day) | Function | L157–L172 | `bool` | Executes core domain logic for `_should_switch_to_next_... |
 | [`resolve_target_date`](#resolve_target_date) | Function | L175–L192 | `date | None` | Executes core domain logic for `resolve_target_date`. |
 | [`is_too_early_to_publish`](#is_too_early_to_publish) | Function | L195–L212 | `bool` | Executes core domain logic for `is_too_early_to_publish... |
-| [`_edit_topic_message`](#_edit_topic_message) | Function | L215–L228 | `bool` | Executes core domain logic for `_edit_topic_message`. |
-| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L231–L248 | `bool` | Synchronizes and updates domain state for `update_topic... |
-| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L251–L272 | `bool` | Executes core domain logic for `_send_new_topic_message... |
-| [`_pin_silently`](#_pin_silently) | Function | L275–L290 | `None` | Executes core domain logic for `_pin_silently`. |
-| [`_try_delete_old_topic_msg`](#_try_delete_old_topic_msg) | Function | L293–L308 | `None` | Executes core domain logic for `_try_delete_old_topic_m... |
-| [`recreate_topic_message`](#recreate_topic_message) | Function | L311–L328 | `bool` | Executes core domain logic for `recreate_topic_message`... |
-| [`_recreate_after_edit_failure`](#_recreate_after_edit_failure) | Function | L331–L342 | `bool` | Executes core domain logic for `_recreate_after_edit_fa... |
-| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L345–L367 | `bool` | Executes core domain logic for `_handle_edit_failure`. |
-| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L370–L387 | `bool` | Executes core domain logic for `should_skip_topic_updat... |
-| [`process_today_reminders`](#process_today_reminders) | Function | L390–L400 | `None` | Executes core domain logic for `process_today_reminders... |
-| [`_prepare_target_schedule`](#_prepare_target_schedule) | Function | L403–L422 | `tuple[date | None, list[Lesson] | None]` | Executes core domain logic for `_prepare_target_schedul... |
-| [`_ensure_topic_main_msg_id`](#_ensure_topic_main_msg_id) | Function | L425–L434 | `None` | Executes core domain logic for `_ensure_topic_main_msg_... |
-| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L437–L459 | `bool` | Executes core domain logic for `sync_topic_main_message... |
-| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L466–L487 | `None` | Executes core domain logic for `notify_admin_about_api_... |
-| [`_track_api_failure`](#_track_api_failure) | Function | L490–L501 | `None` | Executes core domain logic for `_track_api_failure`. |
-| [`_reset_api_failure_tracker`](#_reset_api_failure_tracker) | Function | L504–L515 | `None` | Executes core domain logic for `_reset_api_failure_trac... |
-| [`topic_sync_loop`](#topic_sync_loop) | Function | L518–L536 | `None` | Executes core domain logic for `topic_sync_loop`. |
+| [`_edit_topic_message`](#_edit_topic_message) | Function | L215–L229 | `bool` | Executes core domain logic for `_edit_topic_message`. |
+| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L232–L249 | `bool` | Synchronizes and updates domain state for `update_topic... |
+| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L252–L273 | `bool` | Executes core domain logic for `_send_new_topic_message... |
+| [`_pin_silently`](#_pin_silently) | Function | L276–L291 | `None` | Executes core domain logic for `_pin_silently`. |
+| [`_try_delete_old_topic_msg`](#_try_delete_old_topic_msg) | Function | L294–L309 | `None` | Executes core domain logic for `_try_delete_old_topic_m... |
+| [`recreate_topic_message`](#recreate_topic_message) | Function | L312–L329 | `bool` | Executes core domain logic for `recreate_topic_message`... |
+| [`_recreate_after_edit_failure`](#_recreate_after_edit_failure) | Function | L332–L343 | `bool` | Executes core domain logic for `_recreate_after_edit_fa... |
+| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L346–L368 | `bool` | Executes core domain logic for `_handle_edit_failure`. |
+| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L371–L388 | `bool` | Executes core domain logic for `should_skip_topic_updat... |
+| [`process_today_reminders`](#process_today_reminders) | Function | L391–L401 | `None` | Executes core domain logic for `process_today_reminders... |
+| [`_prepare_target_schedule`](#_prepare_target_schedule) | Function | L404–L423 | `tuple[date | None, list[Lesson] | None]` | Executes core domain logic for `_prepare_target_schedul... |
+| [`_ensure_topic_main_msg_id`](#_ensure_topic_main_msg_id) | Function | L426–L435 | `None` | Executes core domain logic for `_ensure_topic_main_msg_... |
+| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L438–L460 | `bool` | Executes core domain logic for `sync_topic_main_message... |
+| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L467–L488 | `None` | Executes core domain logic for `notify_admin_about_api_... |
+| [`_track_api_failure`](#_track_api_failure) | Function | L491–L502 | `None` | Executes core domain logic for `_track_api_failure`. |
+| [`_reset_api_failure_tracker`](#_reset_api_failure_tracker) | Function | L505–L516 | `None` | Executes core domain logic for `_reset_api_failure_trac... |
+| [`topic_sync_loop`](#topic_sync_loop) | Function | L519–L537 | `None` | Executes core domain logic for `topic_sync_loop`. |
 
 ---
 
@@ -358,7 +358,7 @@ result = is_too_early_to_publish(lessons=..., now_dt=..., today=...)
 async def _edit_topic_message(text: str, kb: Any) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L215-L228`](../../services/topic_updater.py#L215-L228)
+- **Source Reference**: [`services/topic_updater.py#L215-L229`](../../services/topic_updater.py#L215-L229)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -392,7 +392,7 @@ result = await _edit_topic_message(text=..., kb=...)
 async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L231-L248`](../../services/topic_updater.py#L231-L248)
+- **Source Reference**: [`services/topic_updater.py#L232-L249`](../../services/topic_updater.py#L232-L249)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -427,7 +427,7 @@ result = await update_topic_message_payload(text=..., kb=..., _retry=...)
 async def _send_new_topic_message(text: str, kb: Any) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L251-L272`](../../services/topic_updater.py#L251-L272)
+- **Source Reference**: [`services/topic_updater.py#L252-L273`](../../services/topic_updater.py#L252-L273)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -461,7 +461,7 @@ result = await _send_new_topic_message(text=..., kb=...)
 async def _pin_silently(chat_id: int, message_id: int) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L275-L290`](../../services/topic_updater.py#L275-L290)
+- **Source Reference**: [`services/topic_updater.py#L276-L291`](../../services/topic_updater.py#L276-L291)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -495,7 +495,7 @@ result = await _pin_silently(chat_id=..., message_id=...)
 async def _try_delete_old_topic_msg(old_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L293-L308`](../../services/topic_updater.py#L293-L308)
+- **Source Reference**: [`services/topic_updater.py#L294-L309`](../../services/topic_updater.py#L294-L309)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -528,7 +528,7 @@ result = await _try_delete_old_topic_msg(old_id=...)
 async def recreate_topic_message() -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L311-L328`](../../services/topic_updater.py#L311-L328)
+- **Source Reference**: [`services/topic_updater.py#L312-L329`](../../services/topic_updater.py#L312-L329)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -559,7 +559,7 @@ result = await recreate_topic_message()
 async def _recreate_after_edit_failure(text: str, kb: Any) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L331-L342`](../../services/topic_updater.py#L331-L342)
+- **Source Reference**: [`services/topic_updater.py#L332-L343`](../../services/topic_updater.py#L332-L343)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -593,7 +593,7 @@ result = await _recreate_after_edit_failure(text=..., kb=...)
 async def _handle_edit_failure( e: TelegramBadRequest, text: str, kb: Any, is_retry: bool, ) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L345-L367`](../../services/topic_updater.py#L345-L367)
+- **Source Reference**: [`services/topic_updater.py#L346-L368`](../../services/topic_updater.py#L346-L368)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -629,7 +629,7 @@ result = await _handle_edit_failure(e=..., text=..., kb=...)
 def should_skip_topic_update( lessons: list[Lesson], now_dt: datetime, target_date: date, ignore_time_restriction: bool, ) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L370-L387`](../../services/topic_updater.py#L370-L387)
+- **Source Reference**: [`services/topic_updater.py#L371-L388`](../../services/topic_updater.py#L371-L388)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -665,7 +665,7 @@ result = should_skip_topic_update(lessons=..., now_dt=..., target_date=...)
 async def process_today_reminders(lessons: list[Lesson], now_dt: datetime, target_date: date) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L390-L400`](../../services/topic_updater.py#L390-L400)
+- **Source Reference**: [`services/topic_updater.py#L391-L401`](../../services/topic_updater.py#L391-L401)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -700,7 +700,7 @@ result = await process_today_reminders(lessons=..., now_dt=..., target_date=...)
 async def _prepare_target_schedule( ignore_restriction: bool, ) -> tuple[date | None, list[Lesson] | None]
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L403-L422`](../../services/topic_updater.py#L403-L422)
+- **Source Reference**: [`services/topic_updater.py#L404-L423`](../../services/topic_updater.py#L404-L423)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[date | None, list[Lesson] | None]`
 
@@ -733,7 +733,7 @@ result = await _prepare_target_schedule(ignore_restriction=...)
 def _ensure_topic_main_msg_id() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L425-L434`](../../services/topic_updater.py#L425-L434)
+- **Source Reference**: [`services/topic_updater.py#L426-L435`](../../services/topic_updater.py#L426-L435)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -764,7 +764,7 @@ result = _ensure_topic_main_msg_id()
 async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L437-L459`](../../services/topic_updater.py#L437-L459)
+- **Source Reference**: [`services/topic_updater.py#L438-L460`](../../services/topic_updater.py#L438-L460)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -797,7 +797,7 @@ result = await sync_topic_main_message(ignore_time_restriction=...)
 async def notify_admin_about_api_down() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L466-L487`](../../services/topic_updater.py#L466-L487)
+- **Source Reference**: [`services/topic_updater.py#L467-L488`](../../services/topic_updater.py#L467-L488)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -828,7 +828,7 @@ result = await notify_admin_about_api_down()
 async def _track_api_failure(now: datetime) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L490-L501`](../../services/topic_updater.py#L490-L501)
+- **Source Reference**: [`services/topic_updater.py#L491-L502`](../../services/topic_updater.py#L491-L502)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -861,7 +861,7 @@ result = await _track_api_failure(now=...)
 def _reset_api_failure_tracker() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L504-L515`](../../services/topic_updater.py#L504-L515)
+- **Source Reference**: [`services/topic_updater.py#L505-L516`](../../services/topic_updater.py#L505-L516)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -892,7 +892,7 @@ result = _reset_api_failure_tracker()
 async def topic_sync_loop() -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L518-L536`](../../services/topic_updater.py#L518-L536)
+- **Source Reference**: [`services/topic_updater.py#L519-L537`](../../services/topic_updater.py#L519-L537)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -224,7 +224,8 @@ async def _edit_topic_message(text: str, kb: Any) -> bool:
         text=text,
         reply_markup=kb,
     )
-    log.info("✅ Сообщение топика ОТРЕДАКТИРОВАНО: MSG_ID=%s, chat=%s", _TOPIC_MAIN_MSG_ID, TOPIC_CHAT_ID)
+    # Штатное поминутное обновление — debug, чтобы не засорять лог (~1 тыс. строк в сутки)
+    log.debug("Сообщение топика отредактировано: MSG_ID=%s, chat=%s", _TOPIC_MAIN_MSG_ID, TOPIC_CHAT_ID)
     return True
 
 

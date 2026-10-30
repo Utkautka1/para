@@ -319,7 +319,7 @@ async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -
                 pipe.set(SNAPSHOT_KEY, p_snap, ex=ttl)
                 pipe.set(SNAPSHOT_META_KEY, p_meta, ex=ttl)
                 await pipe.execute()
-            log.info("Срез расписания группы успешно сохранен в кэш Redis")
+            log.debug("Срез расписания группы сохранен в кэш Redis: version=%s", meta["version"])
     except Exception as e:
         log.error("Ошибка сохранения снимка расписания в Redis: %s", e)
 
