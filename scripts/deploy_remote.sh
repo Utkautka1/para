@@ -85,7 +85,7 @@ apply_changes() {
   local files services
   files=$(changed_files)
   services=$(affected_services | xargs)
-  if grep -qE '^(requirements[^/]*\.txt|[^/]+\.dockerfile|\.dockerignore)$' <<<"$files"; then
+  if grep -qE '^(requirements[^/]*\.(txt|lock)|[^/]+\.dockerfile|\.dockerignore)$' <<<"$files"; then
     log "изменились зависимости/Dockerfile — пересборка образов"
     timeout 900 docker compose up -d --build --wait || fail "пересборка не прошла"
   elif grep -qx 'compose.yml' <<<"$files"; then
@@ -106,7 +106,9 @@ restart_counts() {
 
 verify_health() {
   local before since errors
-  since=$(date '+[%Y-%m-%d %H:%M')
+  # С точностью до секунды: с минутной меткой в окно попадали ошибки старых контейнеров,
+  # случившиеся при пересоздании за секунды до проверки (ложный DEPLOY_FAILED 9993bbb)
+  since=$(date '+[%Y-%m-%d %H:%M:%S')
   before=$(restart_counts)
   timeout 120 docker compose up -d --wait >/dev/null 2>&1 || fail "сервисы не стали healthy за 120 сек"
   sleep "$OBSERVE_SECONDS"
