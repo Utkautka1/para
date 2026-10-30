@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Background schedule refresh**: only `para-worker` downloads the ~57 MB KTMU payload (`services/schedule_refresher.py`, every `SCHEDULE_REFRESH_INTERVAL_SECONDS`=900). `para-api` serves the Redis snapshot and re-reads it only when `meta.version` changes; `force_refresh` («🔄 Обновить», admin sync) returns instantly and queues a refresh via `schedule:refresh_requested`. Readers fall back to their own download if the snapshot is older than 3 intervals. Cuts ~155 downloads/day (~8.7 GB) to ~96 and removes the ~10 s wait from user requests.
 
 ### Fixed
+- **Schedule substitutions ignored**: the bot read only the base grid and dropped the KTMU `substitutions` list, so one-off changes were lost (31.10: foreign language moved from pair 2 to pair 1 on the site, bot still showed pair 2). New `services/schedule_substitutions.py` overlays them per date: `sub`/`join_subgroup` patch period, room, teacher and format; `cancel`, `cancel_assignment`, `pending_move`, `excursion` and `moved` remove the lesson on its date; `stream_group_cancel` applies only to excluded groups; `moved` lessons appear on `targetDate`/`targetPeriod`. A legacy Redis snapshot without substitutions drops its ETag so the worker refetches once.
 - **Log rotation**: every `get_logger()` opened its own `RotatingFileHandler` on the shared `logs/bot.log` (~60 per process × 4 containers), so rotation renamed the file under the other handlers. Handlers are now process-wide singletons and each service writes its own `logs/{api,bot,worker,solver}.log`.
 
 ### Deployment
@@ -30,8 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code mounts completed**: `solver` had no code mounted (baked by `COPY . .`), and `api`/`bot`/`worker` were missing `integrations/` (and `api/`, `bot/` where imported), so `git pull` silently left those packages on the image version. All four services now mount every project package they import — deploy is `git pull` + restart, no rebuild.
 
 ### Changed
-- Primary schedule API moved
-- Log noise: routine gRPC reads (~2.6k/day), per-minute topic edits (~1.1k/day) and snapshot saves moved to `DEBUG` / logged only on `force_refresh`. from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).
+- Primary schedule API moved from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).
+- Log noise: routine gRPC reads (~2.6k/day), per-minute topic edits (~1.1k/day) and snapshot saves moved to `DEBUG` / logged only on `force_refresh`.
 - Lazy `%`-formatting in all logging calls (304 call sites); ruff `G004` enabled.
 - Blocking file I/O in async code moved to `asyncio.to_thread`; ambiguous `l` variables renamed, ruff `E741` enabled.
 

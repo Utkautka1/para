@@ -18,7 +18,7 @@ install: ## Initialize virtual environment and install production & dev dependen
 	$(VENV)/bin/pip install --upgrade pip
 	$(VENV)/bin/pip install -r requirements.txt -r requirements-dev.txt
 
-test: ## Execute complete test suite (588 tests)
+test: ## Execute complete test suite (730 tests)
 	PYTHONPATH=. $(PYTEST) tests/ -v
 
 test-fast: ## Execute test suite in quiet summary mode
@@ -44,7 +44,7 @@ format: ## Automatically fix lint errors and format code
 	$(RUFF) check . --fix
 	$(RUFF) format .
 
-docs: ## Regenerate 70 module engineering specifications and docs/index.md
+docs: ## Regenerate 100 module engineering specifications and docs/index.md
 	$(PYTHON) scripts/generate_docs_suite.py
 
 docs-check: docs ## Verify that engineering documentation is in sync with codebase

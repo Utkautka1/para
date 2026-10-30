@@ -1,6 +1,6 @@
 # 🏛️ Enterprise Engineering Portal: API & Subsystems Reference
 
-> Comprehensive, unabridged API and architectural specification for all 625+ system symbols.
+> Comprehensive, unabridged API and architectural specification for all 900+ system symbols.
 
 ## Subsystem Catalogs & Architectural Boundaries
 

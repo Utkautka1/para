@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/badge/CI%2FCD%20PIPELINE-PASSING-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD Status">
   </a>
   <a href="https://pytest.org">
-    <img src="https://img.shields.io/badge/TESTS-667%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 667 Passed">
+    <img src="https://img.shields.io/badge/TESTS-730%20PASSED%20(100%25)-success?style=for-the-badge&logo=pytest&logoColor=white" alt="Pytest 730 Passed">
   </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/PYTHON-3.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Versions">
@@ -70,7 +70,7 @@
   <b><a href="#-benchmarks--telemetry">Benchmarks</a></b> •
   <b><a href="#-code-highlights">Code Highlights</a></b> •
   <b><a href="#-deployment--quickstart">Quickstart</a></b> •
-  <b><a href="#-engineering-documentation--api-reference">Docs (90 specs / 650+)</a></b> •
+  <b><a href="#-engineering-documentation--api-reference">Docs (100 specs / 900+)</a></b> •
   <b><a href="docs/UML.md">UML Spec</a></b>
 </p>
 
@@ -79,7 +79,7 @@
 </div>
 
 > [!IMPORTANT]
-> **Production Status**: Deployed in production handling real-time academic operations for academic group `1-КПД-3` (KTMU College). System enforces strict **≤ 25 lines per method** single-responsibility decomposition, unprivileged `appuser` containers, zero host port exposure, end-to-end OpenTelemetry distributed tracing, ACID SQLite WAL persistence with automated hot backups, and 100% test coverage (658/658 passing).
+> **Production Status**: Deployed in production handling real-time academic operations for academic group `1-КПД-3` (KTMU College). System enforces strict **≤ 25 lines per method** single-responsibility decomposition, unprivileged `appuser` containers, zero host port exposure, end-to-end OpenTelemetry distributed tracing, ACID SQLite WAL persistence with automated hot backups, and 100% test pass rate (730/730 passing).
 
 ---
 
@@ -98,7 +98,7 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 | **Distributed Observability** | Print statements or untraceable text logs | **Full-Stack Distributed Tracing**: OpenTelemetry SDK + OTLP gRPC collector + Jaeger all-in-one + authenticated dual-tab Telegram Mini App portal (Swagger & Jaeger) + Prometheus `/metrics` |
 | **Incident Management** | Silent crashes and unhandled outages | **Proactive System Incident Engine**: Circuit Breaker trips, Yandex cookie expiry, and timetable degradation immediately dispatch severity-routed alerts to Debug Forum topics (`Fatal` #7, `Warning` #5, `Debug` #3) with distributed Redis cooldown throttling |
 | **Voice / STT Ingress** | Unsupported or manual playback | **GPU-Accelerated faster-whisper** (`large-v3-turbo`, 0.36s inference) + `/dev/shm` RAM-disk ephemeral streaming + automatic CPU int8 fallback |
-| **Quality Assurance** | "Tested in production" (manual testing) | **658 Automated Tests (100% passing)**, **Locust 846+ RPS stress testing** (sub-10ms gRPC p99), strict Ruff, Bandit AST security & GitHub Actions CI |
+| **Quality Assurance** | "Tested in production" (manual testing) | **730 Automated Tests (100% passing)**, **Locust 846+ RPS stress testing** (sub-10ms gRPC p99), strict Ruff, Bandit AST security & GitHub Actions CI |
 
 ---
 
@@ -454,7 +454,7 @@ Distributed Tracing Overhead:
 5. **Bounded Concurrency & Memory Guards**:
    * Memory leaks are prevented via strict container limits (`deploy.resources.limits`), while AI processing concurrency is capped to 3 tasks via `asyncio.Semaphore(3)` to eliminate out-of-memory kernel traps.
 6. **Automated Test Suite Execution Speed**:
-   * Complete test suite (**656 tests**, 100% passing) executes in **~6.2 s** locally and in GitHub Actions CI matrixes.
+   * Complete test suite (**730 tests**, 100% passing) executes in **~23 s** locally and in GitHub Actions CI matrixes.
 
 ---
 
@@ -666,6 +666,7 @@ para/
 │   ├── models.py             # Pydantic v2 core domain data transfer models
 │   ├── notifier.py           # APScheduler bell notifications (10-min pre-class alarms)
 │   ├── schedule_parser.py    # Resilient KTMU college timetable parser & parser engine
+│   ├── schedule_substitutions.py # KTMU substitutions overlay (moves, cancellations, transfers)
 │   ├── solver/               # Decomposed modular homework solver pipeline:
 │   │   ├── payload_extractor.py # Safe media downloader & multimodal attachment parser
 │   │   ├── prompt_sanitizer.py  # Prompt isolation facade preventing prompt injection
@@ -682,13 +683,13 @@ para/
 │   ├── mute_parser.py        # Natural language duration parser for moderation (/mute)
 │   └── storage.py            # Atomic JSON serialization with temp file & fsync guarantees
 │
-├── docs/                     # Architectural Documentation Suite (90 enterprise specifications)
+├── docs/                     # Architectural Documentation Suite (100 enterprise specifications)
 │   ├── UML.md                # Comprehensive 3,000+ line UML specification (Mermaid diagrams)
-│   ├── index.md              # Central engineering portal referencing 650+ symbols
+│   ├── index.md              # Central engineering portal referencing 900+ symbols
 │   ├── PRIVACY.md            # Data privacy & user telemetry policy (GDPR / 152-ФЗ compliant)
 │   └── reports/load_test/    # Locust stress test reports (HTML, CSV distributions)
 │
-└── tests/                    # Comprehensive Test Suite (656 tests, 100% passing)
+└── tests/                    # Comprehensive Test Suite (730 tests, 100% passing)
     ├── load/locustfile.py    # Locust dual-protocol (HTTP REST + gRPC) load test scenario
     └── test_*.py             # 25+ unit and integration test modules
 ```
@@ -782,7 +783,7 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
    * `ruff check .` — validates strict PEP compliance, import sorting, and Python 3.12+ syntax.
    * `bandit -r services/ bot/ core/ api/ -c pyproject.toml` — verifies zero cryptographic flaws, socket vulnerabilities, or injection vectors.
 2. **Stage 2 (Isolated Matrix Testing)**:
-   * Python 3.11 & 3.12 test execution across all 656 unit and integration test suites (100% passing).
+   * Python 3.11 & 3.12 test execution across all 730 unit and integration test suites (100% passing).
 3. **Stage 3 (Container Delivery Verification)**:
    * `docker compose build --parallel` — confirms that all four microservice Dockerfiles compile cleanly.
 
@@ -791,10 +792,10 @@ All commits and pull requests must pass the automated 3-tier GitHub Actions pipe
 Para features an **enterprise-grade, exhaustive documentation suite** authored under the **[Google Developer Documentation Style Guide](https://developers.google.com/style)**, AWS, and Stripe engineering standards. Every component is rigorously specified in pure Technical English with zero omissions.
 
 > [!TIP]
-> Access the central engineering portal at **[`docs/index.md`](docs/index.md)** for the complete component catalog, system boundaries, and direct cross-references to all 650+ symbols.
+> Access the central engineering portal at **[`docs/index.md`](docs/index.md)** for the complete component catalog, system boundaries, and direct cross-references to all 900+ symbols.
 
 ### 📐 Documentation Architecture & Standards
-* **Total Coverage**: **90 dedicated module specifications** documenting all **650+ functions and methods** across 104 modules and 77 domain classes.
+* **Total Coverage**: **100 dedicated module specifications** documenting all **900+ functions and methods** across 137 modules and 117 domain classes.
 * **Portable Relative GitHub Anchors**: All symbol references link directly to source line numbers on GitHub (e.g., `../../services/attendance_manager.py#L52-L60`), ensuring full portability and zero host filesystem leaks.
 * **Formal Method Specifications**: Every function is documented with:
   1. **Strict Type Annotations**: Python 3.12+ signature contracts.
@@ -810,13 +811,13 @@ Para features an **enterprise-grade, exhaustive documentation suite** authored u
 
 | Domain Subsystem | Documentation Path | Covered Components & Invariants |
 | :--- | :--- | :--- |
-| **🏛️ Master Engineering Portal** | [`docs/index.md`](docs/index.md) | Central Engineering Hub linking all 90 module specifications and cross-referencing 650+ symbols. |
+| **🏛️ Master Engineering Portal** | [`docs/index.md`](docs/index.md) | Central Engineering Hub linking all 100 module specifications and cross-referencing 900+ symbols. |
 | **⚡ Entrypoints & Daemons** | [`docs/entrypoints/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | `api.py` (FastAPI+gRPC), `bot.py` (aiogram Gateway), `worker.py` (APScheduler), `solver.py` (AI Queue), `config.py` (Domain Facade). |
 | **🔍 Distributed Tracing & Jaeger** | [`docs/core/telemetry.md`](docs/core/telemetry.md) • [`docs/bot/middlewares_tracing.md`](docs/bot/middlewares_tracing.md) • [`docs/api/router_jaeger.md`](docs/api/router_jaeger.md) | OpenTelemetry TracerProvider, OTLP gRPC export, W3C TraceContext propagation, parent-based sampling & authenticated reverse proxy. |
 | **💾 Relational Persistence & SQLite** | [`docs/core/database.md`](docs/core/database.md) • [`docs/db/sqlite_models.md`](docs/db/sqlite_models.md) • [`docs/db/sqlite_repositories.md`](docs/db/sqlite_repositories.md) | Async SQLite engine (aiosqlite) with WAL mode, foreign keys, Subscriber, Incident, and Attendance repositories. |
 | **🚨 Incident Alerting & Backups** | [`docs/services/alerting.md`](docs/services/alerting.md) • [`docs/services/backup_manager.md`](docs/services/backup_manager.md) • [`docs/api/router_system.md`](docs/api/router_system.md) | Proactive incident engine with 5-min cooldown, hot SQLite online backup, Redis snapshot, tar.gz compression & Telegram delivery. |
 | **🤖 AI Homework Solver Pipeline** | [`docs/services/solver_task_processor.md`](docs/services/solver_task_processor.md) • [`docs/services/solver_payload_extractor.md`](docs/services/solver_payload_extractor.md) • [`docs/services/solver_telegram_reporter.md`](docs/services/solver_telegram_reporter.md) | Decomposed worker pipeline: semaphore throttling, multimodal DeepSeek vision, prompt injection sanitizer & GOST .docx synthesis. |
-| **🎓 Academic Services & Logic** | [`docs/services/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | Attendance Manager & League Stats, KTMU Upstream Timetable Parser, Topic Updater, Bell Notifier, Birthday Manager, Classmates RBAC. |
+| **🎓 Academic Services & Logic** | [`docs/services/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | Attendance Manager & League Stats, KTMU Upstream Timetable Parser & Substitutions Overlay, Topic Updater, Bell Notifier, Birthday Manager, Classmates RBAC. |
 | **📱 Telegram Bot Gateway & UX** | [`docs/bot/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | User & Admin Handlers, Throttling & Retry Middlewares, OTel Tracing Middleware, Dynamic Keyboards & Voice STT Formatters. |
 | **🚀 Dual-Protocol API & gRPC Mesh** | [`docs/api/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | 13 REST Routers, gRPC HTTP/2 Server & Servicers, Protobuf Converters, HMAC Security & Dual-Tab Mini App Portal. |
 | **🧠 Distributed Core & Caching** | [`docs/core/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | Redis L2 Distributed Cache, Tokenized Distributed Locks, Connection Pool, Prometheus Metrics & Rotating Structured Logger. |

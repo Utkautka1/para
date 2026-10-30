@@ -807,7 +807,7 @@ def build_master_portal(manifest: dict[str, dict[str, str]]) -> str:
     """
     lines = [
         "# 🏛️ Enterprise Engineering Portal: API & Subsystems Reference",
-        "\n> Comprehensive, unabridged API and architectural specification for all 625+ system symbols.\n",
+        "\n> Comprehensive, unabridged API and architectural specification for all 900+ system symbols.\n",
         "## Subsystem Catalogs & Architectural Boundaries\n",
         "| Subsystem | Source Module | Specification Reference | Architectural Layer |",
         "| :--- | :--- | :--- | :--- |",

@@ -6,9 +6,9 @@ Security patches and dependency updates are applied exclusively to the `main` br
 
 | Version | Supported | Release Date | Status |
 | :--- | :--- | :--- | :--- |
-| `v2.6.x` | :white_check_mark: | October 2026 | Active Production (Hardened Containers & gRPC Auth Interceptor) |
-| `v2.5.x` | :white_check_mark: | October 2026 | Maintenance Mode (GPU STT Transcription Engine) |
-| `v2.4.x` | :x: | October 2026 | Deprecated |
+| `v2.9.x` | :white_check_mark: | October 2026 | Active Production (Gamification, STT Microservice & Continuous Deployment) |
+| `v2.8.x` | :white_check_mark: | October 2026 | Maintenance Mode (security fixes only) |
+| `v2.4.x` – `v2.7.x` | :x: | October 2026 | Deprecated |
 | `< v2.0` | :x: | Earlier | End of Life |
 
 ---

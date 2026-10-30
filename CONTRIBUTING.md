@@ -50,6 +50,7 @@ pip install --upgrade pip
 pip install -r requirements.txt -r requirements-dev.txt
 
 # 4. Prepare local environment configuration
+#    WARNING: overwrites an existing .env — never run this in a checkout with production secrets
 cp .env.ci .env
 
 # 5. Start background Redis store (if not running natively)
@@ -78,7 +79,7 @@ ruff check . --fix
 # Run Bandit AST security scan
 bandit -r services/ bot/ core/ api/ -c pyproject.toml
 
-# Run the complete test suite (588 tests)
+# Run the complete test suite (730 tests)
 PYTHONPATH=. pytest tests/ -v
 ```
 
@@ -118,7 +119,7 @@ Documentation is treated as a first-class production artifact:
    - `docs(api): update gRPC servicer parameter specifications`
    - `test(solver): add chaos test for DeepSeek DLQ retry backoff`
 3. **Pull Request Checklist**:
-   - [ ] All 588+ automated unit and integration tests pass.
+   - [ ] All 730+ automated unit and integration tests pass.
    - [ ] `ruff check .` produces zero linting warnings.
    - [ ] Every new or modified method is ≤ 25 lines.
    - [ ] Documentation regenerated via `scripts/generate_docs_suite.py`.
