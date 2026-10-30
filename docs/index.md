@@ -27,6 +27,7 @@
 | `Cloud DOCX Parser` | [`integrations/docx_parser.py`](../integrations/docx_parser.py) | [📖 View Specification](integrations/docx_parser.md) | Enterprise Service Component |
 | `Cloudflare Tunnel Syncer` | [`scripts/tunnel_sync.py`](../scripts/tunnel_sync.py) | [📖 View Specification](scripts/tunnel_sync.md) | Enterprise Service Component |
 | `DeepSeek LLM Integration` | [`integrations/deepseek.py`](../integrations/deepseek.py) | [📖 View Specification](integrations/deepseek.md) | Enterprise Service Component |
+| `Deployment Alerts` | [`services/deploy_notifier.py`](../services/deploy_notifier.py) | [📖 View Specification](services/deploy_notifier.md) | Enterprise Service Component |
 | `Distributed L2 Cache` | [`core/redis_cache.py`](../core/redis_cache.py) | [📖 View Specification](core/redis_cache.md) | Enterprise Service Component |
 | `Domain Configuration Models` | [`core/config_models.py`](../core/config_models.py) | [📖 View Specification](core/config_models.md) | Enterprise Service Component |
 | `Domain Models` | [`services/models.py`](../services/models.py) | [📖 View Specification](services/models.md) | Enterprise Service Component |
@@ -75,6 +76,8 @@
 | `Solver Payload Ingestion` | [`services/solver/payload_extractor.py`](../services/solver/payload_extractor.py) | [📖 View Specification](services/solver_payload_extractor.md) | Enterprise Service Component |
 | `Solver Queue Processing` | [`services/solver/task_processor.py`](../services/solver/task_processor.py) | [📖 View Specification](services/solver_task_processor.md) | Enterprise Service Component |
 | `Solver Security Facade` | [`services/solver/prompt_sanitizer.py`](../services/solver/prompt_sanitizer.py) | [📖 View Specification](services/solver_prompt_sanitizer.md) | Enterprise Service Component |
+| `Speech-to-Text Queue Consumer` | [`stt.py`](../stt.py) | [📖 View Specification](entrypoints/stt.md) | Enterprise Service Component |
+| `Speech-to-Text Whisper Engine` | [`services/stt_queue.py`](../services/stt_queue.py) | [📖 View Specification](services/stt_queue.md) | Enterprise Service Component |
 | `Speech-to-Text Whisper Engine` | [`services/transcriber.py`](../services/transcriber.py) | [📖 View Specification](services/transcriber.md) | Enterprise Service Component |
 | `Spreadsheet Analytics` | [`services/attendance_stats.py`](../services/attendance_stats.py) | [📖 View Specification](services/attendance_stats.md) | Enterprise Service Component |
 | `Student Identity Cache` | [`services/user_cache.py`](../services/user_cache.py) | [📖 View Specification](services/user_cache.md) | Enterprise Service Component |

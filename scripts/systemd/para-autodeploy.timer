@@ -1,0 +1,10 @@
+[Unit]
+Description=Para autodeploy: poll ci-passed every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+Unit=para-autodeploy.service
+
+[Install]
+WantedBy=timers.target

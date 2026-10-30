@@ -619,6 +619,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "bot.py": {"out": "docs/entrypoints/bot.md", "cat": "Telegram Gateway"},
     "worker.py": {"out": "docs/entrypoints/worker.md", "cat": "Background Daemon"},
     "solver.py": {"out": "docs/entrypoints/solver.md", "cat": "AI Queue Consumer"},
+    "stt.py": {"out": "docs/entrypoints/stt.md", "cat": "Speech-to-Text Queue Consumer"},
     "config.py": {"out": "docs/entrypoints/config.md", "cat": "System Configuration"},
     "services/attendance_manager.py": {"out": "docs/services/attendance_manager.md", "cat": "Attendance Operations"},
     "services/attendance_stats.py": {"out": "docs/services/attendance_stats.md", "cat": "Spreadsheet Analytics"},
@@ -629,6 +630,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "services/birthday_manager.py": {"out": "docs/services/birthday_manager.md", "cat": "Student Lifecycle"},
     "services/classmates_auth.py": {"out": "docs/services/classmates_auth.md", "cat": "RBAC Security"},
     "services/login_tokens.py": {"out": "docs/services/login_tokens.md", "cat": "RBAC Security"},
+    "services/deploy_notifier.py": {"out": "docs/services/deploy_notifier.md", "cat": "Deployment Alerts"},
     "services/custom_teachers.py": {"out": "docs/services/custom_teachers.md", "cat": "Faculty Registry"},
     "services/exam_parser.py": {"out": "docs/services/exam_parser.md", "cat": "Examination Parser"},
     "services/exam_topic_updater.py": {"out": "docs/services/exam_topic_updater.md", "cat": "Examination Topic"},
@@ -638,6 +640,7 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "services/schedule_refresher.py": {"out": "docs/services/schedule_refresher.md", "cat": "KTMU Timetable Engine"},
     "services/testers_manager.py": {"out": "docs/services/testers_manager.md", "cat": "Testing Whitelist"},
     "services/topic_updater.py": {"out": "docs/services/topic_updater.md", "cat": "Live Schedule Topic"},
+    "services/stt_queue.py": {"out": "docs/services/stt_queue.md", "cat": "Speech-to-Text Whisper Engine"},
     "services/transcriber.py": {"out": "docs/services/transcriber.md", "cat": "Speech-to-Text Whisper Engine"},
     "services/user_cache.py": {"out": "docs/services/user_cache.md", "cat": "Student Identity Cache"},
     "services/solver/payload_extractor.py": {

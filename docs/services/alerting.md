@@ -21,14 +21,14 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L46–L59 | `bool | None` | Executes core domain logic for `_check_redis_throttle`. |
-| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L62–L72 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
-| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L75–L80 | `bool` | Executes core domain logic for `_is_alert_throttled`. |
-| [`_format_alert_text`](#_format_alert_text) | Function | L83–L95 | `str` | Executes core domain logic for `_format_alert_text`. |
-| [`_resolve_alert_destination`](#_resolve_alert_destination) | Function | L98–L106 | `tuple[int, int | None]` | Executes core domain logic for `_resolve_alert_destinat... |
-| [`_record_incident_safe`](#_record_incident_safe) | Function | L109–L126 | `None` | Executes core domain logic for `_record_incident_safe`. |
-| [`_deliver_alert_message`](#_deliver_alert_message) | Function | L129–L150 | `bool` | Executes core domain logic for `_deliver_alert_message`... |
-| [`send_admin_alert`](#send_admin_alert) | Function | L153–L167 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L51–L64 | `bool | None` | Executes core domain logic for `_check_redis_throttle`. |
+| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L67–L77 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
+| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L80–L85 | `bool` | Executes core domain logic for `_is_alert_throttled`. |
+| [`_format_alert_text`](#_format_alert_text) | Function | L88–L100 | `str` | Executes core domain logic for `_format_alert_text`. |
+| [`_resolve_alert_destination`](#_resolve_alert_destination) | Function | L103–L111 | `tuple[int, int | None]` | Executes core domain logic for `_resolve_alert_destinat... |
+| [`_record_incident_safe`](#_record_incident_safe) | Function | L114–L131 | `None` | Executes core domain logic for `_record_incident_safe`. |
+| [`_deliver_alert_message`](#_deliver_alert_message) | Function | L134–L155 | `bool` | Executes core domain logic for `_deliver_alert_message`... |
+| [`send_admin_alert`](#send_admin_alert) | Function | L158–L172 | `bool` | Dispatches notification message via Telegram API for `s... |
 
 ---
 
@@ -43,7 +43,7 @@ Encapsulates domain entities and data transfer logic for `IncidentType`.
 async def _check_redis_throttle(incident_type: str, cooldown_seconds: float) -> bool | None
 ```
 
-- **Source Reference**: [`services/alerting.py#L46-L59`](../../services/alerting.py#L46-L59)
+- **Source Reference**: [`services/alerting.py#L51-L64`](../../services/alerting.py#L51-L64)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool | None`
 
@@ -78,7 +78,7 @@ result = await _check_redis_throttle(incident_type=..., cooldown_seconds=...)
 def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L62-L72`](../../services/alerting.py#L62-L72)
+- **Source Reference**: [`services/alerting.py#L67-L77`](../../services/alerting.py#L67-L77)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -112,7 +112,7 @@ result = _should_throttle_alert(incident_type=..., cooldown_seconds=...)
 async def _is_alert_throttled(incident_type: str, cooldown_seconds: float) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L75-L80`](../../services/alerting.py#L75-L80)
+- **Source Reference**: [`services/alerting.py#L80-L85`](../../services/alerting.py#L80-L85)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -146,7 +146,7 @@ result = await _is_alert_throttled(incident_type=..., cooldown_seconds=...)
 def _format_alert_text( incident_type: str, severity: str, title: str, description: str, trace_id: str | None = None ) -> str
 ```
 
-- **Source Reference**: [`services/alerting.py#L83-L95`](../../services/alerting.py#L83-L95)
+- **Source Reference**: [`services/alerting.py#L88-L100`](../../services/alerting.py#L88-L100)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -183,7 +183,7 @@ result = _format_alert_text(incident_type=..., severity=..., title=...)
 def _resolve_alert_destination(severity: str) -> tuple[int, int | None]
 ```
 
-- **Source Reference**: [`services/alerting.py#L98-L106`](../../services/alerting.py#L98-L106)
+- **Source Reference**: [`services/alerting.py#L103-L111`](../../services/alerting.py#L103-L111)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, int | None]`
 
@@ -216,7 +216,7 @@ result = _resolve_alert_destination(severity=...)
 async def _record_incident_safe( incident_type: str, severity: str, title: str, description: str, trace_id: str | None, ) -> None
 ```
 
-- **Source Reference**: [`services/alerting.py#L109-L126`](../../services/alerting.py#L109-L126)
+- **Source Reference**: [`services/alerting.py#L114-L131`](../../services/alerting.py#L114-L131)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -253,7 +253,7 @@ result = await _record_incident_safe(incident_type=..., severity=..., title=...)
 async def _deliver_alert_message( incident_type: str, severity: str, title: str, description: str, trace_id: str | None, ) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L129-L150`](../../services/alerting.py#L129-L150)
+- **Source Reference**: [`services/alerting.py#L134-L155`](../../services/alerting.py#L134-L155)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -290,7 +290,7 @@ result = await _deliver_alert_message(incident_type=..., severity=..., title=...
 async def send_admin_alert( incident_type: str, title: str, description: str, severity: str = IncidentSeverity.WARNING, trace_id: str | None = None, cooldown_seconds: float | None = None, ) -> bool
 ```
 
-- **Source Reference**: [`services/alerting.py#L153-L167`](../../services/alerting.py#L153-L167)
+- **Source Reference**: [`services/alerting.py#L158-L172`](../../services/alerting.py#L158-L172)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

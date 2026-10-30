@@ -17,12 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Private temp dir for voice audio**: per-process `mkdtemp` (0700) instead of fixed `/dev/shm/para_audio`.
 
 ### Performance
+- **STT microservice**: speech recognition moved from the bot into `para-stt` (`stt.py`, `stt.dockerfile`, GPU reservation). Bot and STT exchange jobs via Redis (`services/stt_queue.py`) and audio via a shared tmpfs volume `stt_audio`. Bot image drops CUDA/faster-whisper (~5.4 GB → ~0.5 GB), memory limit 4 GB → 1 GB; bot restarts no longer reload Whisper into VRAM.
+- Topic post: identical edits are skipped (≈1.7k 'message is not modified' API calls per 4 days), with a forced edit every 10 minutes to detect a manually deleted post.
 - **Background schedule refresh**: only `para-worker` downloads the ~57 MB KTMU payload (`services/schedule_refresher.py`, every `SCHEDULE_REFRESH_INTERVAL_SECONDS`=900). `para-api` serves the Redis snapshot and re-reads it only when `meta.version` changes; `force_refresh` («🔄 Обновить», admin sync) returns instantly and queues a refresh via `schedule:refresh_requested`. Readers fall back to their own download if the snapshot is older than 3 intervals. Cuts ~155 downloads/day (~8.7 GB) to ~96 and removes the ~10 s wait from user requests.
 
 ### Fixed
 - **Log rotation**: every `get_logger()` opened its own `RotatingFileHandler` on the shared `logs/bot.log` (~60 per process × 4 containers), so rotation renamed the file under the other handlers. Handlers are now process-wide singletons and each service writes its own `logs/{api,bot,worker,solver}.log`.
 
 ### Deployment
+- **Continuous deployment**: CI job `deploy-gate` (needs all 42 jobs) moves branch `ci-passed`; the server polls it every 2 minutes (`scripts/autodeploy.sh`, `scripts/systemd/para-autodeploy.timer`) and deploys without GitHub having any server access. Result is sent to the admin in Telegram (`services/deploy_notifier.py`, `DEPLOY_SUCCESS`/`DEPLOY_FAILED`).
+- **One-command deploy**: `scripts/deploy.sh` → `scripts/deploy_remote.sh` over `ssh home-tunnel`: ff-only pull with timeouts, restarts only services whose mounted code changed (from `docker compose config`), rebuilds on requirements/Dockerfile changes, then verifies health, restart counts and new log errors. Shared `flock` with autodeploy.
 - **Code mounts completed**: `solver` had no code mounted (baked by `COPY . .`), and `api`/`bot`/`worker` were missing `integrations/` (and `api/`, `bot/` where imported), so `git pull` silently left those packages on the image version. All four services now mount every project package they import — deploy is `git pull` + restart, no rebuild.
 
 ### Changed

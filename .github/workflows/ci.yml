@@ -755,3 +755,63 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL'
+
+  # =========================================================================
+  # Deploy gate: ветка ci-passed указывает на последний коммит main,
+  # прошедший ВСЕ джобы. Сервер сам опрашивает её (scripts/autodeploy.sh)
+  # и деплоит — GitHub не получает ни ssh-ключей, ни доступа к серверу.
+  # =========================================================================
+  deploy-gate:
+    name: "🚀 Deploy Gate: mark commit as deployable"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    needs:
+      - check-ruff-lint
+      - check-ruff-format
+      - check-function-length
+      - check-docstrings-coverage
+      - check-trailing-whitespace
+      - check-pyproject-toml
+      - check-json-data-integrity
+      - mypy-core-types
+      - mypy-solver-types
+      - mypy-gamification-types
+      - mypy-full-configured
+      - security-bandit-core
+      - security-bandit-api
+      - security-bandit-bot
+      - security-bandit-services
+      - security-pip-audit
+      - security-secrets-leak
+      - security-sqli-ast
+      - security-session-auth
+      - arch-openapi-drift
+      - arch-docs-suite-drift
+      - arch-uml-diagram-drift
+      - arch-layer-isolation
+      - arch-env-schema-parity
+      - arch-requirements-parity
+      - unit-test-achievement-service
+      - unit-test-gamification-rules
+      - unit-test-miniapp-and-testers
+      - unit-test-attendance-system
+      - unit-test-bot-schedule-commands
+      - unit-test-auth-and-access-filters
+      - unit-test-sqlite-database
+      - unit-test-ai-solver-resilience
+      - unit-test-observability-jaeger
+      - unit-test-grpc-services
+      - unit-test-voice-transcription
+      - unit-test-yandex-wopi-sync
+      - matrix-test-python-311
+      - matrix-test-python-312
+      - docker-compose-validate
+      - docker-images-build
+      - docker-trivy-security
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+      - name: "Move ci-passed to this commit"
+        run: git push --force origin "HEAD:refs/heads/ci-passed"

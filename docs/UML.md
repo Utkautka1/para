@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -1766,7 +1766,8 @@ sequenceDiagram
     participant Bot as Aiogram Dispatcher
     participant Handler as voice_transcribe.py
     participant TG as Telegram Bot API
-    participant STT as AudioTranscriber (faster-whisper)
+    participant Queue as Redis (stt:queue / stt:result:<job>)
+    participant STT as para-stt (AudioTranscriber, faster-whisper)
     participant GPU as NVIDIA GTX 1660 Ti (CUDA)
 
     User->>Bot: Sends Voice / Video Note (in Topic or DM)
@@ -1780,14 +1781,16 @@ sequenceDiagram
 
     Handler->>Handler: process_audio_pipeline(...)
     Handler->>TG: bot.get_file(file_id) & bot.download_file(...) [timeout=25s]
-    TG-->>Handler: Raw Audio Stream (.ogg / .mp4 in /dev/shm)
+    TG-->>Handler: Raw Audio (.ogg / .mp4) in shared tmpfs volume stt_audio
 
-    Handler->>STT: transcribe_file(temp_path) [timeout=90s]
-    STT->>STT: acquire _gpu_semaphore (bound concurrency & track queue_size)
-    STT->>STT: get_model() [lazy lock & fallback check]
+    Handler->>Queue: RPUSH stt:queue {job_id, path}
+    STT->>Queue: BLPOP stt:queue (4 s loop)
+    STT->>STT: acquire _gpu_semaphore, get_model() [warmed at stt startup]
     STT->>GPU: WhisperModel.transcribe(beam_size=1, no_speech_threshold=0.6, language="ru")
     GPU-->>STT: Segments: text, timestamps, language
-    STT-->>Handler: Normalized Full Text Transcript
+    STT->>Queue: RPUSH stt:result:<job_id> {text | error} EX 600
+    Handler->>Queue: BLPOP stt:result:<job_id> until TRANSCRIBE_TIMEOUT
+    Queue-->>Handler: Normalized Full Text Transcript
 
     Handler->>Handler: split_text_to_chunks(text, max_chunk_len=4000)
     Handler->>TG: status_msg.edit_text(format_transcription_result(...)) [HTML safe]
@@ -1795,7 +1798,7 @@ sequenceDiagram
         Handler->>TG: message.reply(extra_chunk, message_thread_id) [HTML safe]
     end
     TG-->>User: Formatted HTML Quote with Duration & Speaker
-    Handler->>Handler: cleanup_temp_file(temp_path) [/dev/shm]
+    Handler->>Handler: cleanup_temp_file(temp_path) [tmpfs stt_audio]
     Handler->>Handler: release_user_slot(user_id)
 ```
 
@@ -1803,10 +1806,10 @@ sequenceDiagram
 1. **Forum Thread Affinity**: Strictly preserves `message_thread_id=message.message_thread_id` across all responses, preventing transcription leakage into the General topic.
 2. **GPU Concurrency Guard**: Bounded by `asyncio.Semaphore(1)` to serialize access to the NVIDIA GTX 1660 Ti, preventing CUDA VRAM OOM and CUDA execution contention.
 3. **Anti-Hallucination Guardrails**: Utilizes `beam_size=1` (3x faster greedy decoding), `condition_on_previous_text=False`, `no_speech_threshold=0.6`, and explicit `language="ru"`, completely eliminating English hallucinations on screams, non-speech noise, or background music.
-4. **RAM-Disk Temp Audio (`/dev/shm`)**: Directs Telegram voice download streams into Linux shared memory (`/dev/shm/para_audio`), eliminating SSD wear and physical disk I/O latency.
+4. **Shared RAM-Disk Audio (`stt_audio` tmpfs volume)**: The bot downloads voice streams into a Docker tmpfs volume (`size=256m, uid=1000, mode=0700`) mounted into both `para-bot` and `para-stt`, eliminating SSD wear while keeping files invisible to other host users.
 5. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to a cached `_cpu_model` (INT8) if VRAM is temporarily exhausted or if execution fails at runtime.
-6. **Zero Cold-Start Lag (Warmup)**: Pre-loads `large-v3-turbo` model into GPU memory in a background async task during bot startup (`_warmup_stt`), enabling instantaneous first-query responses.
-7. **Isolated Service Dependencies**: Packages `faster-whisper`, `nvidia-cublas-cu12`, and `nvidia-cudnn-cu12` into `requirements-bot.txt`, ensuring `api`, `worker`, and `solver` microservices remain lightweight (< 10s builds).
+6. **Zero Cold-Start Lag (Warmup)**: `para-stt` pre-loads `large-v3-turbo` into GPU memory at its own startup (`stt.py::_warmup_model`), so bot restarts and deploys never reload the model into VRAM.
+7. **Isolated GPU Service**: `faster-whisper`, `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` (`requirements-bot.txt`) live only in `stt.dockerfile`; the bot image dropped CUDA (~5.4 GB → ~0.5 GB), its GPU reservation and 4 GB memory limit. Bot and STT talk only through Redis (`services/stt_queue.py`).
 
 ---
 
@@ -2249,6 +2252,34 @@ classDiagram
 ```
 
 ---
+
+### 9.6. Continuous Deployment: CI Gate & Server-Side Pull
+
+GitHub never gets SSH access to the servers. After **all** CI jobs pass on `main`, the `deploy-gate` job moves branch `ci-passed` to that commit. The home server polls it and deploys itself; manual `scripts/deploy.sh` runs the same `deploy_remote.sh` under the same lock.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant GH as GitHub Actions (ci.yml)
+    participant Timer as ut: para-autodeploy.timer (2 min)
+    participant Deploy as scripts/deploy_remote.sh
+    participant Compose as docker compose
+    participant Bot as para-worker (deploy_notifier)
+
+    Dev->>GH: git push main
+    GH->>GH: 42 jobs (lint, types, security, tests, docker)
+    GH->>GH: deploy-gate: git push HEAD:ci-passed
+    Timer->>GH: git ls-remote refs/heads/ci-passed
+    alt ci-passed not in HEAD
+        Timer->>Deploy: DEPLOY_BRANCH=ci-passed (flock /run/lock/para-deploy.lock)
+        Deploy->>Deploy: fetch + ff-only merge (timeouts)
+        Deploy->>Compose: rebuild if requirements/Dockerfile, up if compose.yml, else restart services whose mounts changed
+        Deploy->>Compose: wait healthy, /health, restart counts, new ERROR lines
+        Timer->>Bot: python -m services.deploy_notifier success|failure
+        Bot-->>Dev: Telegram alert ✅ / 🚨
+    end
+```
 
 ### 9.5. Public HTTPS Edge Gateway & Reverse SSH Tunnel Architecture
 

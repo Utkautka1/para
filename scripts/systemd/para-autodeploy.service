@@ -1,0 +1,11 @@
+[Unit]
+Description=Para autodeploy: deploy ci-passed after green GitHub CI
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/bash /root/para/scripts/autodeploy.sh
+# Пересборка образов при смене requirements может занять до 15 минут
+TimeoutStartSec=1800

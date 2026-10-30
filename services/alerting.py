@@ -33,6 +33,8 @@ class IncidentType(StrEnum):
     TIMETABLE_API_DOWN = "TIMETABLE_API_DOWN"
     BACKUP_FAILED = "BACKUP_FAILED"
     BACKUP_SUCCESS = "BACKUP_SUCCESS"
+    DEPLOY_SUCCESS = "DEPLOY_SUCCESS"
+    DEPLOY_FAILED = "DEPLOY_FAILED"
 
 
 DEFAULT_ALERT_COOLDOWNS: dict[str, float] = {
@@ -40,6 +42,9 @@ DEFAULT_ALERT_COOLDOWNS: dict[str, float] = {
     IncidentType.YANDEX_COOKIE_EXPIRED: 7200.0,
     IncidentType.CIRCUIT_BREAKER_OPEN: 1800.0,
     IncidentType.BACKUP_FAILED: 1800.0,
+    # О каждом деплое сообщаем отдельно — подавлять повторы нельзя
+    IncidentType.DEPLOY_SUCCESS: 1.0,
+    IncidentType.DEPLOY_FAILED: 1.0,
 }
 
 
@@ -84,7 +89,7 @@ def _format_alert_text(
     incident_type: str, severity: str, title: str, description: str, trace_id: str | None = None
 ) -> str:
     """Форматирует HTML-текст алерта для Telegram."""
-    emoji = "🚨" if severity == IncidentSeverity.CRITICAL else "⚠️"
+    emoji = {IncidentSeverity.CRITICAL: "🚨", IncidentSeverity.INFO: "✅"}.get(severity, "⚠️")
     trace_info = f"\n🔍 <b>Trace ID:</b> <code>{trace_id}</code>" if trace_id else ""
     return (
         f"{emoji} <b>[SYSTEM ALERT] {incident_type}</b>\n"
