@@ -3,10 +3,12 @@ Description=Para API Reverse SSH Tunnel to VPS Gateway (185.121.12.109)
 After=network.target docker.service
 Wants=docker.service
 
+# На VPS — пользователь tunnel без shell: authorized_keys с restrict,port-forwarding и permitlisten
+# только для 127.0.0.1:8080 и 127.0.0.1:2223. Ключ хоста VPS закреплён в /etc/ssh/ssh_known_hosts.
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/ssh -N -R 8080:127.0.0.1:8080 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no root@185.121.12.109
+ExecStart=/usr/bin/ssh -N -R 127.0.0.1:8080:127.0.0.1:8080 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/ssh_known_hosts tunnel@185.121.12.109
 Restart=always
 RestartSec=5
 

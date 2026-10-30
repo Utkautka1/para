@@ -3,11 +3,13 @@ Description=Para SSH Reverse Tunnel to VPS Gateway (185.121.12.109:2223 -> sshd)
 After=network-online.target ssh.service
 Wants=network-online.target
 
+# На VPS — пользователь tunnel без shell: authorized_keys с restrict,port-forwarding и permitlisten
+# только для 127.0.0.1:8080 и 127.0.0.1:2223. Ключ хоста VPS закреплён в /etc/ssh/ssh_known_hosts.
 [Service]
 Type=simple
 User=root
 # Запасной вход на home в обход Tailscale и NAT: ssh home-tunnel (ProxyJump claude)
-ExecStart=/usr/bin/ssh -N -R 127.0.0.1:2223:127.0.0.1:22 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=accept-new root@185.121.12.109
+ExecStart=/usr/bin/ssh -N -R 127.0.0.1:2223:127.0.0.1:22 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/ssh_known_hosts tunnel@185.121.12.109
 Restart=always
 RestartSec=10
 
