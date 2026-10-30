@@ -739,6 +739,18 @@ install -m 0644 scripts/systemd/para-autodeploy.* /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now para-autodeploy.timer
 ```
 
+### Server Network Units (`scripts/systemd/`)
+
+The home server sits behind NAT with an ISP that throttles long-lived foreign TLS (DPI), so every inbound path goes through the edge VPS `claude`:
+
+| Unit | Purpose |
+|---|---|
+| `para-vps-tunnel.service` | reverse tunnel `claude:8080 → para-api` (public HTTPS via Caddy) |
+| `para-ssh-tunnel.service` | reverse tunnel `claude:127.0.0.1:2223 → sshd` (`ssh home-tunnel`, works without Tailscale) |
+| `para-socks-claude.service` | SOCKS5 `127.0.0.1:1080` via `claude` for the Tailscale control plane |
+| `tailscaled.service.d/para-proxy.conf` | sends tailscaled control traffic through that SOCKS; DERP relays stay direct |
+| `para-autodeploy.{service,timer}` | continuous deployment after green CI |
+
 ### Local Development Setup
 
 ```bash

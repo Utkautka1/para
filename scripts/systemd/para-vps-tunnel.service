@@ -1,0 +1,14 @@
+[Unit]
+Description=Para API Reverse SSH Tunnel to VPS Gateway (185.121.12.109)
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/ssh -N -R 8080:127.0.0.1:8080 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no root@185.121.12.109
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

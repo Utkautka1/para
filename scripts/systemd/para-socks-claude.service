@@ -1,0 +1,15 @@
+[Unit]
+Description=SOCKS5 proxy via VPS claude (127.0.0.1:1080) for tailscaled control plane
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+# Провайдер рвёт long-poll Tailscale к controlplane.tailscale.com (DPI) — пускаем его через claude
+ExecStart=/usr/bin/ssh -N -D 127.0.0.1:1080 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=accept-new root@185.121.12.109
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
