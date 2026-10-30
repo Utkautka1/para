@@ -21,12 +21,12 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_calculate_group_pulse`](#_calculate_group_pulse) | Function | L32–L36 | `float` | Executes core domain logic for `_calculate_group_pulse`... |
-| [`_resolve_target_fio`](#_resolve_target_fio) | Function | L39–L52 | `str | None` | Executes core domain logic for `_resolve_target_fio`. |
-| [`get_leaderboard_endpoint`](#get_leaderboard_endpoint) | Function | L56–L72 | `LeaderboardResponse` | Retrieves and resolves domain data for `get_leaderboard... |
-| [`get_student_profile_endpoint`](#get_student_profile_endpoint) | Function | L76–L93 | `StudentProfileSchema` | Retrieves and resolves domain data for `get_student_pro... |
-| [`get_achievements_catalog_endpoint`](#get_achievements_catalog_endpoint) | Function | L97–L116 | `AchievementsCatalogResponse` | Retrieves and resolves domain data for `get_achievement... |
-| [`get_ranks_catalog_endpoint`](#get_ranks_catalog_endpoint) | Function | L120–L122 | `list[dict[str, str]]` | Retrieves and resolves domain data for `get_ranks_catal... |
+| [`_calculate_group_pulse`](#_calculate_group_pulse) | Function | L37–L41 | `float` | Executes core domain logic for `_calculate_group_pulse`... |
+| [`_resolve_target_fio`](#_resolve_target_fio) | Function | L44–L57 | `str | None` | Executes core domain logic for `_resolve_target_fio`. |
+| [`get_leaderboard_endpoint`](#get_leaderboard_endpoint) | Function | L61–L77 | `LeaderboardResponse` | Retrieves and resolves domain data for `get_leaderboard... |
+| [`get_student_profile_endpoint`](#get_student_profile_endpoint) | Function | L81–L98 | `StudentProfileSchema` | Retrieves and resolves domain data for `get_student_pro... |
+| [`get_achievements_catalog_endpoint`](#get_achievements_catalog_endpoint) | Function | L102–L121 | `AchievementsCatalogResponse` | Retrieves and resolves domain data for `get_achievement... |
+| [`get_ranks_catalog_endpoint`](#get_ranks_catalog_endpoint) | Function | L125–L127 | `list[dict[str, str]]` | Retrieves and resolves domain data for `get_ranks_catal... |
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
 def _calculate_group_pulse(profiles: list) -> float
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L32-L36`](../../api/router/gamification.py#L32-L36)
+- **Source Reference**: [`api/router/gamification.py#L37-L41`](../../api/router/gamification.py#L37-L41)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
@@ -70,7 +70,7 @@ result = _calculate_group_pulse(profiles=...)
 def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str | None
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L39-L52`](../../api/router/gamification.py#L39-L52)
+- **Source Reference**: [`api/router/gamification.py#L44-L57`](../../api/router/gamification.py#L44-L57)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -104,7 +104,7 @@ result = _resolve_target_fio(fio=..., tg_id=...)
 async def get_leaderboard_endpoint() -> LeaderboardResponse
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L56-L72`](../../api/router/gamification.py#L56-L72)
+- **Source Reference**: [`api/router/gamification.py#L61-L77`](../../api/router/gamification.py#L61-L77)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `LeaderboardResponse`
 
@@ -135,7 +135,7 @@ result = await get_leaderboard_endpoint()
 async def get_student_profile_endpoint( fio: str | None = Query(default=None, description="Фамилия или ФИО студента"), tg_id: int | None = Query(default=None, description="Telegram ID студента"), ) -> StudentProfileSchema
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L76-L93`](../../api/router/gamification.py#L76-L93)
+- **Source Reference**: [`api/router/gamification.py#L81-L98`](../../api/router/gamification.py#L81-L98)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentProfileSchema`
 
@@ -169,7 +169,7 @@ result = await get_student_profile_endpoint(fio=..., tg_id=...)
 async def get_achievements_catalog_endpoint() -> AchievementsCatalogResponse
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L97-L116`](../../api/router/gamification.py#L97-L116)
+- **Source Reference**: [`api/router/gamification.py#L102-L121`](../../api/router/gamification.py#L102-L121)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AchievementsCatalogResponse`
 
@@ -200,7 +200,7 @@ result = await get_achievements_catalog_endpoint()
 async def get_ranks_catalog_endpoint() -> list[dict[str, str]]
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L120-L122`](../../api/router/gamification.py#L120-L122)
+- **Source Reference**: [`api/router/gamification.py#L125-L127`](../../api/router/gamification.py#L125-L127)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[dict[str, str]]`
 

@@ -130,10 +130,10 @@ async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str,
                 return res.json()
         except (httpx.TransportError, httpx.HTTPStatusError) as e:
             if attempt == 0:
-                log.warning(f"⚠️ Сбой запроса к {path} ({e}), повтор через 1 сек...")
+                log.warning("⚠️ Сбой запроса к %s (%s), повтор через 1 сек...", path, e)
                 await asyncio.sleep(1.0)
             else:
-                log.error(f"❌ Ошибка запроса к {path} после повтора: {e}")
+                log.error("❌ Ошибка запроса к %s после повтора: %s", path, e)
                 raise
     return {}
 
@@ -171,7 +171,7 @@ async def fetch_day_schedule(target_date: date | None = None, force_refresh: boo
     try:
         return await _fetch_day_schedule_grpc(target_date, force_refresh)
     except Exception as e:
-        log.warning(f"⚠️ gRPC GetDaySchedule не ответил ({e}), переключаемся на HTTP")
+        log.warning("⚠️ gRPC GetDaySchedule не ответил (%s), переключаемся на HTTP", e)
         params: dict[str, Any] = {"force_refresh": force_refresh}
         if target_date:
             params["target_date"] = target_date.isoformat()
@@ -211,7 +211,7 @@ async def fetch_week_schedule(monday: date | None = None, force_refresh: bool = 
     try:
         return await _fetch_week_schedule_grpc(monday, force_refresh)
     except Exception as e:
-        log.warning(f"⚠️ gRPC GetWeekSchedule не ответил ({e}), переключаемся на HTTP")
+        log.warning("⚠️ gRPC GetWeekSchedule не ответил (%s), переключаемся на HTTP", e)
         params: dict[str, Any] = {"force_refresh": force_refresh}
         if monday:
             params["monday"] = monday.isoformat()
@@ -248,7 +248,7 @@ async def fetch_exams(force_refresh: bool = False) -> dict[str, Any]:
     try:
         return await _fetch_exams_grpc(force_refresh)
     except Exception as e:
-        log.warning(f"⚠️ gRPC GetExams не ответил ({e}), переключаемся на HTTP")
+        log.warning("⚠️ gRPC GetExams не ответил (%s), переключаемся на HTTP", e)
         return await _api_get("/exams")
 
 
@@ -282,7 +282,7 @@ async def fetch_teachers(force_refresh: bool = False) -> dict[str, Any]:
     try:
         return await _fetch_teachers_grpc(force_refresh)
     except Exception as e:
-        log.warning(f"⚠️ gRPC GetTeachers не ответил ({e}), переключаемся на HTTP")
+        log.warning("⚠️ gRPC GetTeachers не ответил (%s), переключаемся на HTTP", e)
         return await _api_get("/teachers", params={"force_refresh": force_refresh})
 
 

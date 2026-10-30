@@ -1,5 +1,7 @@
 # Architecture Specification for «para»
 
+Обновлено: 2026-10-30 — одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
 ---
@@ -1819,6 +1821,7 @@ classDiagram
 
     class MiniappRouter {
         +serve_miniapp_page() HTMLResponse
+        +login_by_token(t, next_target) RedirectResponse
         +authenticate_miniapp(payload, response) MiniappAuthResponse
         +check_tester_status(session) MiniappCheckResponse
         +list_api_testers() TesterListResponse
@@ -1840,6 +1843,13 @@ classDiagram
         +remove_tester(user_id) bool
         +is_tester_allowed(user_id) bool
         +get_all_testers() list
+    }
+
+    class LoginTokensService {
+        +LOGIN_REDIRECT_TARGETS dict
+        +issue_login_token(user_id) str
+        +consume_login_token(token) int
+        +build_login_url(user_id, target) str
     }
 
     class AdminTestersHandler {
@@ -1873,6 +1883,8 @@ classDiagram
     MiniappRouter --> MiniappAuthService : validates HMAC initData
     MiniappRouter --> TestersManager : checks tester whitelist in Redis
     AdminTestersHandler --> TestersManager : manages whitelist via Bot FSM
+    AdminTestersHandler --> LoginTokensService : one-time Swagger links
+    MiniappRouter --> LoginTokensService : GETDEL one-time token
 ```
 
 ---
@@ -2008,7 +2020,12 @@ sequenceDiagram
 
     Tester->>Bot: /start or /swagger
     Bot->>Bot: Check is_tester_allowed(8894263260) == True
-    Bot-->>Tester: Render Tester Cabinet with Key & Swagger UI buttons
+    Bot->>RedisStore: SET para:login_token:<t> 8894263260 EX 600
+    Bot-->>Tester: Render Tester Cabinet with Key & one-time Swagger link
+
+    Tester->>ApiServer: GET /miniapp/login?t=<t>&next=docs
+    ApiServer->>RedisStore: GETDEL para:login_token:<t> -> 8894263260
+    ApiServer-->>Tester: 303 -> /docs + Set-Cookie para_session
 
     Tester->>ApiServer: Request with Header X-API-Key or Bearer para_test_xxx
     ApiServer->>TestersMgr: get_tester_by_key(para_test_xxx)
@@ -2019,7 +2036,7 @@ sequenceDiagram
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access. The headman control panel (`/testers` and `/swagger`) automatically displays the admin master key and generates 1-click links for `📱 Mini App` and `🌐 Swagger UI` with attached `?key=` authentication.
+1. **Administrative Access Gate**: Only administrators present in `ADMIN_IDS` (headman and deputy) are permitted to manage API testing access. The headman control panel (`/testers` and `/swagger`) automatically displays the admin master key and generates 1-click links: `📱 Mini App` authenticates via Telegram `initData`, `🌐 Swagger UI` opens a one-time login link (`/miniapp/login?t=...`, TTL `LOGIN_TOKEN_TTL_SECONDS`, consumed atomically via `GETDEL`). API keys are never accepted from query parameters.
 2. **Atomic Whitelist & Key Minting**: The `/add_tester <id>` command adds the user ID to `api:testers:whitelist` and generates an cryptographically secure 16-byte hex token prefixed with `API_TESTER_KEY_PREFIX`.
 3. **Bidirectional O(1) Indexing**: Redis stores dual keys:
    - `{REDIS_TESTER_UID_TO_KEY_PREFIX}{uid}` -> `api_key`
@@ -2134,7 +2151,7 @@ classDiagram
 
     class MiniappRouter {
         +GET /miniapp
-        +GET /miniapp/dev-login
+        +GET /miniapp/login
         +POST /miniapp/auth
         +POST /miniapp/action
         +GET /miniapp/status
@@ -2153,8 +2170,8 @@ classDiagram
     }
 
     class GamificationRouter {
-        +GET /gamification/leaderboard
-        +GET /gamification/profile
+        +GET /gamification/leaderboard auth
+        +GET /gamification/profile auth
         +GET /gamification/achievements
         +GET /gamification/ranks
     }
@@ -2185,6 +2202,7 @@ classDiagram
     SystemRouter ..> SecurityDependencies : verify_api_or_tester
     MiniappRouter ..> SecurityDependencies : verify_api_or_tester
     JaegerProxyRouter ..> SecurityDependencies : verify_api_or_tester
+    GamificationRouter ..> SecurityDependencies : verify_api_or_tester (leaderboard, profile)
     GamificationRouter ..> GamificationService : calculates XP, ranks & 80 achievements
 
 ```

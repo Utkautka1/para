@@ -36,6 +36,7 @@ from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from db.subscribers import is_subscribed, toggle_subscriber
 from services.classmates_auth import is_authorized_user, process_user_auth
+from services.login_tokens import build_login_url
 from services.models import Lesson
 from services.testers_manager import generate_or_get_tester_key, is_tester_allowed
 
@@ -54,11 +55,11 @@ async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]
             data = json.loads(cached)
             return data["text"], [Lesson(**item) for item in data.get("lessons", [])]
         except Exception as e:
-            log.warning(f"Ошибка десериализации кэша дня ({cache_key}): {e}")
+            log.warning("Ошибка десериализации кэша дня (%s): %s", cache_key, e)
 
     lessons = await get_api_schedule_for_date(target_date)
     text = format_day_schedule(target_date, lessons)
-    payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
+    payload = json.dumps({"text": text, "lessons": [lesson.model_dump() for lesson in lessons]})
     await cache_set(cache_key, payload, ttl=180)
     return text, lessons
 
@@ -71,7 +72,7 @@ async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> Non
         if "query is too old" in str(e).lower():
             log.debug("Callback устарел при ответе (query is too old)")
         else:
-            log.warning(f"Ошибка подтверждения callback: {e}")
+            log.warning("Ошибка подтверждения callback: %s", e)
 
 
 async def edit_or_answer(
@@ -91,7 +92,7 @@ async def edit_or_answer(
         if callback.message:
             await callback.message.edit_text(text, reply_markup=kb)
     except TelegramBadRequest as e:
-        log.debug(f"Обновление сообщения пропущено: {e}")
+        log.debug("Обновление сообщения пропущено: %s", e)
 
 
 async def _greet_new_student(message: Message, student: dict) -> None:
@@ -153,7 +154,8 @@ async def _show_tester_cabinet(message: Message, uid: int) -> None:
         "💡 <i>Вставьте ключ в Swagger UI (Authorize -> ApiKeyAuth).</i>"
     )
 
-    await message.answer(text, reply_markup=get_tester_cabinet_kb(key))
+    login_url = await build_login_url(uid, "docs")
+    await message.answer(text, reply_markup=get_tester_cabinet_kb(login_url))
 
 
 async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> None:
@@ -286,7 +288,7 @@ async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_
         if callback.message:
             await callback.message.edit_reply_markup(reply_markup=kb)
     except TelegramBadRequest as e:
-        log.debug(f"Клавиатура расписания не изменилась: {e}")
+        log.debug("Клавиатура расписания не изменилась: %s", e)
 
 
 @router.callback_query(F.data == "sched:toggle_notify")
@@ -345,7 +347,7 @@ async def cb_notice_toggle(callback: CallbackQuery) -> None:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=get_notice_settings_kb(new_sub))
     except TelegramBadRequest as e:
-        log.debug(f"Экран /notice не изменился: {e}")
+        log.debug("Экран /notice не изменился: %s", e)
 
 
 @router.callback_query(F.data == "sched:today")
@@ -458,7 +460,7 @@ async def _safe_fetch_lessons_for_refresh(now: date) -> list[Lesson]:
     try:
         return await get_api_schedule_for_date(now, force_refresh=True)
     except Exception as e:
-        log.warning(f"Сбой принудительного обновления ({e}), возврат из кэша...")
+        log.warning("Сбой принудительного обновления (%s), возврат из кэша...", e)
         return await get_api_schedule_for_date(now, force_refresh=False)
 
 
@@ -470,7 +472,7 @@ async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], in
 
     lessons = await _safe_fetch_lessons_for_refresh(now)
     text = format_day_schedule(now, lessons)
-    payload = json.dumps({"text": text, "lessons": [l.model_dump() for l in lessons]})
+    payload = json.dumps({"text": text, "lessons": [lesson.model_dump() for lesson in lessons]})
     await cache_set(f"sched:day_pack:{now.isoformat()}", payload, ttl=180)
     return text, lessons, teachers_res.get("count", 0)
 

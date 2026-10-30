@@ -70,4 +70,4 @@ async def notify_task_error(tg_bot: Bot, task: dict) -> None:
             message_thread_id=task.get("message_thread_id"),
         )
     except Exception as e:
-        log.debug(f"Не удалось отправить уведомление об ошибке: {e}")
+        log.debug("Не удалось отправить уведомление об ошибке: %s", e)

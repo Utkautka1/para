@@ -76,7 +76,7 @@ class ScheduleServicer(schedule_pb2_grpc.ScheduleServiceServicer):
 
         Возвращает типизированный объект DayScheduleResponse со списком уроков.
         """
-        log.debug(f"gRPC GetDaySchedule: date='{request.target_date}', refresh={request.force_refresh}")
+        log.debug("gRPC GetDaySchedule: date='%s', refresh=%s", request.target_date, request.force_refresh)
         target = _resolve_day(request.target_date)
 
         lessons = await get_schedule_for_date(target, force_refresh=request.force_refresh)
@@ -96,7 +96,7 @@ class ScheduleServicer(schedule_pb2_grpc.ScheduleServiceServicer):
 
         Возвращает объект WeekScheduleResponse с вложенными днями и парами.
         """
-        log.debug(f"gRPC GetWeekSchedule: monday='{request.monday}', refresh={request.force_refresh}")
+        log.debug("gRPC GetWeekSchedule: monday='%s', refresh=%s", request.monday, request.force_refresh)
         mon = _resolve_monday(request.monday)
 
         raw_days = await get_week_schedule(mon, force_refresh=request.force_refresh)
@@ -120,7 +120,7 @@ class ExamsServicer(exams_pb2_grpc.ExamsServiceServicer):
 
         Возвращает объект ExamsResponse с массивом экзаменационных нагрузок.
         """
-        log.debug(f"gRPC GetExams: refresh={request.force_refresh}")
+        log.debug("gRPC GetExams: refresh=%s", request.force_refresh)
 
         exams = await get_group_exams()
         proto_exams = [exam_item_to_proto(item) for item in exams]
@@ -143,7 +143,7 @@ class TeachersServicer(teachers_pb2_grpc.TeachersServiceServicer):
 
         Возвращает объект TeachersResponse с картой преподавателей.
         """
-        log.debug(f"gRPC GetTeachers: refresh={request.force_refresh}")
+        log.debug("gRPC GetTeachers: refresh=%s", request.force_refresh)
 
         raw_map = await get_teacher_links(force_refresh=request.force_refresh)
         return teachers_dict_to_proto(raw_map)

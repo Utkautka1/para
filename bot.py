@@ -141,7 +141,7 @@ async def _warmup_stt() -> None:
         await transcriber_service.warmup()
         log.info("✅ STT модель (faster-whisper) прогрета и готова к работе")
     except Exception as e:
-        log.warning(f"⚠️ Ошибка фонового прогрева STT модели: {e}")
+        log.warning("⚠️ Ошибка фонового прогрева STT модели: %s", e)
 
 
 async def _init_bot_subsystems() -> None:
@@ -185,7 +185,7 @@ async def main() -> None:
     try:
         await dp.start_polling(bot, drop_pending_updates=True, polling_timeout=20)
     except Exception as e:
-        log.error(f"❌ Критическая ошибка при работе бота: {e}")
+        log.error("❌ Критическая ошибка при работе бота: %s", e)
     finally:
         await shutdown_bot()
 

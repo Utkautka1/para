@@ -159,8 +159,8 @@ def get_lesson_status_banner(lessons: list[Lesson], target_date: date) -> str:
         return ""
 
     n_min = now_dt.time().hour * 60 + now_dt.time().minute
-    for l in lessons:
-        found, banner = _check_single_lesson_status(l, n_min)
+    for lesson in lessons:
+        found, banner = _check_single_lesson_status(lesson, n_min)
         if found:
             return banner
 
@@ -185,7 +185,7 @@ def format_day_schedule(target_date: date, lessons: list[Lesson]) -> str:
     if not lessons:
         return header + "<i>Занятий нет — свободный день!</i> ☕️"
 
-    cards = [format_lesson_card(l) for l in lessons]
+    cards = [format_lesson_card(lesson) for lesson in lessons]
 
     return header + "\n\n".join(cards)
 
@@ -249,7 +249,7 @@ def format_week_day_block(day_date: date, lessons: list[Lesson]) -> str:
     if not lessons:
         return f"{header}<blockquote><i>Занятий нет — свободный день! ☕️</i></blockquote>"
 
-    cards = [format_week_lesson_card(l) for l in lessons]
+    cards = [format_week_lesson_card(lesson) for lesson in lessons]
 
     return f"{header}" + "\n".join(cards)
 
@@ -265,7 +265,7 @@ def format_week_schedule(days_data: list[tuple[date, list[Lesson]]]) -> str:
     """
 
     header = f"🎓 <b>РАСПИСАНИЕ НА НЕДЕЛЮ ({GROUP_NAME})</b>\n────────────────────────────\n\n"
-    day_blocks = [format_week_day_block(d, l) for d, l in days_data]
+    day_blocks = [format_week_day_block(day, day_lessons) for day, day_lessons in days_data]
 
     return header + "\n\n".join(day_blocks)
 

@@ -28,6 +28,6 @@ async def cb_public_copy_value(callback: CallbackQuery) -> None:
 
     val = callback.data.split("copy:", 1)[1]
     user_id = callback.from_user.id if callback.from_user else 0
-    log.info(f"Публичный копир реквизитов вызван user_id={user_id}: {val}")
+    log.info("Публичный копир реквизитов вызван user_id=%s: %s", user_id, val)
 
     await callback.answer(f"Скопировано: {val}", show_alert=True)

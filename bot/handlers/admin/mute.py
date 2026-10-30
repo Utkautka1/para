@@ -59,7 +59,7 @@ async def _find_in_admins(bot, chat_id: int, clean: str) -> tuple[int, str] | No
                 add_user_to_cache(clean, a.user.id)
                 return a.user.id, f"<b>{html.escape(a.user.full_name)}</b>"
     except Exception as e:
-        log.debug(f"Ошибка проверки администраторов чата: {e}")
+        log.debug("Ошибка проверки администраторов чата: %s", e)
 
     return None
 
@@ -310,11 +310,11 @@ async def _safe_delete_message(message: Message) -> None:
             await message.delete()
         except TelegramBadRequest as e:
             if "not found" in str(e).lower():
-                log.debug(f"Сервисная команда {message.message_id} уже была удалена")
+                log.debug("Сервисная команда %s уже была удалена", message.message_id)
             else:
-                log.warning(f"Не удалось удалить сервисную команду {message.message_id}: {e}")
+                log.warning("Не удалось удалить сервисную команду %s: %s", message.message_id, e)
         except Exception as e:
-            log.warning(f"Не удалось удалить сервисную команду {message.message_id}: {e}")
+            log.warning("Не удалось удалить сервисную команду %s: %s", message.message_id, e)
 
 
 def _build_mute_report(target_name: str, time_raw: str, reason: str) -> str:
@@ -398,7 +398,7 @@ async def cmd_mute_user(message: Message) -> None:
         await send_mute_notification(message, _build_mute_report(target_name, time_raw, reason))
         await _safe_delete_message(message)
     except Exception as e:
-        log.error(f"Ошибка мута target_id={target_id}: {e}")
+        log.error("Ошибка мута target_id=%s: %s", target_id, e)
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {html.escape(str(e))}")
 
 
@@ -428,5 +428,5 @@ async def cmd_unmute_user(message: Message) -> None:
         await send_mute_notification(message, res_text)
         await _safe_delete_message(message)
     except Exception as e:
-        log.error(f"Ошибка размута target_id={target_id}: {e}")
+        log.error("Ошибка размута target_id=%s: %s", target_id, e)
         await message.answer(f"❌ <b>Не удалось размутить:</b> {html.escape(str(e))}")

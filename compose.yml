@@ -3,12 +3,17 @@ services:
     image: redis:7-alpine
     container_name: para-redis
     restart: always
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 48M
-      --maxmemory-policy volatile-lru
-      --requirepass ${REDIS_PASSWORD}
+    # Пароль отдаём redis-server через stdin-конфиг ("-"), а не флагом --requirepass:
+    # иначе он виден в `docker inspect` (Args) и `ps` на хосте.
+    # Через docker-entrypoint.sh — чтобы сохранить сброс прав до пользователя redis (gosu).
+    # REDISCLI_AUTH остаётся в env: его читают healthcheck и `docker exec para-redis redis-cli`.
+    command:
+      - sh
+      - -c
+      - |
+        exec docker-entrypoint.sh redis-server - --appendonly yes --maxmemory 48M --maxmemory-policy volatile-lru <<EOF
+        requirepass "$$REDISCLI_AUTH"
+        EOF
     environment:
       - REDISCLI_AUTH=${REDIS_PASSWORD}
     security_opt:

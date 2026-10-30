@@ -45,7 +45,7 @@ async def _notify_student(bot: Any, user_id: int, ach: AchievementDefinition) ->
         msg = format_achievement_notification(ach)
         await bot.send_message(user_id, msg, parse_mode="HTML")
     except Exception as exc:
-        log.warning(f"Не удалось отправить уведомление студенту {user_id}: {exc}")
+        log.warning("Не удалось отправить уведомление студенту %s: %s", user_id, exc)
 
 
 async def invalidate_leaderboard_cache() -> None:
@@ -53,7 +53,7 @@ async def invalidate_leaderboard_cache() -> None:
     try:
         await cache_delete(LEADERBOARD_CACHE_KEY)
     except Exception as exc:
-        log.debug(f"Ошибка инвалидации кэша лидерборда: {exc}")
+        log.debug("Ошибка инвалидации кэша лидерборда: %s", exc)
 
 
 async def award_achievement(
@@ -71,7 +71,7 @@ async def award_achievement(
     if not unlocked:
         return False
     await invalidate_leaderboard_cache()
-    log.info(f"🏆 Студент {fio} (tg={user_id}) разблокировал: {ach.title} (+{ach.xp_reward} XP)")
+    log.info("🏆 Студент %s (tg=%s) разблокировал: %s (+%s XP)", fio, user_id, ach.title, ach.xp_reward)
     if bot:
         await _notify_student(bot, user_id, ach)
     return True

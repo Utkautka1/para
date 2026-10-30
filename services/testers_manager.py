@@ -43,7 +43,7 @@ async def generate_or_get_tester_key(user_id: int) -> str | None:
         pipe.set(f"{REDIS_TESTER_UID_TO_KEY_PREFIX}{user_id}", new_key)
         pipe.set(f"{REDIS_TESTER_KEY_TO_UID_PREFIX}{new_key}", str(user_id))
         await pipe.execute()
-    log.info(f"🔑 Сгенерирован персональный API-ключ для тестера {user_id}")
+    log.info("🔑 Сгенерирован персональный API-ключ для тестера %s", user_id)
     return new_key
 
 
@@ -82,7 +82,7 @@ async def add_tester(user_id: int) -> bool:
         return False
     await r.sadd(REDIS_TESTERS_KEY, str(user_id))
     await generate_or_get_tester_key(user_id)
-    log.info(f"✅ Пользователь {user_id} добавлен в тестеры API с персональным ключом")
+    log.info("✅ Пользователь %s добавлен в тестеры API с персональным ключом", user_id)
     return True
 
 
@@ -96,7 +96,7 @@ async def remove_tester(user_id: int) -> bool:
     Возвращает True при успешном удалении, False при ошибке или попытке удалить админа.
     """
     if user_id in ADMIN_TESTERS:
-        log.warning(f"⚠️ Попытка удалить администратора {user_id} из тестеров")
+        log.warning("⚠️ Попытка удалить администратора %s из тестеров", user_id)
         return False
     r = await get_redis()
     if not r:
@@ -106,7 +106,7 @@ async def remove_tester(user_id: int) -> bool:
         key_str = key.decode() if isinstance(key, bytes) else str(key)
         await r.delete(f"{REDIS_TESTER_KEY_TO_UID_PREFIX}{key_str}", f"{REDIS_TESTER_UID_TO_KEY_PREFIX}{user_id}")
     await r.srem(REDIS_TESTERS_KEY, str(user_id))
-    log.info(f"🗑️ Пользователь {user_id} и его API-ключ удалены")
+    log.info("🗑️ Пользователь %s и его API-ключ удалены", user_id)
     return True
 
 

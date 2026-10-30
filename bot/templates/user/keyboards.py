@@ -37,11 +37,11 @@ def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]
     """
 
     btns = []
-    for l in lessons:
-        if l.is_remote and l.remote_link:
-            url = next((w for w in l.remote_link.split() if w.startswith("http")), None)
+    for lesson in lessons:
+        if lesson.is_remote and lesson.remote_link:
+            url = next((w for w in lesson.remote_link.split() if w.startswith("http")), None)
             if url:
-                btns.append(InlineKeyboardButton(text=format_lesson_button_text(l), url=url, style="success"))
+                btns.append(InlineKeyboardButton(text=format_lesson_button_text(lesson), url=url, style="success"))
 
     return [btns[i : i + 2] for i in range(0, len(btns), 2)]
 
@@ -120,16 +120,17 @@ def get_schedule_inline_kb(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_tester_cabinet_kb(tester_key: str | None = None) -> InlineKeyboardMarkup:
+def get_tester_cabinet_kb(login_url: str | None = None) -> InlineKeyboardMarkup:
     """
     Формирует инлайн-клавиатуру персонального кабинета тестера API.
 
     Предоставляет ссылки на веб-портал в формате Telegram Web App и в браузере.
+    Браузерная ссылка — одноразовый вход, а не постоянный API-ключ в URL.
     Включает кнопку получения личного API-ключа.
 
     Возвращает объект InlineKeyboardMarkup.
     """
-    swagger_url = f"{SWAGGER_URL}?key={tester_key}" if tester_key and SWAGGER_URL else SWAGGER_URL
+    swagger_url = login_url or SWAGGER_URL
 
     return InlineKeyboardMarkup(
         inline_keyboard=[

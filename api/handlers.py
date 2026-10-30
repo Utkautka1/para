@@ -37,7 +37,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
     Возвращает объект JSONResponse с кодом 422 и списком ошибок валидации.
     """
-    log.warning(f"⚠️ Ошибка валидации {request.method} {request.url.path}: {exc.errors()}")
+    log.warning("⚠️ Ошибка валидации %s %s: %s", request.method, request.url.path, exc.errors())
     status_code = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 
     return JSONResponse(
@@ -54,7 +54,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
     Возвращает JSONResponse со статусом 500 и кодом INTERNAL_SERVER_ERROR.
     """
-    log.error(f"❌ Критический сбой при вызове {request.method} {request.url.path}: {exc}", exc_info=exc)
+    log.error("❌ Критический сбой при вызове %s %s: %s", request.method, request.url.path, exc, exc_info=exc)
     payload = ErrorDetail(detail="Внутренняя ошибка сервера", code="INTERNAL_SERVER_ERROR")
 
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload.model_dump())

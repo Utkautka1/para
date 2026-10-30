@@ -79,15 +79,19 @@ def _log_audit_access(identity: str, request: Request) -> None:
     Ничего не возвращает.
     """
     client_ip = request.client.host if request.client else "unknown"
-    log.info(f"🔎 [AUDIT] {identity} -> {request.method} {request.url.path} (IP: {client_ip})")
+    log.info("🔎 [AUDIT] %s -> %s %s (IP: %s)", identity, request.method, request.url.path, client_ip)
 
 
 async def _extract_identity_candidates(
-    request: Request, key: str | None, bearer: HTTPAuthorizationCredentials | None, para_session: str | None
+    key: str | None, bearer: HTTPAuthorizationCredentials | None, para_session: str | None
 ) -> str | None:
-    """Извлекает и верифицирует идентификатор из заголовков, query-параметров или cookies."""
-    target_key = key or request.query_params.get("key") or request.query_params.get("api_key")
-    ident = await _resolve_key_identity(target_key)
+    """
+    Извлекает и верифицирует идентификатор из заголовков или cookies.
+
+    Query-параметры (?key=) намеренно не принимаются: ключ из URL оседает в логах
+    uvicorn и истории браузера. Вход по ссылке — через одноразовый /miniapp/login.
+    """
+    ident = await _resolve_key_identity(key)
     if not ident:
         token = bearer.credentials if bearer else para_session
         ident = await _resolve_token_identity(token)
@@ -101,17 +105,17 @@ async def verify_api_or_tester(
     para_session: str | None = Cookie(default=None),
 ) -> str:
     """
-    Универсальная зависимость авторизации по API-ключу, query-параметру, токену или cookie.
+    Универсальная зависимость авторизации по API-ключу в заголовке, Bearer-токену или cookie.
 
     Защищает API-эндпоинты и регистрирует аудит-событие для каждого запроса.
     Возвращает строку идентификатора субъекта или вызывает HTTP 401 Unauthorized.
     """
-    ident = await _extract_identity_candidates(request, key, bearer, para_session)
+    ident = await _extract_identity_candidates(key, bearer, para_session)
     if ident:
         _log_audit_access(ident, request)
         return ident
 
-    log.warning(f"⚠️ Неавторизованный запрос к {request.method} {request.url.path}")
+    log.warning("⚠️ Неавторизованный запрос к %s %s", request.method, request.url.path)
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key or session")
 
 
@@ -131,7 +135,7 @@ async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)
         if uid in {ALLOWED_USER_ID, DEPUTY_USER_ID}:
             return auth_identity
 
-    log.warning(f"🚫 Попытка несанкционированного доступа: {auth_identity}")
+    log.warning("🚫 Попытка несанкционированного доступа: %s", auth_identity)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
 

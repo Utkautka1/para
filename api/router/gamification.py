@@ -5,10 +5,15 @@
   1. Выгрузки лидерборда группы 1-КПД-3 для Telegram Mini App
   2. Получения персонального профиля студента по ФИО
   3. Получения каталога всех 80 достижений с категориями и наградами
+
+Лидерборд и профили содержат ФИО и посещаемость студентов — это персональные
+данные, поэтому они доступны только одногруппникам и тестерам (verify_api_or_tester).
+Каталоги достижений и рангов статичны и остаются публичными.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from api.deps import verify_api_or_tester
 from api.schemas.gamification import (
     AchievementsCatalogResponse,
     AchievementSchema,
@@ -52,7 +57,7 @@ def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str | None:
     return None
 
 
-@router.get("/leaderboard", response_model=LeaderboardResponse)
+@router.get("/leaderboard", response_model=LeaderboardResponse, dependencies=[Depends(verify_api_or_tester)])
 async def get_leaderboard_endpoint() -> LeaderboardResponse:
     """
     Возвращает рейтинг соревнующихся студентов с выделенным старостой вне конкурса.
@@ -72,7 +77,7 @@ async def get_leaderboard_endpoint() -> LeaderboardResponse:
     )
 
 
-@router.get("/profile", response_model=StudentProfileSchema)
+@router.get("/profile", response_model=StudentProfileSchema, dependencies=[Depends(verify_api_or_tester)])
 async def get_student_profile_endpoint(
     fio: str | None = Query(default=None, description="Фамилия или ФИО студента"),
     tg_id: int | None = Query(default=None, description="Telegram ID студента"),

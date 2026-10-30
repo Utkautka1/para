@@ -52,7 +52,7 @@ async def _ack_admin_callback(callback: CallbackQuery, text: str | None = None) 
         if "query is too old" in str(e).lower():
             log.debug("Callback админки устарел (query is too old)")
         else:
-            log.warning(f"Ошибка ответа на callback админки: {e}")
+            log.warning("Ошибка ответа на callback админки: %s", e)
 
 
 async def _safe_edit_admin_message(
@@ -77,7 +77,7 @@ async def _safe_edit_admin_message(
             log.debug("Сообщение админки не изменилось ('not modified')")
             return
 
-        log.warning(f"Не удалось обновить сообщение админки: {e}")
+        log.warning("Не удалось обновить сообщение админки: %s", e)
 
 
 def format_admin_panel_text(status_note: str = "") -> str:
@@ -166,7 +166,7 @@ async def _get_redis_memory_stat() -> str:
             info = await r.info("memory")
             return info.get("used_memory_human", "OK")
     except Exception as e:
-        log.debug(f"Не удалось получить статистику памяти Redis: {e}")
+        log.debug("Не удалось получить статистику памяти Redis: %s", e)
 
     return "N/A"
 

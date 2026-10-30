@@ -383,6 +383,11 @@ HTTP_POOL_MAX_KEEPALIVE_CONNECTIONS: int = api_config.http_pool_max_keepalive_co
 HTTP_POOL_MAX_CONNECTIONS: int = api_config.http_pool_max_connections
 HTTP_CLIENT_TIMEOUT_SECONDS: float = api_config.http_client_timeout_seconds
 
+# Одноразовые токены входа по ссылке из бота — заменяют постоянный API-ключ в URL.
+# TTL 10 минут: ссылка из сообщения бота быстро протухает, даже если попала в историю браузера.
+REDIS_LOGIN_TOKEN_PREFIX: str = get_env("REDIS_LOGIN_TOKEN_PREFIX", "para:login_token:")
+LOGIN_TOKEN_TTL_SECONDS: int = get_env_int("LOGIN_TOKEN_TTL_SECONDS", 600)
+
 
 # ==============================================================================
 # 7. DEEPSEEK AI SOLVER & HOMEWORK QUEUE

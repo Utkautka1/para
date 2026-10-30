@@ -21,24 +21,24 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AudioMeta.__init__`](#audiometa__init__) | Method | L47–L74 | `Any` | Executes core domain logic for `__init__`. |
-| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L76–L86 | `Any` | Executes core domain logic for `__iter__`. |
-| [`is_allowed_chat`](#is_allowed_chat) | Function | L89–L99 | `bool` | Executes core domain logic for `is_allowed_chat`. |
-| [`extract_audio_meta`](#extract_audio_meta) | Function | L102–L128 | `AudioMeta` | Extracts audio or video note metadata from inbound Tele... |
-| [`acquire_user_slot`](#acquire_user_slot) | Function | L131–L150 | `bool` | Atomically reserves an in-flight transcription slot for... |
-| [`release_user_slot`](#release_user_slot) | Function | L153–L166 | `None` | Releases the in-flight transcription slot after process... |
-| [`validate_audio_limits`](#validate_audio_limits) | Function | L169–L188 | `str | None` | Validates audio duration and payload size against safet... |
-| [`log_voice_request`](#log_voice_request) | Function | L191–L206 | `None` | Executes core domain logic for `log_voice_request`. |
-| [`_resolve_temp_audio_dir`](#_resolve_temp_audio_dir) | Function | L209–L222 | `str` | Executes core domain logic for `_resolve_temp_audio_dir... |
-| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L225–L238 | `str` | Executes core domain logic for `_determine_audio_extens... |
-| [`download_temp_audio`](#download_temp_audio) | Function | L241–L265 | `str` | Downloads Telegram media payload directly to RAM-disk (... |
-| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L268–L282 | `None` | Safely unlinks temporary audio file from ephemeral stor... |
-| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L285–L297 | `None` | Sends subsequent chunks of long transcription to Telegr... |
-| [`deliver_transcription`](#deliver_transcription) | Function | L300–L324 | `None` | Delivers formatted transcription text with automatic mu... |
-| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L327–L345 | `str` | Executes core domain logic for `_download_and_transcrib... |
-| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L348–L380 | `None` | Executes core domain logic for `process_audio_pipeline`... |
-| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L383–L404 | `bool` | Executes core domain logic for `_check_and_acquire_voic... |
-| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L408–L429 | `None` | Executes core domain logic for `handle_voice_or_video_n... |
+| [`AudioMeta.__init__`](#audiometa__init__) | Method | L51–L78 | `Any` | Executes core domain logic for `__init__`. |
+| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L80–L90 | `Any` | Executes core domain logic for `__iter__`. |
+| [`is_allowed_chat`](#is_allowed_chat) | Function | L93–L103 | `bool` | Executes core domain logic for `is_allowed_chat`. |
+| [`extract_audio_meta`](#extract_audio_meta) | Function | L106–L132 | `AudioMeta` | Extracts audio or video note metadata from inbound Tele... |
+| [`acquire_user_slot`](#acquire_user_slot) | Function | L135–L154 | `bool` | Atomically reserves an in-flight transcription slot for... |
+| [`release_user_slot`](#release_user_slot) | Function | L157–L170 | `None` | Releases the in-flight transcription slot after process... |
+| [`validate_audio_limits`](#validate_audio_limits) | Function | L173–L192 | `str | None` | Validates audio duration and payload size against safet... |
+| [`log_voice_request`](#log_voice_request) | Function | L195–L210 | `None` | Executes core domain logic for `log_voice_request`. |
+| [`_resolve_temp_audio_dir`](#_resolve_temp_audio_dir) | Function | L213–L230 | `str` | Executes core domain logic for `_resolve_temp_audio_dir... |
+| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L233–L246 | `str` | Executes core domain logic for `_determine_audio_extens... |
+| [`download_temp_audio`](#download_temp_audio) | Function | L249–L273 | `str` | Downloads Telegram media payload directly to RAM-disk (... |
+| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L276–L290 | `None` | Safely unlinks temporary audio file from ephemeral stor... |
+| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L293–L305 | `None` | Sends subsequent chunks of long transcription to Telegr... |
+| [`deliver_transcription`](#deliver_transcription) | Function | L308–L332 | `None` | Delivers formatted transcription text with automatic mu... |
+| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L335–L353 | `str` | Executes core domain logic for `_download_and_transcrib... |
+| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L356–L388 | `None` | Executes core domain logic for `process_audio_pipeline`... |
+| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L391–L412 | `bool` | Executes core domain logic for `_check_and_acquire_voic... |
+| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L416–L437 | `None` | Executes core domain logic for `handle_voice_or_video_n... |
 
 ---
 
@@ -53,7 +53,7 @@ Encapsulates domain entities and data transfer logic for `AudioMeta`.
 def __init__( self, file_id: str, duration: int, sender: str, file_size: int = 0, user_id: int = 0, username: str = "",
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L47-L74`](../../bot/handlers/user/voice_transcribe.py#L47-L74)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L51-L78`](../../bot/handlers/user/voice_transcribe.py#L51-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -94,7 +94,7 @@ result = __init__(file_id=..., duration=..., sender=...)
 def __iter__(self)
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L76-L86`](../../bot/handlers/user/voice_transcribe.py#L76-L86)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L80-L90`](../../bot/handlers/user/voice_transcribe.py#L80-L90)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -125,7 +125,7 @@ result = __iter__()
 def is_allowed_chat(chat_id: int, chat_type: str) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L89-L99`](../../bot/handlers/user/voice_transcribe.py#L89-L99)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L93-L103`](../../bot/handlers/user/voice_transcribe.py#L93-L103)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -159,7 +159,7 @@ result = is_allowed_chat(chat_id=..., chat_type=...)
 def extract_audio_meta(message: Message) -> AudioMeta
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L102-L128`](../../bot/handlers/user/voice_transcribe.py#L102-L128)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L106-L132`](../../bot/handlers/user/voice_transcribe.py#L106-L132)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AudioMeta`
 
@@ -192,7 +192,7 @@ result = extract_audio_meta(message=...)
 def acquire_user_slot(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L131-L150`](../../bot/handlers/user/voice_transcribe.py#L131-L150)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L135-L154`](../../bot/handlers/user/voice_transcribe.py#L135-L154)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -225,7 +225,7 @@ result = acquire_user_slot(user_id=...)
 def release_user_slot(user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L153-L166`](../../bot/handlers/user/voice_transcribe.py#L153-L166)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L157-L170`](../../bot/handlers/user/voice_transcribe.py#L157-L170)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -258,7 +258,7 @@ result = release_user_slot(user_id=...)
 def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L169-L188`](../../bot/handlers/user/voice_transcribe.py#L169-L188)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L173-L192`](../../bot/handlers/user/voice_transcribe.py#L173-L192)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -293,7 +293,7 @@ result = validate_audio_limits(duration=..., file_size=..., sender=...)
 def log_voice_request(meta: AudioMeta) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L191-L206`](../../bot/handlers/user/voice_transcribe.py#L191-L206)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L195-L210`](../../bot/handlers/user/voice_transcribe.py#L195-L210)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -326,7 +326,7 @@ result = log_voice_request(meta=...)
 def _resolve_temp_audio_dir() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L209-L222`](../../bot/handlers/user/voice_transcribe.py#L209-L222)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L213-L230`](../../bot/handlers/user/voice_transcribe.py#L213-L230)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -337,7 +337,7 @@ Executes core domain logic for `_resolve_temp_audio_dir`.
 *This method takes no input parameters.*
 
 #### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
+- Emits structured telemetry events to system logging subsystem.
 
 #### Fault Tolerance & Error Modes
 Propagates unexpected runtime errors up the call stack to global exception handlers.
@@ -357,7 +357,7 @@ result = _resolve_temp_audio_dir()
 def _determine_audio_extension(file_path: str | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L225-L238`](../../bot/handlers/user/voice_transcribe.py#L225-L238)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L233-L246`](../../bot/handlers/user/voice_transcribe.py#L233-L246)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -390,7 +390,7 @@ result = _determine_audio_extension(file_path=...)
 async def download_temp_audio(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L241-L265`](../../bot/handlers/user/voice_transcribe.py#L241-L265)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L249-L273`](../../bot/handlers/user/voice_transcribe.py#L249-L273)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -423,7 +423,7 @@ result = await download_temp_audio(file_id=...)
 def cleanup_temp_file(path: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L268-L282`](../../bot/handlers/user/voice_transcribe.py#L268-L282)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L276-L290`](../../bot/handlers/user/voice_transcribe.py#L276-L290)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -456,7 +456,7 @@ result = cleanup_temp_file(path=...)
 async def send_overflow_chunks(message: Message, chunks: list[str]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L285-L297`](../../bot/handlers/user/voice_transcribe.py#L285-L297)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L293-L305`](../../bot/handlers/user/voice_transcribe.py#L293-L305)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -490,7 +490,7 @@ result = await send_overflow_chunks(message=..., chunks=...)
 async def deliver_transcription( message: Message, status_msg: Message, sender_name: str, duration: int, text: str, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L300-L324`](../../bot/handlers/user/voice_transcribe.py#L300-L324)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L308-L332`](../../bot/handlers/user/voice_transcribe.py#L308-L332)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -527,7 +527,7 @@ result = await deliver_transcription(message=..., status_msg=..., sender_name=..
 async def _download_and_transcribe(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L327-L345`](../../bot/handlers/user/voice_transcribe.py#L327-L345)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L335-L353`](../../bot/handlers/user/voice_transcribe.py#L335-L353)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -560,7 +560,7 @@ result = await _download_and_transcribe(file_id=...)
 async def process_audio_pipeline( file_id: str, sender: str, duration: int, message: Message, status_msg: Message, user_id: int = 0, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L348-L380`](../../bot/handlers/user/voice_transcribe.py#L348-L380)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L356-L388`](../../bot/handlers/user/voice_transcribe.py#L356-L388)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -598,7 +598,7 @@ result = await process_audio_pipeline(file_id=..., sender=..., duration=...)
 async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L383-L404`](../../bot/handlers/user/voice_transcribe.py#L383-L404)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L391-L412`](../../bot/handlers/user/voice_transcribe.py#L391-L412)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -632,7 +632,7 @@ result = await _check_and_acquire_voice(message=..., meta=...)
 async def handle_voice_or_video_note(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L408-L429`](../../bot/handlers/user/voice_transcribe.py#L408-L429)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L416-L437`](../../bot/handlers/user/voice_transcribe.py#L416-L437)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

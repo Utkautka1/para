@@ -77,7 +77,7 @@ def sanitize_prompt(raw_text: str | None, max_length: int = 15000) -> SanitizeRe
     is_suspicious = len(flags) > 0
 
     if is_suspicious:
-        log.warning(f"⚠️ Обнаружен подозрительный ввод (Prompt Injection): {flags}")
+        log.warning("⚠️ Обнаружен подозрительный ввод (Prompt Injection): %s", flags)
 
     safe_text = escape_context_delimiters(cleaned)
     return SanitizeResult(clean_text=safe_text, is_suspicious=is_suspicious, flags=tuple(flags))

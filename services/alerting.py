@@ -55,7 +55,7 @@ async def _check_redis_throttle(incident_type: str, cooldown_seconds: float) -> 
         is_new = await client.set(key, "1", ex=int(cooldown_seconds), nx=True)
         return not bool(is_new)
     except Exception as exc:
-        log.debug(f"Сбой проверки распределенного троттлинга Redis: {exc}")
+        log.debug("Сбой проверки распределенного троттлинга Redis: %s", exc)
         return None
 
 
@@ -123,7 +123,7 @@ async def _record_incident_safe(
             trace_id=trace_id,
         )
     except Exception as exc:
-        log.error(f"Не удалось зафиксировать инцидент в SQLite: {exc}")
+        log.error("Не удалось зафиксировать инцидент в SQLite: %s", exc)
 
 
 async def _deliver_alert_message(
@@ -143,10 +143,10 @@ async def _deliver_alert_message(
             text=text,
             parse_mode="HTML",
         )
-        log.info(f"✅ Алерт {incident_type} доставлен в {chat_id} (topic={thread_id})")
+        log.info("✅ Алерт %s доставлен в %s (topic=%s)", incident_type, chat_id, thread_id)
         return True
     except Exception as exc:
-        log.error(f"❌ Ошибка отправки алерта: {exc}")
+        log.error("❌ Ошибка отправки алерта: %s", exc)
         return False
 
 
@@ -162,6 +162,6 @@ async def send_admin_alert(
     await _record_incident_safe(incident_type, severity, title, description, trace_id)
     cooldown = cooldown_seconds or DEFAULT_ALERT_COOLDOWNS.get(incident_type, 1800.0)
     if await _is_alert_throttled(incident_type, cooldown):
-        log.debug(f"Алерт {incident_type} пропущен из-за кулдауна троттлинга")
+        log.debug("Алерт %s пропущен из-за кулдауна троттлинга", incident_type)
         return False
     return await _deliver_alert_message(incident_type, severity, title, description, trace_id)

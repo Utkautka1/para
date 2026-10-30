@@ -106,5 +106,5 @@ async def solve_homework(
         return result
     except Exception as e:
         await deepseek_circuit_breaker.record_failure(e)
-        log.error(f"Ошибка при вызове DeepSeek API: {e}")
+        log.error("Ошибка при вызове DeepSeek API: %s", e)
         raise

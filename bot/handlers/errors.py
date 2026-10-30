@@ -27,7 +27,7 @@ async def _notify_callback_error(cb) -> None:
     try:
         await cb.answer("⚠️ Временный сбой сервиса. Попробуйте снова.", show_alert=True)
     except Exception as e:
-        log.debug(f"Не удалось ответить на сбойный callback: {e}")
+        log.debug("Не удалось ответить на сбойный callback: %s", e)
 
 
 async def _notify_message_error(msg) -> None:
@@ -43,7 +43,7 @@ async def _notify_message_error(msg) -> None:
     try:
         await msg.answer("⚠️ Произошла ошибка. Пожалуйста, повторите попытку через пару секунд.")
     except Exception as e:
-        log.debug(f"Не удалось отправить уведомление об ошибке: {e}")
+        log.debug("Не удалось отправить уведомление об ошибке: %s", e)
 
 
 async def _dispatch_error_alert(exc: Exception) -> None:
@@ -63,7 +63,7 @@ async def _dispatch_error_alert(exc: Exception) -> None:
             description=f"<code>{html.escape(err_msg[:500])}</code>",
         )
     except Exception as e:
-        log.debug(f"Не удалось отправить алерт об ошибке: {e}")
+        log.debug("Не удалось отправить алерт об ошибке: %s", e)
 
 
 @router.error()
@@ -76,7 +76,7 @@ async def global_error_handler(event: ErrorEvent) -> bool:
 
     Возвращает True для подтверждения успешной обработки события сбоя.
     """
-    log.error(f"❌ Необработанная ошибка в хэндлере: {event.exception}")
+    log.error("❌ Необработанная ошибка в хэндлере: %s", event.exception)
     await _dispatch_error_alert(event.exception)
     update = event.update
 

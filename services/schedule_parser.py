@@ -358,7 +358,7 @@ def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]
     Возвращает компактный словарь среза данных расписания группы.
     """
     group_insts, group_assigns = _filter_group_schedule(snapshot.get("schedule", {}))
-    group_loads = [l for l in snapshot.get("loads", []) if is_item_for_group(l, GROUP_ID)]
+    group_loads = [load for load in snapshot.get("loads", []) if is_item_for_group(load, GROUP_ID)]
 
     return {
         "config": snapshot.get("config", {}),
@@ -420,7 +420,7 @@ def _handle_non_200_status(status_code: int, now: float) -> tuple[float, dict[st
     if status_code == 304:
         return 0.0, _DATA_CACHE[1]
 
-    log.error(f"Ошибка API КТМУ: HTTP {status_code} (кулдаун 5 мин)")
+    log.error("Ошибка API КТМУ: HTTP %s (кулдаун 5 мин)", status_code)
     return now + _COOLDOWN_SECONDS, _DATA_CACHE[1]
 
 
@@ -433,7 +433,7 @@ def _apply_new_snapshot(pub_at: str | None, cleaned: dict[str, Any], now: float)
     global _DATA_CACHE, _LAST_PUBLISHED_AT, _COOLDOWN_UNTIL
 
     if pub_at and pub_at != _LAST_PUBLISHED_AT:
-        log.info(f"Обнаружена новая публикация расписания КТМУ от: {pub_at}")
+        log.info("Обнаружена новая публикация расписания КТМУ от: %s", pub_at)
         _LAST_PUBLISHED_AT = pub_at
 
     _DATA_CACHE, _COOLDOWN_UNTIL = (now, cleaned), 0.0
@@ -514,10 +514,10 @@ async def _try_fetch_endpoint(url: str, idx: int, headers: dict[str, str]) -> ht
 
     if res.status_code in (200, 304):
         if idx > 0:
-            log.info(f"Основной API недоступен, данные получены из запасного API: {url}")
+            log.info("Основной API недоступен, данные получены из запасного API: %s", url)
         return res
 
-    log.warning(f"Эндпоинт {url} вернул статус {res.status_code}, переключаемся...")
+    log.warning("Эндпоинт %s вернул статус %s, переключаемся...", url, res.status_code)
     return None
 
 
@@ -551,7 +551,7 @@ async def _fetch_remote_schedule() -> httpx.Response:
                 return res
         except Exception as e:
             last_exc = e
-            log.warning(f"Сбой подключения к эндпоинту расписания ({url}): {e}")
+            log.warning("Сбой подключения к эндпоинту расписания (%s): %s", url, e)
 
     if last_exc:
         raise last_exc
@@ -573,7 +573,7 @@ def _dispatch_schedule_alert(err_msg: str) -> None:
             )
         )
     except Exception as exc:
-        log.debug(f"Не удалось отправить алерт расписания: {exc}")
+        log.debug("Не удалось отправить алерт расписания: %s", exc)
 
 
 async def refresh_schedule_in_background(force: bool = False) -> None:
@@ -591,7 +591,7 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
     except Exception as e:
         _COOLDOWN_UNTIL = now + _COOLDOWN_SECONDS
         err_msg = repr(e) if str(e) == "" else f"{type(e).__name__}: {e}"
-        log.warning(f"Фоновое обновление API КТМУ не удалось ({err_msg}). Используется кэш (кулдаун 5 мин).")
+        log.warning("Фоновое обновление API КТМУ не удалось (%s). Используется кэш (кулдаун 5 мин).", err_msg)
         _dispatch_schedule_alert(err_msg)
     finally:
         _IS_REFRESHING = False
@@ -690,7 +690,11 @@ def extract_entity_maps(data: dict[str, Any]) -> tuple[dict, dict, dict, dict, d
     teachs = {t["id"]: t.get("name", "") for t in data.get("teachers", []) if isinstance(t, dict)}
     rms = {r["id"]: r.get("name", "") for r in data.get("rooms", []) if isinstance(r, dict)}
     groups = {g["id"]: g for g in data.get("groups", []) if isinstance(g, dict)}
-    l_types = {l["id"]: l.get("name", "") for l in data.get("lessonTypes", []) if isinstance(l, dict)}
+    l_types = {
+        lesson_type["id"]: lesson_type.get("name", "")
+        for lesson_type in data.get("lessonTypes", [])
+        if isinstance(lesson_type, dict)
+    }
 
     return (subjs, teachs, rms, groups.get(GROUP_ID, {}), l_types)
 

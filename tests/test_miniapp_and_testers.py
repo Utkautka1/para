@@ -183,14 +183,14 @@ def test_miniapp_html_lightweight_and_clean() -> None:
 
 
 @pytest.mark.asyncio
-async def test_docs_query_key_and_action() -> None:
-    """Проверяет доступ к /docs по query-параметру key и вызов /miniapp/action."""
+async def test_docs_query_key_rejected_and_action() -> None:
+    """Проверяет, что ?key= больше не авторизует /docs, и вызов /miniapp/action по initData."""
     app = create_app()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.get(f"/docs?key={API_SECRET_KEY}")
-        assert resp.status_code == 200
-        assert "para_session" in resp.cookies
+        assert resp.status_code == 401
+        assert "para_session" not in resp.cookies
 
         now_ts = int(datetime.now(UTC).timestamp())
         init_data = _build_test_init_data({"id": ALLOWED_USER_ID, "first_name": "Admin"}, now_ts)
@@ -201,6 +201,53 @@ async def test_docs_query_key_and_action() -> None:
         assert action_resp.status_code == 200
         data = action_resp.json()
         assert data["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_dev_login_removed() -> None:
+    """Проверяет, что вход по постоянному ключу в URL (/miniapp/dev-login) удалён."""
+    app = create_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/miniapp/dev-login?key={API_SECRET_KEY}")
+        assert resp.status_code in {404, 405}
+
+
+@pytest.mark.asyncio
+async def test_login_by_one_time_token() -> None:
+    """Проверяет обмен одноразового токена на куку, whitelist next и отказ при повторе."""
+    app = create_app()
+    consume = AsyncMock(side_effect=[ALLOWED_USER_ID, ALLOWED_USER_ID, None])
+    with patch("api.router.miniapp.consume_login_token", consume):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/miniapp/login?t=tok&next=docs")
+            assert resp.status_code == 303
+            assert resp.headers["location"] == "/docs"
+            assert "para_session" in resp.cookies
+
+            evil = await client.get("/miniapp/login?t=tok&next=https://evil.example")
+            assert evil.headers["location"] == "/miniapp"
+
+            reused = await client.get("/miniapp/login?t=tok")
+            assert reused.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_tokens_issue_and_consume() -> None:
+    """Проверяет выпуск токена с TTL и его атомарное погашение через GETDEL."""
+    from config import LOGIN_TOKEN_TTL_SECONDS, MINIAPP_URL
+    from services.login_tokens import build_login_url, consume_login_token
+
+    mock_redis = AsyncMock()
+    mock_redis.getdel = AsyncMock(side_effect=["555", None])
+    with patch("services.login_tokens.get_redis", return_value=mock_redis):
+        url = await build_login_url(555, "docs")
+        assert url is not None
+        assert url.startswith(f"{MINIAPP_URL}/login?t=")
+        assert url.endswith("&next=docs")
+        assert mock_redis.set.call_args.kwargs["ex"] == LOGIN_TOKEN_TTL_SECONDS
+
+        assert await consume_login_token("tok") == 555
+        assert await consume_login_token("tok") is None
 
 
 @pytest.mark.asyncio

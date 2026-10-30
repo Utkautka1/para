@@ -64,7 +64,7 @@ async def _async_commit_and_update(message: Message | None, session, stats: dict
     try:
         await message.edit_text(format_summary_text(session, stats) + badge)
     except Exception as e:
-        log.debug(f"Не удалось обновить статус выгрузки посещаемости: {e}")
+        log.debug("Не удалось обновить статус выгрузки посещаемости: %s", e)
 
 
 async def _instant_topic_sync(session) -> None:
@@ -83,9 +83,9 @@ async def _instant_topic_sync(session) -> None:
 
         await apply_session_optimistic_update(session)
         await sync_attendance_topic_message(force_refresh=False)
-        log.info(f"⚡️ Мгновенное обновление топика для пары {session.lesson_num} выполнено")
+        log.info("⚡️ Мгновенное обновление топика для пары %s выполнено", session.lesson_num)
     except Exception as e:
-        log.error(f"Ошибка мгновенного обновления топика посещаемости: {e}")
+        log.error("Ошибка мгновенного обновления топика посещаемости: %s", e)
 
 
 def get_partner_admin_id(current_user_id: int) -> int | None:
@@ -132,9 +132,9 @@ async def notify_partner_about_attendance(session, stats: dict[str, int], user_f
         from core.bot import bot
 
         await bot.send_message(partner_id, text)
-        log.info(f"Статистика пары {session.lesson_num} отправлена партнеру {partner_id}")
+        log.info("Статистика пары %s отправлена партнеру %s", session.lesson_num, partner_id)
     except Exception as e:
-        log.warning(f"Не удалось доставить статистику партнеру {partner_id}: {e}")
+        log.warning("Не удалось доставить статистику партнеру %s: %s", partner_id, e)
 
 
 async def finish_and_notify(cb: CallbackQuery, session) -> None:
@@ -155,12 +155,12 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
         try:
             await cb.message.edit_text(text_saving)
         except Exception as e:
-            log.debug(f"Не удалось обновить статус сообщения посещаемости: {e}")
+            log.debug("Не удалось обновить статус сообщения посещаемости: %s", e)
 
     asyncio.create_task(_instant_topic_sync(session))
     asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
     asyncio.create_task(notify_partner_about_attendance(session, stats, cb.from_user.full_name))
-    log.info(f"Сводка пары {session.lesson_num} выдана, запущены оптимистичный апдейт и выгрузка")
+    log.info("Сводка пары %s выдана, запущены оптимистичный апдейт и выгрузка", session.lesson_num)
 
 
 @router.message(Command("attendance"))
@@ -315,7 +315,7 @@ async def _init_session_safe(cb: CallbackQuery, target_date, lesson_num: int, ti
     try:
         return await create_attendance_session(target_date, lesson_num, title, cb.from_user.id)
     except Exception as e:
-        log.error(f"Сбой инициализации сессии: {e}")
+        log.error("Сбой инициализации сессии: %s", e)
         if cb.message:
             await cb.message.edit_text(f"❌ Не удалось открыть таблицу: {e}")
         return None
@@ -450,9 +450,9 @@ async def notify_partner_about_cancellation(
 
     try:
         await bot.send_message(partner_id, format_partner_cancel_report(lesson_num, title))
-        log.info(f"Уведомление об отмене пары {lesson_num} отправлено партнеру {partner_id}")
+        log.info("Уведомление об отмене пары %s отправлено партнеру %s", lesson_num, partner_id)
     except Exception as e:
-        log.warning(f"Не удалось доставить уведомление об отмене партнеру {partner_id}: {e}")
+        log.warning("Не удалось доставить уведомление об отмене партнеру %s: %s", partner_id, e)
 
 
 @router.callback_query(F.data.startswith("att:cancel:"))

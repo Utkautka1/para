@@ -3,11 +3,10 @@ target-version = "py311"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "PIE", "RUF"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PIE", "RUF", "G004"]
 ignore = [
     "E402",    # Module level import not at top of file (used for deferred circular import guards)
     "E501",    # Line too long (handled by formatting / long test mocks)
-    "E741",    # Ambiguous variable name (e.g. l for lesson in tests)
     "B008",    # FastAPI Depends, Query, and Security in argument defaults
     "BLE001",  # Broad exception catching (used for process resilience)
     "RUF001",  # Ambiguous unicode characters in string literals (Cyrillic support)

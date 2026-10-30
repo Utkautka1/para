@@ -306,7 +306,9 @@ def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_
         f"subprocess.run(['docker', 'exec', 'para-redis', 'redis-cli', 'set', '{REDIS_YANDEX_COOKIE_KEY}', c, 'ex', '{REDIS_COOKIE_TTL_SECONDS}'], check=True); "
         f"subprocess.run(['docker', 'compose', 'up', '-d', 'worker', 'bot'], cwd='{remote_dir}', check=True)"
     )
-    subprocess.run(["ssh", host, f'python3 -c "{py}"'], check=True)
+    # Скрипт идёт через stdin, а не `python3 -c "..."`: удалённый shell не разбирает
+    # содержимое, и кавычки в путях или ключах не могут сломать/подменить команду
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
 
 
 def sync_cookies(host: str = "home") -> bool:

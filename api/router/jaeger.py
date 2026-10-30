@@ -102,7 +102,7 @@ async def _forward_request(method: str, url: str, headers: dict[str, str], body:
             media_type=resp.headers.get("content-type"),
         )
     except httpx.RequestError as exc:
-        log.warning(f"⚠️ Ошибка соединения с Jaeger UI ({url}): {exc}")
+        log.warning("⚠️ Ошибка соединения с Jaeger UI (%s): %s", url, exc)
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"error": "Jaeger UI service is temporarily unavailable", "detail": str(exc)},

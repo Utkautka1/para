@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     grpc_server = create_grpc_server()
     await start_grpc_server(grpc_server, GRPC_HOST, GRPC_PORT)
-    log.info(f"⚡ gRPC сервер активен на {GRPC_HOST}:{GRPC_PORT}")
+    log.info("⚡ gRPC сервер активен на %s:%s", GRPC_HOST, GRPC_PORT)
     await init_redis()
     from core.database import init_db
 
@@ -71,7 +71,7 @@ app.router.lifespan_context = lifespan
 if __name__ == "__main__":
     logging.getLogger("uvicorn.error").addFilter(_InvalidHttpFilter())
     log.info("=" * 60)
-    log.info(f"ЗАПУСК Dual-Protocol API: HTTP :{API_PORT} | gRPC :{GRPC_PORT}")
+    log.info("ЗАПУСК Dual-Protocol API: HTTP :%s | gRPC :%s", API_PORT, GRPC_PORT)
     log.info("  Swagger UI: /docs | Telegram Mini App: /miniapp")
     log.info("=" * 60)
     uvicorn.run(

@@ -90,7 +90,7 @@ class CallbackThrottleMiddleware(BaseMiddleware):
         last_time = self._last_clicks.get(key, 0.0)
 
         if now - last_time < cooldown:
-            log.debug(f"Дребезг клика от {uid} ({cb_data}), кулдаун {cooldown}с")
+            log.debug("Дребезг клика от %s (%s), кулдаун %sс", uid, cb_data, cooldown)
             await event.answer("⏳ Подождите секунду...", show_alert=False)
             return False
 

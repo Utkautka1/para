@@ -74,7 +74,7 @@ async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None:
     _NOTIFIED_MISSING_TEACHERS.add(raw_teacher)
     text, kb = build_missing_teacher_alert(raw_teacher, subj_name)
 
-    log.warning(f"Уведомление админа об отсутствующем преподавателе: {raw_teacher}")
+    log.warning("Уведомление админа об отсутствующем преподавателе: %s", raw_teacher)
     await send_to_user(text, reply_markup=kb)
 
 
@@ -88,9 +88,9 @@ async def send_to_user(text: str, reply_markup: Any = None) -> None:
     """
     try:
         await bot.send_message(ALLOWED_USER_ID, text, reply_markup=reply_markup)
-        log.info(f"Сообщение успешно отправлено пользователю {ALLOWED_USER_ID}")
+        log.info("Сообщение успешно отправлено пользователю %s", ALLOWED_USER_ID)
     except Exception as e:
-        log.error(f"Ошибка отправки сообщения пользователю {ALLOWED_USER_ID}: {e}")
+        log.error("Ошибка отправки сообщения пользователю %s: %s", ALLOWED_USER_ID, e)
 
 
 def parse_lesson_start_time(time_str: str) -> dtime | None:
@@ -107,7 +107,7 @@ def parse_lesson_start_time(time_str: str) -> dtime | None:
             h, m = int(match.group(1)), int(match.group(2))
             return dtime(hour=h, minute=m)
     except Exception as e:
-        log.error(f"Не удалось распарсить время пары {time_str}: {e}")
+        log.error("Не удалось распарсить время пары %s: %s", time_str, e)
 
     return None
 
@@ -126,7 +126,7 @@ def parse_lesson_end_time(time_str: str) -> dtime | None:
             h, m = int(matches[1][0]), int(matches[1][1])
             return dtime(hour=h, minute=m)
     except Exception as e:
-        log.error(f"Не удалось распарсить время окончания пары {time_str}: {e}")
+        log.error("Не удалось распарсить время окончания пары %s: %s", time_str, e)
 
     return None
 
@@ -150,7 +150,7 @@ async def _send_reminder_to_chat(
         try:
             await bot.send_message(chat_id, text, reply_markup=kb)
         except Exception as e:
-            log.warning(f"Не удалось доставить напоминание {chat_id}: {e}")
+            log.warning("Не удалось доставить напоминание %s: %s", chat_id, e)
 
 
 async def send_single_reminder(lesson: Lesson) -> None:
@@ -161,7 +161,7 @@ async def send_single_reminder(lesson: Lesson) -> None:
 
     Ничего не возвращает.
     """
-    log.info(f"Отправка напоминания для пары {lesson.period + 1}: {lesson.subject}")
+    log.info("Отправка напоминания для пары %s: %s", lesson.period + 1, lesson.subject)
     text = format_reminder_text(lesson)
 
     from db.subscribers import load_subscribers
@@ -190,7 +190,7 @@ def _add_lesson_reminder_job(today: date, lesson: Lesson, remind_dt: datetime) -
         id=job_id,
         replace_existing=True,
     )
-    log.info(f"Запланировано напоминание для пары {lesson.period + 1} на {remind_dt.strftime('%H:%M:%S')}")
+    log.info("Запланировано напоминание для пары %s на %s", lesson.period + 1, remind_dt.strftime("%H:%M:%S"))
 
 
 def schedule_lesson_reminder(today: date, lesson: Lesson, now_dt: datetime) -> None:
@@ -226,9 +226,9 @@ async def _send_attendance_to_admin(
     async with sem:
         try:
             await bot.send_message(user_id, text, reply_markup=kb)
-            log.info(f"Запрос посещаемости пары отправлен пользователю {user_id}")
+            log.info("Запрос посещаемости пары отправлен пользователю %s", user_id)
         except Exception as e:
-            log.warning(f"Не удалось доставить запрос посещаемости пользователю {user_id}: {e}")
+            log.warning("Не удалось доставить запрос посещаемости пользователю %s: %s", user_id, e)
 
 
 async def send_attendance_prompt(lesson: Lesson) -> None:
@@ -260,11 +260,11 @@ async def auto_close_attendance_session(lesson_num: int) -> None:
         return
 
     if session.current_idx > 0:
-        log.debug(f"Сессия пары {lesson_num} не сброшена: идет активное заполнение ({session.current_idx})")
+        log.debug("Сессия пары %s не сброшена: идет активное заполнение (%s)", lesson_num, session.current_idx)
         return
 
     await clear_session()
-    log.info(f"Сессия посещаемости пары {lesson_num} закрыта по окончании пары")
+    log.info("Сессия посещаемости пары %s закрыта по окончании пары", lesson_num)
 
 
 def _schedule_attendance_poll_job(today: date, lesson: Lesson, poll_dt: datetime, now_dt: datetime) -> None:
@@ -283,7 +283,7 @@ def _schedule_attendance_poll_job(today: date, lesson: Lesson, poll_dt: datetime
             id=job_id,
             replace_existing=True,
         )
-        log.info(f"Запланирован опрос посещаемости пары {lesson.number} на {poll_dt.strftime('%H:%M:%S')}")
+        log.info("Запланирован опрос посещаемости пары %s на %s", lesson.number, poll_dt.strftime("%H:%M:%S"))
 
 
 def _schedule_attendance_close_job(today: date, lesson: Lesson, end_dt: datetime, now_dt: datetime) -> None:
@@ -340,7 +340,7 @@ async def daily_schedule_dispatch() -> None:
         log.info("Сегодня Воскресенье — фоновый расчет рассылок пропущен.")
         return
 
-    log.info(f"=== ЕЖЕДНЕВНЫЙ ФОНОВЫЙ РАСЧЁТ ТАЙМЕРОВ ({today}) ===")
+    log.info("=== ЕЖЕДНЕВНЫЙ ФОНОВЫЙ РАСЧЁТ ТАЙМЕРОВ (%s) ===", today)
     lessons = await get_api_schedule_for_date(today, force_refresh=True)
 
     for lesson in lessons:
@@ -374,6 +374,6 @@ def setup_scheduler() -> AsyncIOScheduler:
     )
     _register_backup_job()
     scheduler.start()
-    log.info(f"Планировщик запущен. Ежедневная рассылка в {DAILY_NOTIFY_HOUR:02d}:{DAILY_NOTIFY_MINUTE:02d} МСК")
+    log.info("Планировщик запущен. Ежедневная рассылка в %02d:%02d МСК", DAILY_NOTIFY_HOUR, DAILY_NOTIFY_MINUTE)
 
     return scheduler

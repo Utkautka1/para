@@ -28,7 +28,7 @@ async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> byte
     Возвращает байты содержимого файла или None при сбое.
     """
     if file_size > MAX_FILE_SIZE:
-        log.warning(f"Файл {file_id} превышает лимит {MAX_FILE_SIZE} байт. Пропуск.")
+        log.warning("Файл %s превышает лимит %s байт. Пропуск.", file_id, MAX_FILE_SIZE)
         return None
 
     try:
@@ -41,7 +41,7 @@ async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> byte
             return None
         return downloaded.read()
     except Exception as e:
-        log.error(f"Ошибка скачивания файла {file_id}: {e}")
+        log.error("Ошибка скачивания файла %s: %s", file_id, e)
         return None
 
 
@@ -102,7 +102,7 @@ def extract_pdf_data(doc_bytes: bytes) -> str:
         pages = [p.extract_text() for p in reader.pages if p.extract_text()]
         return "\n\n".join(pages)
     except Exception as e:
-        log.error(f"Ошибка парсинга PDF документа: {e}")
+        log.error("Ошибка парсинга PDF документа: %s", e)
         return ""
 
 

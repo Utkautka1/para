@@ -27,9 +27,9 @@ graph LR
 | [`_build_calendar_rows`](#_build_calendar_rows) | Function | L71–L90 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_calendar_rows`. |
 | [`_build_nav_rows`](#_build_nav_rows) | Function | L93–L106 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_nav_rows`. |
 | [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L109–L120 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_schedule_in... |
-| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L123–L140 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_tester_cabi... |
-| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L143–L158 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
-| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L161–L178 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
+| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L123–L141 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_tester_cabi... |
+| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L144–L159 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
+| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L162–L179 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
 
 ---
 
@@ -246,10 +246,10 @@ result = get_schedule_inline_kb(lessons=..., week_offset=..., is_admin=...)
 
 ### `get_tester_cabinet_kb`
 ```python
-def get_tester_cabinet_kb(tester_key: str | None = None) -> InlineKeyboardMarkup
+def get_tester_cabinet_kb(login_url: str | None = None) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L123-L140`](../../bot/templates/user/keyboards.py#L123-L140)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L123-L141`](../../bot/templates/user/keyboards.py#L123-L141)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -259,7 +259,7 @@ Retrieves and resolves domain data for `get_tester_cabinet_kb`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `tester_key` | `str | None` | Yes | Parameter `tester_key` of type `str | None`. |
+| `login_url` | `str | None` | Yes | Parameter `login_url` of type `str | None`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -272,7 +272,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.user.keyboards import get_tester_cabinet_kb
 
 # Execute call
-result = get_tester_cabinet_kb(tester_key=...)
+result = get_tester_cabinet_kb(login_url=...)
 ```
 
 ---
@@ -282,7 +282,7 @@ result = get_tester_cabinet_kb(tester_key=...)
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L143-L158`](../../bot/templates/user/keyboards.py#L143-L158)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L144-L159`](../../bot/templates/user/keyboards.py#L144-L159)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup | None`
 
@@ -315,7 +315,7 @@ result = get_topic_inline_kb(lessons=...)
 def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L161-L178`](../../bot/templates/user/keyboards.py#L161-L178)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L162-L179`](../../bot/templates/user/keyboards.py#L162-L179)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 

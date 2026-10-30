@@ -153,7 +153,7 @@ async def start_grpc_server(server: grpc.aio.Server, host: str, port: int) -> No
     listen_addr = f"{host}:{port}"
     server.add_insecure_port(listen_addr)
 
-    log.info(f"🚀 Запуск gRPC сервера на {listen_addr}")
+    log.info("🚀 Запуск gRPC сервера на %s", listen_addr)
     await server.start()
 
 
@@ -166,6 +166,6 @@ async def stop_grpc_server(server: grpc.aio.Server | None, grace: float = 5.0) -
     Ничего не возвращает.
     """
     if server is not None:
-        log.info(f"🛑 Остановка gRPC сервера (grace={grace}s)...")
+        log.info("🛑 Остановка gRPC сервера (grace=%ss)...", grace)
         await server.stop(grace=grace)
         log.info("✅ gRPC сервер успешно остановлен")

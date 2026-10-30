@@ -134,7 +134,7 @@ async def get_effective_yandex_cookie() -> str:
             if cached:
                 return cached
     except Exception as e:
-        log.warning(f"Не удалось прочитать Cookie из Redis: {e}")
+        log.warning("Не удалось прочитать Cookie из Redis: %s", e)
     return get_yandex_cookie_header()
 
 
@@ -155,7 +155,7 @@ async def save_effective_yandex_cookie(cookie_str: str) -> None:
             await r.set(REDIS_YANDEX_COOKIE_KEY, cookie_str, ex=REDIS_COOKIE_TTL_SECONDS)
             log.debug("Актуальные Cookie Яндекс Документов обновлены в Redis")
     except Exception as e:
-        log.warning(f"Не удалось сохранить Cookie в Redis: {e}")
+        log.warning("Не удалось сохранить Cookie в Redis: %s", e)
 
 
 async def update_cookies_from_response(res: httpx.Response, current_cookie: str) -> None:
@@ -230,7 +230,7 @@ async def get_active_wopi_lock(resource_url: str, token: str) -> str:
     async with httpx.AsyncClient(timeout=15.0) as client:
         res = await client.post(url, headers=headers, content=b"")
         lock = res.headers.get("x-wopi-lock") or f"wopi-lock-{uuid.uuid4().hex[:8]}"
-        log.debug(f"Получен WOPI lock: {lock} (HTTP {res.status_code})")
+        log.debug("Получен WOPI lock: %s (HTTP %s)", lock, res.status_code)
         return lock
 
 
@@ -436,7 +436,7 @@ async def download_workbook(session: WopiSession) -> openpyxl.Workbook:
         if res.status_code != 200:
             raise RuntimeError(f"Ошибка скачивания таблицы: HTTP {res.status_code}")
         wb = await asyncio.to_thread(load_workbook_from_bytes, res.content)
-        log.info(f"Таблица успешно скачана ({len(res.content)} байт)")
+        log.info("Таблица успешно скачана (%s байт)", len(res.content))
         return wb
 
 
@@ -486,10 +486,10 @@ async def put_wopi_contents(
         "X-WOPI-Lock": lock_id,
     }
     res = await client.post(url, headers=hdr, content=data)
-    log.debug(f"WOPI PUT: HTTP {res.status_code}, lock={lock_id[:16]}...")
+    log.debug("WOPI PUT: HTTP %s, lock=%s...", res.status_code, lock_id[:16])
     if res.status_code != 200:
         wopi_lock = res.headers.get("x-wopi-lock", "—")
-        log.warning(f"WOPI PUT отклонён: status={res.status_code}, server_lock={wopi_lock}")
+        log.warning("WOPI PUT отклонён: status=%s, server_lock=%s", res.status_code, wopi_lock)
     return res
 
 
@@ -527,7 +527,7 @@ async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool:
     data = await asyncio.to_thread(save_workbook_to_bytes, wb)
     async with httpx.AsyncClient(timeout=30.0) as client:
         if await _try_put_with_lock(session, client, data):
-            log.info(f"✅ Таблица успешно сохранена ({len(data)} байт)")
+            log.info("✅ Таблица успешно сохранена (%s байт)", len(data))
             return True
     log.error("❌ Ошибка загрузки таблицы в WOPI")
     return False
@@ -551,7 +551,7 @@ async def verify_upload(
         raw = await _download_raw_bytes(session)
         return _verify_marks_in_raw(raw, target_date, expected_marks)
     except Exception as e:
-        log.warning(f"Верификация не удалась ({type(e).__name__}): {e}")
+        log.warning("Верификация не удалась (%s): %s", type(e).__name__, e)
         return False
 
 
@@ -568,7 +568,7 @@ async def _download_raw_bytes(session: WopiSession) -> bytes:
         res = await client.get(url)
         if res.status_code != 200:
             raise RuntimeError(f"Верификация: HTTP {res.status_code}")
-        log.debug(f"Верификация: скачано {len(res.content)} байт")
+        log.debug("Верификация: скачано %s байт", len(res.content))
         return res.content
 
 
@@ -590,7 +590,7 @@ def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None:
                         return val
         return None
     except Exception as e:
-        log.warning(f"Ошибка парсинга workbook.xml: {e}")
+        log.warning("Ошибка парсинга workbook.xml: %s", e)
         return None
 
 
@@ -610,7 +610,7 @@ def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None:
                 return target if target.startswith("xl/") else f"xl/{target}"
         return None
     except Exception as e:
-        log.warning(f"Ошибка парсинга workbook.xml.rels: {e}")
+        log.warning("Ошибка парсинга workbook.xml.rels: %s", e)
         return None
 
 
@@ -636,7 +636,7 @@ def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None:
                 return zf.read(path).decode("utf-8")
         return None
     except Exception as e:
-        log.warning(f"Сбой распаковки листа '{sheet_name}': {e}")
+        log.warning("Сбой распаковки листа '%s': %s", sheet_name, e)
         return None
 
 
@@ -670,9 +670,9 @@ def _marks_found_in_xml(xml_text: str, check_marks: dict[str, str]) -> bool:
                 break
     ok = found == len(check_marks)
     if not ok:
-        log.warning(f"Верификация: найдено {found}/{len(check_marks)} отметок")
+        log.warning("Верификация: найдено %s/%s отметок", found, len(check_marks))
     else:
-        log.info(f"Верификация: все {found} отметок подтверждены ✓")
+        log.info("Верификация: все %s отметок подтверждены ✓", found)
     return ok
 
 
@@ -692,7 +692,7 @@ def _verify_marks_in_raw(raw: bytes, target_date: date, expected_marks: dict[str
         check_marks = dict(list(expected_marks.items())[:3])
     xml_text = _extract_sheet_xml(raw, sheet_name)
     if not xml_text:
-        log.warning(f"Верификация: XML листа '{sheet_name}' не найден")
+        log.warning("Верификация: XML листа '%s' не найден", sheet_name)
         return False
     return _marks_found_in_xml(xml_text, check_marks)
 
@@ -738,7 +738,7 @@ def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None:
     for col in range(1, sheet.max_column + 1):
         parsed = parse_date_cell(sheet.cell(2, col).value)
         if parsed and target_str in parsed:
-            log.debug(f"Найдена дата {target_str} в колонке {col}")
+            log.debug("Найдена дата %s в колонке %s", target_str, col)
             return col
     return None
 
@@ -759,7 +759,7 @@ def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> 
         col = start_col + offset
         pair_val = sheet.cell(4, col).value
         if pair_val == lesson_num or str(pair_val) == str(lesson_num):
-            log.debug(f"Найдена пара {lesson_num} в колонке {col}")
+            log.debug("Найдена пара %s в колонке %s", lesson_num, col)
             return col
     return None
 
@@ -829,4 +829,4 @@ def write_student_mark(
         raise ValueError(f"Недопустимая отметка посещаемости: {mark}")
     cell = sheet.cell(row, col)
     cell.value = clean_mark if clean_mark else None
-    log.debug(f"Записана отметка '{clean_mark}' в ячейку R{row}C{col}")
+    log.debug("Записана отметка '%s' в ячейку R%sC%s", clean_mark, row, col)

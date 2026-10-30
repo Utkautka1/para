@@ -8,7 +8,7 @@
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from bot.filters.auth import AuthFilter
 from bot.templates.admin.testers import (
@@ -18,6 +18,7 @@ from bot.templates.admin.testers import (
 )
 from config import API_SECRET_KEY
 from core.logger import get_logger
+from services.login_tokens import build_login_url
 from services.testers_manager import (
     ADMIN_TESTERS,
     add_tester,
@@ -38,6 +39,21 @@ def _get_admin_key(user_id: int) -> str:
     return API_SECRET_KEY if user_id in ADMIN_TESTERS else ""
 
 
+async def _build_testers_panel(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
+    """
+    Собирает текст и клавиатуру панели тестеров для конкретного администратора.
+
+    Ссылка на Swagger — одноразовая и выпускается заново при каждой отрисовке,
+    поэтому старые сообщения со временем перестают авторизовывать.
+
+    Возвращает пару (текст, клавиатура).
+    """
+    testers = await get_all_testers()
+    key = _get_admin_key(user_id)
+    login_url = await build_login_url(user_id, "docs") if key else None
+    return format_testers_text(testers, key), get_testers_management_kb(testers, login_url)
+
+
 @router.message(Command("testers"))
 async def cmd_list_testers(message: Message) -> None:
     """
@@ -49,11 +65,9 @@ async def cmd_list_testers(message: Message) -> None:
     Ничего не возвращает (отправляет сообщение в чат).
     """
 
-    testers = await get_all_testers()
-    key = _get_admin_key(message.from_user.id if message.from_user else 0)
-    text = format_testers_text(testers, key)
+    text, kb = await _build_testers_panel(message.from_user.id if message.from_user else 0)
 
-    await message.answer(text, reply_markup=get_testers_management_kb(testers, key))
+    await message.answer(text, reply_markup=kb)
 
 
 @router.message(Command("add_tester"))
@@ -116,10 +130,8 @@ async def cmd_open_swagger(message: Message) -> None:
     Ничего не возвращает.
     """
 
-    testers = await get_all_testers()
-    key = _get_admin_key(message.from_user.id if message.from_user else 0)
-
-    await message.answer("🚀 <b>Swagger UI Портал para-api</b>", reply_markup=get_testers_management_kb(testers, key))
+    _, kb = await _build_testers_panel(message.from_user.id if message.from_user else 0)
+    await message.answer("🚀 <b>Swagger UI Портал para-api</b>", reply_markup=kb)
 
 
 @router.callback_query(F.data == "admin:testers")
@@ -133,11 +145,9 @@ async def cb_admin_testers(callback: CallbackQuery) -> None:
     Ничего не возвращает.
     """
 
-    testers = await get_all_testers()
-    key = _get_admin_key(callback.from_user.id if callback.from_user else 0)
-    text = format_testers_text(testers, key)
+    text, kb = await _build_testers_panel(callback.from_user.id if callback.from_user else 0)
 
-    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers, key))
+    await callback.message.edit_text(text, reply_markup=kb)
     await callback.answer()
 
 
@@ -177,11 +187,10 @@ async def process_tester_id_input(message: Message, state: FSMContext) -> None:
     await add_tester(uid)
     key = await generate_or_get_tester_key(uid)
     await state.clear()
-    testers = await get_all_testers()
-    admin_key = _get_admin_key(message.from_user.id if message.from_user else 0)
+    _, kb = await _build_testers_panel(message.from_user.id if message.from_user else 0)
     msg = f"✅ Пользователь <code>{uid}</code> добавлен!\n🔑 Персональный <b>API-ключ</b>:\n<code>{key}</code>"
 
-    await message.answer(msg, reply_markup=get_testers_management_kb(testers, admin_key))
+    await message.answer(msg, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("admin:del_tester:"))
@@ -199,9 +208,7 @@ async def cb_delete_tester(callback: CallbackQuery) -> None:
     if raw_id.isdigit():
         await remove_tester(int(raw_id))
 
-    testers = await get_all_testers()
-    key = _get_admin_key(callback.from_user.id if callback.from_user else 0)
-    text = format_testers_text(testers, key)
+    text, kb = await _build_testers_panel(callback.from_user.id if callback.from_user else 0)
 
-    await callback.message.edit_text(text, reply_markup=get_testers_management_kb(testers, key))
+    await callback.message.edit_text(text, reply_markup=kb)
     await callback.answer("Тестер удален")

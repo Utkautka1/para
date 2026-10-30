@@ -57,7 +57,7 @@ async def fetch_docx_bytes() -> bytes | None:
         async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             res = await client.get(api_url)
             if res.status_code != 200:
-                log.error(f"Ошибка API Яндекс Диска: HTTP {res.status_code}")
+                log.error("Ошибка API Яндекс Диска: HTTP %s", res.status_code)
                 return None
             file_url = res.json().get("file")
             if not file_url:
@@ -66,7 +66,7 @@ async def fetch_docx_bytes() -> bytes | None:
             doc_res = await client.get(file_url)
             return doc_res.content
     except Exception as e:
-        log.error(f"Исключение при скачивании файла с Яндекс Диска: {e}")
+        log.error("Исключение при скачивании файла с Яндекс Диска: %s", e)
         return None
 
 
@@ -107,9 +107,9 @@ def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]:
             name, link_info = extract_row_texts(row)
             if name:
                 teachers_map[name.split()[0].lower()] = {"full_name": name, "link_info": link_info}
-        log.info(f"Успешно распаршено {len(teachers_map)} преподавателей из docx")
+        log.info("Успешно распаршено %s преподавателей из docx", len(teachers_map))
     except Exception as e:
-        log.error(f"Ошибка парсинга docx XML: {e}")
+        log.error("Ошибка парсинга docx XML: %s", e)
     return teachers_map
 
 

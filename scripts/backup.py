@@ -26,7 +26,7 @@ def _parse_cli_args() -> argparse.Namespace:
 async def main() -> int:
     """Точка входа запуска резервного копирования из командной строки."""
     args = _parse_cli_args()
-    log.info(f"Запуск создания резервной копии Para (ротация: {args.retention_days} дней)...")
+    log.info("Запуск создания резервной копии Para (ротация: %s дней)...", args.retention_days)
     success = await run_backup_pipeline()
 
     if success:

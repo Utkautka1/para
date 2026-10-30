@@ -66,13 +66,13 @@ class CircuitBreaker:
                 raise CircuitOpenError(self.name, max(0.0, wait_time))
             if current_state == CircuitState.HALF_OPEN and self._state != CircuitState.HALF_OPEN:
                 self._state = CircuitState.HALF_OPEN
-                log.info(f"⚡ CircuitBreaker '{self.name}': OPEN -> HALF_OPEN (пробный запрос)")
+                log.info("⚡ CircuitBreaker '%s': OPEN -> HALF_OPEN (пробный запрос)", self.name)
 
     async def record_success(self) -> None:
         """Сбрасывает счетчик ошибок при успешном завершении запроса."""
         async with self._lock:
             if self._state != CircuitState.CLOSED:
-                log.info(f"✅ CircuitBreaker '{self.name}': {self._state.value} -> CLOSED (сервис восстановился)")
+                log.info("✅ CircuitBreaker '%s': %s -> CLOSED (сервис восстановился)", self.name, self._state.value)
             self._state = CircuitState.CLOSED
             self._failure_count = 0
             self._last_state_change = time.monotonic()
@@ -91,17 +91,17 @@ class CircuitBreaker:
                 )
             )
         except Exception as exc:
-            log.debug(f"Не удалось отправить алерт CircuitBreaker: {exc}")
+            log.debug("Не удалось отправить алерт CircuitBreaker: %s", exc)
 
     async def record_failure(self, error: Exception) -> None:
         """Фиксирует сбой и переводит в OPEN при превышении порога."""
         async with self._lock:
             self._failure_count += 1
             self._last_state_change = time.monotonic()
-            log.warning(f"⚠️ CircuitBreaker '{self.name}': ошибка #{self._failure_count}: {error}")
+            log.warning("⚠️ CircuitBreaker '%s': ошибка #%s: %s", self.name, self._failure_count, error)
             if self._failure_count >= self.failure_threshold or self._state == CircuitState.HALF_OPEN:
                 self._state = CircuitState.OPEN
-                log.error(f"🛑 CircuitBreaker '{self.name}' перешел в состояние OPEN на {self.recovery_timeout}с")
+                log.error("🛑 CircuitBreaker '%s' перешел в состояние OPEN на %sс", self.name, self.recovery_timeout)
                 self._dispatch_open_alert(error)
 
 
@@ -120,10 +120,10 @@ async def async_retry_with_backoff(
         except retryable_exceptions as exc:
             attempt += 1
             if attempt > max_retries:
-                log.error(f"❌ Превышено число повторных попыток ({max_retries}): {exc}")
+                log.error("❌ Превышено число повторных попыток (%s): %s", max_retries, exc)
                 raise
             delay = min(max_delay, base_delay * (2 ** (attempt - 1)))
             jitter = random.uniform(0.0, 0.2 * delay)  # nosec B311
             total_delay = delay + jitter
-            log.warning(f"🔄 Retry #{attempt}/{max_retries} через {total_delay:.2f}с из-за ошибки: {exc}")
+            log.warning("🔄 Retry #%s/%s через %.2fс из-за ошибки: %s", attempt, max_retries, total_delay, exc)
             await asyncio.sleep(total_delay)

@@ -21,9 +21,9 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_testers_text`](#format_testers_text) | Function | L20–L45 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L48–L65 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L68–L98 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`format_testers_text`](#format_testers_text) | Function | L20–L41 | `str` | Formats message payload and presentation markup for `fo... |
+| [`get_swagger_buttons`](#get_swagger_buttons) | Function | L44–L61 | `list[InlineKeyboardButton]` | Retrieves and resolves domain data for `get_swagger_but... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L64–L94 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
 
 ---
 
@@ -38,7 +38,7 @@ Encapsulates domain entities and data transfer logic for `AddTesterState`.
 def format_testers_text(testers: list[int], admin_key: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L20-L45`](../../bot/templates/admin/testers.py#L20-L45)
+- **Source Reference**: [`bot/templates/admin/testers.py#L20-L41`](../../bot/templates/admin/testers.py#L20-L41)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -69,10 +69,10 @@ result = format_testers_text(testers=..., admin_key=...)
 
 ### `get_swagger_buttons`
 ```python
-def get_swagger_buttons(admin_key: str = "") -> list[InlineKeyboardButton]
+def get_swagger_buttons(login_url: str | None = None) -> list[InlineKeyboardButton]
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L48-L65`](../../bot/templates/admin/testers.py#L48-L65)
+- **Source Reference**: [`bot/templates/admin/testers.py#L44-L61`](../../bot/templates/admin/testers.py#L44-L61)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[InlineKeyboardButton]`
 
@@ -82,7 +82,7 @@ Retrieves and resolves domain data for `get_swagger_buttons`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `admin_key` | `str` | Yes | Parameter `admin_key` of type `str`. |
+| `login_url` | `str | None` | Yes | Parameter `login_url` of type `str | None`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -95,17 +95,17 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.admin.testers import get_swagger_buttons
 
 # Execute call
-result = get_swagger_buttons(admin_key=...)
+result = get_swagger_buttons(login_url=...)
 ```
 
 ---
 
 ### `get_testers_management_kb`
 ```python
-def get_testers_management_kb(testers: list[int], admin_key: str = "") -> InlineKeyboardMarkup
+def get_testers_management_kb(testers: list[int], login_url: str | None = None) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/testers.py#L68-L98`](../../bot/templates/admin/testers.py#L68-L98)
+- **Source Reference**: [`bot/templates/admin/testers.py#L64-L94`](../../bot/templates/admin/testers.py#L64-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -116,7 +116,7 @@ Retrieves and resolves domain data for `get_testers_management_kb`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `testers` | `list[int]` | Yes | Parameter `testers` of type `list[int]`. |
-| `admin_key` | `str` | Yes | Parameter `admin_key` of type `str`. |
+| `login_url` | `str | None` | Yes | Parameter `login_url` of type `str | None`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -129,7 +129,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.templates.admin.testers import get_testers_management_kb
 
 # Execute call
-result = get_testers_management_kb(testers=..., admin_key=...)
+result = get_testers_management_kb(testers=..., login_url=...)
 ```
 
 ---

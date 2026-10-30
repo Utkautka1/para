@@ -125,7 +125,7 @@ def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | 
         sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
         clear_registry_cache()
         add_user_to_cache(clean_username, tg_id)
-        log.info(f"🎉 Разовая фиксация ID: {updated['full_name']} (@{clean_username}) -> tg_id={tg_id}")
+        log.info("🎉 Разовая фиксация ID: %s (@%s) -> tg_id=%s", updated["full_name"], clean_username, tg_id)
     return updated
 
 
@@ -160,7 +160,7 @@ def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
         clear_registry_cache()
         if uname := updated.get("username"):
             add_user_to_cache(uname.lstrip("@").lower(), tg_id)
-        log.info(f"Ручная привязка ID: {updated['full_name']} -> tg_id={tg_id}")
+        log.info("Ручная привязка ID: %s -> tg_id=%s", updated["full_name"], tg_id)
     return updated
 
 

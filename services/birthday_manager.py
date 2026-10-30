@@ -333,9 +333,9 @@ async def _send_congrats_telegram(text: str, person_key: str, key: str, state: d
         await bot.send_message(chat_id=TOPIC_CHAT_ID, message_thread_id=IMPORTANT_TOPIC_THREAD_ID, text=text)
         state[key] = True
         save_json_file(CONGRATS_STATE_FILE, state)
-        log.info(f"✅ Отправлено поздравление для {person_key} в топик {IMPORTANT_TOPIC_THREAD_ID}")
+        log.info("✅ Отправлено поздравление для %s в топик %s", person_key, IMPORTANT_TOPIC_THREAD_ID)
     except Exception as e:
-        log.error(f"❌ Ошибка отправки поздравления для {person_key}: {e}")
+        log.error("❌ Ошибка отправки поздравления для %s: %s", person_key, e)
 
 
 async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None:
@@ -382,7 +382,7 @@ async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], t
     """
     now_dt = datetime.now(TIMEZONE)
     if not is_morning_congrats_time(now_dt):
-        log.debug(f"Поздравления с ДР ожидают наступления 07:00 (сейчас {now_dt.strftime('%H:%M')})")
+        log.debug("Поздравления с ДР ожидают наступления 07:00 (сейчас %s)", now_dt.strftime("%H:%M"))
         return
     today_str = today.isoformat()
     for item in items:
@@ -401,12 +401,12 @@ async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool:
     """
     try:
         await bot.edit_message_text(chat_id=TOPIC_CHAT_ID, message_id=msg_id, text=text)
-        log.debug(f"Реестр дней рождения обновлен: MSG_ID={msg_id}")
+        log.debug("Реестр дней рождения обновлен: MSG_ID=%s", msg_id)
         return True
     except TelegramBadRequest as e:
         if "not modified" in str(e).lower():
             return True
-        log.warning(f"Ошибка редактирования MSG_ID={msg_id} ({e}), пересоздаем...")
+        log.warning("Ошибка редактирования MSG_ID=%s (%s), пересоздаем...", msg_id, e)
         return False
 
 
@@ -425,11 +425,11 @@ async def _create_new_birthday_message(text: str) -> bool:
         try:
             await bot.pin_chat_message(chat_id=TOPIC_CHAT_ID, message_id=msg.message_id, disable_notification=True)
         except Exception as e:
-            log.warning(f"Не удалось закрепить сообщение ДР: {e}")
-        log.info(f"✅ Создано и закреплено сообщение ДР: MSG_ID={msg.message_id}")
+            log.warning("Не удалось закрепить сообщение ДР: %s", e)
+        log.info("✅ Создано и закреплено сообщение ДР: MSG_ID=%s", msg.message_id)
         return True
     except Exception as e:
-        log.error(f"❌ Ошибка отправки главного сообщения ДР: {e}")
+        log.error("❌ Ошибка отправки главного сообщения ДР: %s", e)
         return False
 
 
@@ -486,5 +486,5 @@ async def birthday_sync_loop() -> None:
         try:
             await sync_birthdays_topic()
         except Exception as e:
-            log.error(f"Ошибка в birthday_sync_loop: {e}")
+            log.error("Ошибка в birthday_sync_loop: %s", e)
         await asyncio.sleep(1800)

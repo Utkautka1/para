@@ -179,9 +179,9 @@ async def safe_delete_command_message(message: Message) -> None:
         if "not found" in str(e).lower():
             log.debug("Сообщение с командой /all уже было удалено")
             return
-        log.warning(f"Не удалось удалить команду /all: {e}")
+        log.warning("Не удалось удалить команду /all: %s", e)
     except Exception as e:
-        log.warning(f"Не удалось удалить команду /all: {e}")
+        log.warning("Не удалось удалить команду /all: %s", e)
 
 
 async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message:
@@ -261,9 +261,9 @@ async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | 
     try:
         await send_broadcast_payload(message, final_text, reply_id)
         await safe_delete_command_message(message)
-        log.info(f"✅ Успешный пинг всех в чате {message.chat.id}, топик {message.message_thread_id}")
+        log.info("✅ Успешный пинг всех в чате %s, топик %s", message.chat.id, message.message_thread_id)
     except Exception as e:
-        log.error(f"❌ Ошибка отправки /all в чате {message.chat.id}: {e}")
+        log.error("❌ Ошибка отправки /all в чате %s: %s", message.chat.id, e)
         await message.answer(f"❌ Ошибка отправки сообщения: {html.escape(str(e))}")
 
 

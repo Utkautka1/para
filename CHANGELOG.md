@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] - 2026-10-30
+
+### Security
+- **Gamification PII closed**: `/gamification/leaderboard` and `/gamification/profile` (student names, attendance) now require `verify_api_or_tester`; Mini App obtains its session before loading the leaderboard.
+- **No API keys in URLs**: `verify_api_or_tester` no longer accepts `?key=` / `?api_key=`; removed `GET /miniapp/dev-login` and `/docs?key=` session attach. Bot links now use one-time login tokens (`services/login_tokens.py`, `GET /miniapp/login`, TTL `LOGIN_TOKEN_TTL_SECONDS`, consumed via `GETDEL`, whitelisted `next`).
+- **Redis password out of process args**: `compose.yml` passes `requirepass` via stdin config instead of `--requirepass`.
+- **Remote ssh script via stdin**: `scripts/sync_yandex_cookie.py` no longer builds `python3 -c "..."` command strings.
+- **Private temp dir for voice audio**: per-process `mkdtemp` (0700) instead of fixed `/dev/shm/para_audio`.
+
+### Changed
+- Lazy `%`-formatting in all logging calls (304 call sites); ruff `G004` enabled.
+- Blocking file I/O in async code moved to `asyncio.to_thread`; ambiguous `l` variables renamed, ruff `E741` enabled.
+
+---
+
 ## [v2.9.0] - 2026-10-22
 
 ### Added

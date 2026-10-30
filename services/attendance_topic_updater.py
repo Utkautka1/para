@@ -289,7 +289,7 @@ async def _pin_attendance_silently(message_id: int) -> None:
             disable_notification=True,
         )
     except Exception as e:
-        log.warning(f"Не удалось закрепить attendance MSG_ID={message_id}: {e}")
+        log.warning("Не удалось закрепить attendance MSG_ID=%s: %s", message_id, e)
 
 
 async def create_attendance_message(text: str) -> int:
@@ -308,7 +308,7 @@ async def create_attendance_message(text: str) -> int:
     save_attendance_topic_state(msg.message_id)
     await _pin_attendance_silently(msg.message_id)
 
-    log.info(f"Сообщение реестра посещаемости создано: MSG_ID={msg.message_id}")
+    log.info("Сообщение реестра посещаемости создано: MSG_ID=%s", msg.message_id)
     return msg.message_id
 
 
@@ -323,14 +323,14 @@ async def handle_attendance_edit_error(text: str, err_str: str, retry: bool) -> 
     global _ATT_MAIN_MSG_ID
 
     if "not modified" in err_str:
-        log.debug(f"sync_att_topic: 'not modified' ({_ATT_MAIN_MSG_ID})")
+        log.debug("sync_att_topic: 'not modified' (%s)", _ATT_MAIN_MSG_ID)
         return True
 
     if retry:
         log.error("❌ Повторная ошибка создания attendance-сообщения")
         return False
 
-    log.warning(f"⚠️ Ошибка редактирования attendance MSG_ID={_ATT_MAIN_MSG_ID}, пересоздаём...")
+    log.warning("⚠️ Ошибка редактирования attendance MSG_ID=%s, пересоздаём...", _ATT_MAIN_MSG_ID)
     _ATT_MAIN_MSG_ID = None
     save_attendance_topic_state(None)
 
@@ -348,7 +348,7 @@ async def _edit_attendance_msg(text: str) -> bool:
         message_id=_ATT_MAIN_MSG_ID,
         text=text,
     )
-    log.info(f"✅ Реестр посещаемости обновлен: MSG_ID={_ATT_MAIN_MSG_ID}")
+    log.info("✅ Реестр посещаемости обновлен: MSG_ID=%s", _ATT_MAIN_MSG_ID)
     return True
 
 
@@ -371,7 +371,7 @@ async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool:
     except TelegramBadRequest as e:
         return await handle_attendance_edit_error(text, str(e).lower(), _retry)
     except Exception as e:
-        log.error(f"❌ Ошибка обновления реестра посещаемости: {type(e).__name__}: {e}")
+        log.error("❌ Ошибка обновления реестра посещаемости: %s: %s", type(e).__name__, e)
         return False
 
 
@@ -386,9 +386,9 @@ async def _delete_old_attendance_msg(old_id: int | None) -> None:
 
     try:
         await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=old_id)
-        log.info(f"Старое attendance-сообщение MSG_ID={old_id} удалено")
+        log.info("Старое attendance-сообщение MSG_ID=%s удалено", old_id)
     except Exception as e:
-        log.warning(f"Не удалось удалить attendance MSG_ID={old_id}: {e}")
+        log.warning("Не удалось удалить attendance MSG_ID=%s: %s", old_id, e)
 
 
 async def recreate_attendance_topic_message() -> bool:
@@ -433,7 +433,7 @@ async def sync_attendance_topic_message(force_refresh: bool = False) -> bool:
             text = format_attendance_topic_message(stats)
             return await send_or_edit_attendance_msg(text)
         except Exception as e:
-            log.error(f"Ошибка синхронизации реестра посещаемости: {e}")
+            log.error("Ошибка синхронизации реестра посещаемости: %s", e)
             return False
 
 
@@ -467,7 +467,7 @@ async def attendance_topic_sync_loop() -> None:
         try:
             await sync_attendance_topic_message(force_refresh=False)
         except Exception as e:
-            log.error(f"Ошибка в цикле attendance_topic_sync_loop: {e}")
+            log.error("Ошибка в цикле attendance_topic_sync_loop: %s", e)
 
         sleep_sec = _get_attendance_sync_sleep_seconds()
         await asyncio.sleep(sleep_sec)

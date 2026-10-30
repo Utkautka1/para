@@ -76,14 +76,14 @@ async def cleanup_expired_messages() -> None:
     for chat_id, msg_id in expired:
         try:
             await bot.delete_message(chat_id=chat_id, message_id=msg_id)
-            log.info(f"Временное уведомление MSG_ID={msg_id} гарантированно удалено.")
+            log.info("Временное уведомление MSG_ID=%s гарантированно удалено.", msg_id)
         except TelegramBadRequest as e:
             if "not found" in str(e).lower():
-                log.debug(f"Временное сообщение MSG_ID={msg_id} уже было удалено: {e}")
+                log.debug("Временное сообщение MSG_ID=%s уже было удалено: %s", msg_id, e)
             else:
-                log.warning(f"Не удалось удалить временное сообщение MSG_ID={msg_id}: {e}")
+                log.warning("Не удалось удалить временное сообщение MSG_ID=%s: %s", msg_id, e)
         except Exception as e:
-            log.error(f"Ошибка удаления временного сообщения {msg_id}: {e}")
+            log.error("Ошибка удаления временного сообщения %s: %s", msg_id, e)
 
 
 async def send_temp_topic_reminder(lesson: Lesson) -> None:
@@ -103,12 +103,12 @@ async def send_temp_topic_reminder(lesson: Lesson) -> None:
         msg = await bot.send_message(
             chat_id=TOPIC_CHAT_ID, message_thread_id=TOPIC_THREAD_ID, text=text, reply_markup=kb
         )
-        log.info(f"Временное уведомление о паре {lesson.period + 1} отправлено. MSG_ID={msg.message_id}")
+        log.info("Временное уведомление о паре %s отправлено. MSG_ID=%s", lesson.period + 1, msg.message_id)
         await register_message_for_cleanup(TOPIC_CHAT_ID, msg.message_id, delay_sec=900)
     except TelegramBadRequest as e:
-        log.warning(f"⚠️ Ошибка Telegram при отправке временного напоминания в топик: {e}")
+        log.warning("⚠️ Ошибка Telegram при отправке временного напоминания в топик: %s", e)
     except Exception as e:
-        log.error(f"Ошибка отправки временного уведомления: {e}")
+        log.error("Ошибка отправки временного уведомления: %s", e)
 
 
 async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: date) -> None:
@@ -224,7 +224,7 @@ async def _edit_topic_message(text: str, kb: Any) -> bool:
         text=text,
         reply_markup=kb,
     )
-    log.info(f"✅ Сообщение топика ОТРЕДАКТИРОВАНО: MSG_ID={_TOPIC_MAIN_MSG_ID}, chat={TOPIC_CHAT_ID}")
+    log.info("✅ Сообщение топика ОТРЕДАКТИРОВАНО: MSG_ID=%s, chat=%s", _TOPIC_MAIN_MSG_ID, TOPIC_CHAT_ID)
     return True
 
 
@@ -244,7 +244,7 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
     except TelegramBadRequest as e:
         return await _handle_edit_failure(e, text, kb, _retry)
     except Exception as e:
-        log.error(f"❌ Ошибка обновления топика: {type(e).__name__}: {e}")
+        log.error("❌ Ошибка обновления топика: %s: %s", type(e).__name__, e)
         return False
 
 
@@ -268,7 +268,7 @@ async def _send_new_topic_message(text: str, kb: Any) -> bool:
     save_topic_state(_TOPIC_MAIN_MSG_ID)
     await _pin_silently(TOPIC_CHAT_ID, _TOPIC_MAIN_MSG_ID)
 
-    log.info(f"Главное сообщение создано и закреплено: MSG_ID={_TOPIC_MAIN_MSG_ID}")
+    log.info("Главное сообщение создано и закреплено: MSG_ID=%s", _TOPIC_MAIN_MSG_ID)
     return True
 
 
@@ -287,7 +287,7 @@ async def _pin_silently(chat_id: int, message_id: int) -> None:
             disable_notification=True,
         )
     except Exception as e:
-        log.warning(f"Не удалось закрепить MSG_ID={message_id}: {e}")
+        log.warning("Не удалось закрепить MSG_ID=%s: %s", message_id, e)
 
 
 async def _try_delete_old_topic_msg(old_id: int | None) -> None:
@@ -303,9 +303,9 @@ async def _try_delete_old_topic_msg(old_id: int | None) -> None:
 
     try:
         await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=old_id)
-        log.info(f"Старое сообщение MSG_ID={old_id} удалено")
+        log.info("Старое сообщение MSG_ID=%s удалено", old_id)
     except Exception as e:
-        log.warning(f"Не удалось удалить MSG_ID={old_id}: {e}")
+        log.warning("Не удалось удалить MSG_ID=%s: %s", old_id, e)
 
 
 async def recreate_topic_message() -> bool:
@@ -356,14 +356,14 @@ async def _handle_edit_failure(
     Возвращает True при успешном восстановлении или неизменности, иначе False.
     """
     if "not modified" in str(e).lower():
-        log.debug(f"sync_topic: 'not modified' (MSG_ID={_TOPIC_MAIN_MSG_ID})")
+        log.debug("sync_topic: 'not modified' (MSG_ID=%s)", _TOPIC_MAIN_MSG_ID)
         return True
 
     if is_retry:
-        log.error(f"❌ Повторная ошибка создания сообщения топика: {e}")
+        log.error("❌ Повторная ошибка создания сообщения топика: %s", e)
         return False
 
-    log.warning(f"⚠️ Ошибка редактирования MSG_ID={_TOPIC_MAIN_MSG_ID} ({e}), пересоздаём...")
+    log.warning("⚠️ Ошибка редактирования MSG_ID=%s (%s), пересоздаём...", _TOPIC_MAIN_MSG_ID, e)
     return await _recreate_after_edit_failure(text, kb)
 
 
@@ -396,8 +396,8 @@ async def process_today_reminders(lessons: list[Lesson], now_dt: datetime, targe
     Ничего не возвращает.
     """
     if lessons and now_dt.date() == target_date:
-        for l in lessons:
-            await check_and_trigger_reminder(l, now_dt, now_dt.date())
+        for lesson in lessons:
+            await check_and_trigger_reminder(lesson, now_dt, now_dt.date())
 
 
 async def _prepare_target_schedule(
@@ -484,7 +484,7 @@ async def notify_admin_about_api_down() -> None:
         _API_ALERT_SENT = True
         log.warning("Отправлено экстренное уведомление администратору о сбое API > 30 мин")
     except Exception as e:
-        log.error(f"Не удалось отправить алерт администратору: {e}")
+        log.error("Не удалось отправить алерт администратору: %s", e)
 
 
 async def _track_api_failure(now: datetime) -> None:
@@ -530,7 +530,7 @@ async def topic_sync_loop() -> None:
             await sync_topic_main_message()
             _reset_api_failure_tracker()
         except Exception as e:
-            log.error(f"Ошибка в цикле topic_sync_loop: {e}")
+            log.error("Ошибка в цикле topic_sync_loop: %s", e)
             await _track_api_failure(datetime.now(TIMEZONE))
 
         await asyncio.sleep(60)

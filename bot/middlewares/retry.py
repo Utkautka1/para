@@ -40,7 +40,7 @@ class RetryAfterMiddleware(BaseMiddleware):
             try:
                 return await handler(event, data)
             except TelegramRetryAfter as e:
-                log.warning(f"⚠️ Telegram flood control: пауза {e.retry_after}с (попытка {attempt + 1}/2)")
+                log.warning("⚠️ Telegram flood control: пауза %sс (попытка %s/2)", e.retry_after, attempt + 1)
                 await asyncio.sleep(e.retry_after)
             except Exception:
                 raise

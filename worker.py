@@ -45,7 +45,7 @@ async def schedule_today_reminders() -> None:
 
     now_dt = datetime.now(TIMEZONE)
     today = now_dt.date()
-    log.info(f"Проверка сегодняшних пар на момент запуска воркера: {now_dt.strftime('%H:%M:%S')}")
+    log.info("Проверка сегодняшних пар на момент запуска воркера: %s", now_dt.strftime("%H:%M:%S"))
 
     lessons = await get_api_schedule_for_date(today)
     for lesson in lessons:
@@ -118,7 +118,7 @@ async def main() -> None:
     except asyncio.CancelledError:
         log.info("Получен сигнал завершения работы воркера.")
     except Exception as e:
-        log.error(f"❌ Критическая ошибка в работе воркера: {e}")
+        log.error("❌ Критическая ошибка в работе воркера: %s", e)
     finally:
         await shutdown_worker()
 

@@ -141,17 +141,17 @@ async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
     """
 
     if user_id != config.ALLOWED_USER_ID and not await check_user_rate_limit(user_id):
-        log.warning(f"⚠️ Превышен rate-limit для пользователя {user_id}.")
+        log.warning("⚠️ Превышен rate-limit для пользователя %s.", user_id)
         return False
 
     if await is_message_processed(msg.message_id):
-        log.debug(f"Сообщение {msg.message_id} уже обработано. Пропуск.")
+        log.debug("Сообщение %s уже обработано. Пропуск.", msg.message_id)
         return False
 
     has_media = bool(msg.photo or msg.document or target.photo or target.document)
     prompt = combine_prompt_and_instructions(msg, target)
     if not is_valid_homework_prompt(prompt, has_media):
-        log.info(f"ℹ️ Пропуск сообщения без задания (msg_id={msg.message_id}): '{prompt}'")
+        log.info("ℹ️ Пропуск сообщения без задания (msg_id=%s): '%s'", msg.message_id, prompt)
         return False
 
     return True
@@ -174,7 +174,7 @@ async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
             reaction=[ReactionTypeEmoji(emoji="👀")],
         )
     except Exception as e:
-        log.debug(f"Не удалось поставить реакцию на msg_id={msg.message_id}: {e}")
+        log.debug("Не удалось поставить реакцию на msg_id=%s: %s", msg.message_id, e)
 
 
 async def dispatch_hw_task(
@@ -225,7 +225,7 @@ async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str
     if f_size <= MAX_HW_FILE_SIZE:
         return True
 
-    log.warning(f"⚠️ Файл '{f_name}' превышает лимит ({f_size} байт). Отклонено.")
+    log.warning("⚠️ Файл '%s' превышает лимит (%s байт). Отклонено.", f_name, f_size)
     try:
         await bot.set_message_reaction(
             chat_id=msg.chat.id,
@@ -233,7 +233,7 @@ async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str
             reaction=[ReactionTypeEmoji(emoji="🤷‍♂️")],
         )
     except Exception as e:
-        log.debug(f"Не удалось выставить реакцию на тяжелый файл: {e}")
+        log.debug("Не удалось выставить реакцию на тяжелый файл: %s", e)
 
     return False
 
@@ -261,7 +261,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
 
     c_hash = compute_content_hash(prompt, u_id)
     if await is_hash_processed(c_hash):
-        log.warning(f"⚠️ Повтор ДЗ по SHA256 (msg_id={msg.message_id}). Пропуск.")
+        log.warning("⚠️ Повтор ДЗ по SHA256 (msg_id=%s). Пропуск.", msg.message_id)
         return
 
     await dispatch_hw_task(bot, msg, user_id, prompt, (f_id, f_name, mime, f_size), c_hash)

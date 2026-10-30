@@ -35,7 +35,6 @@ from api.router.system import router as system_router
 from api.router.teachers import router as teachers_router
 from api.schemas.errors import COMMON_API_RESPONSES
 from config import (
-    ALLOWED_USER_ID,
     GZIP_MIN_SIZE_BYTES,
     SWAGGER_SERVERS_DESCRIPTION,
     SWAGGER_SERVERS_URL,
@@ -87,8 +86,6 @@ PUBLIC_API_PATHS = {
     "/miniapp/auth",
     "/miniapp/action",
     "/miniapp/status",
-    "/gamification/leaderboard",
-    "/gamification/profile",
     "/gamification/achievements",
     "/gamification/ranks",
 }
@@ -129,17 +126,6 @@ def _custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
     return app.openapi_schema
 
 
-async def _attach_swagger_session_if_keyed(request: Request, resp: Any) -> None:
-    """Прикрепляет сессионную куку при авторизации Swagger по query API-ключу."""
-    query_key = request.query_params.get("key") or request.query_params.get("api_key")
-    if query_key:
-        from api.router.miniapp import _set_tester_cookie
-        from services.testers_manager import get_tester_by_key
-
-        uid = await get_tester_by_key(query_key) or ALLOWED_USER_ID
-        _set_tester_cookie(resp, uid)
-
-
 def _register_protected_docs(app: FastAPI) -> None:
     """Регистрирует защищенную отдачу спецификации и Swagger UI для тестеров."""
 
@@ -148,10 +134,8 @@ def _register_protected_docs(app: FastAPI) -> None:
         return JSONResponse(content=_custom_openapi_schema(app))
 
     @app.get("/docs", include_in_schema=False, dependencies=[Depends(verify_api_or_tester)])
-    async def get_docs_swagger(request: Request) -> Any:
-        resp = get_swagger_ui_html(openapi_url="/openapi.json", title="para-api — Swagger UI Documentation")
-        await _attach_swagger_session_if_keyed(request, resp)
-        return resp
+    async def get_docs_swagger() -> Any:
+        return get_swagger_ui_html(openapi_url="/openapi.json", title="para-api — Swagger UI Documentation")
 
 
 def _register_observability_middleware(app: FastAPI) -> None:

@@ -9,6 +9,7 @@
 import asyncio
 import html
 import os
+import tempfile
 import time
 import uuid
 
@@ -39,6 +40,9 @@ from services.transcriber import split_text_to_chunks, transcriber_service
 
 log = get_logger("bot_voice")
 router = Router(name="voice_transcribe")
+
+# Приватный каталог процесса для временного аудио (создаётся лениво через mkdtemp)
+_temp_audio_dir: str | None = None
 
 
 class AudioMeta:
@@ -177,12 +181,12 @@ def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | N
     """
 
     if duration > MAX_AUDIO_DURATION:
-        log.warning(f"⚠️ Аудио от {sender} отклонено: длительность {duration}с > {MAX_AUDIO_DURATION}с")
+        log.warning("⚠️ Аудио от %s отклонено: длительность %sс > %sс", sender, duration, MAX_AUDIO_DURATION)
         return format_too_long_error(MAX_AUDIO_DURATION)
 
     if file_size > MAX_AUDIO_SIZE:
         max_mb = MAX_AUDIO_SIZE // (1024 * 1024)
-        log.warning(f"⚠️ Аудио от {sender} отклонено: размер {file_size} > {MAX_AUDIO_SIZE}")
+        log.warning("⚠️ Аудио от %s отклонено: размер %s > %s", sender, file_size, MAX_AUDIO_SIZE)
         return format_too_big_error(max_mb)
 
     return None
@@ -199,27 +203,31 @@ def log_voice_request(meta: AudioMeta) -> None:
     """
 
     log.info("=" * 55)
-    log.info(f"--- 🎙 Получено аудиосообщение ({meta.media_type}) ---")
-    log.info(f"  Пользователь: {meta.user_id} (@{meta.username}) | {meta.sender}")
-    log.info(f"  Чат / Топик:  chat={meta.chat_id} | thread={meta.thread_id}")
-    log.info(f"  Параметры:    длительность={meta.duration}с | размер={meta.file_size} байт")
+    log.info("--- 🎙 Получено аудиосообщение (%s) ---", meta.media_type)
+    log.info("  Пользователь: %s (@%s) | %s", meta.user_id, meta.username, meta.sender)
+    log.info("  Чат / Топик:  chat=%s | thread=%s", meta.chat_id, meta.thread_id)
+    log.info("  Параметры:    длительность=%sс | размер=%s байт", meta.duration, meta.file_size)
     log.info("=" * 55)
 
 
 def _resolve_temp_audio_dir() -> str:
     """
-    Определяет и подготавливает каталог для временных аудиофайлов.
+    Возвращает приватный каталог процесса для временных аудиофайлов.
 
-    Использует RAM-диск /dev/shm в Linux для исключения износа диска и быстрого I/O.
-    При недоступности /dev/shm переключается на локальный каталог data/temp_audio.
+    Создаётся через mkdtemp (права 0700, случайное имя) на RAM-диске /dev/shm,
+    а не по фиксированному пути /dev/shm/para_audio: общий предсказуемый каталог
+    другой пользователь хоста мог бы создать заранее или подменить в нём файлы.
+    Если каталог удалили извне (очистка tmpfs), создаёт новый.
 
     Возвращает строковый путь к готовой директории.
     """
-
-    base_dir = "/dev/shm/para_audio" if os.path.exists("/dev/shm") else "data/temp_audio"  # nosec B108
-    os.makedirs(base_dir, exist_ok=True)
-
-    return base_dir
+    global _temp_audio_dir
+    if _temp_audio_dir is None or not os.path.isdir(_temp_audio_dir):
+        # B108 ложный: /dev/shm здесь только родитель — сам каталог создаёт mkdtemp со случайным именем и правами 0700
+        parent = "/dev/shm" if os.path.isdir("/dev/shm") else None  # nosec B108
+        _temp_audio_dir = tempfile.mkdtemp(prefix="para_audio_", dir=parent)
+        log.debug("Создан приватный каталог для аудио: %s", _temp_audio_dir)
+    return _temp_audio_dir
 
 
 def _determine_audio_extension(file_path: str | None) -> str:
@@ -254,13 +262,13 @@ async def download_temp_audio(file_id: str) -> str:
     ext = _determine_audio_extension(tg_file.file_path)
     temp_path = f"{base_dir}/{uuid.uuid4().hex}.{ext}"
 
-    log.debug(f"Старт загрузки файла {file_id[:12]}... в {temp_path}")
+    log.debug("Старт загрузки файла %s... в %s", file_id[:12], temp_path)
     await asyncio.wait_for(
         bot.download_file(tg_file.file_path, destination=temp_path),
         timeout=DOWNLOAD_TIMEOUT,
     )
     dl_time = time.monotonic() - dl_start
-    log.debug(f"Файл {os.path.basename(temp_path)} скачан за {dl_time:.2f}с")
+    log.debug("Файл %s скачан за %.2fс", os.path.basename(temp_path), dl_time)
 
     return temp_path
 
@@ -269,7 +277,7 @@ def cleanup_temp_file(path: str) -> None:
     """
     Удаляет временный аудиофайл с диска с безопасным подавлением ошибок.
 
-    Предотвращает утечки дискового пространства и памяти RAM-диска /dev/shm.
+    Предотвращает утечки памяти RAM-диска /dev/shm.
     Логирует предупреждение при сбоях файловой системы.
 
     Ничего не возвращает.
@@ -279,7 +287,7 @@ def cleanup_temp_file(path: str) -> None:
         if path and os.path.exists(path):
             os.remove(path)
     except OSError as e:
-        log.warning(f"⚠️ Не удалось удалить временный файл {path}: {e}")
+        log.warning("⚠️ Не удалось удалить временный файл %s: %s", path, e)
 
 
 async def send_overflow_chunks(message: Message, chunks: list[str]) -> None:
@@ -372,9 +380,9 @@ async def process_audio_pipeline(
         if duration >= 60:
             asyncio.create_task(award_achievement(user_id, "bot_podcast", message.bot, sender))
         elapsed = time.monotonic() - start_time
-        log.info(f"✅ Аудио от {sender} (id={user_id}) обработано за {elapsed:.2f}с ({len(text)} симв.)")
+        log.info("✅ Аудио от %s (id=%s) обработано за %.2fс (%s симв.)", sender, user_id, elapsed, len(text))
     except Exception as e:
-        log.error(f"❌ Ошибка расшифровки аудио ({file_id}) от {sender}: {e}")
+        log.error("❌ Ошибка расшифровки аудио (%s) от %s: %s", file_id, sender, e)
         await status_msg.edit_text(format_transcription_error())
     finally:
         release_user_slot(user_id)
@@ -397,7 +405,7 @@ async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool:
         return False
 
     if not acquire_user_slot(meta.user_id):
-        log.warning(f"⚠️ Троттлинг: пользователь {meta.user_id} превысил лимит")
+        log.warning("⚠️ Троттлинг: пользователь %s превысил лимит", meta.user_id)
         await message.reply(format_rate_limit_error())
         return False
 

@@ -72,7 +72,10 @@ async def save_session_to_redis(session: AttendanceSession) -> None:
     data = session.model_dump_json()
     await client.set(REDIS_SESSION_KEY, data, ex=SESSION_TTL_SECONDS)
     log.info(
-        f"Сессия посещаемости сохранена в Redis (пара {session.lesson_num}, студент {session.current_idx}/{len(session.students)})"
+        "Сессия посещаемости сохранена в Redis (пара %s, студент %s/%s)",
+        session.lesson_num,
+        session.current_idx,
+        len(session.students),
     )
 
 
@@ -91,13 +94,13 @@ async def get_active_session() -> AttendanceSession | None:
 
     data = await client.get(REDIS_SESSION_KEY)
     if not data:
-        log.warning(f"Активная сессия не найдена по ключу '{REDIS_SESSION_KEY}'")
+        log.warning("Активная сессия не найдена по ключу '%s'", REDIS_SESSION_KEY)
         return None
 
     try:
         return AttendanceSession.model_validate_json(data)
     except Exception as e:
-        log.error(f"Ошибка десериализации сессии: {e}")
+        log.error("Ошибка десериализации сессии: %s", e)
         return None
 
 
@@ -148,7 +151,7 @@ async def _read_cached_students(client) -> list[tuple[int, str]] | None:
         try:
             return [tuple(x) for x in json.loads(cached)]
         except Exception as e:
-            log.debug(f"Сбой десериализации кэша студентов: {e}")
+            log.debug("Сбой десериализации кэша студентов: %s", e)
 
     return None
 
@@ -208,7 +211,7 @@ async def create_attendance_session(
     )
 
     await save_session_to_redis(session)
-    log.info(f"Создана сессия для пары {lesson_num} ({len(students)} студентов)")
+    log.info("Создана сессия для пары %s (%s студентов)", lesson_num, len(students))
 
     return session
 
@@ -271,7 +274,7 @@ async def mark_all_remaining_present() -> AttendanceSession | None:
 
     session.current_idx = len(session.students)
     await save_session_to_redis(session)
-    log.info(f"Оставшиеся студенты отмечены как 'П' (всего {len(session.marks)})")
+    log.info("Оставшиеся студенты отмечены как 'П' (всего %s)", len(session.marks))
 
     return session
 
@@ -349,7 +352,7 @@ async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
 
     verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
     if verified:
-        log.info(f"✅ Посещаемость пары {session.lesson_num} подтверждена верификацией")
+        log.info("✅ Посещаемость пары %s подтверждена верификацией", session.lesson_num)
     else:
         log.warning("⚠️  WOPI PUT успешен (200 OK), но верификация чтения не подтвердила отметки")
 
@@ -373,7 +376,7 @@ async def _post_commit_sync() -> None:
         await invalidate_attendance_stats_cache()
         await sync_attendance_topic_message(force_refresh=True)
     except Exception as e:
-        log.warning(f"Ошибка пост-коммит обновления топика посещаемости: {e}")
+        log.warning("Ошибка пост-коммит обновления топика посещаемости: %s", e)
 
 
 async def _execute_commit_attempts(session: AttendanceSession, t_date: date) -> bool:
@@ -383,15 +386,15 @@ async def _execute_commit_attempts(session: AttendanceSession, t_date: date) -> 
     Возвращает True в случае успеха любой из попыток, иначе False.
     """
     for attempt in range(1, MAX_COMMIT_RETRIES + 1):
-        log.info(f"Запись посещаемости пары {session.lesson_num} (попытка {attempt}/{MAX_COMMIT_RETRIES})...")
+        log.info("Запись посещаемости пары %s (попытка %s/%s)...", session.lesson_num, attempt, MAX_COMMIT_RETRIES)
         try:
             if await _try_commit_once(session, t_date):
                 return True
         except Exception as e:
-            log.error(f"Попытка {attempt} провалилась: {type(e).__name__}: {e}")
+            log.error("Попытка %s провалилась: %s: %s", attempt, type(e).__name__, e)
 
         if attempt < MAX_COMMIT_RETRIES:
-            log.info(f"Повтор через {RETRY_DELAY_SECONDS} сек...")
+            log.info("Повтор через %s сек...", RETRY_DELAY_SECONDS)
             await asyncio.sleep(RETRY_DELAY_SECONDS)
 
     return False
@@ -409,12 +412,12 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
     success = await _execute_commit_attempts(session, t_date)
 
     if success:
-        log.info(f"✅ Посещаемость пары {session.lesson_num} зафиксирована")
+        log.info("✅ Посещаемость пары %s зафиксирована", session.lesson_num)
         await clear_session()
         asyncio.create_task(_post_commit_sync())
         return True
 
-    log.error(f"❌ Все {MAX_COMMIT_RETRIES} попытки записи пары {session.lesson_num} провалились")
+    log.error("❌ Все %s попытки записи пары %s провалились", MAX_COMMIT_RETRIES, session.lesson_num)
     return False
 
 

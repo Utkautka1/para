@@ -5,6 +5,7 @@
 проверки внешних ключей и быстрого таймаута ожидания блокировок (busy_timeout).
 """
 
+import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -47,7 +48,7 @@ def get_database_engine() -> AsyncEngine:
             future=True,
         )
         event.listen(_engine.sync_engine, "connect", _set_sqlite_pragmas)
-        log.info(f"Инициализирован движок SQLite: {SQLITE_DB_PATH} (WAL-mode)")
+        log.info("Инициализирован движок SQLite: %s (WAL-mode)", SQLITE_DB_PATH)
     return _engine
 
 
@@ -83,15 +84,16 @@ async def _migrate_subscribers_from_json(session: AsyncSession) -> None:
     from db.sqlite.models import Subscriber
 
     sub_count = (await session.execute(select(Subscriber))).scalars().first()
-    if sub_count is not None or not os.path.exists(SUBSCRIBERS_FILE_PATH):
+    if sub_count is not None or not await asyncio.to_thread(os.path.exists, SUBSCRIBERS_FILE_PATH):
         return
 
-    data = sync_load_json(SUBSCRIBERS_FILE_PATH, default=[])
+    # Чтение JSON — дисковый I/O, уводим в поток, чтобы не стопорить event loop на старте
+    data = await asyncio.to_thread(sync_load_json, SUBSCRIBERS_FILE_PATH, default=[])
     if isinstance(data, list) and data:
         for chat_id in set(data):
             session.add(Subscriber(chat_id=int(chat_id), is_active=True))
         await session.flush()
-        log.info(f"✅ Успешно мигрировано {len(data)} подписчиков из JSON в SQLite")
+        log.info("✅ Успешно мигрировано %s подписчиков из JSON в SQLite", len(data))
 
 
 def _migrate_attendance_snapshot_columns(conn: Any) -> None:
@@ -103,7 +105,7 @@ def _migrate_attendance_snapshot_columns(conn: Any) -> None:
             if col not in existing:
                 conn.execute(text(f"ALTER TABLE attendance_snapshots ADD COLUMN {col} INTEGER DEFAULT 0"))
     except Exception as exc:
-        log.debug(f"Миграция колонок attendance_snapshots пропущена: {exc}")
+        log.debug("Миграция колонок attendance_snapshots пропущена: %s", exc)
 
 
 async def init_db() -> None:

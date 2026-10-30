@@ -5,6 +5,7 @@
 валидацию HMAC-SHA256 подписи Telegram initData и управление сессионными куками.
 """
 
+import asyncio
 import secrets
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from config import (
 )
 from core.logger import get_logger
 from services.classmates_auth import find_classmate_by_tg_id
+from services.login_tokens import LOGIN_REDIRECT_TARGETS, consume_login_token
 from services.testers_manager import (
     add_tester,
     get_all_testers,
@@ -82,10 +84,13 @@ async def serve_miniapp_page() -> HTMLResponse:
     Возвращает HTMLResponse с содержимым страницы портала.
     """
 
-    if _HTML_PATH.exists():
-        return HTMLResponse(content=_HTML_PATH.read_text(encoding="utf-8"))
-
-    return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)
+    # Дисковый I/O уводим в поток, чтобы не блокировать event loop на каждом открытии Mini App
+    try:
+        content = await asyncio.to_thread(_HTML_PATH.read_text, encoding="utf-8")
+    except FileNotFoundError:
+        log.warning("⚠️  Шаблон Mini App не найден: %s", _HTML_PATH)
+        return HTMLResponse(content="<h1>para-api Mini App</h1>", status_code=200)
+    return HTMLResponse(content=content)
 
 
 async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None:
@@ -101,16 +106,28 @@ async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None:
     return None
 
 
-@router.get("/dev-login")
-async def dev_login(key: str = Query(..., description="API Secret Key")) -> Response:
-    """Выполняет вход разработчика или тестера по API ключу и перенаправляет в MiniApp."""
-    resolved = await _resolve_api_key_user(key)
-    if not resolved:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
-    uid, _, _ = resolved
-    redirect = RedirectResponse(url="/miniapp", status_code=status.HTTP_303_SEE_OTHER)
+@router.get("/login", include_in_schema=False)
+async def login_by_token(
+    t: str = Query(..., description="Одноразовый токен входа из бота"),
+    next_target: str = Query(default="miniapp", alias="next"),
+) -> Response:
+    """
+    Обменивает одноразовый токен из ссылки бота на сессионную куку.
+
+    Токен гасится при первом использовании, поэтому в URL никогда не живёт
+    постоянный ключ. next принимается только из whitelist — защита от open redirect.
+
+    Возвращает redirect 303 на Mini App или Swagger UI, либо HTTP 401.
+    """
+    uid = await consume_login_token(t)
+    if uid is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login link expired or already used")
+    target = LOGIN_REDIRECT_TARGETS.get(next_target, LOGIN_REDIRECT_TARGETS["miniapp"])
+    redirect = RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
+    # Не отдаём URL с токеном в Referer при переходах со страницы назначения
+    redirect.headers["Referrer-Policy"] = "no-referrer"
     _set_tester_cookie(redirect, uid)
-    log.info(f"🔑 Успешный dev-login в MiniApp (user_id={uid})")
+    log.info("🔑 Вход по одноразовой ссылке (user_id=%s) -> %s", uid, target)
     return redirect
 
 
@@ -121,7 +138,7 @@ async def _auth_by_key(api_key: str, response: Response) -> MiniappAuthResponse:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
     uid, name, uname = resolved
     _set_tester_cookie(response, uid)
-    log.info(f"🔑 Успешный вход по API-ключу в MiniApp (user_id={uid}, name={name})")
+    log.info("🔑 Успешный вход по API-ключу в MiniApp (user_id=%s, name=%s)", uid, name)
     return MiniappAuthResponse(user_id=uid, first_name=name, username=uname)
 
 
@@ -134,11 +151,9 @@ async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuth
     is_classmate = bool(uid == ALLOWED_USER_ID or find_classmate_by_tg_id(uid) is not None)
     is_tester = await is_tester_allowed(uid)
     if not is_classmate and not is_tester:
-        log.warning(f"🚫 Пользователь {uid} не в группе 1-КПД-3 и не в списке тестеров")
+        log.warning("🚫 Пользователь %s не в группе 1-КПД-3 и не в списке тестеров", uid)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
     _set_tester_cookie(response, uid)
-    import asyncio
-
     from services.achievement_service import award_achievement
 
     asyncio.create_task(award_achievement(uid, "bot_miniapp", None, info.get("first_name")))

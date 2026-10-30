@@ -507,7 +507,7 @@ def create_solution_docx(
     Возвращает абсолютный путь к сгенерированному файлу .docx.
     """
     target_path = output_path or os.path.join(tempfile.gettempdir(), "solution.docx")
-    log.debug(f"Создание DOCX документа решения по ГОСТ: {target_path}")
+    log.debug("Создание DOCX документа решения по ГОСТ: %s", target_path)
     doc = init_gost_document()
     create_title_page(doc, student_name, teacher_name, year, group_name)
     headings = extract_headings_from_text(solution_text)
@@ -515,5 +515,5 @@ def create_solution_docx(
     heading_map = {h[0]: (h[1], h[2], h[3]) for h in headings}
     process_document_content_lines(doc, solution_text.split("\n"), heading_map)
     doc.save(target_path)
-    log.info(f"DOCX файл решения по точному образцу ГОСТ создан: {target_path}")
+    log.info("DOCX файл решения по точному образцу ГОСТ создан: %s", target_path)
     return target_path

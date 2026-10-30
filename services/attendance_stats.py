@@ -121,9 +121,9 @@ def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]
     valid_months = set(MONTH_SHEET_MAP.values())
     for s_name in wb.sheetnames:
         if s_name in valid_months:
-            log.debug(f"Обработка листа месяца посещаемости: {s_name}")
+            log.debug("Обработка листа месяца посещаемости: %s", s_name)
             _aggregate_sheet_stats(wb[s_name], s_name, stats)
-    log.info(f"Собрана статистика посещаемости для {len(stats)} студентов")
+    log.info("Собрана статистика посещаемости для %s студентов", len(stats))
     return stats
 
 
@@ -142,7 +142,7 @@ async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None:
     try:
         return json.loads(cached)
     except Exception as e:
-        log.warning(f"Ошибка десериализации кэша статистики: {e}")
+        log.warning("Ошибка десериализации кэша статистики: %s", e)
         return None
 
 
@@ -160,7 +160,7 @@ async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None:
         await cache_set(REDIS_STATS_KEY, payload, ttl=CACHE_TTL_SECONDS)
         log.debug("Статистика посещаемости успешно закэширована в Redis")
     except Exception as e:
-        log.warning(f"Не удалось закэшировать статистику в Redis: {e}")
+        log.warning("Не удалось закэшировать статистику в Redis: %s", e)
 
 
 async def invalidate_attendance_stats_cache() -> None:
@@ -206,7 +206,7 @@ async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None:
         await AttendanceRepository.save_daily_snapshots(date.today(), records)
         sync_atomic_save_json("data/attendance_cache.json", stats)
     except Exception as exc:
-        log.debug(f"Сохранение среза посещаемости в SQLite пропущено: {exc}")
+        log.debug("Сохранение среза посещаемости в SQLite пропущено: %s", exc)
 
 
 def _extract_snapshot_dict(snapshots: list[Any]) -> dict[str, dict[str, Any]]:
@@ -237,7 +237,7 @@ async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None:
         snapshots = await AttendanceRepository.get_latest_snapshots()
         return _extract_snapshot_dict(list(snapshots)) if snapshots else None
     except Exception as exc:
-        log.warning(f"Не удалось прочитать срез посещаемости из SQLite: {exc}")
+        log.warning("Не удалось прочитать срез посещаемости из SQLite: %s", exc)
         return None
 
 
@@ -256,7 +256,7 @@ async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]:
     await _save_to_redis_cache(fresh_stats)
     await _save_sqlite_snapshot(fresh_stats)
     await cache_flush("gamification:leaderboard*")
-    log.info(f"✅ Данные посещаемости обновлены из Яндекс Документов ({len(fresh_stats)} студентов)")
+    log.info("✅ Данные посещаемости обновлены из Яндекс Документов (%s студентов)", len(fresh_stats))
     return fresh_stats
 
 
@@ -272,7 +272,7 @@ async def _trigger_background_attendance_refresh() -> None:
         try:
             await _download_and_cache_fresh_stats()
         except Exception as exc:
-            log.warning(f"Фоновое обновление посещаемости завершилось ошибкой: {exc}")
+            log.warning("Фоновое обновление посещаемости завершилось ошибкой: %s", exc)
 
 
 async def _fetch_with_sync_lock(force_refresh: bool) -> dict[str, dict[str, Any]]:
@@ -284,7 +284,7 @@ async def _fetch_with_sync_lock(force_refresh: bool) -> dict[str, dict[str, Any]
         try:
             return await _download_and_cache_fresh_stats()
         except Exception as exc:
-            log.error(f"Сбой загрузки Яндекс Документов ({exc}), фолбэк на SQLite")
+            log.error("Сбой загрузки Яндекс Документов (%s), фолбэк на SQLite", exc)
             fallback = await _load_sqlite_snapshot()
             if fallback:
                 return fallback
@@ -411,5 +411,5 @@ async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, A
     new_saved_marks = _update_session_marks_in_stats(session, saved_marks, stats)
     await _save_lesson_marks(session.target_date, session.lesson_num, new_saved_marks)
     await _save_to_redis_cache(stats)
-    log.info(f"✅ Оптимистичное обновление посещаемости пары {session.lesson_num} применено")
+    log.info("✅ Оптимистичное обновление посещаемости пары %s применено", session.lesson_num)
     return stats

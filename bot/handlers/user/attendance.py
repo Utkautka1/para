@@ -192,7 +192,7 @@ async def cb_my_attendance_refresh(callback: CallbackQuery) -> None:
         if callback.message:
             await callback.message.edit_text(text, reply_markup=get_personal_attendance_kb())
     except TelegramBadRequest as e:
-        log.debug(f"Обновление посещаемости пропущено: {e}")
+        log.debug("Обновление посещаемости пропущено: %s", e)
 
 
 @router.callback_query(F.data == "att_topic:refresh")

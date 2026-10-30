@@ -54,9 +54,9 @@ async def init_redis() -> Redis | None:
             pool = get_redis_pool()
             redis_client = Redis(connection_pool=pool)
             await redis_client.ping()
-            log.info(f"Успешное подключение к Redis ({REDIS_HOST}:{REDIS_PORT}) через ConnectionPool")
+            log.info("Успешное подключение к Redis (%s:%s) через ConnectionPool", REDIS_HOST, REDIS_PORT)
         except Exception as e:
-            log.error(f"Ошибка подключения к Redis ({REDIS_HOST}:{REDIS_PORT}): {e}")
+            log.error("Ошибка подключения к Redis (%s:%s): %s", REDIS_HOST, REDIS_PORT, e)
             redis_client = None
     return redis_client
 

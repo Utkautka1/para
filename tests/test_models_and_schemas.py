@@ -55,7 +55,7 @@ def test_lesson_model_required_fields_validation() -> None:
 )
 def test_lesson_model_matrix(subgroup: int, is_stream: bool, is_remote: bool) -> None:
     """Проверяет создание моделей Lesson с различными комбинациями флагов."""
-    l = Lesson(
+    lesson = Lesson(
         period=0,
         time_str="08:30-10:00",
         subject="Математика",
@@ -67,9 +67,9 @@ def test_lesson_model_matrix(subgroup: int, is_stream: bool, is_remote: bool) ->
         subgroup=subgroup,
         is_stream=is_stream,
     )
-    assert l.subgroup == subgroup
-    assert l.is_stream is is_stream
-    assert l.is_remote is is_remote
+    assert lesson.subgroup == subgroup
+    assert lesson.is_stream is is_stream
+    assert lesson.is_remote is is_remote
 
 
 def test_exam_item_defaults() -> None:

@@ -1055,6 +1055,19 @@
       }
     }
 
+    async function hasActiveSession() {
+      // Сессия уже выставлена одноразовой ссылкой из бота (/miniapp/login)
+      try {
+        const resp = await fetch('/miniapp/status', { credentials: 'include' });
+        if (!resp.ok) return false;
+        const data = await resp.json();
+        return Boolean(data.authenticated && data.is_tester);
+      } catch (e) {
+        console.warn('Проверка сессии:', e);
+        return false;
+      }
+    }
+
     function enableTesterUI() {
       const bSw = document.getElementById('tab-swagger');
       const bJg = document.getElementById('tab-jaeger');
@@ -1289,9 +1302,8 @@
       if (tab === 'swagger') {
         const frame = document.getElementById('swagger-frame');
         if (frame && !frame.getAttribute('src')) {
-          const params = new URLSearchParams(window.location.search);
-          const k = params.get('key') || localStorage.getItem('para_dev_key') || '';
-          frame.setAttribute('src', k ? ('/docs?key=' + encodeURIComponent(k)) : '/docs');
+          // Swagger авторизуется сессионной кукой, выставленной при входе в Mini App
+          frame.setAttribute('src', '/docs');
         }
       }
       if (tab === 'jaeger') {
@@ -1403,11 +1415,18 @@
       initTelegram();
       if (Boolean(tg?.initData)) {
         unlockApp();
-        await Promise.allSettled([loadLeaderboard(), loadAchievements(), checkTesterStatus()]);
+        // Лидерборд закрыт авторизацией — сначала получаем сессионную куку
+        await checkTesterStatus();
+        await Promise.allSettled([loadLeaderboard(), loadAchievements()]);
         return;
       }
-      const params = new URLSearchParams(window.location.search);
-      const testKey = params.get('key') || localStorage.getItem('para_dev_key');
+      if (await hasActiveSession()) {
+        unlockApp();
+        enableTesterUI();
+        await Promise.allSettled([loadLeaderboard(), loadAchievements()]);
+        return;
+      }
+      const testKey = localStorage.getItem('para_dev_key');
       if (testKey) {
         const ok = await verifyAndApplyKey(testKey);
         if (ok) {

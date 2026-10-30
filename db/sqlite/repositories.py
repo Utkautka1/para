@@ -49,7 +49,7 @@ class SubscriberRepository:
                 sub.full_name = full_name or sub.full_name
             else:
                 session.add(Subscriber(chat_id=chat_id, username=username, full_name=full_name, is_active=True))
-            log.info(f"Подписчик {chat_id} успешно сохранен в SQLite")
+            log.info("Подписчик %s успешно сохранен в SQLite", chat_id)
             return True
 
     @staticmethod
@@ -61,7 +61,7 @@ class SubscriberRepository:
             if not sub:
                 return False
             sub.is_active = False
-            log.info(f"Подписчик {chat_id} деактивирован в SQLite")
+            log.info("Подписчик %s деактивирован в SQLite", chat_id)
             return True
 
     @staticmethod
@@ -94,7 +94,7 @@ class IncidentRepository:
             )
             session.add(incident)
             await session.flush()
-            log.warning(f"Зафиксирован инцидент [{severity}] {incident_type}: {title}")
+            log.warning("Зафиксирован инцидент [%s] %s: %s", severity, incident_type, title)
             return incident
 
     @staticmethod
@@ -132,7 +132,7 @@ class AttendanceRepository:
                     )
                 )
                 count += 1
-            log.info(f"Сохранено {count} записей посещаемости за {snapshot_date}")
+            log.info("Сохранено %s записей посещаемости за %s", count, snapshot_date)
             return count
 
     @staticmethod
@@ -160,7 +160,7 @@ class GamificationRepository:
                     mapping.setdefault(fio.lower(), set()).add(aid)
                 return mapping
         except Exception as exc:
-            log.debug(f"Таблица достижений еще не создана: {exc}")
+            log.debug("Таблица достижений еще не создана: %s", exc)
             return {}
 
     @staticmethod
@@ -177,5 +177,5 @@ class GamificationRepository:
                 session.add(StudentAchievement(student_fio=student_fio, achievement_id=achievement_id))
                 return True
         except Exception as exc:
-            log.warning(f"Ошибка разблокировки достижения: {exc}")
+            log.warning("Ошибка разблокировки достижения: %s", exc)
             return False

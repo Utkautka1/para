@@ -241,7 +241,7 @@ async def _load_cached_leaderboard() -> list[StudentProfile] | None:
         data = json.loads(raw)
         return [StudentProfile(**item) for item in data]
     except Exception as exc:
-        log.warning(f"Ошибка десериализации кэша лидерборда: {exc}")
+        log.warning("Ошибка десериализации кэша лидерборда: %s", exc)
         return None
 
 
@@ -252,7 +252,7 @@ async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None:
         payload = json.dumps(data, ensure_ascii=False)
         await cache_set(LEADERBOARD_CACHE_KEY, payload, ttl=LEADERBOARD_CACHE_TTL)
     except Exception as exc:
-        log.warning(f"Ошибка сохранения кэша лидерборда: {exc}")
+        log.warning("Ошибка сохранения кэша лидерборда: %s", exc)
 
 
 def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]:

@@ -44,10 +44,10 @@ async def cache_get(key: str) -> str | None:
             if client:
                 val = await client.get(key)
                 if val:
-                    log.debug(f"Redis hit [key={key}]")
+                    log.debug("Redis hit [key=%s]", key)
                     return val
         except Exception as e:
-            log.error(f"Ошибка чтения из Redis ({key}): {e}")
+            log.error("Ошибка чтения из Redis (%s): %s", key, e)
         return None
 
 
@@ -64,9 +64,9 @@ async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECO
             client = await init_redis()
             if client:
                 await (client.set(key, value, ex=ttl) if ttl and ttl > 0 else client.set(key, value))
-                log.debug(f"Сохранено в Redis [key={key}, ttl={ttl}s]")
+                log.debug("Сохранено в Redis [key=%s, ttl=%ss]", key, ttl)
         except Exception as e:
-            log.error(f"Ошибка записи в Redis ({key}): {e}")
+            log.error("Ошибка записи в Redis (%s): %s", key, e)
 
 
 async def cache_delete(key: str) -> bool:
@@ -83,10 +83,10 @@ async def cache_delete(key: str) -> bool:
             client = await init_redis()
             if client:
                 deleted = await client.delete(key)
-                log.debug(f"Удален ключ из Redis [key={key}, deleted={deleted}]")
+                log.debug("Удален ключ из Redis [key=%s, deleted=%s]", key, deleted)
                 return bool(deleted)
         except Exception as e:
-            log.error(f"Ошибка удаления из Redis ({key}): {e}")
+            log.error("Ошибка удаления из Redis (%s): %s", key, e)
         return False
 
 
@@ -106,9 +106,9 @@ async def cache_flush(pattern: str = "sched:*") -> int:
             keys = [k async for k in client.scan_iter(match=pattern)]
             if keys:
                 deleted = await client.delete(*keys)
-            log.info(f"Очищен кэш расписания ({deleted} ключей по {pattern})")
+            log.info("Очищен кэш расписания (%s ключей по %s)", deleted, pattern)
     except Exception as e:
-        log.error(f"Ошибка точечной очистки кэша Redis ({pattern}): {e}")
+        log.error("Ошибка точечной очистки кэша Redis (%s): %s", pattern, e)
     return deleted
 
 
@@ -159,7 +159,7 @@ async def check_user_rate_limit(user_id: int) -> bool:
                 await client.expire(key, 60)
             return count <= 3
     except Exception as e:
-        log.error(f"Ошибка проверки rate-limit в Redis ({user_id}): {e}")
+        log.error("Ошибка проверки rate-limit в Redis (%s): %s", user_id, e)
     return True
 
 
@@ -205,10 +205,10 @@ async def push_hw_task(task_data: dict) -> bool:
             payload = json.dumps(task_data, ensure_ascii=False)
             await client.rpush(HW_QUEUE_KEY, payload)
             msg_id = task_data.get("message_id")
-            log.info(f"Задача ДЗ (msg_id={msg_id}) добавлена в очередь {HW_QUEUE_KEY}")
+            log.info("Задача ДЗ (msg_id=%s) добавлена в очередь %s", msg_id, HW_QUEUE_KEY)
             return True
     except Exception as e:
-        log.error(f"Ошибка добавления задачи ДЗ в Redis: {e}")
+        log.error("Ошибка добавления задачи ДЗ в Redis: %s", e)
     return False
 
 
@@ -227,7 +227,7 @@ async def pop_hw_task(timeout: int = 2) -> dict | None:
             raw = await client.blmove(HW_QUEUE_KEY, HW_PROCESSING_KEY, timeout, "LEFT", "RIGHT")
             return json.loads(raw) if raw else None
     except Exception as e:
-        log.error(f"Ошибка извлечения задачи ДЗ из Redis: {e}")
+        log.error("Ошибка извлечения задачи ДЗ из Redis: %s", e)
     return None
 
 
@@ -245,9 +245,9 @@ async def ack_hw_task(task_data: dict) -> None:
         if client:
             payload = json.dumps(task_data, ensure_ascii=False)
             await client.lrem(HW_PROCESSING_KEY, 1, payload)
-            log.debug(f"Задача ДЗ {task_data.get('message_id')} подтверждена (ack)")
+            log.debug("Задача ДЗ %s подтверждена (ack)", task_data.get("message_id"))
     except Exception as e:
-        log.error(f"Ошибка подтверждения задачи ДЗ в Redis: {e}")
+        log.error("Ошибка подтверждения задачи ДЗ в Redis: %s", e)
 
 
 async def recover_stale_hw_tasks() -> int:
@@ -266,9 +266,9 @@ async def recover_stale_hw_tasks() -> int:
             while await client.rpoplpush(HW_PROCESSING_KEY, HW_QUEUE_KEY):
                 recovered += 1
             if recovered > 0:
-                log.warning(f"⚠️ Восстановлено {recovered} зависших задач ДЗ из processing")
+                log.warning("⚠️ Восстановлено %s зависших задач ДЗ из processing", recovered)
     except Exception as e:
-        log.error(f"Ошибка восстановления зависших задач ДЗ: {e}")
+        log.error("Ошибка восстановления зависших задач ДЗ: %s", e)
     return recovered
 
 
@@ -285,10 +285,10 @@ async def clear_hw_queue() -> int:
         client = await init_redis()
         if client:
             deleted = await client.delete(HW_QUEUE_KEY, HW_PROCESSING_KEY)
-            log.info(f"Очереди задач ДЗ очищены (deleted={deleted})")
+            log.info("Очереди задач ДЗ очищены (deleted=%s)", deleted)
             return deleted
     except Exception as e:
-        log.error(f"Ошибка очистки очереди ДЗ в Redis: {e}")
+        log.error("Ошибка очистки очереди ДЗ в Redis: %s", e)
     return 0
 
 
@@ -312,7 +312,7 @@ async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -
                 await pipe.execute()
             log.info("Срез расписания группы успешно сохранен в кэш Redis")
     except Exception as e:
-        log.error(f"Ошибка сохранения снимка расписания в Redis: {e}")
+        log.error("Ошибка сохранения снимка расписания в Redis: %s", e)
 
 
 async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
@@ -333,7 +333,7 @@ async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
                 log.debug("Снимок расписания успешно загружен из Redis")
                 return json.loads(snap_raw), json.loads(meta_raw)
     except Exception as e:
-        log.error(f"Ошибка чтения снимка расписания из Redis: {e}")
+        log.error("Ошибка чтения снимка расписания из Redis: %s", e)
     return None, None
 
 
@@ -401,9 +401,9 @@ async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int
         if client:
             target_ts = time.time() + delay_sec
             await client.zadd(TOPIC_CLEANUP_KEY, {f"{chat_id}:{msg_id}": target_ts})
-            log.debug(f"Сообщение {chat_id}:{msg_id} запланировано на удаление через {delay_sec}с")
+            log.debug("Сообщение %s:%s запланировано на удаление через %sс", chat_id, msg_id, delay_sec)
     except Exception as e:
-        log.error(f"Ошибка регистрации сообщения на удаление: {e}")
+        log.error("Ошибка регистрации сообщения на удаление: %s", e)
 
 
 async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]:
@@ -425,7 +425,7 @@ async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]:
                 await client.zrem(TOPIC_CLEANUP_KEY, *expired)
                 results = [(int(i.split(":")[0]), int(i.split(":")[1])) for i in expired]
     except Exception as e:
-        log.error(f"Ошибка извлечения сообщений для очистки: {e}")
+        log.error("Ошибка извлечения сообщений для очистки: %s", e)
     return results
 
 
@@ -446,7 +446,7 @@ async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
         try:
             acquired = bool(await client.set(key, token, nx=True, ex=ttl))
         except Exception as e:
-            log.warning(f"Ошибка захвата лока Redis ({key}): {e}")
+            log.warning("Ошибка захвата лока Redis (%s): %s", key, e)
     try:
         yield acquired
     finally:
@@ -454,7 +454,7 @@ async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]:
             try:
                 await client.eval(LUA_RELEASE_LOCK, 1, key, token)
             except Exception as e:
-                log.debug(f"Ошибка освобождения лока Redis ({key}): {e}")
+                log.debug("Ошибка освобождения лока Redis (%s): %s", key, e)
 
 
 async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool:
@@ -475,8 +475,8 @@ async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool:
     await client.lrem(HW_PROCESSING_KEY, 1, raw)
     if retries <= max_retries:
         await client.rpush(HW_QUEUE_KEY, raw)
-        log.warning(f"⚠️ Задача ДЗ {task_data.get('message_id')} на повтор (#{retries}/{max_retries})")
+        log.warning("⚠️ Задача ДЗ %s на повтор (#%s/%s)", task_data.get("message_id"), retries, max_retries)
         return True
     await client.rpush(HW_DLQ_KEY, raw)
-    log.error(f"❌ Задача ДЗ {task_data.get('message_id')} превысила {max_retries} попыток -> DLQ")
+    log.error("❌ Задача ДЗ %s превысила %s попыток -> DLQ", task_data.get("message_id"), max_retries)
     return False

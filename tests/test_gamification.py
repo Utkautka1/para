@@ -15,6 +15,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api import create_app
+from config import API_SECRET_KEY
 from services.gamification import (
     build_student_profile,
     calculate_student_xp,
@@ -27,6 +28,9 @@ from services.gamification_registry import (
     RANKS,
     get_all_achievements,
 )
+
+# Лидерборд и профили содержат ПДн студентов и закрыты авторизацией
+_AUTH = {"X-API-Key": API_SECRET_KEY}
 
 
 def test_ranks_hierarchy_and_meme_rank() -> None:
@@ -134,7 +138,10 @@ async def test_gamification_api_leaderboard() -> None:
     }
     with patch("services.gamification.fetch_all_time_attendance", AsyncMock(return_value=fake_stats)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp_lb = await client.get("/gamification/leaderboard")
+            resp_anon = await client.get("/gamification/leaderboard")
+            assert resp_anon.status_code == 401
+
+            resp_lb = await client.get("/gamification/leaderboard", headers=_AUTH)
             assert resp_lb.status_code == 200
             data_lb = resp_lb.json()
             assert data_lb["total_students"] == 2
@@ -158,9 +165,12 @@ async def test_gamification_api_profile_and_ranks() -> None:
             resp_ranks = await client.get("/gamification/ranks")
             assert resp_ranks.status_code == 200 and len(resp_ranks.json()) == 10
 
-            resp_prof = await client.get("/gamification/profile?fio=Конышев")
+            resp_anon = await client.get("/gamification/profile?fio=Конышев")
+            assert resp_anon.status_code == 401
+
+            resp_prof = await client.get("/gamification/profile?fio=Конышев", headers=_AUTH)
             assert resp_prof.status_code == 200
             assert resp_prof.json()["fio"] == "Конышев Сергей"
 
-            resp_bad = await client.get("/gamification/profile")
+            resp_bad = await client.get("/gamification/profile", headers=_AUTH)
             assert resp_bad.status_code == 400

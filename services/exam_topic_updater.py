@@ -59,7 +59,7 @@ async def get_effective_semester_start() -> date:
             if s_str:
                 return date.fromisoformat(s_str)
     except Exception as e:
-        log.warning(f"Не удалось получить semesterStart для экзаменов: {e}")
+        log.warning("Не удалось получить semesterStart для экзаменов: %s", e)
 
     return get_default_semester_start()
 
@@ -177,7 +177,7 @@ async def _pin_exam_silently(message_id: int) -> None:
             disable_notification=True,
         )
     except Exception as e:
-        log.warning(f"Не удалось закрепить exam MSG_ID={message_id}: {e}")
+        log.warning("Не удалось закрепить exam MSG_ID=%s: %s", message_id, e)
 
 
 async def create_exam_message(text: str) -> int:
@@ -196,7 +196,7 @@ async def create_exam_message(text: str) -> int:
     save_exam_topic_state(msg.message_id)
     await _pin_exam_silently(msg.message_id)
 
-    log.info(f"Сообщение экзаменов создано и закреплено: MSG_ID={msg.message_id}")
+    log.info("Сообщение экзаменов создано и закреплено: MSG_ID=%s", msg.message_id)
     return msg.message_id
 
 
@@ -211,14 +211,14 @@ async def handle_exam_edit_error(text: str, err_str: str, retry: bool) -> bool:
     global _EXAM_MAIN_MSG_ID
 
     if "not modified" in err_str:
-        log.debug(f"sync_exam_topic: 'not modified' (MSG_ID={_EXAM_MAIN_MSG_ID})")
+        log.debug("sync_exam_topic: 'not modified' (MSG_ID=%s)", _EXAM_MAIN_MSG_ID)
         return True
 
     if retry:
         log.error("❌ Повторная ошибка создания exam-сообщения")
         return False
 
-    log.warning(f"⚠️ Ошибка редактирования exam MSG_ID={_EXAM_MAIN_MSG_ID}, пересоздаём...")
+    log.warning("⚠️ Ошибка редактирования exam MSG_ID=%s, пересоздаём...", _EXAM_MAIN_MSG_ID)
     _EXAM_MAIN_MSG_ID = None
     save_exam_topic_state(None)
 
@@ -236,7 +236,7 @@ async def _edit_exam_msg(text: str) -> bool:
         message_id=_EXAM_MAIN_MSG_ID,
         text=text,
     )
-    log.info(f"✅ Сообщение экзаменов обновлено: MSG_ID={_EXAM_MAIN_MSG_ID}")
+    log.info("✅ Сообщение экзаменов обновлено: MSG_ID=%s", _EXAM_MAIN_MSG_ID)
     return True
 
 
@@ -259,7 +259,7 @@ async def send_or_edit_exam_msg(text: str, _retry: bool = False) -> bool:
     except TelegramBadRequest as e:
         return await handle_exam_edit_error(text, str(e).lower(), _retry)
     except Exception as e:
-        log.error(f"❌ Ошибка обновления топика экзаменов: {type(e).__name__}: {e}")
+        log.error("❌ Ошибка обновления топика экзаменов: %s: %s", type(e).__name__, e)
         return False
 
 
@@ -274,9 +274,9 @@ async def _delete_old_exam_msg(old_id: int | None) -> None:
 
     try:
         await bot.delete_message(chat_id=TOPIC_CHAT_ID, message_id=old_id)
-        log.info(f"Старое exam-сообщение MSG_ID={old_id} удалено")
+        log.info("Старое exam-сообщение MSG_ID=%s удалено", old_id)
     except Exception as e:
-        log.warning(f"Не удалось удалить exam MSG_ID={old_id}: {e}")
+        log.warning("Не удалось удалить exam MSG_ID=%s: %s", old_id, e)
 
 
 async def recreate_exam_topic_message() -> bool:
@@ -318,7 +318,7 @@ async def sync_exam_topic_message() -> bool:
     try:
         return await send_or_edit_exam_msg(text)
     except Exception as e:
-        log.error(f"Ошибка обновления топика экзаменов: {e}")
+        log.error("Ошибка обновления топика экзаменов: %s", e)
         return False
 
 
@@ -336,6 +336,6 @@ async def exam_topic_sync_loop() -> None:
         try:
             await sync_exam_topic_message()
         except Exception as e:
-            log.error(f"Ошибка в цикле exam_topic_sync_loop: {e}")
+            log.error("Ошибка в цикле exam_topic_sync_loop: %s", e)
 
         await asyncio.sleep(600)

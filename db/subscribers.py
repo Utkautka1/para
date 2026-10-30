@@ -26,7 +26,7 @@ def _query_sqlite_subscribers() -> set[int] | None:
             rows = cursor.fetchall()
             return {int(row[0]) for row in rows}
     except Exception as exc:
-        log.debug(f"SQLite пока не инициализирован для подписчиков: {exc}")
+        log.debug("SQLite пока не инициализирован для подписчиков: %s", exc)
         return None
 
 
@@ -46,7 +46,7 @@ def _update_sqlite_subscriber(chat_id: int, is_active: bool) -> None:
             )
             conn.commit()
     except Exception as exc:
-        log.warning(f"Не удалось обновить подписчика {chat_id} в SQLite: {exc}")
+        log.warning("Не удалось обновить подписчика %s в SQLite: %s", chat_id, exc)
 
 
 def load_subscribers() -> set[int]:
@@ -62,7 +62,7 @@ def save_subscribers(subs: set[int]) -> bool:
     """Сохраняет актуальное множество подписчиков в JSON-файл и SQLite."""
     ok = sync_atomic_save_json(SUBSCRIBERS_FILE_PATH, list(subs))
     if ok:
-        log.debug(f"Сохранено {len(subs)} подписчиков в {SUBSCRIBERS_FILE_PATH}")
+        log.debug("Сохранено %s подписчиков в %s", len(subs), SUBSCRIBERS_FILE_PATH)
     for cid in subs:
         _update_sqlite_subscriber(cid, True)
     return ok
@@ -75,7 +75,7 @@ def add_subscriber(chat_id: int) -> bool:
         subs.add(chat_id)
         save_subscribers(subs)
         _update_sqlite_subscriber(chat_id, True)
-        log.info(f"Добавлен новый подписчик: {chat_id}")
+        log.info("Добавлен новый подписчик: %s", chat_id)
         return True
     return False
 
@@ -87,7 +87,7 @@ def remove_subscriber(chat_id: int) -> bool:
         subs.remove(chat_id)
         save_subscribers(subs)
         _update_sqlite_subscriber(chat_id, False)
-        log.info(f"Удален подписчик: {chat_id}")
+        log.info("Удален подписчик: %s", chat_id)
         return True
     return False
 
@@ -102,8 +102,8 @@ def toggle_subscriber(chat_id: int) -> bool:
     subs = load_subscribers()
     if chat_id in subs:
         remove_subscriber(chat_id)
-        log.info(f"🔕 Пользователь отключил напоминания: {chat_id}")
+        log.info("🔕 Пользователь отключил напоминания: %s", chat_id)
         return False
     add_subscriber(chat_id)
-    log.info(f"🔔 Пользователь включил напоминания: {chat_id}")
+    log.info("🔔 Пользователь включил напоминания: %s", chat_id)
     return True

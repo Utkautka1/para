@@ -81,7 +81,7 @@ class AudioTranscriber:
         comp = compute_type or self.compute_type
 
         try:
-            log.info(f"Загрузка модели STT: {self.model_name} на {dev} ({comp})")
+            log.info("Загрузка модели STT: %s на %s (%s)", self.model_name, dev, comp)
             return WhisperModel(
                 self.model_name,
                 device=dev,
@@ -89,7 +89,7 @@ class AudioTranscriber:
                 download_root=self.download_root,
             )
         except Exception as e:
-            log.warning(f"⚠️ Сбой загрузки на {dev}: {e}. Переключение на CPU (int8)")
+            log.warning("⚠️ Сбой загрузки на %s: %s. Переключение на CPU (int8)", dev, e)
             return WhisperModel(
                 self.model_name,
                 device="cpu",
@@ -199,7 +199,7 @@ class AudioTranscriber:
             model = await self.get_model()
             return await asyncio.to_thread(self._sync_transcribe, model, audio_path, language)
         except Exception as e:
-            log.warning(f"⚠️ Ошибка GPU инференса ({e}). Переход на CPU fallback: {fname}")
+            log.warning("⚠️ Ошибка GPU инференса (%s). Переход на CPU fallback: %s", e, fname)
             cpu_model = await self._get_cpu_model()
             return await asyncio.to_thread(self._sync_transcribe, cpu_model, audio_path, language)
 
@@ -214,7 +214,7 @@ class AudioTranscriber:
         infer_time = time.monotonic() - infer_start
         total_time = time.monotonic() - start_time
 
-        log.info(f"✅ STT {fname} готов: инференс={infer_time:.2f}с (всего={total_time:.2f}с, {len(text)} симв.)")
+        log.info("✅ STT %s готов: инференс=%.2fс (всего=%.2fс, %s симв.)", fname, infer_time, total_time, len(text))
 
     async def transcribe_file(self, audio_path: str, language: str | None = None) -> str:
         """
@@ -229,12 +229,12 @@ class AudioTranscriber:
         start_time = time.monotonic()
         fname = os.path.basename(audio_path)
 
-        log.debug(f"Файл {fname} встал в очередь STT (ожидают в очереди: {self.queue_size})")
+        log.debug("Файл %s встал в очередь STT (ожидают в очереди: %s)", fname, self.queue_size)
 
         try:
             async with self._gpu_semaphore:
                 infer_start = time.monotonic()
-                log.info(f"▶️ Начало STT инференса ({self.device}): {fname} (beam={self.beam_size})")
+                log.info("▶️ Начало STT инференса (%s): %s (beam=%s)", self.device, fname, self.beam_size)
 
                 text = await self._infer_with_fallback(audio_path, language)
                 self._log_transcribe_stats(fname, infer_start, start_time, text)

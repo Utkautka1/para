@@ -16,6 +16,7 @@ from scripts.sync_yandex_cookie import (
     get_target_doc_url,
     refresh_yandex_session,
     update_env_file,
+    update_remote_redis_and_restart,
     verify_yandex_cookie,
 )
 
@@ -112,3 +113,13 @@ def test_get_target_doc_url_fallback():
     """Проверяет корректный fallback при отсутствии ATTENDANCE_DOC_URL в config."""
     with patch("config.ATTENDANCE_DOC_URL", ""):
         assert get_target_doc_url() == TEST_DOC_URL
+
+
+def test_update_remote_redis_passes_script_via_stdin():
+    """Проверяет, что скрипт уходит на сервер через stdin, а не в аргументе ssh-команды."""
+    with patch("scripts.sync_yandex_cookie.subprocess.run") as mock_run:
+        update_remote_redis_and_restart('Session_id=a"b; yandexuid=1', host="home", remote_dir="/root/para")
+    args, kwargs = mock_run.call_args
+    assert args[0] == ["ssh", "home", "python3 -"]
+    assert b"para-redis" in kwargs["input"]
+    assert kwargs["check"] is True

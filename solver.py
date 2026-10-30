@@ -46,7 +46,7 @@ async def main() -> None:
     """
     log.info("=" * 60)
     log.info("ЗАПУСК Сервиса AI-Решения ДЗ (para-solver)")
-    log.info(f"  Модель DeepSeek: {config.DEEPSEEK_MODEL_NAME}")
+    log.info("  Модель DeepSeek: %s", config.DEEPSEEK_MODEL_NAME)
     log.info("=" * 60)
     setup_telemetry("para-solver")
     await init_redis()

@@ -34,7 +34,7 @@ async def unauth_fallback(message: Message) -> None:
 
     uid = user.id
     uname = f"@{user.username}" if user.username else "нет username"
-    log.warning(f"⛔ Доступ ограничен: id={uid}, username={uname}")
+    log.warning("⛔ Доступ ограничен: id=%s, username=%s", uid, uname)
 
     await message.answer(
         "⛔ <b>Доступ ограничен.</b>\n"

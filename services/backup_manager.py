@@ -8,6 +8,7 @@
   4. Отправку архивной копии в Telegram администратору
 """
 
+import asyncio
 import os
 import shutil
 import sqlite3
@@ -28,14 +29,14 @@ log = get_logger("backup_manager")
 def _backup_sqlite_online(dest_path: str) -> bool:
     """Создает консистентный снимок SQLite без блокировки читателей и писателей."""
     if not os.path.exists(SQLITE_DB_PATH):
-        log.warning(f"Файл БД {SQLITE_DB_PATH} не найден для бэкапа")
+        log.warning("Файл БД %s не найден для бэкапа", SQLITE_DB_PATH)
         return False
     try:
         with sqlite3.connect(SQLITE_DB_PATH) as src, sqlite3.connect(dest_path) as dst:
             src.backup(dst)
         return True
     except Exception as exc:
-        log.error(f"Сбой онлайн-бэкапа SQLite: {exc}")
+        log.error("Сбой онлайн-бэкапа SQLite: %s", exc)
         return False
 
 
@@ -47,7 +48,7 @@ async def _trigger_redis_save() -> None:
         await redis_client.bgsave()
         log.info("Инициирован фоновый BGSAVE в Redis")
     except Exception as exc:
-        log.warning(f"Не удалось запустить BGSAVE в Redis: {exc}")
+        log.warning("Не удалось запустить BGSAVE в Redis: %s", exc)
 
 
 def _create_tar_archive(staging_dir: str, archive_path: str) -> bool:
@@ -58,7 +59,7 @@ def _create_tar_archive(staging_dir: str, archive_path: str) -> bool:
                 tar.add(os.path.join(staging_dir, item), arcname=item)
         return True
     except Exception as exc:
-        log.error(f"Сбой сжатия архива бэкапа: {exc}")
+        log.error("Сбой сжатия архива бэкапа: %s", exc)
         return False
 
 
@@ -75,22 +76,22 @@ def _rotate_old_backups(backup_dir: str, retention_days: int) -> int:
             os.remove(filepath)
             removed_count += 1
     if removed_count > 0:
-        log.info(f"Ротация бэкапов: удалено {removed_count} устаревших архивов")
+        log.info("Ротация бэкапов: удалено %s устаревших архивов", removed_count)
     return removed_count
 
 
 async def _send_backup_to_telegram(archive_path: str) -> bool:
     """Отправляет сжатый архив бэкапа администратору в Telegram."""
     try:
-        file_size_kb = os.path.getsize(archive_path) / 1024
+        file_size_kb = await asyncio.to_thread(os.path.getsize, archive_path) / 1024
         ts_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         caption = f"📦 <b>Автоматический бэкап системы Para</b>\n📅 <b>Дата:</b> {ts_str}\n📊 <b>Размер:</b> {file_size_kb:.1f} KB"
         doc = FSInputFile(archive_path)
         await bot.send_document(chat_id=ALLOWED_USER_ID, document=doc, caption=caption, parse_mode="HTML")
-        log.info(f"Архив бэкапа отправлен администратору {ALLOWED_USER_ID}")
+        log.info("Архив бэкапа отправлен администратору %s", ALLOWED_USER_ID)
         return True
     except Exception as exc:
-        log.error(f"Не удалось отправить архив бэкапа в Telegram: {exc}")
+        log.error("Не удалось отправить архив бэкапа в Telegram: %s", exc)
         return False
 
 

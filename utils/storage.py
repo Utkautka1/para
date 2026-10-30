@@ -32,7 +32,7 @@ def sync_load_json(file_path: str, default: Any = None) -> Any:
         with open(file_path, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        log.error(f"Ошибка чтения JSON файла {file_path}: {e}")
+        log.error("Ошибка чтения JSON файла %s: %s", file_path, e)
         return default
 
 
@@ -69,7 +69,7 @@ def _write_temp_and_replace(file_path: str, data: Any) -> bool:
         os.replace(temp_path, file_path)
         return True
     except Exception as e:
-        log.error(f"Ошибка атомарной записи в {file_path}: {e}")
+        log.error("Ошибка атомарной записи в %s: %s", file_path, e)
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
         return False

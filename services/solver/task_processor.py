@@ -57,7 +57,7 @@ async def _handle_task_failure(tg_bot: Bot, task: dict, msg_id: int, error: Exce
 
     Ничего не возвращает.
     """
-    log.error(f"❌ Сбой обработки ДЗ msg_id={msg_id}: {error}")
+    log.error("❌ Сбой обработки ДЗ msg_id=%s: %s", msg_id, error)
     retried = await nack_hw_task(task, max_retries=config.HW_MAX_TASK_RETRIES)
     if not retried:
         await notify_task_error(tg_bot, task)
@@ -82,7 +82,7 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None:
             await asyncio.to_thread(create_solution_docx, solution, output_path=doc_path)
             await send_solution_to_telegram(tg_bot, task, doc_path)
             await ack_hw_task(task)
-            log.info(f"✅ Решение ДЗ msg_id={msg_id} успешно доставлено в топик решений!")
+            log.info("✅ Решение ДЗ msg_id=%s успешно доставлено в топик решений!", msg_id)
         except Exception as e:
             await _handle_task_failure(tg_bot, task, msg_id, e)
         finally:
@@ -139,5 +139,5 @@ async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None:
             await _drain_active_tasks(active_tasks)
             break
         except Exception as e:
-            log.error(f"Ошибка в цикле solver_loop: {e}")
+            log.error("Ошибка в цикле solver_loop: %s", e)
             await asyncio.sleep(2)

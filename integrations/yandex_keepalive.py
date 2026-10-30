@@ -30,7 +30,7 @@ async def _dispatch_yandex_alert(details: str) -> None:
             severity="WARNING",
         )
     except Exception as exc:
-        log.debug(f"Не удалось отправить алерт Яндекс: {exc}")
+        log.debug("Не удалось отправить алерт Яндекс: %s", exc)
 
 
 async def ping_yandex_session() -> bool:
@@ -43,7 +43,7 @@ async def ping_yandex_session() -> bool:
             return True
         await _dispatch_yandex_alert("В ответе отсутствует officeActionData")
     except Exception as e:
-        log.warning(f"⚠️ Ошибка фонового продления сессии Яндекс Документов: {e}")
+        log.warning("⚠️ Ошибка фонового продления сессии Яндекс Документов: %s", e)
         await _dispatch_yandex_alert(str(e))
     return False
 
@@ -59,7 +59,7 @@ async def yandex_session_keepalive_loop(
 
     Ничего не возвращает (работает до завершения приложения или отмены задачи).
     """
-    log.info(f"Запущен фоновый мониторинг сессии Яндекс (интервал: {interval} сек)")
+    log.info("Запущен фоновый мониторинг сессии Яндекс (интервал: %s сек)", interval)
     await asyncio.sleep(60)
     while True:
         try:
@@ -68,5 +68,5 @@ async def yandex_session_keepalive_loop(
             log.info("Цикл keepalive сессии Яндекс остановлен")
             break
         except Exception as e:
-            log.error(f"Непредвиденная ошибка в keepalive цикле Яндекс: {e}")
+            log.error("Непредвиденная ошибка в keepalive цикле Яндекс: %s", e)
         await asyncio.sleep(interval)
