@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -485,6 +485,16 @@ classDiagram
         +fetch_raw_payload() dict
     }
 
+    class ScheduleSubstitutions {
+        <<module services/schedule_substitutions.py>>
+        +base_inst_id(inst_id) str
+        +filter_group_substitutions(subs, group_insts) list
+        +index_day_substitutions(subs, iso_date) dict
+        +moved_in_substitutions(subs, iso_date) list
+        +is_cancelled_for_group(sub, group_id) bool
+        +apply_substitution(inst, asgn, sub, period_key) tuple
+    }
+
     class ScheduleRefresher {
         <<worker loop>>
         +schedule_refresh_loop() void
@@ -496,6 +506,7 @@ classDiagram
     ScheduleParser ..> Lesson : parses
     ScheduleParser --> RedisCacheManager : reads and writes snapshot
     ScheduleParser ..> KTMUProvider : downloads (owner, or reader fallback)
+    ScheduleParser ..> ScheduleSubstitutions : overlays substitutions on day grid
     ScheduleRefresher --> ScheduleParser : enable_schedule_fetch_ownership, refresh every 15 min
     ScheduleRefresher --> RedisCacheManager : pop_schedule_refresh_request
 ```

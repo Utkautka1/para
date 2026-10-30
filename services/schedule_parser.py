@@ -40,6 +40,15 @@ from config import (
 from core.logger import get_logger
 from integrations.docx_parser import TeacherData, get_teacher_links
 from services.models import Lesson
+from services.schedule_substitutions import (
+    PATCH_TYPES,
+    apply_substitution,
+    base_inst_id,
+    filter_group_substitutions,
+    index_day_substitutions,
+    is_cancelled_for_group,
+    moved_in_substitutions,
+)
 
 log = get_logger("schedule_parser")
 
@@ -398,6 +407,7 @@ def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]
         "lessonTypes": snapshot.get("lessonTypes", []),
         "loads": group_loads,
         "schedule": {"instances": group_insts, "assignment": group_assigns},
+        "substitutions": filter_group_substitutions(snapshot.get("substitutions", []), group_insts),
     }
 
 
@@ -625,6 +635,23 @@ async def refresh_schedule_in_background(force: bool = False) -> None:
         _IS_REFRESHING = False
 
 
+def _restorable_cache_headers(snap: dict[str, Any], meta: dict[str, Any]) -> tuple[str | None, str | None]:
+    """
+    Отдаёт ETag/Last-Modified снапшота, если его формат актуален.
+
+    Снапшот, сохранённый до поддержки замен, не содержит 'substitutions'. С его ETag
+    КТМУ ответит 304 и замены не появятся до новой публикации — поэтому заголовки
+    сбрасываем, и следующий запрос скачает расписание целиком.
+
+    Возвращает кортеж (etag, last_modified) или (None, None) для устаревшего формата.
+    """
+    if "substitutions" not in snap:
+        log.warning("⚠️  Снапшот в Redis без замен (старый формат) — форсируем полную загрузку")
+        return None, None
+
+    return meta.get("etag"), meta.get("last_modified")
+
+
 async def init_schedule_cache_from_redis(now: float) -> bool:
     """
     Восстанавливает снимок расписания и ETag из Redis при холодном старте сервиса.
@@ -641,8 +668,7 @@ async def init_schedule_cache_from_redis(now: float) -> bool:
     snap, meta = await load_schedule_snapshot()
     if snap and meta:
         _DATA_CACHE = (now, snap)
-        _LAST_ETAG = meta.get("etag")
-        _LAST_MODIFIED = meta.get("last_modified")
+        _LAST_ETAG, _LAST_MODIFIED = _restorable_cache_headers(snap, meta)
         _LAST_PUBLISHED_AT = meta.get("published_at")
         _LOCAL_VERSION = meta.get("version")
         clear_resolved_day_cache()
@@ -933,52 +959,106 @@ def is_placed_lesson_active(inst: dict[str, Any], asgn: dict[str, Any] | None, d
     return asgn.get("day") == day_idx and is_instance_active_for_week(inst, week_num)
 
 
+def _resolve_day_entry(
+    inst: dict[str, Any], asgn: dict[str, Any], day_subs: dict[str, dict[str, Any]]
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """
+    Накладывает на занятие замену, действующую в этот день.
+
+    Возвращает (инстанс, назначение) с учётом замены или None, если пара снята.
+    """
+    sub = day_subs.get(base_inst_id(inst.get("instId", "")))
+    if not sub:
+        return inst, asgn
+
+    if is_cancelled_for_group(sub, GROUP_ID):
+        log.debug("Пара снята заменой: instId=%s, тип=%s", inst.get("instId"), sub.get("type"))
+        return None
+
+    if sub.get("type") in PATCH_TYPES:
+        return apply_substitution(inst, asgn, sub)
+
+    return inst, asgn
+
+
 def _collect_day_instances(
     insts: list[dict[str, Any]],
     asgns: dict[str, Any],
-    maps: tuple[dict, dict, dict, dict, dict],
+    day_subs: dict[str, dict[str, Any]],
     day_idx: int,
     week_num: int,
-    links: dict[str, TeacherData],
-    cfg: dict[str, Any] | None,
-) -> list[Lesson]:
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
     """
-    Фильтрует и конструирует объекты Lesson для активных занятий академической группы.
+    Отбирает активные в этот день занятия группы с учётом замен на дату.
 
-    Возвращает список занятий Lesson.
+    Возвращает список пар (инстанс, назначение).
     """
-    lessons: list[Lesson] = []
+    entries: list[tuple[dict[str, Any], dict[str, Any]]] = []
 
     for inst in insts:
         if not is_item_for_group(inst, GROUP_ID):
             continue
         asgn = asgns.get(inst.get("instId", ""))
-        if is_placed_lesson_active(inst, asgn, day_idx, week_num):
-            lessons.append(build_lesson_object(inst, asgn, maps, day_idx, week_num, links, cfg))
+        if not asgn or not is_placed_lesson_active(inst, asgn, day_idx, week_num):
+            continue
+        if entry := _resolve_day_entry(inst, asgn, day_subs):
+            entries.append(entry)
 
-    return lessons
+    return entries
+
+
+def _collect_moved_in(
+    insts: list[dict[str, Any]],
+    asgns: dict[str, Any],
+    subs: list[dict[str, Any]],
+    iso_date: str,
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """
+    Достаёт занятия, перенесённые на эту дату с других дней.
+
+    Перенесённый инстанс по сетке относится к другому дню/неделе, поэтому
+    ищем его по instId замены, а пару и кабинет берём из targetPeriod/newRoomId.
+
+    Возвращает список пар (инстанс, назначение).
+    """
+    by_base = {base_inst_id(i.get("instId", "")): i for i in insts if is_item_for_group(i, GROUP_ID)}
+    entries: list[tuple[dict[str, Any], dict[str, Any]]] = []
+
+    for sub in moved_in_substitutions(subs, iso_date):
+        inst = by_base.get(sub["instId"])
+        if not inst:
+            log.debug("Перенос без инстанса в снапшоте: instId=%s", sub["instId"])
+            continue
+        asgn = asgns.get(inst.get("instId", ""), {})
+        entries.append(apply_substitution(inst, asgn, sub, period_key="targetPeriod"))
+
+    return entries
 
 
 def _extract_lessons_for_day(
     data: dict[str, Any],
-    day_idx: int,
+    target_date: date,
     week_num: int,
     links: dict[str, TeacherData],
 ) -> list[Lesson]:
     """
-    Извлекает и упорядочивает список занятий для группы на указанный день недели.
+    Извлекает и упорядочивает список занятий группы на дату с учётом замен.
 
-    Фильтрует пары по дню и неделе, сопоставляет преподавателей и сортирует по периодам.
+    Базовая сетка дня + замены на эту дату + переносы с других дней,
+    затем сопоставление преподавателей и сортировка по периодам.
 
     Возвращает упорядоченный список объектов Lesson.
     """
     sched = data.get("schedule", {})
-    insts = sched.get("instances", [])
-    asgns = sched.get("assignment", {})
-    maps = extract_entity_maps(data)
-    cfg = data.get("config", {})
+    insts, asgns = sched.get("instances", []), sched.get("assignment", {})
+    subs, iso_date = data.get("substitutions", []), target_date.isoformat()
+    day_idx = target_date.weekday()
 
-    lessons = _collect_day_instances(insts, asgns, maps, day_idx, week_num, links, cfg)
+    entries = _collect_day_instances(insts, asgns, index_day_substitutions(subs, iso_date), day_idx, week_num)
+    entries += _collect_moved_in(insts, asgns, subs, iso_date)
+
+    maps, cfg = extract_entity_maps(data), data.get("config", {})
+    lessons = [build_lesson_object(inst, asgn, maps, day_idx, week_num, links, cfg) for inst, asgn in entries]
     lessons.sort(key=lambda x: x.period)
 
     return lessons
@@ -1002,10 +1082,9 @@ async def get_schedule_for_date(target_date: date, force_refresh: bool = False) 
 
     sem_start = data.get("config", {}).get("semesterStart", "2026-09-01")
     week_num = calculate_week_number(target_date, sem_start)
-    day_idx = target_date.weekday()
 
     links = await get_teacher_links(force_refresh=False)
-    lessons = _extract_lessons_for_day(data, day_idx, week_num, links)
+    lessons = _extract_lessons_for_day(data, target_date, week_num, links)
 
     _RESOLVED_DAY_CACHE[target_date] = lessons
     return lessons
