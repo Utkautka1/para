@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Private temp dir for voice audio**: per-process `mkdtemp` (0700) instead of fixed `/dev/shm/para_audio`.
 
 ### Changed
+- Primary schedule API moved from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).
 - Lazy `%`-formatting in all logging calls (304 call sites); ruff `G004` enabled.
 - Blocking file I/O in async code moved to `asyncio.to_thread`; ambiguous `l` variables renamed, ruff `E741` enabled.
 

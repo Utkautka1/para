@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -2523,7 +2523,7 @@ flowchart TD
 
 ### 12.1. Dual-Endpoint Schedule Upstream Failover (TLS Alert Mitigation)
 
-When the primary college schedule endpoint (`timetable-ktmu.ru`) experiences TLS handshake failures (`[SSL: TLSV1_ALERT_INTERNAL_ERROR]`), the system dynamically switches to the configured `SCHEDULE_FALLBACK_API_URL` (`DEFAULT_FALLBACK_SCHEDULE_API_URL`), preserving cold-start capability and ensuring uninterrupted service.
+When the primary college schedule endpoint (`raspisanie-ktmu.ru`, formerly `timetable-ktmu.ru` until 2026-10-30) experiences TLS handshake failures (`[SSL: TLSV1_ALERT_INTERNAL_ERROR]`), the system dynamically switches to the configured `SCHEDULE_FALLBACK_API_URL` (`DEFAULT_FALLBACK_SCHEDULE_API_URL`), preserving cold-start capability and ensuring uninterrupted service.
 
 ```mermaid
 sequenceDiagram
@@ -2531,7 +2531,7 @@ sequenceDiagram
     actor Caller as Worker / API Client
     participant Engine as ScheduleParser Engine
     participant Redis as Redis L2 State Cache
-    participant Primary as Primary Endpoint (timetable-ktmu.ru)
+    participant Primary as Primary Endpoint (raspisanie-ktmu.ru)
     participant Fallback as Fallback Endpoint (twc1.net)
 
     Caller->>Engine: fetch_schedule_data(force=True)

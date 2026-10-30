@@ -270,7 +270,7 @@ def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
 
 
 def send_api_urls_to_remote_env(
-    primary_url: str = "https://timetable-ktmu.ru/api/storage/schedule-data-v2",
+    primary_url: str = "https://raspisanie-ktmu.ru/api/storage/schedule-data-v2",
     fallback_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2",
     host: str = "home",
     remote_dir: str = "/root/para",

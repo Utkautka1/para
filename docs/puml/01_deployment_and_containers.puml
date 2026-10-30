@@ -12,7 +12,7 @@ cloud "🌐 Внешние сервисы и платформы" as external_clo
   actor "👤 Пользователь / Студент" as user
   actor "👑 Староста / Администратор" as admin
   node "✈️ Telegram Bot API" as tg_api
-  node "🏫 API расписания КТМУ\n(timetable-ktmu.ru)" as ktmu_api
+  node "🏫 API расписания КТМУ\n(raspisanie-ktmu.ru)" as ktmu_api
   node "📂 Яндекс Диск API" as yd_api
   node "📊 Яндекс Документы (WOPI)" as yd_wopi
   node "🧠 DeepSeek API (LLM/Vision)" as deepseek_api
