@@ -93,14 +93,14 @@ services:
     env_file:
       - .env
     volumes:
-      - ./integrations:/app/integrations
-      - ./api:/app/api
-      - ./core:/app/core
-      - ./services:/app/services
-      - ./utils:/app/utils
-      - ./db:/app/db
-      - ./config.py:/app/config.py
-      - ./api.py:/app/api.py
+      - ./integrations:/app/integrations:ro
+      - ./api:/app/api:ro
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./utils:/app/utils:ro
+      - ./db:/app/db:ro
+      - ./config.py:/app/config.py:ro
+      - ./api.py:/app/api.py:ro
       - ./data:/app/data
       - ./logs:/app/logs
     deploy:
@@ -135,16 +135,20 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    # Секреты, которые боту не нужны: config.py требует их при импорте, поэтому подменяем заглушкой
+    environment:
+      DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
+      SESSION_SECRET: "disabled:not-used-by-this-service"
     volumes:
-      - ./api:/app/api
-      - ./integrations:/app/integrations
-      - ./bot:/app/bot
-      - ./core:/app/core
-      - ./services:/app/services
-      - ./utils:/app/utils
-      - ./db:/app/db
-      - ./config.py:/app/config.py
-      - ./bot.py:/app/bot.py
+      - ./api:/app/api:ro
+      - ./integrations:/app/integrations:ro
+      - ./bot:/app/bot:ro
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./utils:/app/utils:ro
+      - ./db:/app/db:ro
+      - ./config.py:/app/config.py:ro
+      - ./bot.py:/app/bot.py:ro
       - ./data:/app/data
       - ./logs:/app/logs
       - stt_audio:/app/stt_audio
@@ -181,16 +185,20 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    # Секреты, которые worker не нужны (см. bot)
+    environment:
+      DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
+      SESSION_SECRET: "disabled:not-used-by-this-service"
     volumes:
-      - ./api:/app/api
-      - ./bot:/app/bot
-      - ./integrations:/app/integrations
-      - ./core:/app/core
-      - ./services:/app/services
-      - ./utils:/app/utils
-      - ./db:/app/db
-      - ./config.py:/app/config.py
-      - ./worker.py:/app/worker.py
+      - ./api:/app/api:ro
+      - ./bot:/app/bot:ro
+      - ./integrations:/app/integrations:ro
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./utils:/app/utils:ro
+      - ./db:/app/db:ro
+      - ./config.py:/app/config.py:ro
+      - ./worker.py:/app/worker.py:ro
       - ./data:/app/data
       - ./logs:/app/logs
     deploy:
@@ -223,14 +231,19 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    # Solver нужны только BOT_TOKEN (ответы в топик) и DEEPSEEK_API_KEY
+    environment:
+      API_SECRET_KEY: "disabled:not-used-by-this-service"
+      SESSION_SECRET: "disabled:not-used-by-this-service"
+      YANDEX_COOKIE: "disabled:not-used-by-this-service"
     volumes:
       # Код монтируется, как у остальных сервисов: деплой = git pull + restart, без пересборки образа
-      - ./core:/app/core
-      - ./services:/app/services
-      - ./integrations:/app/integrations
-      - ./utils:/app/utils
-      - ./config.py:/app/config.py
-      - ./solver.py:/app/solver.py
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./integrations:/app/integrations:ro
+      - ./utils:/app/utils:ro
+      - ./config.py:/app/config.py:ro
+      - ./solver.py:/app/solver.py:ro
       - ./data:/app/data:ro
       - ./logs:/app/logs
     deploy:
@@ -263,16 +276,23 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    # STT разбирает чужое аудио (ffmpeg) и ходит только в Redis — секреты ему не отдаём
+    environment:
+      BOT_TOKEN: "disabled:not-used-by-this-service"
+      API_SECRET_KEY: "disabled:not-used-by-this-service"
+      SESSION_SECRET: "disabled:not-used-by-this-service"
+      DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
+      YANDEX_COOKIE: "disabled:not-used-by-this-service"
     volumes:
-      - ./core:/app/core
-      - ./services:/app/services
-      - ./integrations:/app/integrations
-      - ./utils:/app/utils
-      - ./db:/app/db
-      - ./config.py:/app/config.py
-      - ./stt.py:/app/stt.py
-      # data — веса Whisper (data/whisper_models)
-      - ./data:/app/data
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./integrations:/app/integrations:ro
+      - ./utils:/app/utils:ro
+      - ./db:/app/db:ro
+      - ./config.py:/app/config.py:ro
+      - ./stt.py:/app/stt.py:ro
+      # Из data stt нужны только веса Whisper — остальные данные (БД, кэши, бэкапы) ему не видны
+      - ./data/whisper_models:/app/data/whisper_models
       - ./logs:/app/logs
       - stt_audio:/app/stt_audio
     deploy:
