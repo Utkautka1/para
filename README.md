@@ -722,7 +722,7 @@ docker compose logs -f stt     # Speech-to-text GPU service logs
 
 ### Continuous Deployment
 
-Every push to `main` runs the full CI. If **all** jobs pass, the `deploy-gate` job moves branch `ci-passed` to that commit. The server polls it every 2 minutes (`para-autodeploy.timer` → `scripts/autodeploy.sh`) and deploys by itself — GitHub holds no server credentials. The result arrives as a Telegram alert (`DEPLOY_SUCCESS` / `DEPLOY_FAILED`); history is in `logs/deploy.log`.
+Every push to `main` runs the full CI. If **all** jobs pass, the `deploy-gate` job moves branch `ci-passed` to that commit. The server polls it every 2 minutes (`para-autodeploy.timer` → `scripts/autodeploy.sh`) and deploys by itself — GitHub holds no server credentials. The result arrives as a Telegram alert (`DEPLOY_SUCCESS` / `DEPLOY_FAILED`); history is in `/var/log/para-deploy.log` on the server. Only commits that are in `main` and signed by a key from `/etc/para/allowed_signers` are deployed (see `scripts/deploy_remote.sh`).
 
 Manual deploy of the current `origin/main` (same checks, same lock):
 

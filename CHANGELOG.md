@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-10-30
 
 ### Security
+- **Autodeploy trusts only signed commits from `main`**: moving `ci-passed` used to be enough to run code as root on the server. `scripts/deploy_remote.sh` now requires the target to be an ancestor of `origin/main` and every new commit to carry an SSH signature from `/etc/para/allowed_signers` (root-owned, outside the repo). A failed revision is remembered in `/var/lib/para` and not retried every 2 minutes.
+- **CI token read-only by default**: `permissions: contents: read` for the workflow (write only in `deploy-gate`), `persist-credentials: false` on checkouts, all third-party actions pinned by commit SHA.
+- **Secret scan actually fails**: `! git grep` never failed a step under `bash -e`; rewritten with `if`, patterns extended with Telegram bot tokens, DeepSeek keys and OpenSSH/EC private keys.
+- **Deploy log out of `./logs`**: `logs/` is mounted into every container (and was 0777), so a planted symlink could make root append to any host file; the log moved to `/var/log/para-deploy.log`.
 - **Gamification PII closed**: `/gamification/leaderboard` and `/gamification/profile` (student names, attendance) now require `verify_api_or_tester`; Mini App obtains its session before loading the leaderboard.
 - **No API keys in URLs**: `verify_api_or_tester` no longer accepts `?key=` / `?api_key=`; removed `GET /miniapp/dev-login` and `/docs?key=` session attach. Bot links now use one-time login tokens (`services/login_tokens.py`, `GET /miniapp/login`, TTL `LOGIN_TOKEN_TTL_SECONDS`, consumed via `GETDEL`, whitelisted `next`).
 - **Redis password out of process args**: `compose.yml` passes `requirepass` via stdin config instead of `--requirepass`.

@@ -11,7 +11,12 @@
 set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-/root/para}"
-DEPLOY_LOG="$PROJECT_DIR/logs/deploy.log"
+# Лог и состояние — вне ./logs: тот смонтирован во все контейнеры, и подменённый там
+# симлинк заставил бы root дописывать строки в любой файл хоста
+DEPLOY_LOG="${DEPLOY_LOG:-/var/log/para-deploy.log}"
+STATE_DIR="${STATE_DIR:-/var/lib/para}"
+# Коммит, деплой которого уже провалился: не повторяем его и не шлём алерт каждые 2 минуты
+FAILED_REV_FILE="$STATE_DIR/autodeploy_failed_rev"
 
 log() { printf '[%s] [autodeploy] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" | tee -a "$DEPLOY_LOG"; }
 
@@ -35,6 +40,7 @@ deploy() {
   else
     printf '%s\n' "$output" >>"$DEPLOY_LOG"
     log "❌ деплой ${rev:0:7} упал"
+    printf '%s\n' "$rev" >"$FAILED_REV_FILE"
     notify failure "${rev:0:7}" "$(tail -n 5 <<<"$output")"
     return 1
   fi
@@ -42,6 +48,8 @@ deploy() {
 
 main() {
   cd "$PROJECT_DIR"
+  umask 077
+  mkdir -p "$STATE_DIR"
   local rev
   rev=$(remote_ci_passed) || { log "⚠️  GitHub недоступен (ls-remote)"; exit 0; }
   [[ -n "$rev" ]] || exit 0
@@ -49,6 +57,8 @@ main() {
   if git cat-file -e "$rev^{commit}" 2>/dev/null && git merge-base --is-ancestor "$rev" HEAD; then
     exit 0
   fi
+  # Этот коммит уже падал — ждём следующий (или ручной деплой), без повторных алертов
+  [[ "$(cat "$FAILED_REV_FILE" 2>/dev/null)" != "$rev" ]] || exit 0
   deploy "$rev"
 }
 

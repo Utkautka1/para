@@ -7,7 +7,8 @@
 # Также вызывается scripts/autodeploy.sh по таймеру с DEPLOY_BRANCH=ci-passed.
 #
 # Шаги:
-#   1. fetch + ff-only merge origin/$DEPLOY_BRANCH с таймаутами (сегодняшний зависший pull)
+#   1. fetch + ff-only merge origin/$DEPLOY_BRANCH с таймаутами (сегодняшний зависший pull);
+#      перед merge — коммит есть в main и все новые коммиты подписаны доверенным ключом
 #   2. по списку изменённых файлов выбирает сервисы, чей код смонтирован
 #      (из `docker compose config`, а не из ручного списка)
 #   3. пересобирает образы только при смене requirements/Dockerfile,
@@ -23,9 +24,26 @@ DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 LOCK_FILE="${LOCK_FILE:-/run/lock/para-deploy.lock}"
 # Сколько секунд после старта наблюдать за перезапусками и ошибками
 OBSERVE_SECONDS="${OBSERVE_SECONDS:-30}"
+# Ключи, чьей подписи коммитов доверяем (формат git allowed_signers). Лежит вне рабочей копии,
+# владелец root: иначе подменённый коммит мог бы сам добавить свой ключ
+ALLOWED_SIGNERS="${ALLOWED_SIGNERS:-/etc/para/allowed_signers}"
 
 log() { printf '[deploy] %s\n' "$*"; }
 fail() { printf '[deploy] ❌ %s\n' "$*" >&2; exit 1; }
+
+verify_trusted_range() {
+  # Защита от подмены ветки ci-passed: деплоим только коммиты из main, подписанные доверенным ключом.
+  # Проверяем весь диапазон, а не верхний коммит — иначе чужой коммит прячется под подписанным
+  local rev
+  [[ -r "$ALLOWED_SIGNERS" ]] || fail "нет $ALLOWED_SIGNERS — без списка доверенных ключей не деплоим"
+  timeout 60 git fetch -q origin main || fail "git fetch main не уложился в 60 сек"
+  git merge-base --is-ancestor "$NEW_REV" origin/main || fail "${NEW_REV:0:7} нет в main — ветку подменили?"
+  for rev in $(git rev-list "$OLD_REV..$NEW_REV"); do
+    git -c gpg.ssh.allowedSignersFile="$ALLOWED_SIGNERS" verify-commit "$rev" >/dev/null 2>&1 \
+      || fail "коммит ${rev:0:7} не подписан доверенным ключом"
+  done
+  log "подписи и принадлежность main проверены: $(git rev-list --count "$OLD_REV..$NEW_REV") коммит(ов)"
+}
 
 update_code() {
   # Не трогаем рабочую копию с ручными правками — иначе merge молча их смешает
@@ -39,6 +57,7 @@ update_code() {
     log "уже на ${OLD_REV:0:7} (содержит ${NEW_REV:0:7}), обновлять нечего"
     exit 0
   fi
+  verify_trusted_range
   git merge -q --ff-only "$NEW_REV" || fail "fast-forward невозможен: история на сервере разошлась с origin/$DEPLOY_BRANCH"
   log "код: ${OLD_REV:0:7} -> ${NEW_REV:0:7}"
 }

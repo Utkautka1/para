@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -2295,11 +2295,15 @@ sequenceDiagram
 
     Dev->>GH: git push main
     GH->>GH: 42 jobs (lint, types, security, tests, docker)
-    GH->>GH: deploy-gate: git push HEAD:ci-passed
+    GH->>GH: deploy-gate (only job with contents: write): git push HEAD:ci-passed
     Timer->>GH: git ls-remote refs/heads/ci-passed
     alt ci-passed not in HEAD
         Timer->>Deploy: DEPLOY_BRANCH=ci-passed (flock /run/lock/para-deploy.lock)
-        Deploy->>Deploy: fetch + ff-only merge (timeouts)
+        Deploy->>Deploy: fetch ci-passed + main (timeouts)
+        alt not in main, or any new commit unsigned by /etc/para/allowed_signers
+            Deploy-->>Timer: fail (rev saved to /var/lib/para, no retries)
+        end
+        Deploy->>Deploy: ff-only merge
         Deploy->>Compose: rebuild if requirements/Dockerfile, up if compose.yml, else restart services whose mounts changed
         Deploy->>Compose: wait healthy, /health, restart counts, new ERROR lines
         Timer->>Bot: python -m services.deploy_notifier success|failure
