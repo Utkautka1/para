@@ -6,6 +6,7 @@
 """
 
 import asyncio
+import time
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -25,6 +26,13 @@ STATE_FILE = TOPIC_STATE_FILE
 
 _TOPIC_MAIN_MSG_ID: int | None = None
 _SENT_REMINDERS: set = set()
+
+# Последнее отправленное состояние топика: (MSG_ID, текст+клавиатура, time.monotonic()).
+# Цикл крутится раз в минуту, и без этого каждая итерация шла в Telegram даже без изменений
+# (~1,7 тыс. ответов 'not modified' за 4 дня).
+_LAST_SENT: tuple[int, str, float] | None = None
+# Раз в 10 минут редактируем даже без изменений — так замечаем удалённое вручную сообщение
+_FORCE_EDIT_EVERY_SECONDS: float = 600.0
 
 
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -237,16 +245,49 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
 
     Возвращает True в случае успешной публикации/редактирования, иначе False.
     """
+    fingerprint = _topic_fingerprint(text, kb)
+    if _is_unchanged_since_last_send(fingerprint):
+        return True
     try:
         if _TOPIC_MAIN_MSG_ID is None:
-            return await _send_new_topic_message(text, kb)
-
-        return await _edit_topic_message(text, kb)
+            sent = await _send_new_topic_message(text, kb)
+        else:
+            sent = await _edit_topic_message(text, kb)
+        _remember_sent(fingerprint)
+        return sent
     except TelegramBadRequest as e:
+        if "not modified" in str(e).lower():
+            _remember_sent(fingerprint)
         return await _handle_edit_failure(e, text, kb, _retry)
     except Exception as e:
         log.error("❌ Ошибка обновления топика: %s: %s", type(e).__name__, e)
         return False
+
+
+def _topic_fingerprint(text: str, kb: Any) -> str:
+    """Склеивает текст и сериализованную клавиатуру — по ним сравниваем, изменился ли пост."""
+    kb_json = kb.model_dump_json() if hasattr(kb, "model_dump_json") else repr(kb)
+    return f"{text}\x00{kb_json}"
+
+
+def _is_unchanged_since_last_send(fingerprint: str) -> bool:
+    """
+    Проверяет, что пост уже в этом состоянии и недавно подтверждён Telegram.
+
+    Возвращает True, если запрос редактирования можно пропустить.
+    """
+    if _LAST_SENT is None or _TOPIC_MAIN_MSG_ID is None:
+        return False
+    msg_id, last_fp, sent_at = _LAST_SENT
+    fresh = time.monotonic() - sent_at < _FORCE_EDIT_EVERY_SECONDS
+    return msg_id == _TOPIC_MAIN_MSG_ID and last_fp == fingerprint and fresh
+
+
+def _remember_sent(fingerprint: str) -> None:
+    """Запоминает состояние поста, подтверждённое Telegram (отправка, правка или 'not modified')."""
+    global _LAST_SENT
+    if _TOPIC_MAIN_MSG_ID is not None:
+        _LAST_SENT = (_TOPIC_MAIN_MSG_ID, fingerprint, time.monotonic())
 
 
 async def _send_new_topic_message(text: str, kb: Any) -> bool:
