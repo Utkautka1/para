@@ -338,7 +338,9 @@ jobs:
       - name: "Install Pip-Audit"
         run: pip install pip-audit
       - name: "Run Vulnerability Audit"
-        run: pip-audit -r requirements.lock -r requirements-stt.lock
+        # Lock полностью закреплён с хешами — аудируем список версий без установки
+        # (иначе в CI скачиваются гигабайты CUDA-пакетов stt)
+        run: pip-audit -r requirements.lock -r requirements-stt.lock --disable-pip --no-deps
 
   security-secrets-leak:
     name: "🔐 Static Secret & API Token Leakage Prevention"
