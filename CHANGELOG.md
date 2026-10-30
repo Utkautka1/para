@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Log rotation**: every `get_logger()` opened its own `RotatingFileHandler` on the shared `logs/bot.log` (~60 per process × 4 containers), so rotation renamed the file under the other handlers. Handlers are now process-wide singletons and each service writes its own `logs/{api,bot,worker,solver}.log`.
 
+### Deployment
+- **Code mounts completed**: `solver` had no code mounted (baked by `COPY . .`), and `api`/`bot`/`worker` were missing `integrations/` (and `api/`, `bot/` where imported), so `git pull` silently left those packages on the image version. All four services now mount every project package they import — deploy is `git pull` + restart, no rebuild.
+
 ### Changed
 - Primary schedule API moved
 - Log noise: routine gRPC reads (~2.6k/day), per-minute topic edits (~1.1k/day) and snapshot saves moved to `DEBUG` / logged only on `force_refresh`. from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).

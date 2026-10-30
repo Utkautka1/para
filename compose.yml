@@ -93,6 +93,7 @@ services:
     env_file:
       - .env
     volumes:
+      - ./integrations:/app/integrations
       - ./api:/app/api
       - ./core:/app/core
       - ./services:/app/services
@@ -136,6 +137,8 @@ services:
     env_file:
       - .env
     volumes:
+      - ./api:/app/api
+      - ./integrations:/app/integrations
       - ./bot:/app/bot
       - ./core:/app/core
       - ./services:/app/services
@@ -182,6 +185,9 @@ services:
     env_file:
       - .env
     volumes:
+      - ./api:/app/api
+      - ./bot:/app/bot
+      - ./integrations:/app/integrations
       - ./core:/app/core
       - ./services:/app/services
       - ./utils:/app/utils
@@ -221,6 +227,13 @@ services:
     env_file:
       - .env
     volumes:
+      # Код монтируется, как у остальных сервисов: деплой = git pull + restart, без пересборки образа
+      - ./core:/app/core
+      - ./services:/app/services
+      - ./integrations:/app/integrations
+      - ./utils:/app/utils
+      - ./config.py:/app/config.py
+      - ./solver.py:/app/solver.py
       - ./data:/app/data:ro
       - ./logs:/app/logs
     deploy:
