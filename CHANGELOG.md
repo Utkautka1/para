@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Remote ssh script via stdin**: `scripts/sync_yandex_cookie.py` no longer builds `python3 -c "..."` command strings.
 - **Private temp dir for voice audio**: per-process `mkdtemp` (0700) instead of fixed `/dev/shm/para_audio`.
 
+### Performance
+- **Background schedule refresh**: only `para-worker` downloads the ~57 MB KTMU payload (`services/schedule_refresher.py`, every `SCHEDULE_REFRESH_INTERVAL_SECONDS`=900). `para-api` serves the Redis snapshot and re-reads it only when `meta.version` changes; `force_refresh` («🔄 Обновить», admin sync) returns instantly and queues a refresh via `schedule:refresh_requested`. Readers fall back to their own download if the snapshot is older than 3 intervals. Cuts ~155 downloads/day (~8.7 GB) to ~96 and removes the ~10 s wait from user requests.
+
 ### Changed
 - Primary schedule API moved from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).
 - Lazy `%`-formatting in all logging calls (304 call sites); ruff `G004` enabled.

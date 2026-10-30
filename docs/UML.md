@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-30 — фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -484,11 +484,51 @@ classDiagram
         +fetch_raw_payload() dict
     }
 
+    class ScheduleRefresher {
+        <<worker loop>>
+        +schedule_refresh_loop() void
+        -_refresh_if_due(next_due) float
+    }
+
     DayScheduleResponse "1" *-- "many" Lesson : contains
     ApiClient ..> DayScheduleResponse : returns
     ScheduleParser ..> Lesson : parses
     ScheduleParser --> RedisCacheManager : reads and writes snapshot
-    ScheduleParser ..> KTMUProvider : downloads on cache miss
+    ScheduleParser ..> KTMUProvider : downloads (owner, or reader fallback)
+    ScheduleRefresher --> ScheduleParser : enable_schedule_fetch_ownership, refresh every 15 min
+    ScheduleRefresher --> RedisCacheManager : pop_schedule_refresh_request
+```
+
+### 3.1. Background Refresh: Single Fetch Owner & Snapshot Readers
+
+The KTMU API returns ~57 MB without gzip/ETag (~10 s per download), so only `para-worker` downloads it. `para-api` (and every gRPC/REST read) serves the Redis snapshot instantly and re-reads it only when `schedule:snapshot:meta.version` changes. `force_refresh` (bot «🔄 Обновить», admin sync) never blocks: it sets `schedule:refresh_requested`, which the worker picks up within 5 s.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Worker as para-worker (schedule_refresh_loop)
+    participant KTMU as raspisanie-ktmu.ru
+    participant Redis as Redis
+    participant Api as para-api (reader)
+    actor User as Student
+
+    loop every SCHEDULE_REFRESH_INTERVAL_SECONDS (900 s) or on request
+        Worker->>Redis: GETDEL schedule:refresh_requested
+        Worker->>KTMU: GET schedule-data-v2 (~57 MB)
+        Worker->>Redis: SET schedule:snapshot + meta {version, fetched_at}
+    end
+
+    User->>Api: Today / Week (gRPC from bot)
+    Api->>Redis: GET schedule:snapshot:meta (at most every 30 s)
+    alt version changed
+        Api->>Redis: GET schedule:snapshot (~650 KB)
+    end
+    Api-->>User: lessons from memory
+
+    User->>Api: 🔄 Обновить (force_refresh)
+    Api->>Redis: SET schedule:refresh_requested EX 300
+    Api-->>User: cached lessons immediately
+    Note over Api,Redis: snapshot older than 3 intervals or missing → reader downloads itself
 ```
 
 ### Execution Flow & Data Lifecycle

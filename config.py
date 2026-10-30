@@ -205,6 +205,17 @@ SCHEDULE_COOLDOWN_SECONDS: int = schedule_config.cooldown_seconds
 DOCX_CACHE_TTL_SECONDS: int = schedule_config.docx_cache_ttl_seconds
 DOCX_MIN_REFRESH_INTERVAL_SECONDS: float = schedule_config.docx_min_refresh_interval_seconds
 
+# Фоновое обновление расписания: качает только worker, остальные читают снапшот из Redis.
+# API КТМУ отдаёт ~57 МБ без gzip/ETag, поэтому каждая загрузка — около 10 сек и полный трафик.
+SCHEDULE_REFRESH_INTERVAL_SECONDS: int = get_env_int("SCHEDULE_REFRESH_INTERVAL_SECONDS", 900)
+# Как часто worker проверяет флаг «обновить сейчас» (кнопка «Обновить», админка)
+SCHEDULE_REFRESH_POLL_SECONDS: int = 5
+# Как часто читатели сверяют версию снапшота в Redis (маленький ключ meta, не сам снапшот)
+SCHEDULE_SYNC_CHECK_SECONDS: int = 30
+# Если worker не обновлял снапшот дольше трёх интервалов — читатели качают сами (worker мог упасть)
+SCHEDULE_STALE_LIMIT_SECONDS: int = SCHEDULE_REFRESH_INTERVAL_SECONDS * 3
+SCHEDULE_REFRESH_REQUEST_KEY: str = "schedule:refresh_requested"
+
 
 # ==============================================================================
 # 3. CAMPUS ADDRESSES & LOCATIONS

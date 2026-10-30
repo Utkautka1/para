@@ -479,7 +479,7 @@ async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], in
 
 @router.callback_query(F.data == "sched:refresh")
 async def cb_refresh(callback: CallbackQuery) -> None:
-    """Принудительно скачивает расписание, очищает Redis-кэш и обновляет экран."""
+    """Сразу показывает расписание из кэша и просит worker скачать свежую версию КТМУ в фоне."""
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
     await _ack_callback(callback, "Синхронизация с API КТМУ...")
     uid = callback.from_user.id if callback.from_user else 0
@@ -493,7 +493,7 @@ async def cb_refresh(callback: CallbackQuery) -> None:
 
     now = datetime.now(TIMEZONE).date()
     text, lessons, count = await _refresh_and_format_schedule(now)
-    text += f"\n\n<i>✅ Расписание КТМУ и контакты ({count}) сверены, Redis обновлен!</i>"
+    text += f"\n\n<i>✅ Контакты ({count}) сверены. Свежая версия расписания КТМУ запрошена — подтянется в течение минуты.</i>"
 
     await edit_or_answer(callback, text, lessons)
 

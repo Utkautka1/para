@@ -49,6 +49,7 @@
 | `Internal RPC Client` | [`core/api_client.py`](../core/api_client.py) | [📖 View Specification](core/api_client.md) | Enterprise Service Component |
 | `Jaeger Tracing Proxy API` | [`api/router/jaeger.py`](../api/router/jaeger.py) | [📖 View Specification](api/router_jaeger.md) | Enterprise Service Component |
 | `KTMU Timetable Engine` | [`services/schedule_parser.py`](../services/schedule_parser.py) | [📖 View Specification](services/schedule_parser.md) | Enterprise Service Component |
+| `KTMU Timetable Engine` | [`services/schedule_refresher.py`](../services/schedule_refresher.py) | [📖 View Specification](services/schedule_refresher.md) | Enterprise Service Component |
 | `Live Schedule Topic` | [`services/topic_updater.py`](../services/topic_updater.py) | [📖 View Specification](services/topic_updater.md) | Enterprise Service Component |
 | `MiniApp API` | [`api/router/miniapp.py`](../api/router/miniapp.py) | [📖 View Specification](api/router_miniapp.md) | Enterprise Service Component |
 | `Moderation Ban Engine` | [`bot/handlers/admin/mute.py`](../bot/handlers/admin/mute.py) | [📖 View Specification](bot/handlers_admin_mute.md) | Enterprise Service Component |
@@ -60,6 +61,7 @@
 | `Protobuf Converters` | [`api/grpc/converters.py`](../api/grpc/converters.py) | [📖 View Specification](api/grpc_converters.md) | Enterprise Service Component |
 | `Public Sharing Flow` | [`bot/handlers/user/public_copy.py`](../bot/handlers/user/public_copy.py) | [📖 View Specification](bot/handlers_user_public_copy.md) | Enterprise Service Component |
 | `RBAC Security` | [`services/classmates_auth.py`](../services/classmates_auth.py) | [📖 View Specification](services/classmates_auth.md) | Enterprise Service Component |
+| `RBAC Security` | [`services/login_tokens.py`](../services/login_tokens.py) | [📖 View Specification](services/login_tokens.md) | Enterprise Service Component |
 | `REST Request Handlers` | [`api/handlers.py`](../api/handlers.py) | [📖 View Specification](api/handlers.md) | Enterprise Service Component |
 | `Redis Engine` | [`core/redis.py`](../core/redis.py) | [📖 View Specification](core/redis.md) | Enterprise Service Component |
 | `Relational SQLite Engine` | [`core/database.py`](../core/database.py) | [📖 View Specification](core/database.md) | Enterprise Service Component |

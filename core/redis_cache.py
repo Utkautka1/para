@@ -5,6 +5,7 @@
 очереди фонового решения домашних заданий и распределенных блокировок.
 """
 
+import hashlib
 import json
 import time
 import uuid
@@ -18,6 +19,7 @@ from config import (
     HW_QUEUE_KEY,
     LUA_RELEASE_LOCK,
     REDIS_CACHE_TTL_SECONDS,
+    SCHEDULE_REFRESH_REQUEST_KEY,
     SNAPSHOT_KEY,
     SNAPSHOT_META_KEY,
     TOPIC_CLEANUP_KEY,
@@ -305,6 +307,13 @@ async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -
         client = await init_redis()
         if client:
             p_snap = json.dumps(snapshot, ensure_ascii=False)
+            # version — хэш содержимого: читатели перечитывают 650 КБ снапшота только при реальном изменении,
+            # fetched_at — время загрузки: по нему читатели понимают, что worker жив
+            meta = {
+                **meta,
+                "version": hashlib.sha256(p_snap.encode("utf-8")).hexdigest()[:16],
+                "fetched_at": time.time(),
+            }
             p_meta = json.dumps(meta, ensure_ascii=False)
             async with client.pipeline(transaction=True) as pipe:
                 pipe.set(SNAPSHOT_KEY, p_snap, ex=ttl)
@@ -335,6 +344,57 @@ async def load_schedule_snapshot() -> tuple[dict | None, dict | None]:
     except Exception as e:
         log.error("Ошибка чтения снимка расписания из Redis: %s", e)
     return None, None
+
+
+async def load_schedule_meta() -> dict | None:
+    """
+    Читает только метаданные снапшота расписания (версия, время загрузки).
+
+    Дешёвая проверка для читателей: сам снапшот (~650 КБ) грузится, лишь если версия сменилась.
+
+    Возвращает словарь метаданных или None, если снапшота нет или Redis недоступен.
+    """
+    try:
+        client = await init_redis()
+        raw = await client.get(SNAPSHOT_META_KEY) if client else None
+        return json.loads(raw) if raw else None
+    except Exception as e:
+        log.error("Ошибка чтения метаданных снапшота расписания: %s", e)
+        return None
+
+
+async def request_schedule_refresh() -> bool:
+    """
+    Ставит флаг «обновить расписание сейчас» для фонового загрузчика в worker.
+
+    TTL 5 минут — если worker лежит, флаг не копится вечно.
+
+    Возвращает True, если флаг поставлен.
+    """
+    try:
+        client = await init_redis()
+        if not client:
+            return False
+        await client.set(SCHEDULE_REFRESH_REQUEST_KEY, "1", ex=300)
+        log.debug("Запрошено внеочередное обновление расписания")
+        return True
+    except Exception as e:
+        log.error("Ошибка постановки запроса обновления расписания: %s", e)
+        return False
+
+
+async def pop_schedule_refresh_request() -> bool:
+    """
+    Атомарно забирает флаг внеочередного обновления расписания (GETDEL).
+
+    Возвращает True, если обновление было запрошено.
+    """
+    try:
+        client = await init_redis()
+        return bool(client and await client.getdel(SCHEDULE_REFRESH_REQUEST_KEY))
+    except Exception as e:
+        log.error("Ошибка чтения запроса обновления расписания: %s", e)
+        return False
 
 
 async def is_reminder_sent(rem_key: str) -> bool:

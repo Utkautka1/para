@@ -3,6 +3,13 @@
 
 Определяет точное время звонков с учетом измененных расписаний (dayPeriodTimesByParity),
 вычисляет дату, предмет, тип пары (Лек/Пр), адреса корпусов и кэширует данные.
+
+Два режима работы процесса:
+  - загрузчик (worker, enable_schedule_fetch_ownership): единственный качает ~57 МБ
+    API КТМУ по таймеру и кладёт отфильтрованный снапшот в Redis;
+  - читатель (api, bot): берёт снапшот из Redis, раз в SCHEDULE_SYNC_CHECK_SECONDS
+    сверяя только его версию. force_refresh не качает, а просит worker обновить.
+Если снапшот worker'а устарел или отсутствует, читатель качает сам (старое поведение).
 """
 
 import asyncio
@@ -27,6 +34,8 @@ from config import (
     SCHEDULE_CACHE_TTL_SECONDS,
     SCHEDULE_COOLDOWN_SECONDS,
     SCHEDULE_FALLBACK_API_URL,
+    SCHEDULE_STALE_LIMIT_SECONDS,
+    SCHEDULE_SYNC_CHECK_SECONDS,
 )
 from core.logger import get_logger
 from integrations.docx_parser import TeacherData, get_teacher_links
@@ -37,6 +46,25 @@ log = get_logger("schedule_parser")
 _DATA_CACHE: tuple[float, dict[str, Any] | None] = (0.0, None)
 _LAST_PUBLISHED_AT: str | None = None
 _RESOLVED_DAY_CACHE: dict[date, list[Lesson]] = {}
+
+# Режим загрузчика включает только worker — остальные процессы читают снапшот из Redis
+_IS_FETCH_OWNER: bool = False
+# Версия снапшота в памяти процесса — сверяется с meta.version в Redis
+_LOCAL_VERSION: str | None = None
+# Время последней сверки версии с Redis (секунды, time.time())
+_LAST_SYNC_CHECK: float = 0.0
+
+
+def enable_schedule_fetch_ownership() -> None:
+    """
+    Делает текущий процесс единственным загрузчиком API КТМУ.
+
+    Вызывается при старте worker; без этого процесс работает как читатель снапшота.
+
+    Ничего не возвращает.
+    """
+    global _IS_FETCH_OWNER
+    _IS_FETCH_OWNER = True
 
 
 def clear_resolved_day_cache() -> None:
@@ -606,7 +634,7 @@ async def init_schedule_cache_from_redis(now: float) -> bool:
 
     Возвращает True в случае успешной загрузки из Redis, иначе False.
     """
-    global _DATA_CACHE, _LAST_ETAG, _LAST_MODIFIED, _LAST_PUBLISHED_AT
+    global _DATA_CACHE, _LAST_ETAG, _LAST_MODIFIED, _LAST_PUBLISHED_AT, _LOCAL_VERSION
 
     from core.redis_cache import load_schedule_snapshot
 
@@ -616,6 +644,7 @@ async def init_schedule_cache_from_redis(now: float) -> bool:
         _LAST_ETAG = meta.get("etag")
         _LAST_MODIFIED = meta.get("last_modified")
         _LAST_PUBLISHED_AT = meta.get("published_at")
+        _LOCAL_VERSION = meta.get("version")
         clear_resolved_day_cache()
         log.info("Кэш расписания успешно восстановлен из Redis (мгновенный cold-start)")
         return True
@@ -646,22 +675,72 @@ async def _get_cached_or_revalidate(now: float) -> dict[str, Any] | None:
         return _DATA_CACHE[1]
 
     if _DATA_CACHE[1] is not None:
-        if now - _DATA_CACHE[0] >= SCHEDULE_CACHE_TTL_SECONDS:
+        # У загрузчика обновлением по таймеру занимается schedule_refresh_loop
+        if not _IS_FETCH_OWNER and now - _DATA_CACHE[0] >= SCHEDULE_CACHE_TTL_SECONDS:
             await _trigger_stale_refresh(now)
         return _DATA_CACHE[1]
 
     return None
 
 
+def _is_shared_snapshot_fresh(meta: dict[str, Any] | None, now: float) -> bool:
+    """Проверяет, что снапшот в Redis есть и worker обновлял его не дольше SCHEDULE_STALE_LIMIT_SECONDS назад."""
+    return bool(meta) and now - float(meta.get("fetched_at") or 0) <= SCHEDULE_STALE_LIMIT_SECONDS
+
+
+async def _sync_from_shared_snapshot(now: float) -> bool:
+    """
+    Синхронизирует кэш читателя со снапшотом, который поддерживает worker.
+
+    Раз в SCHEDULE_SYNC_CHECK_SECONDS читает только meta (версию); сам снапшот
+    перечитывается лишь при смене версии, поэтому запросы пользователей не ждут сети.
+
+    Возвращает True, если данные взяты из снапшота worker'а; False — снапшот устарел
+    или отсутствует, и процессу нужно качать самому.
+    """
+    global _LAST_SYNC_CHECK
+    if _DATA_CACHE[1] is not None and now - _LAST_SYNC_CHECK < SCHEDULE_SYNC_CHECK_SECONDS:
+        return True
+    _LAST_SYNC_CHECK = now
+
+    from core.redis_cache import load_schedule_meta
+
+    meta = await load_schedule_meta()
+    if not _is_shared_snapshot_fresh(meta, now):
+        log.warning("⚠️  Снапшот расписания от worker устарел или отсутствует — загружаем самостоятельно")
+        return False
+    if meta.get("version") != _LOCAL_VERSION or _DATA_CACHE[1] is None:
+        log.debug("Версия снапшота сменилась: %s -> %s", _LOCAL_VERSION, meta.get("version"))
+        await init_schedule_cache_from_redis(now)
+    return _DATA_CACHE[1] is not None
+
+
+async def _read_shared_schedule(now: float, force_refresh: bool) -> bool:
+    """
+    Путь читателя: отдаёт снапшот worker'а, а force_refresh превращает в запрос worker'у.
+
+    Возвращает True, если данные готовы в _DATA_CACHE без самостоятельной загрузки.
+    """
+    if force_refresh:
+        from core.redis_cache import request_schedule_refresh
+
+        await request_schedule_refresh()
+    return await _sync_from_shared_snapshot(now)
+
+
 async def fetch_schedule_data(force_refresh: bool = False) -> dict[str, Any] | None:
     """
     Предоставляет актуальный снимок расписания из памяти, Redis или внешнего API.
 
-    Реализует паттерн Stale-While-Revalidate с защитой от блокировки клиента.
+    Читатель (api, bot) отдаёт снапшот worker'а мгновенно; загрузчик и читатель
+    без свежего снапшота работают по Stale-While-Revalidate с загрузкой из API.
 
     Возвращает очищенный словарь среза расписания группы или None при ошибке.
     """
     now = time.time()
+
+    if not _IS_FETCH_OWNER and await _read_shared_schedule(now, force_refresh):
+        return _DATA_CACHE[1]
 
     if force_refresh:
         await refresh_schedule_in_background(force=True)
@@ -914,10 +993,10 @@ async def get_schedule_for_date(target_date: date, force_refresh: bool = False) 
 
     Возвращает отсортированный по времени список занятий Lesson на выбранный день.
     """
+    # Сначала синхронизируемся со снапшотом: при смене версии L1-кэш дней сбросится
+    data = await fetch_schedule_data(force_refresh=force_refresh)
     if not force_refresh and target_date in _RESOLVED_DAY_CACHE:
         return _RESOLVED_DAY_CACHE[target_date]
-
-    data = await fetch_schedule_data(force_refresh=force_refresh)
     if not data:
         return []
 

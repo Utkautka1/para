@@ -28,6 +28,7 @@ from services.notifier import (
     scheduler,
     setup_scheduler,
 )
+from services.schedule_refresher import schedule_refresh_loop
 from services.topic_updater import topic_sync_loop
 
 log = get_logger("worker_main")
@@ -84,6 +85,7 @@ async def _start_worker_loops() -> None:
     """
 
     await asyncio.gather(
+        schedule_refresh_loop(),
         topic_sync_loop(),
         exam_topic_sync_loop(),
         attendance_topic_sync_loop(),
