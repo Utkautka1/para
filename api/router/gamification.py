@@ -9,6 +9,8 @@
 Лидерборд и профили содержат ФИО и посещаемость студентов — это персональные
 данные, поэтому они доступны только одногруппникам и тестерам (verify_api_or_tester).
 Каталоги достижений и рангов статичны и остаются публичными.
+Секретные ачивки в каталог не входят и вырезаются из чужих профилей —
+их видит только владелец (зритель определяется по сессии Mini App).
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -25,8 +27,10 @@ from services.classmates_auth import find_classmate_by_tg_id
 from services.gamification import (
     get_group_leaderboard,
     get_student_profile_by_fio,
+    hide_secret_achievements,
     is_starosta,
 )
+from services.gamification_models import StudentProfile
 from services.gamification_registry import RANKS, get_all_achievements
 
 log = get_logger("gamification_router")
@@ -57,8 +61,26 @@ def _resolve_target_fio(fio: str | None, tg_id: int | None) -> str | None:
     return None
 
 
-@router.get("/leaderboard", response_model=LeaderboardResponse, dependencies=[Depends(verify_api_or_tester)])
-async def get_leaderboard_endpoint() -> LeaderboardResponse:
+def _viewer_fio(identity: str) -> str | None:
+    """
+    Определяет ФИО зрителя по идентичности из verify_api_or_tester.
+
+    Сессия Mini App даёт 'tester:<tg_id>'; мастер-ключ и прочие — без ФИО,
+    такие зрители секретных ачивок не видят ни у кого.
+    """
+    if not identity.startswith("tester:"):
+        return None
+    classmate = find_classmate_by_tg_id(int(identity.split(":", 1)[1]))
+    return str(classmate["full_name"]) if classmate and classmate.get("full_name") else None
+
+
+def _public_schema(profile: StudentProfile, viewer: str | None) -> StudentProfileSchema:
+    """Сериализует профиль, скрывая секретные ачивки от чужих глаз."""
+    return StudentProfileSchema.model_validate(hide_secret_achievements(profile, viewer))
+
+
+@router.get("/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard_endpoint(identity: str = Depends(verify_api_or_tester)) -> LeaderboardResponse:
     """
     Возвращает рейтинг соревнующихся студентов с выделенным старостой вне конкурса.
 
@@ -66,21 +88,23 @@ async def get_leaderboard_endpoint() -> LeaderboardResponse:
     в то время как староста группы вынесен в отдельный почетный блок.
     """
     profiles = await get_group_leaderboard()
+    viewer = _viewer_fio(identity)
     pulse = _calculate_group_pulse(profiles)
     starosta_prof = next((p for p in profiles if is_starosta(p.fio)), None)
     competing = [p for p in profiles if not is_starosta(p.fio)]
     return LeaderboardResponse(
         total_students=len(profiles),
         group_pulse=pulse,
-        leaderboard=[StudentProfileSchema.model_validate(p) for p in competing],
-        starosta=StudentProfileSchema.model_validate(starosta_prof) if starosta_prof else None,
+        leaderboard=[_public_schema(p, viewer) for p in competing],
+        starosta=_public_schema(starosta_prof, viewer) if starosta_prof else None,
     )
 
 
-@router.get("/profile", response_model=StudentProfileSchema, dependencies=[Depends(verify_api_or_tester)])
+@router.get("/profile", response_model=StudentProfileSchema)
 async def get_student_profile_endpoint(
     fio: str | None = Query(default=None, description="Фамилия или ФИО студента"),
     tg_id: int | None = Query(default=None, description="Telegram ID студента"),
+    identity: str = Depends(verify_api_or_tester),
 ) -> StudentProfileSchema:
     """Возвращает персональный профиль студента по ФИО или Telegram ID."""
     target_fio = _resolve_target_fio(fio, tg_id)
@@ -95,7 +119,7 @@ async def get_student_profile_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Студент '{target_fio}' не найден в реестре группы 1-КПД-3",
         )
-    return StudentProfileSchema.model_validate(profile)
+    return _public_schema(profile, _viewer_fio(identity))
 
 
 @router.get("/achievements", response_model=AchievementsCatalogResponse)

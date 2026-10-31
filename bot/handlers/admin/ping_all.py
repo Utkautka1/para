@@ -28,6 +28,7 @@ from aiogram.types import Message, User
 from bot.filters.auth import AuthFilter
 from config import BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
+from services.achievement_events import mark_ping_all
 from services.user_cache import get_cached_user_id
 from utils.storage import load_json
 
@@ -261,6 +262,8 @@ async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | 
     try:
         await send_broadcast_payload(message, final_text, reply_id)
         await safe_delete_command_message(message)
+        # Открываем окно «Общего сбора»: кто напишет в чат в ближайшие 15 минут — получит ачивку
+        await mark_ping_all()
         log.info("✅ Успешный пинг всех в чате %s, топик %s", message.chat.id, message.message_thread_id)
     except Exception as e:
         log.error("❌ Ошибка отправки /all в чате %s: %s", message.chat.id, e)

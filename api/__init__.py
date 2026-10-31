@@ -28,6 +28,7 @@ from api.router.health import router as health_router
 from api.router.jaeger import router as jaeger_router
 from api.router.metrics import router as metrics_router
 from api.router.miniapp import router as miniapp_router
+from api.router.pulse import router as pulse_router
 from api.router.schedule import router as schedule_router
 from api.router.solver import router as solver_router
 from api.router.subscribers import router as subscribers_router
@@ -64,6 +65,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(subscribers_router)
     app.include_router(system_router)
     app.include_router(miniapp_router)
+    app.include_router(pulse_router)
     app.include_router(jaeger_router)
     app.include_router(gamification_router)
 

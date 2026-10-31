@@ -21,16 +21,18 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L31–L36 | `set[int]` | Retrieves and resolves domain data for `get_active_chat... |
-| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L39–L53 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L56–L65 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L68–L72 | `int` | Executes core domain logic for `count_active`. |
-| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L79–L98 | `SystemIncident` | Executes core domain logic for `record_incident`. |
-| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L101–L107 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
-| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L114–L136 | `int` | Saves serialized entity data to storage for `save_daily... |
-| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L139–L145 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
-| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L152–L164 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
-| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L167–L181 | `bool` | Executes core domain logic for `unlock_achievement`. |
+| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L33–L38 | `set[int]` | Retrieves and resolves domain data for `get_active_chat... |
+| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L41–L55 | `bool` | Executes core domain logic for `add_subscriber`. |
+| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L58–L67 | `bool` | Executes core domain logic for `remove_subscriber`. |
+| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L70–L74 | `int` | Executes core domain logic for `count_active`. |
+| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L81–L100 | `SystemIncident` | Executes core domain logic for `record_incident`. |
+| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L103–L109 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
+| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L116–L138 | `int` | Saves serialized entity data to storage for `save_daily... |
+| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L141–L147 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
+| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L154–L166 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
+| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L169–L183 | `bool` | Executes core domain logic for `unlock_achievement`. |
+| [`CounterRepository.increment`](#counterrepositoryincrement) | Method | L190–L212 | `int` | Executes core domain logic for `increment`. |
+| [`CounterRepository.count_keys`](#counterrepositorycount_keys) | Method | L215–L231 | `int` | Executes core domain logic for `count_keys`. |
 
 ---
 
@@ -45,7 +47,7 @@ Encapsulates domain entities and data transfer logic for `SubscriberRepository`.
 async def get_active_chat_ids() -> set[int]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L31-L36`](../../db/sqlite/repositories.py#L31-L36)
+- **Source Reference**: [`db/sqlite/repositories.py#L33-L38`](../../db/sqlite/repositories.py#L33-L38)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `set[int]`
 
@@ -76,7 +78,7 @@ result = await get_active_chat_ids()
 async def add_subscriber(chat_id: int, username: str | None = None, full_name: str | None = None) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L39-L53`](../../db/sqlite/repositories.py#L39-L53)
+- **Source Reference**: [`db/sqlite/repositories.py#L41-L55`](../../db/sqlite/repositories.py#L41-L55)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -111,7 +113,7 @@ result = await add_subscriber(chat_id=..., username=..., full_name=...)
 async def remove_subscriber(chat_id: int) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L56-L65`](../../db/sqlite/repositories.py#L56-L65)
+- **Source Reference**: [`db/sqlite/repositories.py#L58-L67`](../../db/sqlite/repositories.py#L58-L67)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -144,7 +146,7 @@ result = await remove_subscriber(chat_id=...)
 async def count_active() -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L68-L72`](../../db/sqlite/repositories.py#L68-L72)
+- **Source Reference**: [`db/sqlite/repositories.py#L70-L74`](../../db/sqlite/repositories.py#L70-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -179,7 +181,7 @@ Encapsulates domain entities and data transfer logic for `IncidentRepository`.
 async def record_incident( incident_type: str, title: str, description: str, severity: str = IncidentSeverity.WARNING, trace_id: str | None = None, ) -> SystemIncident
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L79-L98`](../../db/sqlite/repositories.py#L79-L98)
+- **Source Reference**: [`db/sqlite/repositories.py#L81-L100`](../../db/sqlite/repositories.py#L81-L100)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SystemIncident`
 
@@ -216,7 +218,7 @@ result = await record_incident(incident_type=..., title=..., description=...)
 async def get_recent_incidents(limit: int = 50, unresolved_only: bool = False) -> Sequence[SystemIncident]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L101-L107`](../../db/sqlite/repositories.py#L101-L107)
+- **Source Reference**: [`db/sqlite/repositories.py#L103-L109`](../../db/sqlite/repositories.py#L103-L109)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Sequence[SystemIncident]`
 
@@ -254,7 +256,7 @@ Encapsulates domain entities and data transfer logic for `AttendanceRepository`.
 async def save_daily_snapshots(snapshot_date: date, records: list[dict[str, Any]]) -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L114-L136`](../../db/sqlite/repositories.py#L114-L136)
+- **Source Reference**: [`db/sqlite/repositories.py#L116-L138`](../../db/sqlite/repositories.py#L116-L138)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -288,7 +290,7 @@ result = await save_daily_snapshots(snapshot_date=..., records=...)
 async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L139-L145`](../../db/sqlite/repositories.py#L139-L145)
+- **Source Reference**: [`db/sqlite/repositories.py#L141-L147`](../../db/sqlite/repositories.py#L141-L147)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Sequence[AttendanceSnapshot]`
 
@@ -323,7 +325,7 @@ Encapsulates domain entities and data transfer logic for `GamificationRepository
 async def get_all_unlocked_map() -> dict[str, set[str]]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L152-L164`](../../db/sqlite/repositories.py#L152-L164)
+- **Source Reference**: [`db/sqlite/repositories.py#L154-L166`](../../db/sqlite/repositories.py#L154-L166)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, set[str]]`
 
@@ -354,7 +356,7 @@ result = await get_all_unlocked_map()
 async def unlock_achievement(student_fio: str, achievement_id: str) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L167-L181`](../../db/sqlite/repositories.py#L167-L181)
+- **Source Reference**: [`db/sqlite/repositories.py#L169-L183`](../../db/sqlite/repositories.py#L169-L183)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -379,6 +381,79 @@ from db.sqlite.repositories import unlock_achievement
 
 # Execute call
 result = await unlock_achievement(student_fio=..., achievement_id=...)
+```
+
+---
+
+## Class Model: `CounterRepository`
+
+Encapsulates domain entities and data transfer logic for `CounterRepository`.
+
+### `CounterRepository.increment`
+```python
+async def increment(student_fio: str, key: str, today: date | None = None) -> int
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L190-L212`](../../db/sqlite/repositories.py#L190-L212)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `increment`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_fio` | `str` | Yes | Parameter `student_fio` of type `str`. |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `today` | `date | None` | Yes | Parameter `today` of type `date | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import increment
+
+# Execute call
+result = await increment(student_fio=..., key=..., today=...)
+```
+
+---
+
+### `CounterRepository.count_keys`
+```python
+async def count_keys(student_fio: str, prefix: str) -> int
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L215-L231`](../../db/sqlite/repositories.py#L215-L231)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `count_keys`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_fio` | `str` | Yes | Parameter `student_fio` of type `str`. |
+| `prefix` | `str` | Yes | Parameter `prefix` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import count_keys
+
+# Execute call
+result = await count_keys(student_fio=..., prefix=...)
 ```
 
 ---

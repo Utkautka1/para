@@ -35,6 +35,8 @@ from core.api_client import (
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from db.subscribers import is_subscribed, toggle_subscriber
+from services.achievement_events import on_refresh_click, on_schedule_view
+from services.achievement_triggers import ScheduleView
 from services.classmates_auth import is_authorized_user, process_user_auth
 from services.login_tokens import build_login_url
 from services.models import Lesson
@@ -163,14 +165,14 @@ async def _show_tester_cabinet(message: Message, uid: int) -> None:
     await message.answer(text, reply_markup=get_tester_cabinet_kb(login_url))
 
 
-async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> None:
+async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> list[Lesson]:
     """
     Отправляет пользователю карточку расписания на сегодня с клавиатурой.
 
     Запрашивает кэшированные данные и собирает инлайн-меню навигации.
     Учитывает статус подписки и административные привилегии.
 
-    Ничего не возвращает.
+    Возвращает пары сегодняшнего дня — по ним проверяются ачивки «во время пары».
     """
 
     now = datetime.now(TIMEZONE).date()
@@ -184,20 +186,17 @@ async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> N
     )
 
     await message.answer(text, reply_markup=kb)
+    return lessons
 
 
-async def _check_start_achievements(uid: int, bot: Any, full_name: str | None) -> None:
-    """Проверяет и выдает приветственные и тайминговые ачивки при старте/просмотре расписания."""
+def _award_today_view(message: Message, lessons: list[Lesson]) -> None:
+    """Запускает в фоне выдачу ачивок за /start и /today (приветствие + время просмотра)."""
     from services.achievement_service import award_achievement
 
-    await award_achievement(uid, "bot_welcome", bot, full_name)
-    now = datetime.now(TIMEZONE)
-    if now.hour < 8:
-        await award_achievement(uid, "time_early_bird", bot, full_name)
-    elif now.hour >= 21:
-        await award_achievement(uid, "time_night_owl", bot, full_name)
-    if now.weekday() == 6:
-        await award_achievement(uid, "time_sunday_scout", bot, full_name)
+    user = message.from_user
+    if user and (message.text or "").startswith("/start"):
+        asyncio.create_task(award_achievement(user.id, "bot_welcome", message.bot, user.full_name))
+    asyncio.create_task(on_schedule_view(user, message.bot, ScheduleView.TODAY, lessons))
 
 
 async def _handle_unauthorized_user(message: Message, is_auth: bool, is_tester: bool, uid: int) -> bool:
@@ -225,9 +224,8 @@ async def cmd_start(message: Message) -> None:
     if is_just_reg and student:
         await _greet_new_student(message, student)
 
-    fname = message.from_user.full_name if message.from_user else None
-    asyncio.create_task(_check_start_achievements(uid, message.bot, fname))
-    await _send_today_schedule(message, uid, is_tester)
+    lessons = await _send_today_schedule(message, uid, is_tester)
+    _award_today_view(message, lessons)
 
 
 @router.message(Command("swagger"))
@@ -273,7 +271,6 @@ def _trigger_notify_achievements(uid: int, bot: Any, new_sub: bool, full_name: s
 
     if new_sub:
         asyncio.create_task(award_achievement(uid, "time_bell_on", bot, full_name))
-        asyncio.create_task(award_achievement(uid, "bot_subscriber", bot, full_name))
     else:
         asyncio.create_task(award_achievement(uid, "time_bell_silent", bot, full_name))
 
@@ -370,6 +367,7 @@ async def cb_today(callback: CallbackQuery) -> None:
     await _ack_callback(callback)
     now = datetime.now(TIMEZONE).date()
     text, lessons = await get_day_schedule_cached(now)
+    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
 
     await edit_or_answer(callback, text, lessons)
 
@@ -387,17 +385,9 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
 
     log.info("Нажата инлайн-кнопка: Завтра")
     await _ack_callback(callback)
-    uid = callback.from_user.id if callback.from_user else 0
-    from services.achievement_service import award_achievement
-
-    asyncio.create_task(
-        award_achievement(
-            uid, "bot_future_peek", callback.bot, callback.from_user.full_name if callback.from_user else None
-        )
-    )
-
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
     text, lessons = await get_day_schedule_cached(tomorrow)
+    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TOMORROW, lessons))
 
     await edit_or_answer(callback, text, lessons)
 
@@ -415,6 +405,7 @@ async def cb_week(callback: CallbackQuery) -> None:
 
     log.info("Нажата инлайн-кнопка: Эта неделя")
     await _ack_callback(callback)
+    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK, []))
     today = datetime.now(TIMEZONE).date()
     monday = today - timedelta(days=today.weekday())
     cache_key = f"sched:week:{monday.isoformat()}"
@@ -441,11 +432,7 @@ async def cb_week_next(callback: CallbackQuery) -> None:
     """Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Следующая неделя")
     await _ack_callback(callback)
-    uid = callback.from_user.id if callback.from_user else 0
-    from services.achievement_service import award_achievement
-
-    fname = callback.from_user.full_name if callback.from_user else None
-    asyncio.create_task(award_achievement(uid, "bot_week_next", callback.bot, fname))
+    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK_NEXT, []))
 
     next_monday = _get_next_week_monday()
     cache_key = f"sched:week_next:{next_monday.isoformat()}"
@@ -487,17 +474,11 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     """Сразу показывает расписание из кэша и просит worker скачать свежую версию КТМУ в фоне."""
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
     await _ack_callback(callback, "Синхронизация с API КТМУ...")
-    uid = callback.from_user.id if callback.from_user else 0
-    from services.achievement_service import award_achievement
-
-    asyncio.create_task(
-        award_achievement(
-            uid, "bot_f5_master", callback.bot, callback.from_user.full_name if callback.from_user else None
-        )
-    )
+    asyncio.create_task(on_refresh_click(callback.from_user, callback.bot))
 
     now = datetime.now(TIMEZONE).date()
     text, lessons, count = await _refresh_and_format_schedule(now)
+    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
     text += f"\n\n<i>✅ Контакты ({count}) сверены. Свежая версия расписания КТМУ запрошена — подтянется в течение минуты.</i>"
 
     await edit_or_answer(callback, text, lessons)

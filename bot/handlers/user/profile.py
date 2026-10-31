@@ -17,6 +17,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, W
 from bot.filters.auth import ClassmateAuthFilter
 from config import ALLOWED_USER_ID, MINIAPP_URL
 from core.logger import get_logger
+from services.achievement_events import on_attendance_view
 from services.achievement_service import award_achievement
 from services.classmates_auth import find_classmate_by_tg_id
 from services.gamification import get_group_leaderboard, get_student_profile_by_fio
@@ -100,7 +101,8 @@ async def handle_profile_command(message: Message) -> None:
         )
         return
     text = _format_profile_message(profile)
-    asyncio.create_task(award_achievement(user.id, "bot_self_audit", message.bot, user.full_name))
+    # Профиль показывает ту же посещаемость, что и /my_attendance
+    asyncio.create_task(on_attendance_view(user, message.bot))
     await message.answer(text=text, parse_mode="HTML", reply_markup=_build_miniapp_keyboard())
 
 
@@ -132,7 +134,7 @@ async def handle_leaderboard_command(message: Message) -> None:
     """Отображает топ-10 студентов группы 1-КПД-3."""
     if message.from_user:
         asyncio.create_task(
-            award_achievement(message.from_user.id, "bot_miniapp", message.bot, message.from_user.full_name)
+            award_achievement(message.from_user.id, "life_hall", message.bot, message.from_user.full_name)
         )
     profiles = await get_group_leaderboard()
     if not profiles:

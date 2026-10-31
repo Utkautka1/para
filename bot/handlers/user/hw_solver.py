@@ -6,6 +6,7 @@
 для фонового воркера para-solver.
 """
 
+import asyncio
 import hashlib
 
 from aiogram import Bot, F, Router
@@ -21,6 +22,8 @@ from core.redis_cache import (
     mark_message_processed,
     push_hw_task,
 )
+from services.achievement_events import on_homework_task
+from services.achievement_triggers import HomeworkTask, homework_kind
 
 log = get_logger("hw_handler")
 router = Router()
@@ -108,6 +111,28 @@ def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str |
         return d.file_id, d.file_unique_id, d.file_name or "doc", d.mime_type, d.file_size or 0
 
     return None, None, None, None, 0
+
+
+def _describe_task(msg: Message, target: Message, prompt: str) -> HomeworkTask:
+    """
+    Описывает принятое задание для ачивок топика ДЗ.
+
+    Уточнение — это реплай студента на собственное сообщение-задание.
+
+    Возвращает HomeworkTask.
+    """
+    _, _, f_name, mime, _ = extract_media_meta(msg, target)
+    own_reply = target is not msg and bool(
+        target.from_user and msg.from_user and target.from_user.id == msg.from_user.id
+    )
+    return HomeworkTask(
+        prompt=prompt, kind=homework_kind(mime, f_name is not None), file_name=f_name, is_followup=own_reply
+    )
+
+
+def _sender_name(msg: Message) -> str | None:
+    """Имя автора сообщения для fallback-ФИО ачивок."""
+    return msg.from_user.full_name if msg.from_user else None
 
 
 def compute_content_hash(text: str | None, unique_id: str | None) -> str:
@@ -265,3 +290,4 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
         return
 
     await dispatch_hw_task(bot, msg, user_id, prompt, (f_id, f_name, mime, f_size), c_hash)
+    asyncio.create_task(on_homework_task(user_id, _sender_name(msg), bot, _describe_task(msg, target, prompt)))

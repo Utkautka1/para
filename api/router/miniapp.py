@@ -192,47 +192,70 @@ async def check_tester_status(para_session: str = Cookie(default=None)) -> Minia
     return MiniappCheckResponse(authenticated=True, user_id=uid, is_tester=allowed)
 
 
-def _resolve_action_uid(payload: MiniappActionRequest, session: str | None) -> int | None:
+def resolve_action_uid(init_data: str | None, session: str | None) -> int | None:
     """Определяет Telegram ID инициатора действия из сессии или init_data."""
     if session:
         uid = verify_tester_session(session)
         if uid is not None:
             return uid
-    if payload.init_data:
-        info = validate_telegram_init_data(payload.init_data)
+    if init_data:
+        info = validate_telegram_init_data(init_data)
         if info and "id" in info and info["id"] is not None:
             return int(info["id"])
     return None
+
+
+# Клиентские действия Mini App → ачивки. Сервер не может проверить, что тема
+# правда включена, но эти ачивки — пасхалки интерфейса, а не журнальные заслуги.
+MINIAPP_ACTION_ACHIEVEMENTS: dict[str, str] = {
+    "matrix_theme": "egg_matrix",
+    "konami_code": "egg_konami",
+    "open_miniapp": "bot_miniapp",
+    "all_tabs": "egg_api_hacker",
+}
+
+
+def _action_result(ach_id: str | None, unlocked: bool) -> MiniappActionResult:
+    """Собирает ответ action-эндпоинта с паспортом открытой ачивки."""
+    from services.gamification_registry import ACHIEVEMENTS_MAP
+
+    ach = ACHIEVEMENTS_MAP.get(ach_id or "")
+    if not unlocked or not ach:
+        return MiniappActionResult(status="ok", unlocked=False)
+    return MiniappActionResult(
+        status="ok", unlocked=True, achievement=ach.title, achievement_id=ach.id, xp=ach.xp_reward
+    )
+
+
+def require_group_member(uid: int | None) -> int:
+    """
+    Пропускает только одногруппников: валидный initData есть у любого, кто открыл бота.
+
+    Возвращает uid или выбрасывает HTTP 401/403.
+    """
+    if uid is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    if uid != ALLOWED_USER_ID and find_classmate_by_tg_id(uid) is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a group member")
+    return uid
 
 
 @router.post("/action", response_model=MiniappActionResult)
 async def trigger_miniapp_action(
     payload: MiniappActionRequest, para_session: str | None = Cookie(default=None)
 ) -> MiniappActionResult:
-    """Разблокирует клиентские достижения Mini App (пасхалки, темы интерфейса)."""
-    uid = _resolve_action_uid(payload, para_session)
-    if uid is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-    # Валидный initData есть у любого, кто открыл Mini App бота — ачивки только для группы
-    if uid != ALLOWED_USER_ID and find_classmate_by_tg_id(uid) is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a group member")
+    """Разблокирует клиентские достижения Mini App (пасхалки, темы, вкладки, профили)."""
+    uid = require_group_member(resolve_action_uid(payload.init_data, para_session))
+    from services.achievement_events import on_profile_view
+    from services.achievement_service import award_achievement
 
-    action_map = {"matrix_theme": "egg_matrix", "konami_code": "egg_konami", "open_miniapp": "bot_miniapp"}
-    ach_id = action_map.get(payload.action)
+    if payload.action == "view_profile":
+        unlocked = await on_profile_view(uid, payload.target or "")
+        return _action_result("soc_solidarity", unlocked)
+    ach_id = MINIAPP_ACTION_ACHIEVEMENTS.get(payload.action)
     if not ach_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown action")
-
-    from services.achievement_service import award_achievement
-    from services.gamification_registry import ACHIEVEMENTS_MAP
-
-    unlocked = await award_achievement(uid, ach_id)
-    ach = ACHIEVEMENTS_MAP.get(ach_id)
-    return MiniappActionResult(
-        status="ok",
-        unlocked=unlocked,
-        achievement=ach.title if ach else None,
-        xp=ach.xp_reward if ach else 0,
-    )
+    return _action_result(ach_id, await award_achievement(uid, ach_id))
 
 
 @router.get("/testers", response_model=TesterListResponse, dependencies=[Depends(verify_api_or_tester)])

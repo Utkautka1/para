@@ -163,6 +163,18 @@
       animation: pulseAnim 2s infinite;
     }
 
+    .pulse-dot.flat {
+      animation: none;
+      background: #64748b;
+      box-shadow: none;
+    }
+
+    #pulse-badge {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
     @keyframes pulseAnim {
 
       0%,
@@ -814,7 +826,7 @@
       <button id="btn-theme-toggle" class="badge badge-rpg" onclick="toggleMatrixTheme()"
         style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); cursor:pointer; font-size:13px;"
         title="Ночная тема Матрица КТМУ">🕶️</button>
-      <div class="badge badge-rpg">
+      <div class="badge badge-rpg" id="pulse-badge">
         <span class="pulse-dot"></span>
         <span id="group-pulse-lbl">Пульс: 75%</span>
       </div>
@@ -983,6 +995,9 @@
     let viewingProfile = null;
     let studentsCache = [];
     let currentCatFilter = 'all';
+    let groupPulse = null;
+    // Вкладки, открытые за сессию, — для квеста «Исследователь»
+    const visitedTabs = new Set(['leaderboard']);
 
     function initTelegram() {
       if (!tg) return;
@@ -1083,7 +1098,8 @@
         if (!resp.ok) return;
         const data = await resp.json();
         studentsCache = data.leaderboard || [];
-        document.getElementById('group-pulse-lbl').innerText = `Пульс: ${data.group_pulse}%`;
+        groupPulse = data.group_pulse;
+        document.getElementById('group-pulse-lbl').innerText = `Пульс: ${groupPulse}%`;
         if (data.starosta) renderStarosta(data.starosta);
         renderPodium(studentsCache.slice(0, 3));
         renderStudentsList(studentsCache);
@@ -1185,6 +1201,7 @@
     }
 
     function openStudentProfile(student) {
+      if (myProfile && student.fio !== myProfile.fio) triggerClientAction('view_profile', student.fio);
       viewingProfile = student;
       renderProfileData(student);
       renderAchievementsCatalog();
@@ -1207,7 +1224,7 @@
       document.getElementById('prof-xp-fill').style.width = `${fillPct}%`;
 
       const unl = s.unlocked_achievements || [];
-      document.getElementById('prof-ach-summary').innerText = `${unl.length} / 80`;
+      document.getElementById('prof-ach-summary').innerText = `${unl.length} / ${allAchievements.length || 80}`;
       renderStudentUnlockedList(unl);
     }
 
@@ -1219,7 +1236,8 @@
         return;
       }
       container.innerHTML = unl.map(aid => {
-        const a = allAchievements.find(x => x.id === aid) || { title: aid, icon: '⭐', xp_reward: 0 };
+        // Ачивки вне каталога видны только владельцу — показываем их без подробностей
+        const a = allAchievements.find(x => x.id === aid) || { title: 'Секретное достижение', icon: '🤫', xp_reward: '?' };
         return `
           <div class="hero-card" style="margin-bottom:6px; padding:8px 12px;">
             <div style="font-size:20px;">${a.icon}</div>
@@ -1249,7 +1267,7 @@
       const unlockedSet = new Set(activeProf?.unlocked_achievements || []);
       const totalAch = allAchievements.length || 80;
       const unlCount = unlockedSet.size;
-      const pct = totalAch > 0 ? Math.round((unlCount / totalAch) * 100) : 0;
+      const pct = totalAch > 0 ? Math.min(100, Math.round((unlCount / totalAch) * 100)) : 0;
 
       const sumElem = document.getElementById('ach-badge-summary');
       if (sumElem) sumElem.innerText = `${unlCount} / ${totalAch} (${pct}%)`;
@@ -1316,7 +1334,14 @@
         if (btn) btn.classList.toggle('active', t === tab);
         if (view) view.style.display = (t === tab) ? 'block' : 'none';
       });
+      trackVisitedTab(tab);
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function trackVisitedTab(tab) {
+      if (visitedTabs.has(tab)) return;
+      visitedTabs.add(tab);
+      if (['leaderboard', 'achievements', 'profile'].every(t => visitedTabs.has(t))) triggerClientAction('all_tabs');
     }
 
     function escapeHtml(str) {
@@ -1338,20 +1363,20 @@
       setTimeout(() => toast.classList.remove('show'), 3500);
     }
 
-    async function triggerClientAction(actionName) {
+    async function triggerClientAction(actionName, target = null) {
       try {
         const resp = await fetch('/miniapp/action', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: actionName, init_data: tg?.initData }),
+          body: JSON.stringify({ action: actionName, init_data: tg?.initData, target }),
           credentials: 'include'
         });
         if (resp.ok) {
           const res = await resp.json();
           if (res.unlocked) {
             showToast(`🏆 <b>${escapeHtml(res.achievement)}</b> разблокирован! (+${res.xp} XP)`);
-            if (myProfile) {
-              myProfile.unlocked_achievements.push(actionName);
+            if (myProfile && !myProfile.unlocked_achievements.includes(res.achievement_id)) {
+              myProfile.unlocked_achievements.push(res.achievement_id);
               myProfile.xp += res.xp;
             }
             renderAchievementsCatalog();
@@ -1403,6 +1428,49 @@
       } else {
         titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 1500);
       }
+    }
+
+    // Долгое удержание пульса группы останавливает «сердце» и запускает диагностику
+    (function bindPulseHold() {
+      const badge = document.getElementById('pulse-badge');
+      if (!badge) return;
+      let holdTimer = null;
+      const cancel = () => { clearTimeout(holdTimer); holdTimer = null; };
+      badge.addEventListener('pointerdown', () => {
+        cancel();
+        holdTimer = setTimeout(startPulseTrace, 3000);
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => badge.addEventListener(ev, cancel));
+      badge.addEventListener('contextmenu', e => e.preventDefault());
+    })();
+
+    async function startPulseTrace() {
+      if (document.getElementById('pulse-monitor')) return;
+      document.querySelector('#pulse-badge .pulse-dot')?.classList.add('flat');
+      document.getElementById('group-pulse-lbl').innerText = 'Пульс: ——';
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      try {
+        const resp = await fetch('/miniapp/pulse/ecg', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: tg?.initData }),
+          credentials: 'include'
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const { trace } = await resp.json();
+        const script = document.createElement('script');
+        script.src = `/miniapp/pulse/ecg.js?t=${encodeURIComponent(trace)}`;
+        script.onerror = restorePulse;
+        document.body.appendChild(script);
+      } catch (err) {
+        restorePulse();
+      }
+    }
+
+    function restorePulse() {
+      document.querySelector('#pulse-badge .pulse-dot')?.classList.remove('flat');
+      document.getElementById('group-pulse-lbl').innerText = groupPulse === null ? 'Пульс: 75%' : `Пульс: ${groupPulse}%`;
+      document.querySelectorAll('script[src*="/miniapp/pulse/"]').forEach(el => el.remove());
     }
 
     if (localStorage.getItem('para_matrix_theme') === '1') {

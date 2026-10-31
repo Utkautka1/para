@@ -109,11 +109,14 @@ def setup_all_middlewares() -> None:
     Регистрирует глобальные middleware для отказоустойчивости бота.
 
     Подключает трейсинг (TracingMiddleware), автоповтор запросов
-    (RetryAfterMiddleware) и защиту от спама (CallbackThrottleMiddleware).
+    (RetryAfterMiddleware), защиту от спама (CallbackThrottleMiddleware)
+    и учёт активности для ачивок (AchievementActivityMiddleware, outer —
+    чтобы видеть и сообщения чата, которые не обрабатывает ни один хэндлер).
 
     Ничего не возвращает.
     """
 
+    from bot.middlewares.achievements import AchievementActivityMiddleware
     from bot.middlewares.retry import RetryAfterMiddleware
     from bot.middlewares.throttling import CallbackThrottleMiddleware
     from bot.middlewares.tracing import TracingMiddleware
@@ -123,6 +126,8 @@ def setup_all_middlewares() -> None:
     dp.message.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(RetryAfterMiddleware())
     dp.callback_query.middleware(CallbackThrottleMiddleware())
+    dp.message.outer_middleware(AchievementActivityMiddleware())
+    dp.callback_query.outer_middleware(AchievementActivityMiddleware())
 
 
 async def _init_bot_subsystems() -> None:

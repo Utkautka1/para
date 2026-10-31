@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2026-10-31
+## [Unreleased] - 2026-11-01
+
+### Gamification
+- **Achievements actually unlock**: the rules for ~60 achievements (`_evaluate_all_rules`) were dead code, so over the whole semester only 17 ids were ever granted. Journal and meta achievements now live in `services/achievement_rules.py` and are granted by `para-worker` (`achievement_sync_loop`, every 10 minutes, one digest DM per student); granted achievements are never revoked.
+- **Catalog reworked, description = condition**: untrackable achievements (stickers in DMs, polls, "6 pairs a day", Zoom link clicks) were replaced with trackable ones; thresholds that rewarded "N attended pairs" for unrelated actions (AI, time of day, social) now check the real action. Percent achievements require 20–30 marks, so 100% after five pairs no longer counts.
+- **«Полуночник» fixed**: it was checked only on `/start`/`/today`, never on the «Завтра» button its description names; time windows are Moscow time and covered by unit tests (`services/achievement_triggers.py`).
+- **New event sources**: homework topic (count, formats, code files, follow-ups, night tasks), group chat via an outer middleware (messages, stickers, replies, reply to the headman, 15 minutes after `/all`, birthday greetings — counters only, no text stored), Mini App tabs and classmates' profiles. Counters are atomic upserts in the new `student_counters` table.
+- **Mini App**: an unlocked card now lights up right away (the client stored the action name instead of the achievement id); the collection bar is capped at 100%.
+
+## [2026-10-31]
 
 ### Infrastructure
 - **Edge gateway moved from `claude` to `vpn`** (185.230.67.217): Caddy (`scripts/vps/Caddyfile`), the API tunnel, the sshd fallback tunnel (`ssh home-tunnel`) and the SOCKS proxy for tailscaled now use `vpn` via the restricted `tunnel` user with a pinned host key. Port 443 on `vpn` belongs to Amnezia Xray, so the public site is `https://185-230-67-217.sslip.io:8443` (Let's Encrypt via HTTP-01 on :80). `para-socks-claude.service` renamed to `para-socks.service`; `MINIAPP_URL`/`SWAGGER_URL` updated on the server, the bot re-registers the menu button on start.

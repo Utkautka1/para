@@ -25,9 +25,9 @@ graph LR
 | [`_register_user_routers`](#_register_user_routers) | Function | L43–L67 | `None` | Executes core domain logic for `_register_user_routers`... |
 | [`register_all_routers`](#register_all_routers) | Function | L70–L84 | `None` | Executes core domain logic for `register_all_routers`. |
 | [`shutdown_bot`](#shutdown_bot) | Function | L87–L104 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L107–L125 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L128–L147 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L150–L170 | `None` | Executes core domain logic for `main`. |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L107–L130 | `None` | Executes core domain logic for `setup_all_middlewares`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L133–L152 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L155–L175 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -162,7 +162,7 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L107-L125`](../../bot.py#L107-L125)
+- **Source Reference**: [`bot.py#L107-L130`](../../bot.py#L107-L130)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -193,7 +193,7 @@ result = setup_all_middlewares()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L128-L147`](../../bot.py#L128-L147)
+- **Source Reference**: [`bot.py#L133-L152`](../../bot.py#L133-L152)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -224,7 +224,7 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L150-L170`](../../bot.py#L150-L170)
+- **Source Reference**: [`bot.py#L155-L175`](../../bot.py#L155-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

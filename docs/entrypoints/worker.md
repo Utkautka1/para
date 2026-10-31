@@ -21,10 +21,10 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`schedule_today_reminders`](#schedule_today_reminders) | Function | L37–L54 | `None` | Executes core domain logic for `schedule_today_reminder... |
-| [`shutdown_worker`](#shutdown_worker) | Function | L57–L74 | `None` | Executes core domain logic for `shutdown_worker`. |
-| [`_start_worker_loops`](#_start_worker_loops) | Function | L77–L94 | `None` | Executes core domain logic for `_start_worker_loops`. |
-| [`main`](#main) | Function | L97–L125 | `None` | Executes core domain logic for `main`. |
+| [`schedule_today_reminders`](#schedule_today_reminders) | Function | L39–L56 | `None` | Executes core domain logic for `schedule_today_reminder... |
+| [`shutdown_worker`](#shutdown_worker) | Function | L59–L76 | `None` | Executes core domain logic for `shutdown_worker`. |
+| [`_start_worker_loops`](#_start_worker_loops) | Function | L79–L97 | `None` | Executes core domain logic for `_start_worker_loops`. |
+| [`main`](#main) | Function | L100–L128 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 async def schedule_today_reminders() -> None
 ```
 
-- **Source Reference**: [`worker.py#L37-L54`](../../worker.py#L37-L54)
+- **Source Reference**: [`worker.py#L39-L56`](../../worker.py#L39-L56)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -66,7 +66,7 @@ result = await schedule_today_reminders()
 async def shutdown_worker() -> None
 ```
 
-- **Source Reference**: [`worker.py#L57-L74`](../../worker.py#L57-L74)
+- **Source Reference**: [`worker.py#L59-L76`](../../worker.py#L59-L76)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -97,7 +97,7 @@ result = await shutdown_worker()
 async def _start_worker_loops() -> None
 ```
 
-- **Source Reference**: [`worker.py#L77-L94`](../../worker.py#L77-L94)
+- **Source Reference**: [`worker.py#L79-L97`](../../worker.py#L79-L97)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -128,7 +128,7 @@ result = await _start_worker_loops()
 async def main() -> None
 ```
 
-- **Source Reference**: [`worker.py#L97-L125`](../../worker.py#L97-L125)
+- **Source Reference**: [`worker.py#L100-L128`](../../worker.py#L100-L128)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

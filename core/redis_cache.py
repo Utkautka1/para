@@ -165,6 +165,28 @@ async def check_user_rate_limit(user_id: int) -> bool:
     return True
 
 
+async def incr_with_ttl(key: str, ttl: int) -> int:
+    """
+    Увеличивает счётчик в Redis; TTL ставится на первом инкременте окна.
+
+    Скользящее окно не нужно: «3 раза за минуту» достаточно фиксированного окна,
+    которое открывает первое нажатие.
+
+    Возвращает новое значение счётчика или 0, если Redis недоступен.
+    """
+    try:
+        client = await init_redis()
+        if not client:
+            return 0
+        count = int(await client.incr(key))
+        if count == 1:
+            await client.expire(key, ttl)
+        return count
+    except Exception as e:
+        log.error("Ошибка инкремента %s в Redis: %s", key, e)
+        return 0
+
+
 async def is_hash_processed(content_hash: str) -> bool:
     """
     Проверяет, решалось ли идентичное задание за последние 24 часа по SHA256-хэшу.

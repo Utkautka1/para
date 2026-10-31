@@ -76,6 +76,25 @@ def find_classmate_by_tg_id(user_id: int) -> dict[str, Any] | None:
     return None
 
 
+def find_classmate_by_fio(fio: str) -> dict[str, Any] | None:
+    """
+    Ищет студента в реестре группы по ФИО из журнала посещаемости.
+
+    В журнале и реестре ФИО могут отличаться отчеством, поэтому совпадение
+    засчитывается, если одно имя целиком содержится в другом (как в лидерборде).
+
+    Возвращает словарь с профилем студента или None.
+    """
+    target = fio.strip().lower()
+    if not target:
+        return None
+    for student in load_classmates_registry():
+        name = str(student.get("full_name", "")).strip().lower()
+        if name and (name in target or target in name):
+            return student
+    return None
+
+
 def find_unregistered_by_username(username: str) -> dict[str, Any] | None:
     """
     Ищет запись студента по юзернейму, у которой еще не зафиксирован tg_id.

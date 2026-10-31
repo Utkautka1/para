@@ -9,7 +9,8 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from core.database import get_async_session
 from core.logger import get_logger
@@ -17,6 +18,7 @@ from db.sqlite.models import (
     AttendanceSnapshot,
     IncidentSeverity,
     StudentAchievement,
+    StudentCounter,
     Subscriber,
     SystemIncident,
 )
@@ -179,3 +181,51 @@ class GamificationRepository:
         except Exception as exc:
             log.warning("Ошибка разблокировки достижения: %s", exc)
             return False
+
+
+class CounterRepository:
+    """Репозиторий накопительных счётчиков действий студентов."""
+
+    @staticmethod
+    async def increment(student_fio: str, key: str, today: date | None = None) -> int:
+        """
+        Атомарно увеличивает счётчик студента и возвращает новое значение.
+
+        Upsert (INSERT … ON CONFLICT DO UPDATE … RETURNING) вместо select + update:
+        два одновременных апдейта от одного студента не потеряют инкремент.
+        Если передан today — счётчик растёт не чаще раза в день («активные дни»).
+
+        Возвращает текущее значение счётчика или 0 при ошибке БД.
+        """
+        bump = StudentCounter.value + 1
+        if today is not None:
+            bump = case((StudentCounter.last_day == today, StudentCounter.value), else_=bump)
+        stmt = sqlite_insert(StudentCounter).values(student_fio=student_fio, key=key, value=1, last_day=today)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["student_fio", "key"], set_={"value": bump, "last_day": today}
+        ).returning(StudentCounter.value)
+        try:
+            async with get_async_session() as session:
+                return int((await session.execute(stmt)).scalar_one())
+        except Exception as exc:
+            log.warning("Ошибка инкремента счётчика %s для %s: %s", key, student_fio, exc)
+            return 0
+
+    @staticmethod
+    async def count_keys(student_fio: str, prefix: str) -> int:
+        """
+        Считает разные счётчики студента с общим префиксом.
+
+        Так хранятся множества: 'hw_kind:photo', 'hw_kind:text' → 2 разных формата.
+
+        Возвращает количество ключей или 0 при ошибке БД.
+        """
+        stmt = select(func.count()).where(
+            StudentCounter.student_fio == student_fio, StudentCounter.key.startswith(prefix)
+        )
+        try:
+            async with get_async_session() as session:
+                return int((await session.execute(stmt)).scalar_one())
+        except Exception as exc:
+            log.warning("Ошибка подсчёта счётчиков %s* для %s: %s", prefix, student_fio, exc)
+            return 0

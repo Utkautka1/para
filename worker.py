@@ -7,6 +7,7 @@
   3. Мониторинг и публикацию поздравлений с ДР (birthday_sync_loop, в 07:00)
   4. APScheduler для утренних дайджестов (06:00) и напоминаний за 10 мин до пар
   5. Фоновый Keep-Alive сессии Яндекс Документов (раз в 6 часов)
+  6. Выдачу ачивок по журналу посещаемости и рейтингу (achievement_sync_loop, раз в 10 мин)
 """
 
 import asyncio
@@ -19,6 +20,7 @@ from core.logger import get_logger
 from core.redis import close_redis, init_redis
 from core.telemetry import setup_telemetry
 from integrations.yandex_keepalive import yandex_session_keepalive_loop
+from services.achievement_sync import achievement_sync_loop
 from services.attendance_topic_updater import attendance_topic_sync_loop
 from services.birthday_manager import birthday_sync_loop
 from services.exam_topic_updater import exam_topic_sync_loop
@@ -91,6 +93,7 @@ async def _start_worker_loops() -> None:
         attendance_topic_sync_loop(),
         birthday_sync_loop(),
         yandex_session_keepalive_loop(),
+        achievement_sync_loop(bot),
     )
 
 

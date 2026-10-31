@@ -756,6 +756,11 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
         "out": "docs/services/gamification_registry.md",
         "cat": "Gamification Registry",
     },
+    "services/achievement_rules.py": {"out": "docs/services/achievement_rules.md", "cat": "Achievement Rules"},
+    "services/achievement_triggers.py": {"out": "docs/services/achievement_triggers.md", "cat": "Achievement Rules"},
+    "services/achievement_events.py": {"out": "docs/services/achievement_events.md", "cat": "Achievement Rules"},
+    "services/achievement_sync.py": {"out": "docs/services/achievement_sync.md", "cat": "Achievement Rules"},
+    "bot/middlewares/achievements.py": {"out": "docs/bot/middlewares_achievements.md", "cat": "Achievement Rules"},
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
 }
 

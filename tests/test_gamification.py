@@ -26,6 +26,7 @@ from services.gamification_models import AchievementCategory
 from services.gamification_registry import (
     ACHIEVEMENTS_MAP,
     RANKS,
+    SECRET_ACHIEVEMENTS,
     get_all_achievements,
 )
 
@@ -62,7 +63,8 @@ def test_registry_contains_exactly_80_achievements() -> None:
     """Проверяет целостность и количество всех 80 достижений."""
     achs = get_all_achievements()
     assert len(achs) == 80
-    assert len(ACHIEVEMENTS_MAP) == 80
+    # В карте есть и секретные ачивки — для XP и выдачи, но не для каталога
+    assert len(ACHIEVEMENTS_MAP) == 80 + len(SECRET_ACHIEVEMENTS)
 
     categories = {a.category for a in achs}
     assert len(categories) == 8
@@ -99,7 +101,7 @@ def test_student_profile_and_xp_calculation() -> None:
 def test_calculate_xp_rewards_and_penalties() -> None:
     """Проверяет начисление очков опыта строго по открытым достижениям."""
     stat = {"p": 10, "u": 2, "n": 4}
-    unlocked = ["att_survivor_6"]  # 50 XP
+    unlocked = ["att_doc_master"]  # 50 XP
     xp = calculate_student_xp(stat, unlocked)
     assert xp == 50
 

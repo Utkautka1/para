@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-11-01 — ачивки переработаны: каталог из 80 с условием = описанием, журнальные и мета-правила (`services/achievement_rules.py`) выдаёт worker (`achievement_sync_loop`), событийные — хэндлеры и middleware (`services/achievement_triggers.py`, `services/achievement_events.py`, `bot/middlewares/achievements.py`), счётчики в `student_counters` (раздел 17.6); 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -57,6 +57,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 17.3. [Gamification Progress Bar & Visual Status Architecture](#173-gamification-progress-bar--visual-status-architecture)
    - 17.4. [Decoupled Starosta Unranked, Lightweight Mini App & Path Traversal Security](#174-decoupled-starosta-unranked-lightweight-mini-app--path-traversal-security)
    - 17.5. [Instant Achievement Dispatcher & Telegram Push Notification Flow](#175-instant-achievement-dispatcher--telegram-push-notification-flow)
+   - 17.6. [Achievement Rules, Event Sources & Worker Sync](#176-achievement-rules-event-sources--worker-sync)
 ---
 
 ## 1. System Services Architecture & Core Contracts
@@ -850,6 +851,24 @@ erDiagram
         string student_name PK "Student full name"
         string birthdate "Birthdate (DD.MM)"
         bigint tg_id "Telegram user ID"
+    }
+
+    BIRTHDAY_RECORD ||--o{ STUDENT_ACHIEVEMENT : "unlocked by FIO"
+    BIRTHDAY_RECORD ||--o{ STUDENT_COUNTER : "counted by FIO"
+
+    STUDENT_ACHIEVEMENT {
+        int id PK "Row identifier"
+        string student_fio "Student full name"
+        string achievement_id "Catalog id"
+        datetime unlocked_at "Unlock time"
+    }
+
+    STUDENT_COUNTER {
+        int id PK "Row identifier"
+        string student_fio UK "Student full name (unique with key)"
+        string key UK "Counter name, e.g. hw_tasks or hw_kind:photo"
+        int value "Counter value"
+        date last_day "Last increment day for daily counters"
     }
 ```
 
@@ -3366,9 +3385,11 @@ classDiagram
     class AchievementService {
         +resolve_student_fio(user_id: int, fallback_name: str) str
         +format_achievement_notification(ach: AchievementDefinition) str
+        +format_achievements_digest(achs: list~AchievementDefinition~) str
+        +send_achievement_message(bot, user_id: int, text: str) None
         +invalidate_leaderboard_cache() None
+        +unlock_for_fio(fio: str, ach_id: str) AchievementDefinition
         +award_achievement(user_id: int, ach_id: str, bot, fallback_name) bool
-        -_notify_student(bot, user_id: int, ach: AchievementDefinition) None
     }
 
     class GamificationRepository {
@@ -3385,4 +3406,83 @@ classDiagram
 
     AchievementService ..> GamificationRepository : persists_unlock
     AchievementService ..> RedisCacheClient : invalidates_leaderboard
+```
+
+### 17.6. Achievement Rules, Event Sources & Worker Sync
+
+Описание каждой ачивки — её условие. Журнальные и мета-ачивки (посещаемость, XP, места в рейтинге)
+выдаёт worker раз в 10 минут и шлёт одну сводку в ЛС; событийные выдают хэндлеры бота, middleware
+и Mini App в момент действия. Выданные ачивки не отзываются.
+
+```mermaid
+flowchart LR
+    journal[(Журнал Яндекс → Redis/SQLite)] --> sync[achievement_sync_loop · worker]
+    sync --> rules[achievement_rules · STAT_RULES / evaluate_meta_rules]
+    handlers[bot.handlers.user · schedule / attendance / hw_solver / profile] --> events[achievement_events]
+    mw[AchievementActivityMiddleware · outer] --> events
+    miniapp[POST /miniapp/action] --> events
+    events --> triggers[achievement_triggers · время, кнопки, ДЗ]
+    events --> counters[(student_counters)]
+    events --> windows[(Redis: ach:refresh:*, ach:ping_all)]
+    sync --> service[achievement_service]
+    events --> service
+    service --> unlocked[(student_achievements)]
+```
+
+```mermaid
+classDiagram
+    direction TB
+    class StudentStat {
+        +MonthStat overall
+        +list~MonthStat~ months
+        +bool in_birthdays
+        +visited() int
+    }
+    class MetaContext {
+        +int place
+        +float pct
+        +int total_marks
+        +float group_pulse
+    }
+    class AchievementRules {
+        <<module services/achievement_rules.py>>
+        +build_student_stat(raw, in_birthdays) StudentStat
+        +evaluate_stat_rules(s: StudentStat) set~str~
+        +evaluate_meta_rules(unlocked, ctx: MetaContext) set~str~
+    }
+    class AchievementTriggers {
+        <<module services/achievement_triggers.py>>
+        +schedule_view_achievements(view: ScheduleView, now, lessons) set~str~
+        +lesson_moment_achievements(now, lessons) set~str~
+        +homework_achievements(task: HomeworkTask, now) set~str~
+    }
+    class AchievementEvents {
+        <<module services/achievement_events.py>>
+        +bump_counter(uid, key, bot, name) int
+        +on_interaction(user, bot) None
+        +on_schedule_view(user, bot, view, lessons) None
+        +on_refresh_click(user, bot) None
+        +on_attendance_view(user, bot) None
+        +on_homework_task(uid, name, bot, task) None
+        +on_group_message(message, bot) None
+        +on_profile_view(uid, viewed_fio) bool
+        +mark_ping_all() None
+    }
+    class AchievementSync {
+        <<module services/achievement_sync.py>>
+        +compute_new_achievements(profile, raw, places, pulse) set~str~
+        +sync_stat_achievements(bot) int
+        +achievement_sync_loop(bot) None
+    }
+    class CounterRepository {
+        +increment(fio, key, today) int
+        +count_keys(fio, prefix) int
+    }
+    AchievementRules ..> StudentStat
+    AchievementRules ..> MetaContext
+    AchievementSync ..> AchievementRules
+    AchievementEvents ..> AchievementTriggers
+    AchievementEvents ..> CounterRepository
+    AchievementSync ..> AchievementService
+    AchievementEvents ..> AchievementService
 ```

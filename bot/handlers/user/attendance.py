@@ -24,7 +24,7 @@ from aiogram.types import (
 
 from bot.filters.auth import ClassmateAuthFilter
 from core.logger import get_logger
-from services.achievement_service import award_achievement
+from services.achievement_events import on_attendance_view
 from services.attendance_stats import fetch_all_time_attendance, find_student_attendance
 from services.attendance_topic_updater import sync_attendance_topic_message
 from services.classmates_auth import find_classmate_by_tg_id, process_user_auth
@@ -144,9 +144,7 @@ def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | N
 
 async def _respond_personal_attendance(message: Message, fio: str, data: dict[str, Any]) -> None:
     """Отправляет карточку посещаемости и фиксирует ачивку самопроверки."""
-    uid = message.from_user.id if message.from_user else 0
-    full_name = message.from_user.full_name if message.from_user else None
-    asyncio.create_task(award_achievement(uid, "bot_self_audit", message.bot, full_name))
+    asyncio.create_task(on_attendance_view(message.from_user, message.bot))
     text = format_personal_attendance_card(data.get("fio", fio), data)
     await message.answer(text, reply_markup=get_personal_attendance_kb())
 
@@ -181,12 +179,7 @@ async def cb_my_attendance_refresh(callback: CallbackQuery) -> None:
         await callback.answer("⚠️ Данные не найдены", show_alert=True)
         return
 
-    uid = callback.from_user.id if callback.from_user else 0
-    asyncio.create_task(
-        award_achievement(
-            uid, "bot_self_audit", callback.bot, callback.from_user.full_name if callback.from_user else None
-        )
-    )
+    asyncio.create_task(on_attendance_view(callback.from_user, callback.bot))
     text = format_personal_attendance_card(data.get("fio", fio), data)
     try:
         if callback.message:

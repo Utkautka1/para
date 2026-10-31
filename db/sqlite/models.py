@@ -5,12 +5,14 @@
   1. Subscriber — персистентный реестр Telegram-подписчиков бота
   2. AttendanceSnapshot — история посещаемости студентов для аналитики
   3. SystemIncident — журнал критических сбоев, алертов и состояний Circuit Breaker
+  4. StudentAchievement — открытые студентами достижения
+  5. StudentCounter — счётчики действий студентов для накопительных ачивок
 """
 
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -81,3 +83,19 @@ class StudentAchievement(Base):
     student_fio: Mapped[str] = mapped_column(String(128), index=True)
     achievement_id: Mapped[str] = mapped_column(String(64), index=True)
     unlocked_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class StudentCounter(Base):
+    """Таблица счётчиков действий студента (сообщения, задания ДЗ, активные дни)."""
+
+    __tablename__ = "student_counters"
+    # Уникальность пары нужна для атомарного upsert-инкремента без гонок
+    __table_args__ = (UniqueConstraint("student_fio", "key", name="uq_student_counter"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    student_fio: Mapped[str] = mapped_column(String(128), index=True)
+    # key — имя счётчика, например 'hw_tasks' или 'hw_kind:photo'
+    key: Mapped[str] = mapped_column(String(64))
+    value: Mapped[int] = mapped_column(Integer, default=0)
+    # last_day — день последнего инкремента для счётчиков «раз в день» (МСК)
+    last_day: Mapped[date | None] = mapped_column(Date, nullable=True)

@@ -23,25 +23,18 @@ graph TD
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`resolve_student_rank`](#resolve_student_rank) | Function | L32–L48 | `RankDefinition` | Executes core domain logic for `resolve_student_rank`. |
-| [`_check_attendance_rules`](#_check_attendance_rules) | Function | L51–L72 | `None` | Executes core domain logic for `_check_attendance_rules... |
-| [`_check_punctuality_rules`](#_check_punctuality_rules) | Function | L75–L88 | `None` | Executes core domain logic for `_check_punctuality_rule... |
-| [`_check_bot_rules`](#_check_bot_rules) | Function | L91–L99 | `None` | Executes core domain logic for `_check_bot_rules`. |
-| [`_check_ai_rules`](#_check_ai_rules) | Function | L102–L111 | `None` | Executes core domain logic for `_check_ai_rules`. |
-| [`_check_student_life_rules`](#_check_student_life_rules) | Function | L114–L127 | `None` | Executes core domain logic for `_check_student_life_rul... |
-| [`_check_social_rules`](#_check_social_rules) | Function | L130–L142 | `None` | Executes core domain logic for `_check_social_rules`. |
-| [`_check_easter_egg_rules`](#_check_easter_egg_rules) | Function | L145–L155 | `None` | Executes core domain logic for `_check_easter_egg_rules... |
-| [`_check_mastery_rules`](#_check_mastery_rules) | Function | L158–L171 | `None` | Executes core domain logic for `_check_mastery_rules`. |
-| [`_evaluate_all_rules`](#_evaluate_all_rules) | Function | L174–L187 | `list[str]` | Executes core domain logic for `_evaluate_all_rules`. |
-| [`calculate_student_xp`](#calculate_student_xp) | Function | L190–L192 | `int` | Executes core domain logic for `calculate_student_xp`. |
-| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L195–L202 | `dict[str, Any]` | Executes core domain logic for `_extract_student_metric... |
-| [`is_starosta`](#is_starosta) | Function | L205–L207 | `bool` | Executes core domain logic for `is_starosta`. |
-| [`build_student_profile`](#build_student_profile) | Function | L210–L232 | `StudentProfile` | Executes core domain logic for `build_student_profile`. |
-| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L235–L245 | `list[StudentProfile] | None` | Executes core domain logic for `_load_cached_leaderboar... |
-| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L248–L255 | `None` | Executes core domain logic for `_save_cached_leaderboar... |
-| [`_match_student_achievements`](#_match_student_achievements) | Function | L258–L265 | `set[str]` | Executes core domain logic for `_match_student_achievem... |
-| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L268–L286 | `list[StudentProfile]` | Retrieves and resolves domain data for `get_group_leade... |
-| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L289–L310 | `StudentProfile | None` | Retrieves and resolves domain data for `get_student_pro... |
+| [`resolve_student_rank`](#resolve_student_rank) | Function | L36–L52 | `RankDefinition` | Executes core domain logic for `resolve_student_rank`. |
+| [`calculate_student_xp`](#calculate_student_xp) | Function | L55–L57 | `int` | Executes core domain logic for `calculate_student_xp`. |
+| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L60–L67 | `dict[str, Any]` | Executes core domain logic for `_extract_student_metric... |
+| [`is_starosta`](#is_starosta) | Function | L70–L72 | `bool` | Executes core domain logic for `is_starosta`. |
+| [`build_student_profile`](#build_student_profile) | Function | L75–L97 | `StudentProfile` | Executes core domain logic for `build_student_profile`. |
+| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L100–L110 | `list[StudentProfile] | None` | Executes core domain logic for `_load_cached_leaderboar... |
+| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L113–L120 | `None` | Executes core domain logic for `_save_cached_leaderboar... |
+| [`_match_student_achievements`](#_match_student_achievements) | Function | L123–L130 | `set[str]` | Executes core domain logic for `_match_student_achievem... |
+| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L133–L151 | `list[StudentProfile]` | Retrieves and resolves domain data for `get_group_leade... |
+| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L154–L175 | `StudentProfile | None` | Retrieves and resolves domain data for `get_student_pro... |
+| [`hide_secret_achievements`](#hide_secret_achievements) | Function | L178–L192 | `StudentProfile` | Executes core domain logic for `hide_secret_achievement... |
+| [`_same_student`](#_same_student) | Function | L195–L198 | `bool` | Executes core domain logic for `_same_student`. |
 
 ---
 
@@ -52,7 +45,7 @@ graph TD
 def resolve_student_rank(pct: float, n_count: int, o_count: int) -> RankDefinition
 ```
 
-- **Source Reference**: [`services/gamification.py#L32-L48`](../../services/gamification.py#L32-L48)
+- **Source Reference**: [`services/gamification.py#L36-L52`](../../services/gamification.py#L36-L52)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `RankDefinition`
 
@@ -82,318 +75,12 @@ result = resolve_student_rank(pct=..., n_count=..., o_count=...)
 
 ---
 
-### `_check_attendance_rules`
-```python
-def _check_attendance_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L51-L72`](../../services/gamification.py#L51-L72)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_attendance_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_attendance_rules
-
-# Execute call
-result = _check_attendance_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_punctuality_rules`
-```python
-def _check_punctuality_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L75-L88`](../../services/gamification.py#L75-L88)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_punctuality_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_punctuality_rules
-
-# Execute call
-result = _check_punctuality_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_bot_rules`
-```python
-def _check_bot_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L91-L99`](../../services/gamification.py#L91-L99)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_bot_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_bot_rules
-
-# Execute call
-result = _check_bot_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_ai_rules`
-```python
-def _check_ai_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L102-L111`](../../services/gamification.py#L102-L111)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_ai_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_ai_rules
-
-# Execute call
-result = _check_ai_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_student_life_rules`
-```python
-def _check_student_life_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L114-L127`](../../services/gamification.py#L114-L127)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_student_life_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_student_life_rules
-
-# Execute call
-result = _check_student_life_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_social_rules`
-```python
-def _check_social_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L130-L142`](../../services/gamification.py#L130-L142)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_social_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_social_rules
-
-# Execute call
-result = _check_social_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_easter_egg_rules`
-```python
-def _check_easter_egg_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L145-L155`](../../services/gamification.py#L145-L155)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_easter_egg_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_easter_egg_rules
-
-# Execute call
-result = _check_easter_egg_rules(s=..., unlocked=...)
-```
-
----
-
-### `_check_mastery_rules`
-```python
-def _check_mastery_rules(s: dict[str, Any], unlocked: set[str]) -> None
-```
-
-- **Source Reference**: [`services/gamification.py#L158-L171`](../../services/gamification.py#L158-L171)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_check_mastery_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `unlocked` | `set[str]` | Yes | Parameter `unlocked` of type `set[str]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _check_mastery_rules
-
-# Execute call
-result = _check_mastery_rules(s=..., unlocked=...)
-```
-
----
-
-### `_evaluate_all_rules`
-```python
-def _evaluate_all_rules(s: dict[str, Any], extra: set[str] | None) -> list[str]
-```
-
-- **Source Reference**: [`services/gamification.py#L174-L187`](../../services/gamification.py#L174-L187)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `list[str]`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_evaluate_all_rules`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `s` | `dict[str, Any]` | Yes | Parameter `s` of type `dict[str, Any]`. |
-| `extra` | `set[str] | None` | Yes | Parameter `extra` of type `set[str] | None`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from services.gamification import _evaluate_all_rules
-
-# Execute call
-result = _evaluate_all_rules(s=..., extra=...)
-```
-
----
-
 ### `calculate_student_xp`
 ```python
 def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> int
 ```
 
-- **Source Reference**: [`services/gamification.py#L190-L192`](../../services/gamification.py#L190-L192)
+- **Source Reference**: [`services/gamification.py#L55-L57`](../../services/gamification.py#L55-L57)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -427,7 +114,7 @@ result = calculate_student_xp(stat=..., unlocked_ach_ids=...)
 def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/gamification.py#L195-L202`](../../services/gamification.py#L195-L202)
+- **Source Reference**: [`services/gamification.py#L60-L67`](../../services/gamification.py#L60-L67)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -461,7 +148,7 @@ result = _extract_student_metrics(fio=..., raw_data=...)
 def is_starosta(fio: str) -> bool
 ```
 
-- **Source Reference**: [`services/gamification.py#L205-L207`](../../services/gamification.py#L205-L207)
+- **Source Reference**: [`services/gamification.py#L70-L72`](../../services/gamification.py#L70-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -494,7 +181,7 @@ result = is_starosta(fio=...)
 def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | None = None) -> StudentProfile
 ```
 
-- **Source Reference**: [`services/gamification.py#L210-L232`](../../services/gamification.py#L210-L232)
+- **Source Reference**: [`services/gamification.py#L75-L97`](../../services/gamification.py#L75-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `StudentProfile`
 
@@ -529,7 +216,7 @@ result = build_student_profile(fio=..., raw_data=..., extra=...)
 async def _load_cached_leaderboard() -> list[StudentProfile] | None
 ```
 
-- **Source Reference**: [`services/gamification.py#L235-L245`](../../services/gamification.py#L235-L245)
+- **Source Reference**: [`services/gamification.py#L100-L110`](../../services/gamification.py#L100-L110)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[StudentProfile] | None`
 
@@ -560,7 +247,7 @@ result = await _load_cached_leaderboard()
 async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None
 ```
 
-- **Source Reference**: [`services/gamification.py#L248-L255`](../../services/gamification.py#L248-L255)
+- **Source Reference**: [`services/gamification.py#L113-L120`](../../services/gamification.py#L113-L120)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -593,7 +280,7 @@ result = await _save_cached_leaderboard(profiles=...)
 def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]
 ```
 
-- **Source Reference**: [`services/gamification.py#L258-L265`](../../services/gamification.py#L258-L265)
+- **Source Reference**: [`services/gamification.py#L123-L130`](../../services/gamification.py#L123-L130)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -627,7 +314,7 @@ result = _match_student_achievements(fio=..., unlocked_map=...)
 async def get_group_leaderboard( provided_stats: dict[str, Any] | None = None, force_refresh: bool = False, ) -> list[StudentProfile]
 ```
 
-- **Source Reference**: [`services/gamification.py#L268-L286`](../../services/gamification.py#L268-L286)
+- **Source Reference**: [`services/gamification.py#L133-L151`](../../services/gamification.py#L133-L151)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[StudentProfile]`
 
@@ -661,7 +348,7 @@ result = await get_group_leaderboard(provided_stats=..., force_refresh=...)
 async def get_student_profile_by_fio(fio: str, extra: set[str] | None = None) -> StudentProfile | None
 ```
 
-- **Source Reference**: [`services/gamification.py#L289-L310`](../../services/gamification.py#L289-L310)
+- **Source Reference**: [`services/gamification.py#L154-L175`](../../services/gamification.py#L154-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentProfile | None`
 
@@ -686,6 +373,74 @@ from services.gamification import get_student_profile_by_fio
 
 # Execute call
 result = await get_student_profile_by_fio(fio=..., extra=...)
+```
+
+---
+
+### `hide_secret_achievements`
+```python
+def hide_secret_achievements(profile: StudentProfile, viewer_fio: str | None) -> StudentProfile
+```
+
+- **Source Reference**: [`services/gamification.py#L178-L192`](../../services/gamification.py#L178-L192)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `StudentProfile`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `hide_secret_achievements`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `profile` | `StudentProfile` | Yes | Parameter `profile` of type `StudentProfile`. |
+| `viewer_fio` | `str | None` | Yes | Parameter `viewer_fio` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.gamification import hide_secret_achievements
+
+# Execute call
+result = hide_secret_achievements(profile=..., viewer_fio=...)
+```
+
+---
+
+### `_same_student`
+```python
+def _same_student(fio: str, other: str) -> bool
+```
+
+- **Source Reference**: [`services/gamification.py#L195-L198`](../../services/gamification.py#L195-L198)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_same_student`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
+| `other` | `str` | Yes | Parameter `other` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.gamification import _same_student
+
+# Execute call
+result = _same_student(fio=..., other=...)
 ```
 
 ---
