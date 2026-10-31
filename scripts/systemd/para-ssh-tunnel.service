@@ -1,5 +1,5 @@
 [Unit]
-Description=Para SSH Reverse Tunnel to VPS Gateway (185.121.12.109:2223 -> sshd)
+Description=Para SSH Reverse Tunnel to VPS Gateway (185.230.67.217:2223 -> sshd)
 After=network-online.target ssh.service
 Wants=network-online.target
 
@@ -8,8 +8,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-# Запасной вход на home в обход Tailscale и NAT: ssh home-tunnel (ProxyJump claude)
-ExecStart=/usr/bin/ssh -N -R 127.0.0.1:2223:127.0.0.1:22 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/ssh_known_hosts tunnel@185.121.12.109
+# Запасной вход на home в обход Tailscale и NAT: ssh home-tunnel (ProxyJump vpn)
+ExecStart=/usr/bin/ssh -N -R 127.0.0.1:2223:127.0.0.1:22 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/ssh_known_hosts tunnel@185.230.67.217
 Restart=always
 RestartSec=10
 

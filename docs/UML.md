@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -2058,7 +2058,7 @@ sequenceDiagram
 3. **Replay Attack Defense**: `MiniappAuthService` validates `auth_date` against `SESSION_MAX_AGE_SECONDS` (86400 seconds). Payloads older than 24 hours are rejected immediately with HTTP 401.
 4. **RBAC Whitelist Enforcement**: `TestersManager.is_tester_allowed(user_id)` checks the Redis set `api:testers:whitelist` in O(1) time complexity. Unwhitelisted accounts are rejected with HTTP 403 Forbidden.
 5. **Signed Session Token Minting**: `generate_tester_session(user_id)` constructs a tamper-proof session token format `<user_id>:<timestamp>:<signature>` and binds it to the browser via an HTTP-only secure cookie `para_session`.
-6. **Embedded Swagger UI Execution & Host Sanitization**: The Mini App mounts Swagger UI Bundle pointing to `/openapi.json` with `CleanSwaggerPlugin` removing the `/openapi.json` header link, CSS hiding server selectors, and `requestInterceptor` stripping public VPS IP addresses and absolute hosts (`185-121-12-109.sslip.io`) to relative routes (`/schedule/day`). The `/openapi.json` endpoint itself is strictly guarded by `verify_api_or_tester()`, preventing unauthorized schema leakage.
+6. **Embedded Swagger UI Execution & Host Sanitization**: The Mini App mounts Swagger UI Bundle pointing to `/openapi.json` with `CleanSwaggerPlugin` removing the `/openapi.json` header link, CSS hiding server selectors, and `requestInterceptor` stripping public VPS IP addresses and absolute hosts (`185-230-67-217.sslip.io`) to relative routes (`/schedule/day`). The `/openapi.json` endpoint itself is strictly guarded by `verify_api_or_tester()`, preventing unauthorized schema leakage.
 
 ---
 
@@ -2313,20 +2313,20 @@ sequenceDiagram
 
 ### 9.5. Public HTTPS Edge Gateway & Reverse SSH Tunnel Architecture
 
-Architecture diagram detailing the edge ingress topology: public mobile clients connect via standard HTTPS (port 443) to the edge VPS gateway (ssh claude) (`185-121-12-109.sslip.io`), where Caddy terminates TLS via Let's Encrypt and forwards traffic over an encrypted reverse SSH tunnel directly into the local `para-api` backend container on `home`.
+Architecture diagram detailing the edge ingress topology: public mobile clients connect via HTTPS on port 8443 (443 is taken by Amnezia Xray) to the edge VPS gateway (ssh vpn) (`185-230-67-217.sslip.io:8443`), where Caddy terminates TLS via Let's Encrypt and forwards traffic over an encrypted reverse SSH tunnel directly into the local `para-api` backend container on `home`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Client as Mobile Client (Telegram / Browser)
-    participant Caddy as Caddy TLS Gateway (185.121.12.109:443)
+    participant Caddy as Caddy TLS Gateway (185.230.67.217:8443)
     participant VpsLocal as VPS Loopback (127.0.0.1:8080)
     participant SshTunnel as SSH Reverse Tunnel (para-vps-tunnel, user tunnel)
     participant HomeApi as para-api (home:8080)
     participant Redis as para-redis (home:6379)
 
-    Client->>Caddy: HTTPS GET https://185-121-12-109.sslip.io/miniapp
-    Note over Caddy: TLS Termination (Let's Encrypt DV Cert)<br/>Standard Port 443 (HTTP/2, HTTP/3)
+    Client->>Caddy: HTTPS GET https://185-230-67-217.sslip.io:8443/miniapp
+    Note over Caddy: TLS Termination (Let's Encrypt DV Cert, HTTP-01 on :80)<br/>Port 8443 (HTTP/2)
     Caddy->>VpsLocal: Proxy HTTP to 127.0.0.1:8080
     VpsLocal->>SshTunnel: Encrypted TCP channel
     SshTunnel->>HomeApi: Forward to 127.0.0.1:8080 (Docker bridge)
@@ -3128,7 +3128,7 @@ sequenceDiagram
     autonumber
     actor Tester as 🧑‍💻 Authorized Tester
     participant WebApp as 📱 Telegram Mini App (/miniapp)
-    participant Caddy as 🌐 Caddy Gateway (185.121.12.109)
+    participant Caddy as 🌐 Caddy Gateway (185.230.67.217:8443)
     participant ApiRouter as 🛡️ para-api (FastAPI :8000)
     participant AuthDep as 🔑 verify_api_or_tester (api/deps.py)
     participant JaegerProxy as 🔀 JaegerProxyRouter (api/router/jaeger.py)

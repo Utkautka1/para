@@ -4,15 +4,15 @@
 #
 # 1. Проверяет, что локальный main запушен (деплоится только origin/main)
 # 2. Выполняет scripts/deploy_remote.sh на сервере (через stdin, с таймаутом)
-# 3. Снаружи проверяет публичный /health через шлюз claude
+# 3. Снаружи проверяет публичный /health через шлюз vpn
 #
 # DEPLOY_HOST — ssh-хост сервера. По умолчанию home-tunnel: он работает через
-# обратный туннель на claude и не зависит от Tailscale, NAT и смены IP дома.
+# обратный туннель на vpn и не зависит от Tailscale, NAT и смены IP дома.
 # ==============================================================================
 set -euo pipefail
 
 DEPLOY_HOST="${DEPLOY_HOST:-home-tunnel}"
-PUBLIC_HEALTH_URL="${PUBLIC_HEALTH_URL:-https://185-121-12-109.sslip.io/health}"
+PUBLIC_HEALTH_URL="${PUBLIC_HEALTH_URL:-https://185-230-67-217.sslip.io:8443/health}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() { printf '[deploy] %s\n' "$*"; }

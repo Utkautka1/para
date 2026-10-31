@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2026-10-30
+## [Unreleased] - 2026-10-31
+
+### Infrastructure
+- **Edge gateway moved from `claude` to `vpn`** (185.230.67.217): Caddy (`scripts/vps/Caddyfile`), the API tunnel, the sshd fallback tunnel (`ssh home-tunnel`) and the SOCKS proxy for tailscaled now use `vpn` via the restricted `tunnel` user with a pinned host key. Port 443 on `vpn` belongs to Amnezia Xray, so the public site is `https://185-230-67-217.sslip.io:8443` (Let's Encrypt via HTTP-01 on :80). `para-socks-claude.service` renamed to `para-socks.service`; `MINIAPP_URL`/`SWAGGER_URL` updated on the server, the bot re-registers the menu button on start.
+
 
 ### Security
 - **Autodeploy trusts only signed commits from `main`**: moving `ci-passed` used to be enough to run code as root on the server. `scripts/deploy_remote.sh` now requires the target to be an ancestor of `origin/main` and every new commit to carry an SSH signature from `/etc/para/allowed_signers` (root-owned, outside the repo). A failed revision is remembered in `/var/lib/para` and not retried every 2 minutes.

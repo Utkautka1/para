@@ -1,0 +1,13 @@
+# Публичный вход para Mini App/API.
+# Бэкенд живёт на home и приходит сюда через reverse SSH-туннель
+# (para-vps-tunnel на home: ssh -R 127.0.0.1:8080:127.0.0.1:8080 tunnel@vpn), поэтому апстрим — loopback.
+# Порт 443 занят Amnezia Xray (VPN), поэтому сайт на 8443; сертификат — только HTTP-01 через :80.
+185-230-67-217.sslip.io:8443 {
+	tls {
+		issuer acme {
+			disable_tlsalpn_challenge
+		}
+	}
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+}

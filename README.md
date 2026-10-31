@@ -742,13 +742,13 @@ systemctl daemon-reload && systemctl enable --now para-autodeploy.timer
 
 ### Server Network Units (`scripts/systemd/`)
 
-The home server sits behind NAT with an ISP that throttles long-lived foreign TLS (DPI), so every inbound path goes through the edge VPS `claude`:
+The home server sits behind NAT with an ISP that throttles long-lived foreign TLS (DPI), so every inbound path goes through the edge VPS `vpn` (185.230.67.217; port 443 there belongs to Amnezia Xray, so the public site is on **8443**, Caddy config in `scripts/vps/Caddyfile`):
 
 | Unit | Purpose |
 |---|---|
-| `para-vps-tunnel.service` | reverse tunnel `claude:8080 → para-api` (public HTTPS via Caddy) |
-| `para-ssh-tunnel.service` | reverse tunnel `claude:127.0.0.1:2223 → sshd` (`ssh home-tunnel`, works without Tailscale) |
-| `para-socks-claude.service` | SOCKS5 `127.0.0.1:1080` via `claude` for the Tailscale control plane |
+| `para-vps-tunnel.service` | reverse tunnel `vpn:127.0.0.1:8080 → para-api` (public HTTPS `https://185-230-67-217.sslip.io:8443` via Caddy) |
+| `para-ssh-tunnel.service` | reverse tunnel `vpn:127.0.0.1:2223 → sshd` (`ssh home-tunnel`, works without Tailscale) |
+| `para-socks.service` | SOCKS5 `127.0.0.1:1080` via `vpn` for the Tailscale control plane |
 | `tailscaled.service.d/para-proxy.conf` | sends tailscaled control traffic through that SOCKS; DERP relays stay direct |
 | `para-autodeploy.{service,timer}` | continuous deployment after green CI |
 
