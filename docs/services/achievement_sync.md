@@ -21,23 +21,57 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_delta_stats`](#_delta_stats) | Function | L53–L59 | `dict[str, StudentStat]` | Executes core domain logic for `_delta_stats`. |
-| [`_group_context`](#_group_context) | Function | L62–L74 | `tuple[dict[str, int], float]` | Executes core domain logic for `_group_context`. |
-| [`compute_new_achievements`](#compute_new_achievements) | Function | L77–L89 | `set[str]` | Executes core domain logic for `compute_new_achievement... |
-| [`_grant_to_student`](#_grant_to_student) | Function | L92–L111 | `int` | Executes core domain logic for `_grant_to_student`. |
-| [`sync_stat_achievements`](#sync_stat_achievements) | Function | L114–L135 | `int` | Executes core domain logic for `sync_stat_achievements`... |
-| [`achievement_sync_loop`](#achievement_sync_loop) | Function | L138–L152 | `None` | Executes core domain logic for `achievement_sync_loop`. |
+| [`_is_birthday_today`](#_is_birthday_today) | Function | L55–L58 | `bool` | Executes core domain logic for `_is_birthday_today`. |
+| [`_delta_stats`](#_delta_stats) | Function | L61–L66 | `dict[str, StudentStat]` | Executes core domain logic for `_delta_stats`. |
+| [`_group_context`](#_group_context) | Function | L69–L81 | `tuple[dict[str, int], float]` | Executes core domain logic for `_group_context`. |
+| [`compute_new_achievements`](#compute_new_achievements) | Function | L84–L96 | `set[str]` | Executes core domain logic for `compute_new_achievement... |
+| [`_grant_to_student`](#_grant_to_student) | Function | L99–L118 | `int` | Executes core domain logic for `_grant_to_student`. |
+| [`sync_stat_achievements`](#sync_stat_achievements) | Function | L121–L142 | `int` | Executes core domain logic for `sync_stat_achievements`... |
+| [`achievement_sync_loop`](#achievement_sync_loop) | Function | L145–L159 | `None` | Executes core domain logic for `achievement_sync_loop`. |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_is_birthday_today`
+```python
+def _is_birthday_today(classmate: dict[str, Any] | None) -> bool
+```
+
+- **Source Reference**: [`services/achievement_sync.py#L55-L58`](../../services/achievement_sync.py#L55-L58)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_is_birthday_today`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `classmate` | `dict[str, Any] | None` | Yes | Parameter `classmate` of type `dict[str, Any] | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.achievement_sync import _is_birthday_today
+
+# Execute call
+result = _is_birthday_today(classmate=...)
+```
+
+---
 
 ### `_delta_stats`
 ```python
 def _delta_stats(stats: dict[str, dict[str, Any]], baselines: dict[str, dict[str, Any]]) -> dict[str, StudentStat]
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L53-L59`](../../services/achievement_sync.py#L53-L59)
+- **Source Reference**: [`services/achievement_sync.py#L61-L66`](../../services/achievement_sync.py#L61-L66)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, StudentStat]`
 
@@ -71,7 +105,7 @@ result = _delta_stats(stats=..., baselines=...)
 def _group_context(deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L62-L74`](../../services/achievement_sync.py#L62-L74)
+- **Source Reference**: [`services/achievement_sync.py#L69-L81`](../../services/achievement_sync.py#L69-L81)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[dict[str, int], float]`
 
@@ -104,7 +138,7 @@ result = _group_context(deltas=...)
 def compute_new_achievements( profile: StudentProfile, stat: StudentStat, places: dict[str, int], pulse: float ) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L77-L89`](../../services/achievement_sync.py#L77-L89)
+- **Source Reference**: [`services/achievement_sync.py#L84-L96`](../../services/achievement_sync.py#L84-L96)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -140,7 +174,7 @@ result = compute_new_achievements(profile=..., stat=..., places=...)
 async def _grant_to_student(bot: Any, fio: str, new_ids: set[str]) -> int
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L92-L111`](../../services/achievement_sync.py#L92-L111)
+- **Source Reference**: [`services/achievement_sync.py#L99-L118`](../../services/achievement_sync.py#L99-L118)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -175,7 +209,7 @@ result = await _grant_to_student(bot=..., fio=..., new_ids=...)
 async def sync_stat_achievements(bot: Any) -> int
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L114-L135`](../../services/achievement_sync.py#L114-L135)
+- **Source Reference**: [`services/achievement_sync.py#L121-L142`](../../services/achievement_sync.py#L121-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -208,7 +242,7 @@ result = await sync_stat_achievements(bot=...)
 async def achievement_sync_loop(bot: Any) -> None
 ```
 
-- **Source Reference**: [`services/achievement_sync.py#L138-L152`](../../services/achievement_sync.py#L138-L152)
+- **Source Reference**: [`services/achievement_sync.py#L145-L159`](../../services/achievement_sync.py#L145-L159)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

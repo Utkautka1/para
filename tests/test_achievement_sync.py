@@ -8,10 +8,12 @@
   4. После сброса отметки до точки отсчёта в ачивки не идут, места и пульс — по новым
 """
 
+from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from config import TIMEZONE
 from services import achievement_sync as sync
 from services.achievement_rules import build_student_stat
 from services.gamification import build_student_profile
@@ -88,3 +90,19 @@ def test_group_context_ranks_after_reset() -> None:
     places, pulse = sync._group_context(deltas)
     assert places == {"Иванов Иван": 1, "Петров Пётр": 2}
     assert pulse == pytest.approx((100 + 50 + 100) / 3)
+
+
+@pytest.mark.parametrize(
+    ("classmate", "expected"),
+    [
+        ({"day": 1, "month": 11}, True),
+        ({"day": 2, "month": 11}, False),
+        ({"full_name": "Без даты"}, False),
+        (None, False),
+    ],
+)
+def test_birthday_only_on_the_day(classmate: dict | None, expected: bool) -> None:
+    fake_now = datetime(2026, 11, 1, 12, 0, tzinfo=TIMEZONE)
+    with patch.object(sync, "datetime", wraps=datetime) as dt:
+        dt.now.return_value = fake_now
+        assert sync._is_birthday_today(classmate) is expected

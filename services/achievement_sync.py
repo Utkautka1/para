@@ -19,8 +19,10 @@ services.achievement_reset): места в «Топ-3» и пульс групп
 """
 
 import asyncio
+from datetime import datetime
 from typing import Any
 
+from config import TIMEZONE
 from core.logger import get_logger
 from db.sqlite.repositories import AchievementResetRepository
 from services.achievement_rules import (
@@ -50,12 +52,17 @@ ACHIEVEMENT_SYNC_INTERVAL = 600
 ACHIEVEMENT_SYNC_START_DELAY = 90
 
 
+def _is_birthday_today(classmate: dict[str, Any] | None) -> bool:
+    """Проверяет по календарю группы, что у студента сегодня (МСК) день рождения."""
+    today = datetime.now(TIMEZONE).date()
+    return bool(classmate) and (classmate.get("day"), classmate.get("month")) == (today.day, today.month)
+
+
 def _delta_stats(stats: dict[str, dict[str, Any]], baselines: dict[str, dict[str, Any]]) -> dict[str, StudentStat]:
     """Строит срезы журнала после точки отсчёта для всех студентов."""
     result: dict[str, StudentStat] = {}
     for fio, raw in stats.items():
-        classmate = find_classmate_by_fio(fio)
-        result[fio] = build_student_stat(raw, bool(classmate and classmate.get("day")), baselines.get(fio))
+        result[fio] = build_student_stat(raw, _is_birthday_today(find_classmate_by_fio(fio)), baselines.get(fio))
     return result
 
 

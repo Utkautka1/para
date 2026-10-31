@@ -59,7 +59,8 @@ class StudentStat:
     overall: MonthStat
     # Месяцы с отметками в порядке учебного года
     months: list[MonthStat] = field(default_factory=list)
-    in_birthdays: bool = False
+    # is_birthday — сегодня (МСК) день рождения студента по календарю группы
+    is_birthday: bool = False
 
     @property
     def visited(self) -> int:
@@ -79,7 +80,7 @@ def _month_from_counts(counts: dict[str, int], base: dict[str, int] | None = Non
 
 
 def build_student_stat(
-    raw: dict[str, Any], in_birthdays: bool = False, baseline: dict[str, Any] | None = None
+    raw: dict[str, Any], is_birthday: bool = False, baseline: dict[str, Any] | None = None
 ) -> StudentStat:
     """
     Преобразует запись fetch_all_time_attendance в StudentStat.
@@ -95,7 +96,7 @@ def build_student_stat(
     sheets = [MONTH_SHEET_MAP[m] for m in ACADEMIC_MONTHS if MONTH_SHEET_MAP[m] in by_sheet]
     months = [_month_from_counts(by_sheet[s], base_sheets.get(s)) for s in sheets]
     overall = _month_from_counts(raw.get("total", {}), base.get("total"))
-    return StudentStat(overall, [m for m in months if m.total > 0], in_birthdays)
+    return StudentStat(overall, [m for m in months if m.total > 0], is_birthday)
 
 
 def _full_months(s: StudentStat, *banned: str) -> int:
@@ -134,7 +135,7 @@ STAT_RULES: dict[str, StatRule] = {
     "life_math_god": lambda s: s.visited >= 150,
     "life_sport_king": lambda s: _pct_between(s, 90.0, 100.0, STRICT_MIN_MARKS),
     "life_future_senior": lambda s: s.visited >= 50 and s.overall.pct >= 85.0,
-    "soc_birthday": lambda s: s.in_birthdays,
+    "soc_birthday": lambda s: s.is_birthday,
     "soc_veteran": lambda s: len(s.months) >= 3,
     "egg_vip": lambda s: _pct_between(s, 95.0, 100.0, STRICT_MIN_MARKS),
     "mast_first_course": lambda s: _pct_between(s, 79.5, 80.9),
