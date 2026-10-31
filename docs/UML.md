@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-11-01 — ачивки переработаны: каталог из 80 с условием = описанием, журнальные и мета-правила (`services/achievement_rules.py`) выдаёт worker (`achievement_sync_loop`), событийные — хэндлеры и middleware (`services/achievement_triggers.py`, `services/achievement_events.py`, `bot/middlewares/achievements.py`), счётчики в `student_counters` (раздел 17.6); 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-11-01 — сброс ачивок с точкой отсчёта журнала (`achievement_baselines`, `services/achievement_reset.py`: журнальные ачивки и места считаются только по отметкам после сброса); ачивки переработаны: каталог из 80 с условием = описанием, журнальные и мета-правила (`services/achievement_rules.py`) выдаёт worker (`achievement_sync_loop`), событийные — хэндлеры и middleware (`services/achievement_triggers.py`, `services/achievement_events.py`, `bot/middlewares/achievements.py`), счётчики в `student_counters` (раздел 17.6); 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -855,6 +855,14 @@ erDiagram
 
     BIRTHDAY_RECORD ||--o{ STUDENT_ACHIEVEMENT : "unlocked by FIO"
     BIRTHDAY_RECORD ||--o{ STUDENT_COUNTER : "counted by FIO"
+    BIRTHDAY_RECORD ||--o| ACHIEVEMENT_BASELINE : "journal snapshot at reset"
+
+    ACHIEVEMENT_BASELINE {
+        int id PK "Row identifier"
+        string student_fio UK "Student full name"
+        text snapshot "Journal record JSON at reset"
+        datetime created_at "Reset time"
+    }
 
     STUDENT_ACHIEVEMENT {
         int id PK "Row identifier"
@@ -3418,6 +3426,8 @@ classDiagram
 flowchart LR
     journal[(Журнал Яндекс → Redis/SQLite)] --> sync[achievement_sync_loop · worker]
     sync --> rules[achievement_rules · STAT_RULES / evaluate_meta_rules]
+    baseline[(achievement_baselines · точка отсчёта)] --> sync
+    reset[achievement_reset --confirm] --> baseline
     handlers[bot.handlers.user · schedule / attendance / hw_solver / profile] --> events[achievement_events]
     mw[AchievementActivityMiddleware · outer] --> events
     miniapp[POST /miniapp/action] --> events
@@ -3446,7 +3456,7 @@ classDiagram
     }
     class AchievementRules {
         <<module services/achievement_rules.py>>
-        +build_student_stat(raw, in_birthdays) StudentStat
+        +build_student_stat(raw, in_birthdays, baseline) StudentStat
         +evaluate_stat_rules(s: StudentStat) set~str~
         +evaluate_meta_rules(unlocked, ctx: MetaContext) set~str~
     }
@@ -3478,6 +3488,11 @@ classDiagram
         +increment(fio, key, today) int
         +count_keys(fio, prefix) int
     }
+    class AchievementResetRepository {
+        +reset_with_baseline(stats) tuple~int,int~
+        +get_baselines() dict
+    }
+    AchievementSync ..> AchievementResetRepository
     AchievementRules ..> StudentStat
     AchievementRules ..> MetaContext
     AchievementSync ..> AchievementRules

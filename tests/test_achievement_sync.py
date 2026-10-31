@@ -5,6 +5,7 @@
   1. Уже открытые ачивки не выдаются повторно, нарушенное условие их не отзывает
   2. Новые ачивки сохраняются под ФИО из реестра и приходят ОДНИМ сообщением
   3. Студент без Telegram получает ачивки, но без уведомления
+  4. После сброса отметки до точки отсчёта в ачивки не идут, места и пульс — по новым
 """
 
 from unittest.mock import AsyncMock, patch
@@ -12,6 +13,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services import achievement_sync as sync
+from services.achievement_rules import build_student_stat
 from services.gamification import build_student_profile
 from services.gamification_registry import ACHIEVEMENTS_MAP
 
@@ -24,7 +26,7 @@ def test_compute_new_skips_owned_and_never_revokes() -> None:
     raw = _raw(30, n=10)
     profile = build_student_profile("Иванов Иван", raw, extra={"att_100", "att_ghost"})
     with patch.object(sync, "find_classmate_by_fio", return_value=None):
-        new = sync.compute_new_achievements(profile, raw, places={}, pulse=50.0)
+        new = sync.compute_new_achievements(profile, build_student_stat(raw), places={}, pulse=50.0)
     # «Клуб 100%» уже открыт и при 75% не отзывается; «Учебный рывок» не дублируется
     assert "att_100" not in new and "att_ghost" not in new
     assert "soc_pulse_boost" in new
@@ -40,6 +42,7 @@ async def test_sync_sends_single_digest_per_student() -> None:
     unlock = AsyncMock(side_effect=lambda fio, aid: ACHIEVEMENTS_MAP[aid])
     send = AsyncMock()
     with (
+        patch.object(sync.AchievementResetRepository, "get_baselines", AsyncMock(return_value={})),
         patch.object(sync, "fetch_all_time_attendance", AsyncMock(return_value=stats)),
         patch("services.gamification.GamificationRepository.get_all_unlocked_map", AsyncMock(return_value={})),
         patch.object(sync, "find_classmate_by_fio", side_effect=lambda fio: registry.get(fio)),
@@ -53,3 +56,35 @@ async def test_sync_sends_single_digest_per_student() -> None:
     assert granted == unlock.await_count
     send.assert_awaited_once()
     assert send.await_args.args[1] == 111
+
+
+@pytest.mark.asyncio
+async def test_baseline_hides_marks_before_reset() -> None:
+    stats = {"Иванов Иван": _raw(30), "Петров Пётр": _raw(30, n=20)}
+    # Иванов набрал всё до сброса, Петров после сброса пришёл на 3 пары
+    baselines = {"Иванов Иван": _raw(30), "Петров Пётр": _raw(27, n=20)}
+    unlock = AsyncMock(side_effect=lambda fio, aid: ACHIEVEMENTS_MAP[aid])
+    with (
+        patch.object(sync.AchievementResetRepository, "get_baselines", AsyncMock(return_value=baselines)),
+        patch.object(sync, "fetch_all_time_attendance", AsyncMock(return_value=stats)),
+        patch("services.gamification.GamificationRepository.get_all_unlocked_map", AsyncMock(return_value={})),
+        patch.object(sync, "find_classmate_by_fio", return_value=None),
+        patch.object(sync, "unlock_for_fio", unlock),
+        patch.object(sync, "invalidate_leaderboard_cache", AsyncMock()),
+    ):
+        await sync.sync_stat_achievements(bot=None)
+    granted = {(c.args[0], c.args[1]) for c in unlock.await_args_list}
+    assert not [aid for fio, aid in granted if fio == "Иванов Иван"]
+    assert ("Петров Пётр", "att_ghost") not in granted
+
+
+def test_group_context_ranks_after_reset() -> None:
+    deltas = {
+        "Иванов Иван": build_student_stat(_raw(20)),
+        "Петров Пётр": build_student_stat(_raw(10, n=10)),
+        "Стрыгин Дмитрий": build_student_stat(_raw(25)),
+        "Сидоров Сидор": build_student_stat({}),
+    }
+    places, pulse = sync._group_context(deltas)
+    assert places == {"Иванов Иван": 1, "Петров Пётр": 2}
+    assert pulse == pytest.approx((100 + 50 + 100) / 3)

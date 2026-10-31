@@ -53,3 +53,7 @@ Encapsulates domain entities and data transfer logic for `StudentAchievement`.
 ## Class Model: `StudentCounter`
 
 Encapsulates domain entities and data transfer logic for `StudentCounter`.
+
+## Class Model: `AchievementBaseline`
+
+Encapsulates domain entities and data transfer logic for `AchievementBaseline`.

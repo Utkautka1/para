@@ -8,6 +8,9 @@
   2. Мета-правила (evaluate_meta_rules) — зависят от уже открытых ачивок,
      XP и места в рейтинге, поэтому считаются после журнальных.
 
+Отметки считаются от точки отсчёта (снимок журнала при сбросе ачивок):
+прошлые пропуски видны в рейтинге, но в ачивки не идут.
+
 Модуль чистый: без БД и сети — его вызывает achievement_sync в worker.
 """
 
@@ -63,26 +66,36 @@ class StudentStat:
         return self.overall.p + self.overall.o
 
 
-def _month_from_counts(counts: dict[str, int]) -> MonthStat:
-    """Собирает MonthStat из словаря {'П': .., 'О': .., 'У': .., 'Н': ..}."""
-    return MonthStat(counts.get("П", 0), counts.get("О", 0), counts.get("У", 0), counts.get("Н", 0))
+def _month_from_counts(counts: dict[str, int], base: dict[str, int] | None = None) -> MonthStat:
+    """
+    Собирает MonthStat из словаря {'П': .., 'О': .., 'У': .., 'Н': ..} за вычетом снимка.
+
+    Отрицательная разница (староста исправил «Н» на «У») обрезается до нуля:
+    исправление не должно «отнимать» отметки, накопленные после сброса.
+    """
+    base = base or {}
+    p, o, u, n = (max(0, counts.get(k, 0) - base.get(k, 0)) for k in ("П", "О", "У", "Н"))
+    return MonthStat(p, o, u, n)
 
 
-def build_student_stat(raw: dict[str, Any], in_birthdays: bool = False) -> StudentStat:
+def build_student_stat(
+    raw: dict[str, Any], in_birthdays: bool = False, baseline: dict[str, Any] | None = None
+) -> StudentStat:
     """
     Преобразует запись fetch_all_time_attendance в StudentStat.
 
-    Пустые месяцы (лист есть, отметок нет) отбрасываются, остальные
-    упорядочиваются по учебному году, а не по порядку листов в книге.
+    baseline — снимок журнала на момент сброса ачивок: в ачивки идут только
+    отметки после него, прошлые пропуски и посещения не учитываются.
+    Пустые месяцы отбрасываются, остальные упорядочиваются по учебному году.
 
     Возвращает StudentStat.
     """
-    by_sheet = raw.get("months", {})
-    ordered = [
-        _month_from_counts(by_sheet[MONTH_SHEET_MAP[m]]) for m in ACADEMIC_MONTHS if MONTH_SHEET_MAP[m] in by_sheet
-    ]
-    months = [m for m in ordered if m.total > 0]
-    return StudentStat(_month_from_counts(raw.get("total", {})), months, in_birthdays)
+    base = baseline or {}
+    by_sheet, base_sheets = raw.get("months", {}), base.get("months", {})
+    sheets = [MONTH_SHEET_MAP[m] for m in ACADEMIC_MONTHS if MONTH_SHEET_MAP[m] in by_sheet]
+    months = [_month_from_counts(by_sheet[s], base_sheets.get(s)) for s in sheets]
+    overall = _month_from_counts(raw.get("total", {}), base.get("total"))
+    return StudentStat(overall, [m for m in months if m.total > 0], in_birthdays)
 
 
 def _full_months(s: StudentStat, *banned: str) -> int:

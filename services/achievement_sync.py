@@ -10,6 +10,10 @@
 Ачивки «остаются навсегда»: если условие потом нарушено (например, появилась «Н»),
 ранее выданная ачивка не отзывается — проверяем только то, чего ещё нет.
 
+Журнал считается от точки отсчёта (achievement_baselines, ставится командой
+services.achievement_reset): места в «Топ-3» и пульс группы для ачивок тоже
+считаются по отметкам после сброса, иначе старые пропуски решали бы исход.
+
 Выдаёт именно worker, а не API: API строит лидерборд на каждый запрос Mini App,
 и если бы он сохранял ачивки сам, уведомления в бот терялись бы.
 """
@@ -18,8 +22,10 @@ import asyncio
 from typing import Any
 
 from core.logger import get_logger
+from db.sqlite.repositories import AchievementResetRepository
 from services.achievement_rules import (
     MetaContext,
+    StudentStat,
     build_student_stat,
     evaluate_meta_rules,
     evaluate_stat_rules,
@@ -44,28 +50,38 @@ ACHIEVEMENT_SYNC_INTERVAL = 600
 ACHIEVEMENT_SYNC_START_DELAY = 90
 
 
-def _group_context(board: list[StudentProfile]) -> tuple[dict[str, int], float]:
-    """
-    Считает места в рейтинге (без старосты) и пульс группы.
+def _delta_stats(stats: dict[str, dict[str, Any]], baselines: dict[str, dict[str, Any]]) -> dict[str, StudentStat]:
+    """Строит срезы журнала после точки отсчёта для всех студентов."""
+    result: dict[str, StudentStat] = {}
+    for fio, raw in stats.items():
+        classmate = find_classmate_by_fio(fio)
+        result[fio] = build_student_stat(raw, bool(classmate and classmate.get("day")), baselines.get(fio))
+    return result
 
-    Возвращает ({ФИО: место}, средний процент посещаемости группы).
+
+def _group_context(deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]:
     """
-    competing = [p for p in board if not is_starosta(p.fio)]
-    places = {p.fio: idx for idx, p in enumerate(competing, start=1)}
-    pulse = sum(p.attendance_pct for p in board) / len(board) if board else 0.0
-    return places, pulse
+    Считает места (без старосты) и пульс группы по отметкам после точки отсчёта.
+
+    Возвращает ({ФИО: место}, средний процент посещаемости студентов с отметками).
+    """
+    marked = {fio: s for fio, s in deltas.items() if s.overall.total > 0}
+    ranked = sorted(
+        (fio for fio in marked if not is_starosta(fio)),
+        key=lambda fio: (-marked[fio].overall.pct, -marked[fio].visited, fio),
+    )
+    pulse = sum(s.overall.pct for s in marked.values()) / len(marked) if marked else 0.0
+    return {fio: idx for idx, fio in enumerate(ranked, start=1)}, pulse
 
 
 def compute_new_achievements(
-    profile: StudentProfile, raw: dict[str, Any], places: dict[str, int], pulse: float
+    profile: StudentProfile, stat: StudentStat, places: dict[str, int], pulse: float
 ) -> set[str]:
     """
     Определяет ачивки, которые студент заработал, но ещё не получил.
 
     Возвращает множество новых id.
     """
-    classmate = find_classmate_by_fio(profile.fio)
-    stat = build_student_stat(raw, in_birthdays=bool(classmate and classmate.get("day")))
     owned = set(profile.unlocked_achievements)
     earned = owned | evaluate_stat_rules(stat)
     ctx = MetaContext(places.get(profile.fio), stat.overall.pct, stat.overall.total, pulse)
@@ -106,10 +122,11 @@ async def sync_stat_achievements(bot: Any) -> int:
         log.debug("Журнал посещаемости пуст — пропускаем выдачу ачивок")
         return 0
     board = await get_group_leaderboard(provided_stats=stats)
-    places, pulse = _group_context(board)
+    deltas = _delta_stats(stats, await AchievementResetRepository.get_baselines())
+    places, pulse = _group_context(deltas)
     granted = 0
     for profile in board:
-        new_ids = compute_new_achievements(profile, stats.get(profile.fio, {}), places, pulse)
+        new_ids = compute_new_achievements(profile, deltas[profile.fio], places, pulse)
         if new_ids:
             granted += await _grant_to_student(bot, profile.fio, new_ids)
     if granted:

@@ -21,19 +21,19 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`MonthStat.total`](#monthstattotal) | Method | L43–L44 | `int` | Executes core domain logic for `total`. |
-| [`MonthStat.pct`](#monthstatpct) | Method | L47–L49 | `float` | Executes core domain logic for `pct`. |
-| [`StudentStat.visited`](#studentstatvisited) | Method | L62–L63 | `int` | Executes core domain logic for `visited`. |
-| [`_month_from_counts`](#_month_from_counts) | Function | L66–L68 | `MonthStat` | Executes core domain logic for `_month_from_counts`. |
-| [`build_student_stat`](#build_student_stat) | Function | L71–L85 | `StudentStat` | Executes core domain logic for `build_student_stat`. |
-| [`_full_months`](#_full_months) | Function | L88–L90 | `int` | Executes core domain logic for `_full_months`. |
-| [`_has_comeback`](#_has_comeback) | Function | L93–L95 | `bool` | Executes core domain logic for `_has_comeback`. |
-| [`_pct_between`](#_pct_between) | Function | L98–L100 | `bool` | Executes core domain logic for `_pct_between`. |
-| [`evaluate_stat_rules`](#evaluate_stat_rules) | Function | L133–L135 | `set[str]` | Executes core domain logic for `evaluate_stat_rules`. |
-| [`_categories_count`](#_categories_count) | Function | L150–L152 | `int` | Executes core domain logic for `_categories_count`. |
-| [`_xp_of`](#_xp_of) | Function | L155–L157 | `int` | Executes core domain logic for `_xp_of`. |
-| [`_meta_pass`](#_meta_pass) | Function | L160–L173 | `set[str]` | Executes core domain logic for `_meta_pass`. |
-| [`evaluate_meta_rules`](#evaluate_meta_rules) | Function | L176–L190 | `set[str]` | Executes core domain logic for `evaluate_meta_rules`. |
+| [`MonthStat.total`](#monthstattotal) | Method | L46–L47 | `int` | Executes core domain logic for `total`. |
+| [`MonthStat.pct`](#monthstatpct) | Method | L50–L52 | `float` | Executes core domain logic for `pct`. |
+| [`StudentStat.visited`](#studentstatvisited) | Method | L65–L66 | `int` | Executes core domain logic for `visited`. |
+| [`_month_from_counts`](#_month_from_counts) | Function | L69–L78 | `MonthStat` | Executes core domain logic for `_month_from_counts`. |
+| [`build_student_stat`](#build_student_stat) | Function | L81–L98 | `StudentStat` | Executes core domain logic for `build_student_stat`. |
+| [`_full_months`](#_full_months) | Function | L101–L103 | `int` | Executes core domain logic for `_full_months`. |
+| [`_has_comeback`](#_has_comeback) | Function | L106–L108 | `bool` | Executes core domain logic for `_has_comeback`. |
+| [`_pct_between`](#_pct_between) | Function | L111–L113 | `bool` | Executes core domain logic for `_pct_between`. |
+| [`evaluate_stat_rules`](#evaluate_stat_rules) | Function | L146–L148 | `set[str]` | Executes core domain logic for `evaluate_stat_rules`. |
+| [`_categories_count`](#_categories_count) | Function | L163–L165 | `int` | Executes core domain logic for `_categories_count`. |
+| [`_xp_of`](#_xp_of) | Function | L168–L170 | `int` | Executes core domain logic for `_xp_of`. |
+| [`_meta_pass`](#_meta_pass) | Function | L173–L186 | `set[str]` | Executes core domain logic for `_meta_pass`. |
+| [`evaluate_meta_rules`](#evaluate_meta_rules) | Function | L189–L203 | `set[str]` | Executes core domain logic for `evaluate_meta_rules`. |
 
 ---
 
@@ -48,7 +48,7 @@ Encapsulates domain entities and data transfer logic for `MonthStat`.
 def total(self) -> int
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L43-L44`](../../services/achievement_rules.py#L43-L44)
+- **Source Reference**: [`services/achievement_rules.py#L46-L47`](../../services/achievement_rules.py#L46-L47)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -79,7 +79,7 @@ result = total()
 def pct(self) -> float
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L47-L49`](../../services/achievement_rules.py#L47-L49)
+- **Source Reference**: [`services/achievement_rules.py#L50-L52`](../../services/achievement_rules.py#L50-L52)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
@@ -114,7 +114,7 @@ Encapsulates domain entities and data transfer logic for `StudentStat`.
 def visited(self) -> int
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L62-L63`](../../services/achievement_rules.py#L62-L63)
+- **Source Reference**: [`services/achievement_rules.py#L65-L66`](../../services/achievement_rules.py#L65-L66)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -142,10 +142,10 @@ result = visited()
 
 ### `_month_from_counts`
 ```python
-def _month_from_counts(counts: dict[str, int]) -> MonthStat
+def _month_from_counts(counts: dict[str, int], base: dict[str, int] | None = None) -> MonthStat
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L66-L68`](../../services/achievement_rules.py#L66-L68)
+- **Source Reference**: [`services/achievement_rules.py#L69-L78`](../../services/achievement_rules.py#L69-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `MonthStat`
 
@@ -156,6 +156,7 @@ Executes core domain logic for `_month_from_counts`.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `counts` | `dict[str, int]` | Yes | Parameter `counts` of type `dict[str, int]`. |
+| `base` | `dict[str, int] | None` | Yes | Parameter `base` of type `dict[str, int] | None`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -168,17 +169,17 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from services.achievement_rules import _month_from_counts
 
 # Execute call
-result = _month_from_counts(counts=...)
+result = _month_from_counts(counts=..., base=...)
 ```
 
 ---
 
 ### `build_student_stat`
 ```python
-def build_student_stat(raw: dict[str, Any], in_birthdays: bool = False) -> StudentStat
+def build_student_stat( raw: dict[str, Any], in_birthdays: bool = False, baseline: dict[str, Any] | None = None ) -> StudentStat
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L71-L85`](../../services/achievement_rules.py#L71-L85)
+- **Source Reference**: [`services/achievement_rules.py#L81-L98`](../../services/achievement_rules.py#L81-L98)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `StudentStat`
 
@@ -190,6 +191,7 @@ Executes core domain logic for `build_student_stat`.
 | :--- | :--- | :--- | :--- |
 | `raw` | `dict[str, Any]` | Yes | Parameter `raw` of type `dict[str, Any]`. |
 | `in_birthdays` | `bool` | Yes | Parameter `in_birthdays` of type `bool`. |
+| `baseline` | `dict[str, Any] | None` | Yes | Parameter `baseline` of type `dict[str, Any] | None`. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -202,7 +204,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from services.achievement_rules import build_student_stat
 
 # Execute call
-result = build_student_stat(raw=..., in_birthdays=...)
+result = build_student_stat(raw=..., in_birthdays=..., baseline=...)
 ```
 
 ---
@@ -212,7 +214,7 @@ result = build_student_stat(raw=..., in_birthdays=...)
 def _full_months(s: StudentStat, *banned: str) -> int
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L88-L90`](../../services/achievement_rules.py#L88-L90)
+- **Source Reference**: [`services/achievement_rules.py#L101-L103`](../../services/achievement_rules.py#L101-L103)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -245,7 +247,7 @@ result = _full_months(s=...)
 def _has_comeback(s: StudentStat) -> bool
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L93-L95`](../../services/achievement_rules.py#L93-L95)
+- **Source Reference**: [`services/achievement_rules.py#L106-L108`](../../services/achievement_rules.py#L106-L108)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -278,7 +280,7 @@ result = _has_comeback(s=...)
 def _pct_between(s: StudentStat, low: float, high: float, min_marks: int = MIN_MARKS) -> bool
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L98-L100`](../../services/achievement_rules.py#L98-L100)
+- **Source Reference**: [`services/achievement_rules.py#L111-L113`](../../services/achievement_rules.py#L111-L113)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -314,7 +316,7 @@ result = _pct_between(s=..., low=..., high=...)
 def evaluate_stat_rules(s: StudentStat) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L133-L135`](../../services/achievement_rules.py#L133-L135)
+- **Source Reference**: [`services/achievement_rules.py#L146-L148`](../../services/achievement_rules.py#L146-L148)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -351,7 +353,7 @@ Encapsulates domain entities and data transfer logic for `MetaContext`.
 def _categories_count(unlocked: set[str]) -> int
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L150-L152`](../../services/achievement_rules.py#L150-L152)
+- **Source Reference**: [`services/achievement_rules.py#L163-L165`](../../services/achievement_rules.py#L163-L165)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -384,7 +386,7 @@ result = _categories_count(unlocked=...)
 def _xp_of(unlocked: set[str]) -> int
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L155-L157`](../../services/achievement_rules.py#L155-L157)
+- **Source Reference**: [`services/achievement_rules.py#L168-L170`](../../services/achievement_rules.py#L168-L170)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -417,7 +419,7 @@ result = _xp_of(unlocked=...)
 def _meta_pass(unlocked: set[str], ctx: MetaContext) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L160-L173`](../../services/achievement_rules.py#L160-L173)
+- **Source Reference**: [`services/achievement_rules.py#L173-L186`](../../services/achievement_rules.py#L173-L186)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -451,7 +453,7 @@ result = _meta_pass(unlocked=..., ctx=...)
 def evaluate_meta_rules(unlocked: set[str], ctx: MetaContext) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_rules.py#L176-L190`](../../services/achievement_rules.py#L176-L190)
+- **Source Reference**: [`services/achievement_rules.py#L189-L203`](../../services/achievement_rules.py#L189-L203)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 

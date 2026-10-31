@@ -11,9 +11,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services.backup_manager import (
-    _backup_sqlite_online,
     _create_tar_archive,
     _rotate_old_backups,
+    backup_sqlite_online,
     run_backup_pipeline,
 )
 
@@ -29,7 +29,7 @@ def test_sqlite_online_backup(tmp_path: Path) -> None:
         conn.commit()
 
     with patch("services.backup_manager.SQLITE_DB_PATH", str(src_db)):
-        ok = _backup_sqlite_online(str(dst_db))
+        ok = backup_sqlite_online(str(dst_db))
         assert ok is True
         assert os.path.exists(dst_db)
 

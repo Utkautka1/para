@@ -21,7 +21,7 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_backup_sqlite_online`](#_backup_sqlite_online) | Function | L29–L40 | `bool` | Executes core domain logic for `_backup_sqlite_online`. |
+| [`backup_sqlite_online`](#backup_sqlite_online) | Function | L29–L40 | `bool` | Executes core domain logic for `backup_sqlite_online`. |
 | [`_trigger_redis_save`](#_trigger_redis_save) | Function | L43–L51 | `None` | Executes core domain logic for `_trigger_redis_save`. |
 | [`_create_tar_archive`](#_create_tar_archive) | Function | L54–L63 | `bool` | Executes core domain logic for `_create_tar_archive`. |
 | [`_rotate_old_backups`](#_rotate_old_backups) | Function | L66–L80 | `int` | Executes core domain logic for `_rotate_old_backups`. |
@@ -32,9 +32,9 @@ graph LR
 
 ## 3. Comprehensive Function Specifications
 
-### `_backup_sqlite_online`
+### `backup_sqlite_online`
 ```python
-def _backup_sqlite_online(dest_path: str) -> bool
+def backup_sqlite_online(dest_path: str) -> bool
 ```
 
 - **Source Reference**: [`services/backup_manager.py#L29-L40`](../../services/backup_manager.py#L29-L40)
@@ -42,7 +42,7 @@ def _backup_sqlite_online(dest_path: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_backup_sqlite_online`.
+Executes core domain logic for `backup_sqlite_online`.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -57,10 +57,10 @@ Encapsulates faults within `try/except` blocks, logging errors and returning saf
 
 #### Production Usage Example
 ```python
-from services.backup_manager import _backup_sqlite_online
+from services.backup_manager import backup_sqlite_online
 
 # Execute call
-result = _backup_sqlite_online(dest_path=...)
+result = backup_sqlite_online(dest_path=...)
 ```
 
 ---

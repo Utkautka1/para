@@ -121,3 +121,12 @@ def test_meta_top_requires_rating_place() -> None:
     assert "mast_top1" not in evaluate_meta_rules(set(), ctx)
     few_marks = MetaContext(place=1, pct=100.0, total_marks=5, group_pulse=70.0)
     assert "mast_top1" not in evaluate_meta_rules(set(), few_marks)
+
+
+def test_baseline_subtracts_totals_and_months() -> None:
+    raw = {"total": {"П": 40, "О": 2, "У": 3, "Н": 5}, "months": {"ОКТ": {"П": 30, "Н": 5}, "НОЯБ": {"П": 10, "О": 2}}}
+    base = {"total": {"П": 30, "О": 0, "У": 4, "Н": 5}, "months": {"ОКТ": {"П": 30, "Н": 5}}}
+    stat = build_student_stat(raw, baseline=base)
+    # «У» исправили задним числом (4 → 3): разница не уходит в минус
+    assert (stat.overall.p, stat.overall.o, stat.overall.u, stat.overall.n) == (10, 2, 0, 0)
+    assert [(m.p, m.o) for m in stat.months] == [(10, 2)]

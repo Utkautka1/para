@@ -26,7 +26,7 @@ from core.redis import redis_client
 log = get_logger("backup_manager")
 
 
-def _backup_sqlite_online(dest_path: str) -> bool:
+def backup_sqlite_online(dest_path: str) -> bool:
     """Создает консистентный снимок SQLite без блокировки читателей и писателей."""
     if not os.path.exists(SQLITE_DB_PATH):
         log.warning("Файл БД %s не найден для бэкапа", SQLITE_DB_PATH)
@@ -107,7 +107,7 @@ async def run_backup_pipeline() -> bool:
     try:
         await _trigger_redis_save()
         db_snapshot_file = os.path.join(staging_dir, "para.db")
-        if not _backup_sqlite_online(db_snapshot_file):
+        if not backup_sqlite_online(db_snapshot_file):
             return False
         if not _create_tar_archive(staging_dir, archive_path):
             return False

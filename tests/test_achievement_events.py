@@ -17,7 +17,7 @@ import pytest
 import pytest_asyncio
 
 from config import ALLOWED_USER_ID
-from db.sqlite.repositories import CounterRepository
+from db.sqlite.repositories import AchievementResetRepository, CounterRepository, GamificationRepository
 from services import achievement_events as ev
 
 CLASSMATE_ID = 111
@@ -39,6 +39,8 @@ async def temp_db(tmp_path: Path):
         db_mod._session_factory = None
         await db_mod.init_db()
         yield
+        # Закрываем пул aiosqlite до конца event loop теста, иначе его поток падает в фоне
+        await db_mod.get_database_engine().dispose()
         db_mod._engine = None
         db_mod._session_factory = None
 
@@ -134,3 +136,22 @@ async def test_profile_view_ignores_self_and_counts_distinct(temp_db, members) -
             assert await ev.on_profile_view(CLASSMATE_ID, fio) is False
         assert await ev.on_profile_view(CLASSMATE_ID, "Д Д") is True
     award.assert_awaited_once_with(CLASSMATE_ID, "soc_solidarity")
+
+
+@pytest.mark.asyncio
+async def test_reset_with_baseline_clears_and_snapshots(temp_db) -> None:
+    await GamificationRepository.unlock_achievement("Иванов Иван", "bot_welcome")
+    await CounterRepository.increment("Иванов Иван", "actions")
+    stats = {"Иванов Иван": {"total": {"П": 5}, "months": {}}}
+    assert await AchievementResetRepository.reset_with_baseline(stats) == (1, 1)
+    assert await GamificationRepository.get_all_unlocked_map() == {}
+    assert await AchievementResetRepository.get_baselines() == stats
+    # Повторный сброс заменяет снимок, а не дублирует его
+    await AchievementResetRepository.reset_with_baseline({"Петров Пётр": {"total": {}, "months": {}}})
+    assert list(await AchievementResetRepository.get_baselines()) == ["Петров Пётр"]
+
+
+def test_reset_cli_requires_confirm() -> None:
+    from services.achievement_reset import main
+
+    assert main([]) == 2

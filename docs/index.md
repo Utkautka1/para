@@ -12,6 +12,7 @@
 | `Academic Gamification Engine` | [`services/gamification.py`](../services/gamification.py) | [📖 View Specification](services/gamification.md) | Enterprise Service Component |
 | `Achievement Rules` | [`bot/middlewares/achievements.py`](../bot/middlewares/achievements.py) | [📖 View Specification](bot/middlewares_achievements.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_events.py`](../services/achievement_events.py) | [📖 View Specification](services/achievement_events.md) | Enterprise Service Component |
+| `Achievement Rules` | [`services/achievement_reset.py`](../services/achievement_reset.py) | [📖 View Specification](services/achievement_reset.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_rules.py`](../services/achievement_rules.py) | [📖 View Specification](services/achievement_rules.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_sync.py`](../services/achievement_sync.py) | [📖 View Specification](services/achievement_sync.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_triggers.py`](../services/achievement_triggers.py) | [📖 View Specification](services/achievement_triggers.md) | Enterprise Service Component |

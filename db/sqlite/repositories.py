@@ -5,16 +5,18 @@
 Каждый метод строго изолирован и придерживается принципа единственной ответственности.
 """
 
+import json
 from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, delete, func, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from core.database import get_async_session
 from core.logger import get_logger
 from db.sqlite.models import (
+    AchievementBaseline,
     AttendanceSnapshot,
     IncidentSeverity,
     StudentAchievement,
@@ -229,3 +231,42 @@ class CounterRepository:
         except Exception as exc:
             log.warning("Ошибка подсчёта счётчиков %s* для %s: %s", prefix, student_fio, exc)
             return 0
+
+
+class AchievementResetRepository:
+    """Сброс ачивок группы и хранение точки отсчёта журнала."""
+
+    @staticmethod
+    async def reset_with_baseline(stats: dict[str, dict[str, Any]]) -> tuple[int, int]:
+        """
+        В одной транзакции удаляет все ачивки и счётчики и записывает новый снимок журнала.
+
+        Одна транзакция важна: если упадёт запись снимка, ачивки не пропадут,
+        иначе worker тут же выдал бы их заново от нулевой точки отсчёта.
+
+        Возвращает (удалено ачивок, удалено счётчиков).
+        """
+        async with get_async_session() as session:
+            achievements = (await session.execute(delete(StudentAchievement))).rowcount or 0
+            counters = (await session.execute(delete(StudentCounter))).rowcount or 0
+            await session.execute(delete(AchievementBaseline))
+            session.add_all(
+                AchievementBaseline(student_fio=fio, snapshot=json.dumps(raw, ensure_ascii=False))
+                for fio, raw in stats.items()
+            )
+        return achievements, counters
+
+    @staticmethod
+    async def get_baselines() -> dict[str, dict[str, Any]]:
+        """
+        Возвращает снимки журнала {ФИО: запись журнала} на момент сброса.
+
+        Пустой словарь — сброса не было (или таблицы ещё нет): ачивки считаются от нуля.
+        """
+        try:
+            async with get_async_session() as session:
+                rows = (await session.execute(select(AchievementBaseline))).scalars().all()
+                return {row.student_fio: json.loads(row.snapshot) for row in rows}
+        except Exception as exc:
+            log.warning("Не удалось загрузить точку отсчёта ачивок: %s", exc)
+            return {}

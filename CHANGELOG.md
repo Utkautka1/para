@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-11-01
 
 ### Gamification
+- **Fair reset with a journal baseline**: `python -m services.achievement_reset --confirm` (run in `para-worker`) backs up SQLite, deletes all granted achievements and counters and stores the current journal as a baseline (`achievement_baselines`). Journal achievements, rating places and the group pulse for achievements count only marks after the baseline; past absences stay in the journal and the leaderboard but no longer decide who can earn what.
 - **Achievements actually unlock**: the rules for ~60 achievements (`_evaluate_all_rules`) were dead code, so over the whole semester only 17 ids were ever granted. Journal and meta achievements now live in `services/achievement_rules.py` and are granted by `para-worker` (`achievement_sync_loop`, every 10 minutes, one digest DM per student); granted achievements are never revoked.
 - **Catalog reworked, description = condition**: untrackable achievements (stickers in DMs, polls, "6 pairs a day", Zoom link clicks) were replaced with trackable ones; thresholds that rewarded "N attended pairs" for unrelated actions (AI, time of day, social) now check the real action. Percent achievements require 20–30 marks, so 100% after five pairs no longer counts.
 - **«Полуночник» fixed**: it was checked only on `/start`/`/today`, never on the «Завтра» button its description names; time windows are Moscow time and covered by unit tests (`services/achievement_triggers.py`).

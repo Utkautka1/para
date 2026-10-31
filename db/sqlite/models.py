@@ -7,6 +7,7 @@
   3. SystemIncident — журнал критических сбоев, алертов и состояний Circuit Breaker
   4. StudentAchievement — открытые студентами достижения
   5. StudentCounter — счётчики действий студентов для накопительных ачивок
+  6. AchievementBaseline — снимок журнала на момент сброса ачивок (точка отсчёта)
 """
 
 from datetime import date, datetime
@@ -99,3 +100,15 @@ class StudentCounter(Base):
     value: Mapped[int] = mapped_column(Integer, default=0)
     # last_day — день последнего инкремента для счётчиков «раз в день» (МСК)
     last_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class AchievementBaseline(Base):
+    """Снимок журнала студента на момент сброса ачивок — журнальные ачивки считаются от него."""
+
+    __tablename__ = "achievement_baselines"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    student_fio: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    # snapshot — запись fetch_all_time_attendance в JSON: {"total": {...}, "months": {...}}
+    snapshot: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
