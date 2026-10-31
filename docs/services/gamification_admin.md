@@ -28,8 +28,9 @@ graph LR
 | [`_notify`](#_notify) | Function | L82–L85 | `None` | Executes core domain logic for `_notify`. |
 | [`format_bonus_notification`](#format_bonus_notification) | Function | L88–L91 | `str` | Formats message payload and presentation markup for `fo... |
 | [`adjust_bonus`](#adjust_bonus) | Function | L94–L105 | `int` | Executes core domain logic for `adjust_bonus`. |
-| [`reset_bonuses`](#reset_bonuses) | Function | L108–L114 | `None` | Executes core domain logic for `reset_bonuses`. |
-| [`toggle_achievement`](#toggle_achievement) | Function | L117–L135 | `bool` | Executes core domain logic for `toggle_achievement`. |
+| [`set_bonus`](#set_bonus) | Function | L108–L119 | `int` | Persists state updates for `set_bonus`. |
+| [`reset_bonuses`](#reset_bonuses) | Function | L122–L128 | `None` | Executes core domain logic for `reset_bonuses`. |
+| [`toggle_achievement`](#toggle_achievement) | Function | L131–L149 | `bool` | Executes core domain logic for `toggle_achievement`. |
 
 ---
 
@@ -274,12 +275,48 @@ result = await adjust_bonus(bot=..., target=..., kind=...)
 
 ---
 
+### `set_bonus`
+```python
+async def set_bonus(bot: Any, target: StudentTarget, kind: str, value: int) -> int
+```
+
+- **Source Reference**: [`services/gamification_admin.py#L108-L119`](../../services/gamification_admin.py#L108-L119)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Persists state updates for `set_bonus`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `bot` | `Any` | Yes | Parameter `bot` of type `Any`. |
+| `target` | `StudentTarget` | Yes | Parameter `target` of type `StudentTarget`. |
+| `kind` | `str` | Yes | Parameter `kind` of type `str`. |
+| `value` | `int` | Yes | Parameter `value` of type `int`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.gamification_admin import set_bonus
+
+# Execute call
+result = await set_bonus(bot=..., target=..., kind=...)
+```
+
+---
+
 ### `reset_bonuses`
 ```python
 async def reset_bonuses(bot: Any, target: StudentTarget) -> None
 ```
 
-- **Source Reference**: [`services/gamification_admin.py#L108-L114`](../../services/gamification_admin.py#L108-L114)
+- **Source Reference**: [`services/gamification_admin.py#L122-L128`](../../services/gamification_admin.py#L122-L128)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -313,7 +350,7 @@ result = await reset_bonuses(bot=..., target=...)
 async def toggle_achievement(bot: Any, target: StudentTarget, achievement_id: str) -> bool
 ```
 
-- **Source Reference**: [`services/gamification_admin.py#L117-L135`](../../services/gamification_admin.py#L117-L135)
+- **Source Reference**: [`services/gamification_admin.py#L131-L149`](../../services/gamification_admin.py#L131-L149)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

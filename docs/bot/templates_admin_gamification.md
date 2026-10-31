@@ -21,15 +21,18 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_cb`](#_cb) | Function | L50–L52 | `str` | Executes core domain logic for `_cb`. |
-| [`students_ikb`](#students_ikb) | Function | L63–L76 | `InlineKeyboardMarkup` | Executes core domain logic for `students_ikb`. |
-| [`student_card_text`](#student_card_text) | Function | L79–L91 | `str` | Executes core domain logic for `student_card_text`. |
-| [`_bonus_row`](#_bonus_row) | Function | L94–L99 | `list[InlineKeyboardButton]` | Executes core domain logic for `_bonus_row`. |
-| [`student_card_ikb`](#student_card_ikb) | Function | L102–L123 | `InlineKeyboardMarkup` | Executes core domain logic for `student_card_ikb`. |
-| [`categories_ikb`](#categories_ikb) | Function | L126–L142 | `InlineKeyboardMarkup` | Executes core domain logic for `categories_ikb`. |
-| [`category_achievements`](#category_achievements) | Function | L145–L149 | `list[str]` | Executes core domain logic for `category_achievements`. |
-| [`category_ikb`](#category_ikb) | Function | L152–L171 | `InlineKeyboardMarkup` | Executes core domain logic for `category_ikb`. |
-| [`category_text`](#category_text) | Function | L174–L179 | `str` | Executes core domain logic for `category_text`. |
+| [`_cb`](#_cb) | Function | L60–L62 | `str` | Executes core domain logic for `_cb`. |
+| [`students_ikb`](#students_ikb) | Function | L73–L86 | `InlineKeyboardMarkup` | Executes core domain logic for `students_ikb`. |
+| [`student_card_text`](#student_card_text) | Function | L89–L101 | `str` | Executes core domain logic for `student_card_text`. |
+| [`_bonus_row`](#_bonus_row) | Function | L104–L109 | `list[InlineKeyboardButton]` | Executes core domain logic for `_bonus_row`. |
+| [`student_card_ikb`](#student_card_ikb) | Function | L112–L133 | `InlineKeyboardMarkup` | Executes core domain logic for `student_card_ikb`. |
+| [`categories_ikb`](#categories_ikb) | Function | L136–L152 | `InlineKeyboardMarkup` | Executes core domain logic for `categories_ikb`. |
+| [`category_achievements`](#category_achievements) | Function | L155–L159 | `list[str]` | Executes core domain logic for `category_achievements`. |
+| [`category_ikb`](#category_ikb) | Function | L162–L181 | `InlineKeyboardMarkup` | Executes core domain logic for `category_ikb`. |
+| [`category_text`](#category_text) | Function | L184–L189 | `str` | Executes core domain logic for `category_text`. |
+| [`ask_amount_text`](#ask_amount_text) | Function | L195–L203 | `str` | Executes core domain logic for `ask_amount_text`. |
+| [`ask_amount_ikb`](#ask_amount_ikb) | Function | L206–L214 | `InlineKeyboardMarkup` | Executes core domain logic for `ask_amount_ikb`. |
+| [`parse_amount`](#parse_amount) | Function | L224–L239 | `tuple[bool, int] | None` | Parses and extracts structured entities from `parse_amo... |
 
 ---
 
@@ -39,12 +42,16 @@ graph LR
 
 Encapsulates domain entities and data transfer logic for `GameAdminCallback`.
 
+## Class Model: `GameAdminState`
+
+Encapsulates domain entities and data transfer logic for `GameAdminState`.
+
 ### `_cb`
 ```python
 def _cb(action: str, idx: int = -1, value: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L50-L52`](../../bot/templates/admin/gamification.py#L50-L52)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L60-L62`](../../bot/templates/admin/gamification.py#L60-L62)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -79,7 +86,7 @@ result = _cb(action=..., idx=..., value=...)
 def students_ikb(students: list[StudentProfile]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L63-L76`](../../bot/templates/admin/gamification.py#L63-L76)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L73-L86`](../../bot/templates/admin/gamification.py#L73-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -112,7 +119,7 @@ result = students_ikb(students=...)
 def student_card_text(p: StudentProfile, xp_bonus: int, guild_bonus: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L79-L91`](../../bot/templates/admin/gamification.py#L79-L91)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L89-L101`](../../bot/templates/admin/gamification.py#L89-L101)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -147,7 +154,7 @@ result = student_card_text(p=..., xp_bonus=..., guild_bonus=...)
 def _bonus_row(idx: int, kind: str) -> list[InlineKeyboardButton]
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L94-L99`](../../bot/templates/admin/gamification.py#L94-L99)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L104-L109`](../../bot/templates/admin/gamification.py#L104-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[InlineKeyboardButton]`
 
@@ -181,7 +188,7 @@ result = _bonus_row(idx=..., kind=...)
 def student_card_ikb(idx: int) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L102-L123`](../../bot/templates/admin/gamification.py#L102-L123)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L112-L133`](../../bot/templates/admin/gamification.py#L112-L133)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -214,7 +221,7 @@ result = student_card_ikb(idx=...)
 def categories_ikb(idx: int, unlocked: list[str]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L126-L142`](../../bot/templates/admin/gamification.py#L126-L142)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L136-L152`](../../bot/templates/admin/gamification.py#L136-L152)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -248,7 +255,7 @@ result = categories_ikb(idx=..., unlocked=...)
 def category_achievements(category: str) -> list[str]
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L145-L149`](../../bot/templates/admin/gamification.py#L145-L149)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L155-L159`](../../bot/templates/admin/gamification.py#L155-L159)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
@@ -281,7 +288,7 @@ result = category_achievements(category=...)
 def category_ikb(idx: int, category: str, unlocked: list[str]) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L152-L171`](../../bot/templates/admin/gamification.py#L152-L171)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L162-L181`](../../bot/templates/admin/gamification.py#L162-L181)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -316,7 +323,7 @@ result = category_ikb(idx=..., category=..., unlocked=...)
 def category_text(p: StudentProfile, category: str) -> str
 ```
 
-- **Source Reference**: [`bot/templates/admin/gamification.py#L174-L179`](../../bot/templates/admin/gamification.py#L174-L179)
+- **Source Reference**: [`bot/templates/admin/gamification.py#L184-L189`](../../bot/templates/admin/gamification.py#L184-L189)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -341,6 +348,106 @@ from bot.templates.admin.gamification import category_text
 
 # Execute call
 result = category_text(p=..., category=...)
+```
+
+---
+
+### `ask_amount_text`
+```python
+def ask_amount_text(student: str, kind: str) -> str
+```
+
+- **Source Reference**: [`bot/templates/admin/gamification.py#L195-L203`](../../bot/templates/admin/gamification.py#L195-L203)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `ask_amount_text`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student` | `str` | Yes | Parameter `student` of type `str`. |
+| `kind` | `str` | Yes | Parameter `kind` of type `str`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.gamification import ask_amount_text
+
+# Execute call
+result = ask_amount_text(student=..., kind=...)
+```
+
+---
+
+### `ask_amount_ikb`
+```python
+def ask_amount_ikb(idx: int) -> InlineKeyboardMarkup
+```
+
+- **Source Reference**: [`bot/templates/admin/gamification.py#L206-L214`](../../bot/templates/admin/gamification.py#L206-L214)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `InlineKeyboardMarkup`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `ask_amount_ikb`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `idx` | `int` | Yes | Parameter `idx` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.gamification import ask_amount_ikb
+
+# Execute call
+result = ask_amount_ikb(idx=...)
+```
+
+---
+
+### `parse_amount`
+```python
+def parse_amount(text: str | None) -> tuple[bool, int] | None
+```
+
+- **Source Reference**: [`bot/templates/admin/gamification.py#L224-L239`](../../bot/templates/admin/gamification.py#L224-L239)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `tuple[bool, int] | None`
+
+#### Overview & Architectural Purpose
+Parses and extracts structured entities from `parse_amount`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str | None` | Yes | Parameter `text` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.templates.admin.gamification import parse_amount
+
+# Execute call
+result = parse_amount(text=...)
 ```
 
 ---

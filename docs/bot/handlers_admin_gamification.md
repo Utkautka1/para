@@ -21,18 +21,23 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_render`](#_render) | Function | L25–L31 | `None` | Executes core domain logic for `_render`. |
-| [`_load_target`](#_load_target) | Function | L34–L39 | `StudentTarget | None` | Executes core domain logic for `_load_target`. |
-| [`_show_card`](#_show_card) | Function | L42–L49 | `None` | Executes core domain logic for `_show_card`. |
-| [`game_students`](#game_students) | Function | L53–L61 | `None` | Executes core domain logic for `game_students`. |
-| [`game_card`](#game_card) | Function | L65–L73 | `None` | Executes core domain logic for `game_card`. |
-| [`game_noop`](#game_noop) | Function | L77–L83 | `None` | Executes core domain logic for `game_noop`. |
-| [`game_bonus`](#game_bonus) | Function | L87–L100 | `None` | Executes core domain logic for `game_bonus`. |
-| [`game_reset`](#game_reset) | Function | L104–L116 | `None` | Executes core domain logic for `game_reset`. |
-| [`game_categories`](#game_categories) | Function | L120–L132 | `None` | Executes core domain logic for `game_categories`. |
-| [`_show_category`](#_show_category) | Function | L135–L141 | `None` | Executes core domain logic for `_show_category`. |
-| [`game_category`](#game_category) | Function | L145–L153 | `None` | Executes core domain logic for `game_category`. |
-| [`game_toggle`](#game_toggle) | Function | L157–L170 | `None` | Executes core domain logic for `game_toggle`. |
+| [`_render`](#_render) | Function | L28–L34 | `None` | Executes core domain logic for `_render`. |
+| [`_load_target`](#_load_target) | Function | L37–L42 | `StudentTarget | None` | Executes core domain logic for `_load_target`. |
+| [`_show_card`](#_show_card) | Function | L45–L52 | `None` | Executes core domain logic for `_show_card`. |
+| [`game_students`](#game_students) | Function | L56–L64 | `None` | Executes core domain logic for `game_students`. |
+| [`game_card`](#game_card) | Function | L68–L78 | `None` | Executes core domain logic for `game_card`. |
+| [`game_ask_amount`](#game_ask_amount) | Function | L82–L98 | `None` | Executes core domain logic for `game_ask_amount`. |
+| [`game_enter_amount`](#game_enter_amount) | Function | L102–L121 | `None` | Executes core domain logic for `game_enter_amount`. |
+| [`_delete_quietly`](#_delete_quietly) | Function | L124–L129 | `None` | Executes core domain logic for `_delete_quietly`. |
+| [`_edit_panel`](#_edit_panel) | Function | L132–L138 | `None` | Executes core domain logic for `_edit_panel`. |
+| [`_apply_amount`](#_apply_amount) | Function | L141–L147 | `None` | Executes core domain logic for `_apply_amount`. |
+| [`_edit_card`](#_edit_card) | Function | L150–L155 | `None` | Executes core domain logic for `_edit_card`. |
+| [`game_bonus`](#game_bonus) | Function | L159–L172 | `None` | Executes core domain logic for `game_bonus`. |
+| [`game_reset`](#game_reset) | Function | L176–L188 | `None` | Executes core domain logic for `game_reset`. |
+| [`game_categories`](#game_categories) | Function | L192–L204 | `None` | Executes core domain logic for `game_categories`. |
+| [`_show_category`](#_show_category) | Function | L207–L213 | `None` | Executes core domain logic for `_show_category`. |
+| [`game_category`](#game_category) | Function | L217–L225 | `None` | Executes core domain logic for `game_category`. |
+| [`game_toggle`](#game_toggle) | Function | L229–L242 | `None` | Executes core domain logic for `game_toggle`. |
 
 ---
 
@@ -43,7 +48,7 @@ graph LR
 async def _render(call: CallbackQuery, text: str, markup: InlineKeyboardMarkup) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L25-L31`](../../bot/handlers/admin/gamification.py#L25-L31)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L28-L34`](../../bot/handlers/admin/gamification.py#L28-L34)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -78,7 +83,7 @@ result = await _render(call=..., text=..., markup=...)
 async def _load_target(call: CallbackQuery, idx: int) -> StudentTarget | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L34-L39`](../../bot/handlers/admin/gamification.py#L34-L39)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L37-L42`](../../bot/handlers/admin/gamification.py#L37-L42)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentTarget | None`
 
@@ -112,7 +117,7 @@ result = await _load_target(call=..., idx=...)
 async def _show_card(call: CallbackQuery, idx: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L42-L49`](../../bot/handlers/admin/gamification.py#L42-L49)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L45-L52`](../../bot/handlers/admin/gamification.py#L45-L52)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -146,7 +151,7 @@ result = await _show_card(call=..., idx=...)
 async def game_students(call: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L53-L61`](../../bot/handlers/admin/gamification.py#L53-L61)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L56-L64`](../../bot/handlers/admin/gamification.py#L56-L64)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -176,10 +181,10 @@ result = await game_students(call=...)
 
 ### `game_card`
 ```python
-async def game_card(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
+async def game_card(call: CallbackQuery, callback_data: tgame.GameAdminCallback, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L65-L73`](../../bot/handlers/admin/gamification.py#L65-L73)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L68-L78`](../../bot/handlers/admin/gamification.py#L68-L78)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -191,6 +196,7 @@ Executes core domain logic for `game_card`.
 | :--- | :--- | :--- | :--- |
 | `call` | `CallbackQuery` | Yes | Parameter `call` of type `CallbackQuery`. |
 | `callback_data` | `tgame.GameAdminCallback` | Yes | Parameter `callback_data` of type `tgame.GameAdminCallback`. |
+| `state` | `FSMContext` | Yes | Aiogram FSM context manager for dialog state persistence. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -203,27 +209,29 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from bot.handlers.admin.gamification import game_card
 
 # Execute call
-result = await game_card(call=..., callback_data=...)
+result = await game_card(call=..., callback_data=..., state=...)
 ```
 
 ---
 
-### `game_noop`
+### `game_ask_amount`
 ```python
-async def game_noop(call: CallbackQuery) -> None
+async def game_ask_amount(call: CallbackQuery, callback_data: tgame.GameAdminCallback, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L77-L83`](../../bot/handlers/admin/gamification.py#L77-L83)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L82-L98`](../../bot/handlers/admin/gamification.py#L82-L98)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_noop`.
+Executes core domain logic for `game_ask_amount`.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `call` | `CallbackQuery` | Yes | Parameter `call` of type `CallbackQuery`. |
+| `callback_data` | `tgame.GameAdminCallback` | Yes | Parameter `callback_data` of type `tgame.GameAdminCallback`. |
+| `state` | `FSMContext` | Yes | Aiogram FSM context manager for dialog state persistence. |
 
 #### Concurrency & Side Effects
 - Stateless pure functional computation without external mutations.
@@ -233,10 +241,184 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 
 #### Production Usage Example
 ```python
-from bot.handlers.admin.gamification import game_noop
+from bot.handlers.admin.gamification import game_ask_amount
 
 # Execute call
-result = await game_noop(call=...)
+result = await game_ask_amount(call=..., callback_data=..., state=...)
+```
+
+---
+
+### `game_enter_amount`
+```python
+async def game_enter_amount(message: Message, state: FSMContext) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L102-L121`](../../bot/handlers/admin/gamification.py#L102-L121)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `game_enter_amount`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `state` | `FSMContext` | Yes | Aiogram FSM context manager for dialog state persistence. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.gamification import game_enter_amount
+
+# Execute call
+result = await game_enter_amount(message=..., state=...)
+```
+
+---
+
+### `_delete_quietly`
+```python
+async def _delete_quietly(message: Message) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L124-L129`](../../bot/handlers/admin/gamification.py#L124-L129)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_delete_quietly`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.gamification import _delete_quietly
+
+# Execute call
+result = await _delete_quietly(message=...)
+```
+
+---
+
+### `_edit_panel`
+```python
+async def _edit_panel(message: Message, panel_id: int, text: str, markup: InlineKeyboardMarkup | None) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L132-L138`](../../bot/handlers/admin/gamification.py#L132-L138)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_edit_panel`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `panel_id` | `int` | Yes | Parameter `panel_id` of type `int`. |
+| `text` | `str` | Yes | Parameter `text` of type `str`. |
+| `markup` | `InlineKeyboardMarkup | None` | Yes | Parameter `markup` of type `InlineKeyboardMarkup | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.gamification import _edit_panel
+
+# Execute call
+result = await _edit_panel(message=..., panel_id=..., text=...)
+```
+
+---
+
+### `_apply_amount`
+```python
+async def _apply_amount(message: Message, target: StudentTarget, kind: str, parsed: tuple[bool, int]) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L141-L147`](../../bot/handlers/admin/gamification.py#L141-L147)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_apply_amount`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `target` | `StudentTarget` | Yes | Parameter `target` of type `StudentTarget`. |
+| `kind` | `str` | Yes | Parameter `kind` of type `str`. |
+| `parsed` | `tuple[bool, int]` | Yes | Parameter `parsed` of type `tuple[bool, int]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.gamification import _apply_amount
+
+# Execute call
+result = await _apply_amount(message=..., target=..., kind=...)
+```
+
+---
+
+### `_edit_card`
+```python
+async def _edit_card(message: Message, panel_id: int, idx: int) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L150-L155`](../../bot/handlers/admin/gamification.py#L150-L155)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_edit_card`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `panel_id` | `int` | Yes | Parameter `panel_id` of type `int`. |
+| `idx` | `int` | Yes | Parameter `idx` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.gamification import _edit_card
+
+# Execute call
+result = await _edit_card(message=..., panel_id=..., idx=...)
 ```
 
 ---
@@ -246,7 +428,7 @@ result = await game_noop(call=...)
 async def game_bonus(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L87-L100`](../../bot/handlers/admin/gamification.py#L87-L100)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L159-L172`](../../bot/handlers/admin/gamification.py#L159-L172)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -280,7 +462,7 @@ result = await game_bonus(call=..., callback_data=...)
 async def game_reset(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L104-L116`](../../bot/handlers/admin/gamification.py#L104-L116)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L176-L188`](../../bot/handlers/admin/gamification.py#L176-L188)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -314,7 +496,7 @@ result = await game_reset(call=..., callback_data=...)
 async def game_categories(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L120-L132`](../../bot/handlers/admin/gamification.py#L120-L132)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L192-L204`](../../bot/handlers/admin/gamification.py#L192-L204)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -348,7 +530,7 @@ result = await game_categories(call=..., callback_data=...)
 async def _show_category(call: CallbackQuery, idx: int, category: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L135-L141`](../../bot/handlers/admin/gamification.py#L135-L141)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L207-L213`](../../bot/handlers/admin/gamification.py#L207-L213)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -383,7 +565,7 @@ result = await _show_category(call=..., idx=..., category=...)
 async def game_category(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L145-L153`](../../bot/handlers/admin/gamification.py#L145-L153)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L217-L225`](../../bot/handlers/admin/gamification.py#L217-L225)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -417,7 +599,7 @@ result = await game_category(call=..., callback_data=...)
 async def game_toggle(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/gamification.py#L157-L170`](../../bot/handlers/admin/gamification.py#L157-L170)
+- **Source Reference**: [`bot/handlers/admin/gamification.py#L229-L242`](../../bot/handlers/admin/gamification.py#L229-L242)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -130,3 +130,58 @@ async def test_bonus_and_toggle_buttons_round_trip() -> None:
         await handlers.game_toggle(call, tgame.GameAdminCallback.unpack(cat_btn.callback_data))
     adjust.assert_awaited_once_with(call.bot, target, "xp", -1000)
     toggle.assert_awaited_once_with(call.bot, target, "egg_dino")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("500", (False, 500)),
+        ("+500", (False, 500)),
+        ("-30", (False, -30)),
+        ("=1000", (True, 1000)),
+        ("= -5", (True, -5)),
+        ("=0", (True, 0)),
+        ("1 000", (False, 1000)),
+        ("0", None),
+        ("abc", None),
+        ("", None),
+        ("99999999", None),
+    ],
+)
+def test_parse_amount(text: str, expected: tuple[bool, int] | None) -> None:
+    assert tgame.parse_amount(text) == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("text", "setter"), [("+250", "adjust_bonus"), ("=1000", "set_bonus")])
+async def test_enter_amount_applies_and_clears_state(text: str, setter: str) -> None:
+    from bot.handlers.admin import gamification as handlers
+
+    target = _target()
+    data = {"idx": 2, "kind": "guild", "message_id": 77}
+    state = MagicMock(get_data=AsyncMock(return_value=data), clear=AsyncMock())
+    message = MagicMock(text=text, delete=AsyncMock(), bot=MagicMock())
+    with (
+        patch.object(handlers.admin, "get_student", AsyncMock(return_value=target)),
+        patch.object(handlers.admin, setter, AsyncMock()) as apply,
+        patch.object(handlers, "_edit_card", AsyncMock()) as card,
+    ):
+        await handlers.game_enter_amount(message, state)
+    apply.assert_awaited_once_with(message.bot, target, "guild", tgame.parse_amount(text)[1])
+    state.clear.assert_awaited_once()
+    # Ввод удалён, а карточка вернулась на место запроса — в то же сообщение
+    message.delete.assert_awaited_once()
+    card.assert_awaited_once_with(message, 77, 2)
+
+
+@pytest.mark.asyncio
+async def test_enter_amount_rejects_garbage_and_keeps_state() -> None:
+    from bot.handlers.admin import gamification as handlers
+
+    state = MagicMock(get_data=AsyncMock(return_value={"idx": 2, "kind": "xp", "message_id": 77}), clear=AsyncMock())
+    message = MagicMock(text="много", delete=AsyncMock())
+    with patch.object(handlers, "_edit_panel", AsyncMock()) as panel:
+        await handlers.game_enter_amount(message, state)
+    message.delete.assert_awaited_once()
+    assert panel.await_args.args[1:3] == (77, tgame.incorrect_amount_text)
+    state.clear.assert_not_awaited()

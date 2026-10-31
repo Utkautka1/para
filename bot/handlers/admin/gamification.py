@@ -2,13 +2,15 @@
 Хэндлеры раздела «Ачивки и очки» админ-панели (только для ALLOWED_USER_ID).
 
 Староста вручную правит бонусные XP и очки гильдии и выдаёт или снимает ачивки.
-Вся логика — в services.gamification_admin, здесь только навигация по экранам.
+Вся логика — в services.gamification_admin, здесь только навигация по экранам
+и ввод произвольного числа для бонуса (FSM GameAdminState).
 После каждого изменения экран перерисовывается из свежего рейтинга.
 """
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from bot.filters.auth import AuthFilter
 from bot.templates.admin import gamification as tgame
@@ -20,6 +22,7 @@ log = get_logger("admin_gamification")
 
 router = Router()
 router.callback_query.filter(AuthFilter(), F.message.chat.type == "private")
+router.message.filter(AuthFilter(), F.chat.type == "private")
 
 
 async def _render(call: CallbackQuery, text: str, markup: InlineKeyboardMarkup) -> None:
@@ -62,25 +65,94 @@ async def game_students(call: CallbackQuery) -> None:
 
 
 @router.callback_query(tgame.GameAdminCallback.filter(F.action == "card"))
-async def game_card(call: CallbackQuery, callback_data: tgame.GameAdminCallback) -> None:
+async def game_card(call: CallbackQuery, callback_data: tgame.GameAdminCallback, state: FSMContext) -> None:
     """
-        Карточка студента
+        Карточка студента (и отмена ввода числа — та же кнопка «Назад»)
     :param call: CallbackQuery
     :param callback_data: индекс студента
+    :param state: FSMContext
     :return:
     """
     await call.answer()
+    await state.clear()
     await _show_card(call, callback_data.idx)
 
 
-@router.callback_query(tgame.GameAdminCallback.filter(F.action == "noop"))
-async def game_noop(call: CallbackQuery) -> None:
+@router.callback_query(tgame.GameAdminCallback.filter(F.action == "ask"))
+async def game_ask_amount(call: CallbackQuery, callback_data: tgame.GameAdminCallback, state: FSMContext) -> None:
     """
-        Заголовок ряда кнопок — ничего не делает
+        Превращает карточку в запрос числа для бонуса XP или очков гильдии
     :param call: CallbackQuery
+    :param callback_data: индекс студента и вид бонуса ('xp' / 'guild')
+    :param state: FSMContext
     :return:
     """
     await call.answer()
+    target = await _load_target(call, callback_data.idx)
+    if not target or callback_data.value not in admin.BONUS_KINDS:
+        return
+    await state.set_state(tgame.GameAdminState.waiting_for_amount)
+    # Запоминаем сообщение-карточку: после ввода оно же снова станет карточкой
+    await state.update_data(idx=callback_data.idx, kind=callback_data.value, message_id=call.message.message_id)
+    text = tgame.ask_amount_text(target.profile.short_fio, callback_data.value)
+    await _render(call, text, tgame.ask_amount_ikb(callback_data.idx))
+
+
+@router.message(tgame.GameAdminState.waiting_for_amount)
+async def game_enter_amount(message: Message, state: FSMContext) -> None:
+    """
+        Применяет вписанное число и возвращает карточку на место запроса
+    :param message: Message
+    :param state: FSMContext
+    :return:
+    """
+    await _delete_quietly(message)
+    data = await state.get_data()
+    parsed = tgame.parse_amount(message.text)
+    if parsed is None:
+        await _edit_panel(message, data["message_id"], tgame.incorrect_amount_text, tgame.ask_amount_ikb(data["idx"]))
+        return
+    await state.clear()
+    target = await admin.get_student(data["idx"])
+    if not target:
+        await _edit_panel(message, data["message_id"], tgame.student_not_found_text, None)
+        return
+    await _apply_amount(message, target, data["kind"], parsed)
+    await _edit_card(message, data["message_id"], data["idx"])
+
+
+async def _delete_quietly(message: Message) -> None:
+    """Удаляет введённое старостой сообщение, чтобы в чате оставалась только панель."""
+    try:
+        await message.delete()
+    except TelegramBadRequest as e:
+        log.debug("Не удалось удалить сообщение с числом: %s", e)
+
+
+async def _edit_panel(message: Message, panel_id: int, text: str, markup: InlineKeyboardMarkup | None) -> None:
+    """Меняет сообщение-панель по id, игнорируя «message is not modified»."""
+    try:
+        await message.bot.edit_message_text(text, chat_id=message.chat.id, message_id=panel_id, reply_markup=markup)
+    except TelegramBadRequest as e:
+        if "not modified" not in str(e).lower():
+            log.warning("Не удалось обновить панель ачивок: %s", e)
+
+
+async def _apply_amount(message: Message, target: StudentTarget, kind: str, parsed: tuple[bool, int]) -> None:
+    """Выставляет или прибавляет бонус по разобранному вводу."""
+    exact, value = parsed
+    if exact:
+        await admin.set_bonus(message.bot, target, kind, value)
+    else:
+        await admin.adjust_bonus(message.bot, target, kind, value)
+
+
+async def _edit_card(message: Message, panel_id: int, idx: int) -> None:
+    """Возвращает на место запроса свежую карточку студента."""
+    target = await admin.get_student(idx)
+    if target:
+        text = tgame.student_card_text(target.profile, *await admin.get_bonuses(target))
+        await _edit_panel(message, panel_id, text, tgame.student_card_ikb(idx))
 
 
 @router.callback_query(tgame.GameAdminCallback.filter(F.action == "bonus"))

@@ -10,11 +10,15 @@
 import html
 
 from aiogram.filters.callback_data import CallbackData
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from services.gamification_models import AchievementCategory, StudentProfile
 from services.gamification_registry import ACHIEVEMENTS_MAP, SECRET_IDS
+
+# Предел ручного ввода — защита от опечатки с лишними нулями
+MAX_MANUAL_AMOUNT = 1_000_000
 
 # Шаги кнопок ± для XP и очков гильдии
 BONUS_STEPS = (-1000, -100, -10, 10, 100, 1000)
@@ -45,6 +49,12 @@ class GameAdminCallback(CallbackData, prefix="gma"):
     action: str
     idx: int = -1
     value: str = ""
+
+
+class GameAdminState(StatesGroup):
+    """Ожидание числа для бонуса XP или очков гильдии."""
+
+    waiting_for_amount = State()
 
 
 def _cb(action: str, idx: int = -1, value: str = "") -> str:
@@ -110,9 +120,9 @@ def student_card_ikb(idx: int) -> InlineKeyboardMarkup:
     :return: InlineKeyboardMarkup
     """
     rows = [
-        [InlineKeyboardButton(text="✨ XP", callback_data=_cb("noop", idx))],
+        [InlineKeyboardButton(text="✨ XP — вписать число", callback_data=_cb("ask", idx, "xp"))],
         _bonus_row(idx, "xp"),
-        [InlineKeyboardButton(text="⚔️ Очки гильдии", callback_data=_cb("noop", idx))],
+        [InlineKeyboardButton(text="⚔️ Очки гильдии — вписать число", callback_data=_cb("ask", idx, "guild"))],
         _bonus_row(idx, "guild"),
         [
             InlineKeyboardButton(text="🏆 Ачивки", callback_data=_cb("cats", idx), style="success"),
@@ -177,6 +187,56 @@ def category_text(p: StudentProfile, category: str) -> str:
         f"🏆 <b>{CATEGORY_TITLES[category]}</b> — {html.escape(p.short_fio)}\n\n"
         "<i>✅ — выдана (нажмите, чтобы снять), ➖ — нет (нажмите, чтобы выдать)</i>"
     )
+
+
+BONUS_LABELS = {"xp": "✨ XP", "guild": "⚔️ очков гильдии"}
+
+
+def ask_amount_text(student: str, kind: str) -> str:
+    """Просьба вписать число для бонуса студента."""
+    return (
+        f"✍️ <b>{BONUS_LABELS[kind]}</b> для <b>{html.escape(student)}</b>\n\n"
+        "Впишите число:\n"
+        "• <code>500</code> или <code>+500</code> — прибавить\n"
+        "• <code>-30</code> — отнять\n"
+        "• <code>=1000</code> — выставить бонус ровно"
+    )
+
+
+def ask_amount_ikb(idx: int) -> InlineKeyboardMarkup:
+    """
+    Запрос числа
+    - ◀️ Отмена (возврат к карточке)
+    :param idx: индекс студента
+    :return: InlineKeyboardMarkup
+    """
+    button = InlineKeyboardButton(text="◀️ Отмена", callback_data=_cb("card", idx), style="primary")
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
+
+
+incorrect_amount_text = (
+    "⚠️ <b>Не понял число.</b>\n\n"
+    "Примеры: <code>500</code>, <code>-30</code>, <code>=1000</code> "
+    f"(не больше {MAX_MANUAL_AMOUNT:,} по модулю). Впишите ещё раз."
+)
+
+
+def parse_amount(text: str | None) -> tuple[bool, int] | None:
+    """
+    Разбирает ввод старосты: '=N' — выставить бонус ровно, иначе — прибавить N.
+
+    Возвращает (выставить_ровно, число) или None, если ввод не распознан.
+    """
+    raw = (text or "").strip().replace(" ", "")
+    exact = raw.startswith("=")
+    number = raw[1:] if exact else raw
+    try:
+        value = int(number)
+    except ValueError:
+        return None
+    if abs(value) > MAX_MANUAL_AMOUNT or (value == 0 and not exact):
+        return None
+    return exact, value
 
 
 student_not_found_text = "⚠️ Студент не найден — список обновился. Откройте его заново."

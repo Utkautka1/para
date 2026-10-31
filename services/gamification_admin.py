@@ -105,6 +105,20 @@ async def adjust_bonus(bot: Any, target: StudentTarget, kind: str, delta: int) -
     return value
 
 
+async def set_bonus(bot: Any, target: StudentTarget, kind: str, value: int) -> int:
+    """
+    Выставляет бонус студента ровно в value и уведомляет его.
+
+    Возвращает установленное значение.
+    """
+    key, label = BONUS_KINDS[kind]
+    await CounterRepository.set_value(target.owner, key, value)
+    await invalidate_leaderboard_cache()
+    log.info("Бонус %s студента %s выставлен: %s", key, target.owner, value)
+    await _notify(bot, target, f"👑 <b>Староста выставил бонус {label}: {value:+d}</b>")
+    return value
+
+
 async def reset_bonuses(bot: Any, target: StudentTarget) -> None:
     """Обнуляет оба бонуса студента и уведомляет его."""
     for key, _ in BONUS_KINDS.values():
