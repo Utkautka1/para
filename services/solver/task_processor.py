@@ -15,7 +15,7 @@ from aiogram import Bot
 
 import config
 from core.logger import get_logger
-from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task
+from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task, promote_due_hw_tasks
 from core.telemetry import trace_span
 from integrations.deepseek import solve_homework
 from services.solver.payload_extractor import resolve_task_payload
@@ -132,6 +132,8 @@ async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None:
                 await asyncio.sleep(0.5)
                 continue
 
+            # Задания ждут уточнений в отложенной очереди — забираем созревшие перед чтением
+            await promote_due_hw_tasks()
             task = await pop_hw_task(timeout=2)
             if task:
                 active_tasks.add(asyncio.create_task(_guarded_execute_task(tg_bot, task, semaphore)))

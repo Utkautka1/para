@@ -443,6 +443,11 @@ SOLVER_MAX_IMAGE_BASE64_BYTES: int = solver_config.max_image_base64_bytes
 HW_QUEUE_KEY: str = "hw:tasks:queue"
 HW_PROCESSING_KEY: str = "hw:tasks:processing"
 HW_DLQ_KEY: str = "hw:tasks:dlq"
+# Отложенные задания (sorted set, score — unix-время отправки в очередь) и их индекс по message_id
+HW_DELAYED_KEY: str = "hw:tasks:delayed"
+HW_PENDING_PREFIX: str = "hw:tasks:pending:"
+# Окно уточнений (секунды): реплай на своё задание в это время склеивается с ним в одно
+HW_CLARIFY_WINDOW_SECONDS: int = 30
 
 SOLVER_MAX_CONCURRENT_TASKS: int = solver_config.max_concurrent_tasks
 SOLVER_RATE_LIMIT_PER_MINUTE: int = solver_config.rate_limit_per_minute

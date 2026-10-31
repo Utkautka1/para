@@ -2,8 +2,13 @@
 Хэндлер перехвата новых ДЗ в целевом топике (ID 405).
 
 Отлавливает фото, документы (.docx, .pdf, .txt, код) и текстовые задачи,
-валидирует их, проверяет антиспам и ставит задачу в очередь Redis (hw:tasks:queue)
-для фонового воркера para-solver.
+валидирует их, проверяет антиспам и ставит задачу в очередь Redis для para-solver.
+
+Уточнения реплаем на собственное задание:
+  1. Новое задание HW_CLARIFY_WINDOW_SECONDS ждёт в отложенной очереди
+  2. Реплай автора в это окно склеивается с заданием — решение будет одно
+  3. Реплай после того, как задание ушло в solver, решается сразу как
+     «исправленное решение» к исходному заданию (revision_of), а не как новая задача
 """
 
 import asyncio
@@ -21,6 +26,8 @@ from core.redis_cache import (
     mark_hash_processed,
     mark_message_processed,
     push_hw_task,
+    schedule_hw_task,
+    take_pending_hw_task,
 )
 from services.achievement_events import on_homework_task
 from services.achievement_triggers import HomeworkTask, homework_kind
@@ -113,21 +120,15 @@ def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str |
     return None, None, None, None, 0
 
 
-def _describe_task(msg: Message, target: Message, prompt: str) -> HomeworkTask:
+def _describe_task(msg: Message, target: Message, prompt: str, is_followup: bool) -> HomeworkTask:
     """
-    Описывает принятое задание для ачивок топика ДЗ.
-
-    Уточнение — это реплай студента на собственное сообщение-задание.
+    Описывает принятое сообщение для ачивок топика ДЗ.
 
     Возвращает HomeworkTask.
     """
     _, _, f_name, mime, _ = extract_media_meta(msg, target)
-    own_reply = target is not msg and bool(
-        target.from_user and msg.from_user and target.from_user.id == msg.from_user.id
-    )
-    return HomeworkTask(
-        prompt=prompt, kind=homework_kind(mime, f_name is not None), file_name=f_name, is_followup=own_reply
-    )
+    kind = homework_kind(mime, f_name is not None)
+    return HomeworkTask(prompt=prompt, kind=kind, file_name=f_name, is_followup=is_followup)
 
 
 def _sender_name(msg: Message) -> str | None:
@@ -202,25 +203,22 @@ async def acknowledge_hw_task(bot: Bot, msg: Message) -> None:
         log.debug("Не удалось поставить реакцию на msg_id=%s: %s", msg.message_id, e)
 
 
-async def dispatch_hw_task(
-    bot: Bot,
+def build_hw_task(
     msg: Message,
     user_id: int,
     prompt: str,
     meta: tuple[str | None, str | None, str | None, int],
-    c_hash: str,
-) -> None:
+    revision_of: int | None = None,
+) -> dict:
     """
-    Формирует payload, ставит задачу в очередь Redis и подтверждает прием.
+    Собирает payload задания для очереди solver.
 
-    Помечает хэш и ID сообщения как обработанные после добавления в очередь.
-    Обеспечивает надежную доставку задач в solver без дублирования.
+    revision_of — id исходного задания, если это уточнение к уже решаемому.
 
-    Ничего не возвращает.
+    Возвращает словарь задания.
     """
-
     f_id, f_name, mime, f_size = meta
-    task = {
+    return {
         "chat_id": msg.chat.id,
         "message_id": msg.message_id,
         "message_thread_id": msg.message_thread_id,
@@ -230,11 +228,59 @@ async def dispatch_hw_task(
         "file_name": f_name,
         "mime_type": mime,
         "file_size": f_size,
+        "revision_of": revision_of,
     }
-    await push_hw_task(task)
+
+
+async def dispatch_hw_task(bot: Bot, msg: Message, task: dict, c_hash: str) -> None:
+    """
+    Ставит задание в очередь и подтверждает приём реакцией.
+
+    Новое задание откладывается на окно уточнений; исправление к уже
+    решаемому заданию ждать нечего — оно уходит в solver сразу.
+
+    Ничего не возвращает.
+    """
+    if task.get("revision_of"):
+        await push_hw_task(task)
+    else:
+        await schedule_hw_task(task, config.HW_CLARIFY_WINDOW_SECONDS)
     await mark_hash_processed(c_hash)
     await mark_message_processed(msg.message_id)
     await acknowledge_hw_task(bot, msg)
+
+
+async def is_own_task_reply(msg: Message, target: Message, user_id: int) -> bool:
+    """
+    Проверяет, что сообщение — реплай автора на его же принятое задание.
+
+    Реплай на чужое задание («реши 2 вариант» под чужим фото) остаётся
+    самостоятельной задачей другого студента.
+
+    Возвращает True для уточнения своего задания.
+    """
+    if target is msg or not target.from_user or target.from_user.id != user_id:
+        return False
+    return await is_message_processed(target.message_id)
+
+
+async def merge_into_pending(bot: Bot, msg: Message, target: Message) -> bool:
+    """
+    Дописывает уточнение к заданию, которое ещё ждёт в окне уточнений.
+
+    Окно перезапускается: можно прислать несколько уточнений подряд.
+
+    Возвращает True, если уточнение склеено с отложенным заданием.
+    """
+    pending = await take_pending_hw_task(target.message_id)
+    if not pending:
+        return False
+    pending["prompt"] = f"{pending.get('prompt', '')}\nУточнение: {msg.text or msg.caption or ''}".strip()
+    await schedule_hw_task(pending, config.HW_CLARIFY_WINDOW_SECONDS)
+    await mark_message_processed(msg.message_id)
+    await acknowledge_hw_task(bot, msg)
+    log.info("✍️ Уточнение msg_id=%s склеено с заданием msg_id=%s", msg.message_id, target.message_id)
+    return True
 
 
 async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str | None) -> bool:
@@ -278,16 +324,28 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     target = msg.reply_to_message if msg.reply_to_message else msg
     if not await is_hw_allowed(msg, target, user_id):
         return
+    own_reply = await is_own_task_reply(msg, target, user_id)
+    merged = own_reply and await merge_into_pending(bot, msg, target)
+    if merged or await _accept_new_task(bot, msg, target, user_id, own_reply):
+        task_info = _describe_task(msg, target, combine_prompt_and_instructions(msg, target), own_reply)
+        asyncio.create_task(on_homework_task(user_id, _sender_name(msg), bot, task_info))
 
+
+async def _accept_new_task(bot: Bot, msg: Message, target: Message, user_id: int, own_reply: bool) -> bool:
+    """
+    Проверяет файл и дубликаты и ставит задание (или исправление) в очередь.
+
+    Возвращает True, если задание принято.
+    """
     prompt = combine_prompt_and_instructions(msg, target)
     f_id, u_id, f_name, mime, f_size = extract_media_meta(msg, target)
     if not await validate_hw_file_size(bot, msg, f_size, f_name):
-        return
-
+        return False
     c_hash = compute_content_hash(prompt, u_id)
     if await is_hash_processed(c_hash):
         log.warning("⚠️ Повтор ДЗ по SHA256 (msg_id=%s). Пропуск.", msg.message_id)
-        return
-
-    await dispatch_hw_task(bot, msg, user_id, prompt, (f_id, f_name, mime, f_size), c_hash)
-    asyncio.create_task(on_homework_task(user_id, _sender_name(msg), bot, _describe_task(msg, target, prompt)))
+        return False
+    revision_of = target.message_id if own_reply else None
+    task = build_hw_task(msg, user_id, prompt, (f_id, f_name, mime, f_size), revision_of)
+    await dispatch_hw_task(bot, msg, task, c_hash)
+    return True

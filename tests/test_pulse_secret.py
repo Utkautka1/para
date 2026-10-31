@@ -138,3 +138,14 @@ def test_hide_secret_from_other_viewers() -> None:
     assert hide_secret_achievements(profile, None).unlocked_achievements == ["bot_welcome"]
     assert "egg_dino" in hide_secret_achievements(profile, "Иванов Иван").unlocked_achievements
     assert profile.unlocked_achievements == ["bot_welcome", "egg_dino"]
+
+
+@pytest.mark.parametrize(
+    ("identity", "expected"),
+    [("classmate:1", "Иванов Иван"), ("tester:1", "Иванов Иван"), ("master_admin", None), ("classmate:x", None)],
+)
+def test_viewer_fio_for_classmate_session(identity: str, expected: str | None) -> None:
+    from api.router import gamification as router
+
+    with patch.object(router, "find_classmate_by_tg_id", return_value={"full_name": "Иванов Иван"}):
+        assert router._viewer_fio(identity) == expected

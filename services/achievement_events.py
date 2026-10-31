@@ -125,8 +125,15 @@ async def on_attendance_view(user: User | None, bot: Any) -> None:
 
 
 async def on_homework_task(uid: int, name: str | None, bot: Any, task: HomeworkTask) -> None:
-    """Задание в топике ДЗ: разовые ачивки, счётчики заданий, дней и форматов."""
+    """
+    Задание в топике ДЗ: разовые ачивки, счётчики заданий, дней и форматов.
+
+    Уточнение к своему заданию — не новое задание: даёт только «Работу над ошибками».
+    """
     if not is_group_member(uid):
+        return
+    if task.is_followup:
+        await award_achievement(uid, "ai_followup", bot, name)
         return
     await _award_all(uid, homework_achievements(task, _now()), bot, name)
     await bump_counter(uid, "hw_tasks", bot, name)

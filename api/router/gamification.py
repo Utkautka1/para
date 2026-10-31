@@ -65,12 +65,13 @@ def _viewer_fio(identity: str) -> str | None:
     """
     Определяет ФИО зрителя по идентичности из verify_api_or_tester.
 
-    Сессия Mini App даёт 'tester:<tg_id>'; мастер-ключ и прочие — без ФИО,
-    такие зрители секретных ачивок не видят ни у кого.
+    Сессия Mini App даёт 'classmate:<tg_id>' (одногруппник) или 'tester:<tg_id>';
+    мастер-ключ и прочие — без ФИО, такие зрители секретных ачивок не видят ни у кого.
     """
-    if not identity.startswith("tester:"):
+    kind, _, uid = identity.partition(":")
+    if kind not in ("classmate", "tester") or not uid.isdigit():
         return None
-    classmate = find_classmate_by_tg_id(int(identity.split(":", 1)[1]))
+    classmate = find_classmate_by_tg_id(int(uid))
     return str(classmate["full_name"]) if classmate and classmate.get("full_name") else None
 
 

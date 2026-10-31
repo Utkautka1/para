@@ -22,8 +22,9 @@ graph LR
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
 | [`build_post_link`](#build_post_link) | Function | L17–L27 | `str` | Executes core domain logic for `build_post_link`. |
-| [`send_solution_to_telegram`](#send_solution_to_telegram) | Function | L30–L50 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`notify_task_error`](#notify_task_error) | Function | L53–L73 | `None` | Executes core domain logic for `notify_task_error`. |
+| [`build_solution_caption`](#build_solution_caption) | Function | L30–L45 | `str` | Executes core domain logic for `build_solution_caption`... |
+| [`send_solution_to_telegram`](#send_solution_to_telegram) | Function | L48–L68 | `None` | Dispatches notification message via Telegram API for `s... |
+| [`notify_task_error`](#notify_task_error) | Function | L71–L91 | `None` | Executes core domain logic for `notify_task_error`. |
 
 ---
 
@@ -63,12 +64,47 @@ result = build_post_link(chat_id=..., message_id=...)
 
 ---
 
+### `build_solution_caption`
+```python
+def build_solution_caption(chat_id: int, message_id: int, revision_of: int | None) -> str
+```
+
+- **Source Reference**: [`services/solver/telegram_reporter.py#L30-L45`](../../services/solver/telegram_reporter.py#L30-L45)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `build_solution_caption`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `chat_id` | `int` | Yes | Unique 64-bit Telegram chat or supergroup identifier. |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
+| `revision_of` | `int | None` | Yes | Parameter `revision_of` of type `int | None`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.solver.telegram_reporter import build_solution_caption
+
+# Execute call
+result = build_solution_caption(chat_id=..., message_id=..., revision_of=...)
+```
+
+---
+
 ### `send_solution_to_telegram`
 ```python
 async def send_solution_to_telegram(tg_bot: Bot, task: dict, doc_path: str) -> None
 ```
 
-- **Source Reference**: [`services/solver/telegram_reporter.py#L30-L50`](../../services/solver/telegram_reporter.py#L30-L50)
+- **Source Reference**: [`services/solver/telegram_reporter.py#L48-L68`](../../services/solver/telegram_reporter.py#L48-L68)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -103,7 +139,7 @@ result = await send_solution_to_telegram(tg_bot=..., task=..., doc_path=...)
 async def notify_task_error(tg_bot: Bot, task: dict) -> None
 ```
 
-- **Source Reference**: [`services/solver/telegram_reporter.py#L53-L73`](../../services/solver/telegram_reporter.py#L53-L73)
+- **Source Reference**: [`services/solver/telegram_reporter.py#L71-L91`](../../services/solver/telegram_reporter.py#L71-L91)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

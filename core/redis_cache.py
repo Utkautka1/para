@@ -14,7 +14,9 @@ from contextlib import asynccontextmanager
 
 from config import (
     ALLOWED_USER_ID,
+    HW_DELAYED_KEY,
     HW_DLQ_KEY,
+    HW_PENDING_PREFIX,
     HW_PROCESSING_KEY,
     HW_QUEUE_KEY,
     LUA_RELEASE_LOCK,
@@ -236,6 +238,80 @@ async def push_hw_task(task_data: dict) -> bool:
     return False
 
 
+# Переносит созревшие отложенные задания в очередь одной атомарной операцией:
+# ZREM внутри Lua гарантирует, что задание, забранное на замену, не уйдёт в solver
+LUA_PROMOTE_DUE = """
+local due = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+for _, payload in ipairs(due) do
+    redis.call('ZREM', KEYS[1], payload)
+    redis.call('RPUSH', KEYS[2], payload)
+end
+return #due
+"""
+
+
+async def schedule_hw_task(task_data: dict, delay_seconds: int) -> bool:
+    """
+    Откладывает задание ДЗ на delay_seconds — окно для уточнений реплаем.
+
+    Индекс hw:tasks:pending:<message_id> позволяет найти задание по сообщению,
+    на которое ответил студент. TTL индекса с запасом переживает окно.
+
+    Возвращает True при успешной постановке.
+    """
+    try:
+        client = await init_redis()
+        if not client:
+            return False
+        payload = json.dumps(task_data, ensure_ascii=False)
+        await client.zadd(HW_DELAYED_KEY, {payload: time.time() + delay_seconds})
+        await client.set(f"{HW_PENDING_PREFIX}{task_data.get('message_id')}", payload, ex=delay_seconds * 4)
+        log.info("Задача ДЗ (msg_id=%s) ждёт уточнений %s сек", task_data.get("message_id"), delay_seconds)
+        return True
+    except Exception as e:
+        log.error("Ошибка откладывания задачи ДЗ в Redis: %s", e)
+        return False
+
+
+async def take_pending_hw_task(message_id: int) -> dict | None:
+    """
+    Забирает ещё не отправленное в solver задание по id его сообщения.
+
+    Успешный ZREM означает, что задание не успело уйти в очередь: дальше его
+    заменит склеенное с уточнением. Если ZREM ничего не удалил — задание уже решается.
+
+    Возвращает задание или None, если окно уточнений закрыто.
+    """
+    try:
+        client = await init_redis()
+        if not client:
+            return None
+        payload = await client.getdel(f"{HW_PENDING_PREFIX}{message_id}")
+        if payload and await client.zrem(HW_DELAYED_KEY, payload):
+            return json.loads(payload)
+    except Exception as e:
+        log.error("Ошибка поиска отложенной задачи ДЗ (msg_id=%s): %s", message_id, e)
+    return None
+
+
+async def promote_due_hw_tasks() -> int:
+    """
+    Отправляет в очередь solver задания, у которых закончилось окно уточнений.
+
+    Возвращает количество перенесённых заданий.
+    """
+    try:
+        client = await init_redis()
+        if client:
+            moved = int(await client.eval(LUA_PROMOTE_DUE, 2, HW_DELAYED_KEY, HW_QUEUE_KEY, time.time()))
+            if moved:
+                log.info("В очередь solver ушло отложенных задач ДЗ: %s", moved)
+            return moved
+    except Exception as e:
+        log.error("Ошибка переноса отложенных задач ДЗ: %s", e)
+    return 0
+
+
 async def pop_hw_task(timeout: int = 2) -> dict | None:
     """
     Атомарно извлекает задачу из очереди и переносит в буфер processing.
@@ -308,7 +384,7 @@ async def clear_hw_queue() -> int:
     try:
         client = await init_redis()
         if client:
-            deleted = await client.delete(HW_QUEUE_KEY, HW_PROCESSING_KEY)
+            deleted = await client.delete(HW_QUEUE_KEY, HW_PROCESSING_KEY, HW_DELAYED_KEY)
             log.info("Очереди задач ДЗ очищены (deleted=%s)", deleted)
             return deleted
     except Exception as e:

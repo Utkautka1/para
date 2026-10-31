@@ -29,13 +29,13 @@ graph LR
 | [`on_schedule_view`](#on_schedule_view) | Function | L102–L106 | `None` | Executes core domain logic for `on_schedule_view`. |
 | [`on_refresh_click`](#on_refresh_click) | Function | L109–L116 | `None` | Executes core domain logic for `on_refresh_click`. |
 | [`on_attendance_view`](#on_attendance_view) | Function | L119–L124 | `None` | Executes core domain logic for `on_attendance_view`. |
-| [`on_homework_task`](#on_homework_task) | Function | L127–L137 | `None` | Executes core domain logic for `on_homework_task`. |
-| [`mark_ping_all`](#mark_ping_all) | Function | L140–L142 | `None` | Executes core domain logic for `mark_ping_all`. |
-| [`_has_birthday_today`](#_has_birthday_today) | Function | L145–L150 | `bool` | Executes core domain logic for `_has_birthday_today`. |
-| [`_chat_reply_achievement`](#_chat_reply_achievement) | Function | L153–L164 | `str | None` | Executes core domain logic for `_chat_reply_achievement... |
-| [`_award_chat_specials`](#_award_chat_specials) | Function | L167–L173 | `None` | Executes core domain logic for `_award_chat_specials`. |
-| [`on_group_message`](#on_group_message) | Function | L176–L194 | `None` | Executes core domain logic for `on_group_message`. |
-| [`on_profile_view`](#on_profile_view) | Function | L197–L213 | `bool` | Executes core domain logic for `on_profile_view`. |
+| [`on_homework_task`](#on_homework_task) | Function | L127–L144 | `None` | Executes core domain logic for `on_homework_task`. |
+| [`mark_ping_all`](#mark_ping_all) | Function | L147–L149 | `None` | Executes core domain logic for `mark_ping_all`. |
+| [`_has_birthday_today`](#_has_birthday_today) | Function | L152–L157 | `bool` | Executes core domain logic for `_has_birthday_today`. |
+| [`_chat_reply_achievement`](#_chat_reply_achievement) | Function | L160–L171 | `str | None` | Executes core domain logic for `_chat_reply_achievement... |
+| [`_award_chat_specials`](#_award_chat_specials) | Function | L174–L180 | `None` | Executes core domain logic for `_award_chat_specials`. |
+| [`on_group_message`](#on_group_message) | Function | L183–L201 | `None` | Executes core domain logic for `on_group_message`. |
+| [`on_profile_view`](#on_profile_view) | Function | L204–L220 | `bool` | Executes core domain logic for `on_profile_view`. |
 
 ---
 
@@ -320,7 +320,7 @@ result = await on_attendance_view(user=..., bot=...)
 async def on_homework_task(uid: int, name: str | None, bot: Any, task: HomeworkTask) -> None
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L127-L137`](../../services/achievement_events.py#L127-L137)
+- **Source Reference**: [`services/achievement_events.py#L127-L144`](../../services/achievement_events.py#L127-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -356,7 +356,7 @@ result = await on_homework_task(uid=..., name=..., bot=...)
 async def mark_ping_all() -> None
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L140-L142`](../../services/achievement_events.py#L140-L142)
+- **Source Reference**: [`services/achievement_events.py#L147-L149`](../../services/achievement_events.py#L147-L149)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -387,7 +387,7 @@ result = await mark_ping_all()
 def _has_birthday_today(exclude_uid: int, today: date) -> bool
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L145-L150`](../../services/achievement_events.py#L145-L150)
+- **Source Reference**: [`services/achievement_events.py#L152-L157`](../../services/achievement_events.py#L152-L157)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -421,7 +421,7 @@ result = _has_birthday_today(exclude_uid=..., today=...)
 def _chat_reply_achievement(message: Message, uid: int) -> str | None
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L153-L164`](../../services/achievement_events.py#L153-L164)
+- **Source Reference**: [`services/achievement_events.py#L160-L171`](../../services/achievement_events.py#L160-L171)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -455,7 +455,7 @@ result = _chat_reply_achievement(message=..., uid=...)
 async def _award_chat_specials(message: Message, uid: int, bot: Any, name: str | None) -> None
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L167-L173`](../../services/achievement_events.py#L167-L173)
+- **Source Reference**: [`services/achievement_events.py#L174-L180`](../../services/achievement_events.py#L174-L180)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -491,7 +491,7 @@ result = await _award_chat_specials(message=..., uid=..., bot=...)
 async def on_group_message(message: Message, bot: Any) -> None
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L176-L194`](../../services/achievement_events.py#L176-L194)
+- **Source Reference**: [`services/achievement_events.py#L183-L201`](../../services/achievement_events.py#L183-L201)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -525,7 +525,7 @@ result = await on_group_message(message=..., bot=...)
 async def on_profile_view(uid: int, viewed_fio: str) -> bool
 ```
 
-- **Source Reference**: [`services/achievement_events.py#L197-L213`](../../services/achievement_events.py#L197-L213)
+- **Source Reference**: [`services/achievement_events.py#L204-L220`](../../services/achievement_events.py#L204-L220)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

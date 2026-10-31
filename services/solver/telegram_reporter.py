@@ -27,6 +27,24 @@ def build_post_link(chat_id: int, message_id: int) -> str:
     return f"https://t.me/c/{clean_id}/{message_id}"
 
 
+def build_solution_caption(chat_id: int, message_id: int, revision_of: int | None) -> str:
+    """
+    Формирует подпись к решению: обычное или исправленное по уточнению студента.
+
+    Исправленное решение ссылается и на исходное задание, и на уточнение,
+    чтобы в топике решений было видно, что это не новая задача.
+
+    Возвращает HTML-строку подписи.
+    """
+    if not revision_of:
+        return f"✅ <b>Готовое решение ДЗ</b>\n\n📌 Ссылка на задание: {build_post_link(chat_id, message_id)}"
+    return (
+        "🔁 <b>Исправленное решение ДЗ</b>\n\n"
+        f"📌 Задание: {build_post_link(chat_id, revision_of)}\n"
+        f"✍️ Уточнение: {build_post_link(chat_id, message_id)}"
+    )
+
+
 async def send_solution_to_telegram(tg_bot: Bot, task: dict, doc_path: str) -> None:
     """
     Отправляет готовый .docx файл решения в топик готовых ДЗ.
@@ -38,7 +56,7 @@ async def send_solution_to_telegram(tg_bot: Bot, task: dict, doc_path: str) -> N
     """
     chat_id = task.get("chat_id", config.TOPIC_CHAT_ID)
     msg_id = task.get("message_id", 0)
-    caption = f"✅ <b>Готовое решение ДЗ</b>\n\n📌 Ссылка на задание: {build_post_link(chat_id, msg_id)}"
+    caption = build_solution_caption(chat_id, msg_id, task.get("revision_of"))
     doc_file = FSInputFile(doc_path, filename=f"Решение_ДЗ_{msg_id}.docx")
 
     await tg_bot.send_document(

@@ -23,12 +23,12 @@ graph LR
 | :--- | :--- | :--- | :--- | :--- |
 | [`_calculate_group_pulse`](#_calculate_group_pulse) | Function | L41–L45 | `float` | Executes core domain logic for `_calculate_group_pulse`... |
 | [`_resolve_target_fio`](#_resolve_target_fio) | Function | L48–L61 | `str | None` | Executes core domain logic for `_resolve_target_fio`. |
-| [`_viewer_fio`](#_viewer_fio) | Function | L64–L74 | `str | None` | Executes core domain logic for `_viewer_fio`. |
-| [`_public_schema`](#_public_schema) | Function | L77–L79 | `StudentProfileSchema` | Executes core domain logic for `_public_schema`. |
-| [`get_leaderboard_endpoint`](#get_leaderboard_endpoint) | Function | L83–L100 | `LeaderboardResponse` | Retrieves and resolves domain data for `get_leaderboard... |
-| [`get_student_profile_endpoint`](#get_student_profile_endpoint) | Function | L104–L122 | `StudentProfileSchema` | Retrieves and resolves domain data for `get_student_pro... |
-| [`get_achievements_catalog_endpoint`](#get_achievements_catalog_endpoint) | Function | L126–L145 | `AchievementsCatalogResponse` | Retrieves and resolves domain data for `get_achievement... |
-| [`get_ranks_catalog_endpoint`](#get_ranks_catalog_endpoint) | Function | L149–L151 | `list[dict[str, str]]` | Retrieves and resolves domain data for `get_ranks_catal... |
+| [`_viewer_fio`](#_viewer_fio) | Function | L64–L75 | `str | None` | Executes core domain logic for `_viewer_fio`. |
+| [`_public_schema`](#_public_schema) | Function | L78–L80 | `StudentProfileSchema` | Executes core domain logic for `_public_schema`. |
+| [`get_leaderboard_endpoint`](#get_leaderboard_endpoint) | Function | L84–L101 | `LeaderboardResponse` | Retrieves and resolves domain data for `get_leaderboard... |
+| [`get_student_profile_endpoint`](#get_student_profile_endpoint) | Function | L105–L123 | `StudentProfileSchema` | Retrieves and resolves domain data for `get_student_pro... |
+| [`get_achievements_catalog_endpoint`](#get_achievements_catalog_endpoint) | Function | L127–L146 | `AchievementsCatalogResponse` | Retrieves and resolves domain data for `get_achievement... |
+| [`get_ranks_catalog_endpoint`](#get_ranks_catalog_endpoint) | Function | L150–L152 | `list[dict[str, str]]` | Retrieves and resolves domain data for `get_ranks_catal... |
 
 ---
 
@@ -106,7 +106,7 @@ result = _resolve_target_fio(fio=..., tg_id=...)
 def _viewer_fio(identity: str) -> str | None
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L64-L74`](../../api/router/gamification.py#L64-L74)
+- **Source Reference**: [`api/router/gamification.py#L64-L75`](../../api/router/gamification.py#L64-L75)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -139,7 +139,7 @@ result = _viewer_fio(identity=...)
 def _public_schema(profile: StudentProfile, viewer: str | None) -> StudentProfileSchema
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L77-L79`](../../api/router/gamification.py#L77-L79)
+- **Source Reference**: [`api/router/gamification.py#L78-L80`](../../api/router/gamification.py#L78-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `StudentProfileSchema`
 
@@ -173,7 +173,7 @@ result = _public_schema(profile=..., viewer=...)
 async def get_leaderboard_endpoint(identity: str = Depends(verify_api_or_tester)) -> LeaderboardResponse
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L83-L100`](../../api/router/gamification.py#L83-L100)
+- **Source Reference**: [`api/router/gamification.py#L84-L101`](../../api/router/gamification.py#L84-L101)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `LeaderboardResponse`
 
@@ -206,7 +206,7 @@ result = await get_leaderboard_endpoint(identity=...)
 async def get_student_profile_endpoint( fio: str | None = Query(default=None, description="Фамилия или ФИО студента"), tg_id: int | None = Query(default=None, description="Telegram ID студента"), identity: str = Depends(verify_api_or_tester), ) -> StudentProfileSchema
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L104-L122`](../../api/router/gamification.py#L104-L122)
+- **Source Reference**: [`api/router/gamification.py#L105-L123`](../../api/router/gamification.py#L105-L123)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentProfileSchema`
 
@@ -241,7 +241,7 @@ result = await get_student_profile_endpoint(fio=..., tg_id=..., identity=...)
 async def get_achievements_catalog_endpoint() -> AchievementsCatalogResponse
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L126-L145`](../../api/router/gamification.py#L126-L145)
+- **Source Reference**: [`api/router/gamification.py#L127-L146`](../../api/router/gamification.py#L127-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AchievementsCatalogResponse`
 
@@ -272,7 +272,7 @@ result = await get_achievements_catalog_endpoint()
 async def get_ranks_catalog_endpoint() -> list[dict[str, str]]
 ```
 
-- **Source Reference**: [`api/router/gamification.py#L149-L151`](../../api/router/gamification.py#L149-L151)
+- **Source Reference**: [`api/router/gamification.py#L150-L152`](../../api/router/gamification.py#L150-L152)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[dict[str, str]]`
 

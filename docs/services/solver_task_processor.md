@@ -27,7 +27,7 @@ graph LR
 | [`execute_single_task`](#execute_single_task) | Function | L66–L89 | `None` | Executes core domain logic for `execute_single_task`. |
 | [`_guarded_execute_task`](#_guarded_execute_task) | Function | L92–L101 | `None` | Executes core domain logic for `_guarded_execute_task`. |
 | [`_drain_active_tasks`](#_drain_active_tasks) | Function | L104–L114 | `None` | Executes core domain logic for `_drain_active_tasks`. |
-| [`run_solver_loop`](#run_solver_loop) | Function | L117–L143 | `None` | Executes core domain logic for `run_solver_loop`. |
+| [`run_solver_loop`](#run_solver_loop) | Function | L117–L145 | `None` | Executes core domain logic for `run_solver_loop`. |
 
 ---
 
@@ -242,7 +242,7 @@ result = await _drain_active_tasks(active_tasks=...)
 async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None
 ```
 
-- **Source Reference**: [`services/solver/task_processor.py#L117-L143`](../../services/solver/task_processor.py#L117-L143)
+- **Source Reference**: [`services/solver/task_processor.py#L117-L145`](../../services/solver/task_processor.py#L117-L145)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

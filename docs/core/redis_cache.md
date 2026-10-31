@@ -21,34 +21,37 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cache_get`](#cache_get) | Function | L34–L53 | `str | None` | Executes core domain logic for `cache_get`. |
-| [`cache_set`](#cache_set) | Function | L56–L71 | `None` | Executes core domain logic for `cache_set`. |
-| [`cache_delete`](#cache_delete) | Function | L74–L92 | `bool` | Executes core domain logic for `cache_delete`. |
-| [`cache_flush`](#cache_flush) | Function | L95–L114 | `int` | Executes core domain logic for `cache_flush`. |
-| [`is_message_processed`](#is_message_processed) | Function | L117–L128 | `bool` | Executes core domain logic for `is_message_processed`. |
-| [`mark_message_processed`](#mark_message_processed) | Function | L131–L141 | `None` | Executes core domain logic for `mark_message_processed`... |
-| [`check_user_rate_limit`](#check_user_rate_limit) | Function | L144–L165 | `bool` | Executes core domain logic for `check_user_rate_limit`. |
-| [`incr_with_ttl`](#incr_with_ttl) | Function | L168–L187 | `int` | Executes core domain logic for `incr_with_ttl`. |
-| [`is_hash_processed`](#is_hash_processed) | Function | L190–L201 | `bool` | Executes core domain logic for `is_hash_processed`. |
-| [`mark_hash_processed`](#mark_hash_processed) | Function | L204–L214 | `None` | Executes core domain logic for `mark_hash_processed`. |
-| [`push_hw_task`](#push_hw_task) | Function | L217–L236 | `bool` | Executes core domain logic for `push_hw_task`. |
-| [`pop_hw_task`](#pop_hw_task) | Function | L239–L255 | `dict | None` | Executes core domain logic for `pop_hw_task`. |
-| [`ack_hw_task`](#ack_hw_task) | Function | L258–L274 | `None` | Executes core domain logic for `ack_hw_task`. |
-| [`recover_stale_hw_tasks`](#recover_stale_hw_tasks) | Function | L277–L296 | `int` | Executes core domain logic for `recover_stale_hw_tasks`... |
-| [`clear_hw_queue`](#clear_hw_queue) | Function | L299–L316 | `int` | Flushes and resets state for `clear_hw_queue`. |
-| [`save_schedule_snapshot`](#save_schedule_snapshot) | Function | L319–L346 | `None` | Saves serialized entity data to storage for `save_sched... |
-| [`load_schedule_snapshot`](#load_schedule_snapshot) | Function | L349–L368 | `tuple[dict | None, dict | None]` | Executes core domain logic for `load_schedule_snapshot`... |
-| [`load_schedule_meta`](#load_schedule_meta) | Function | L371–L385 | `dict | None` | Executes core domain logic for `load_schedule_meta`. |
-| [`request_schedule_refresh`](#request_schedule_refresh) | Function | L388–L405 | `bool` | Executes core domain logic for `request_schedule_refres... |
-| [`pop_schedule_refresh_request`](#pop_schedule_refresh_request) | Function | L408–L419 | `bool` | Executes core domain logic for `pop_schedule_refresh_re... |
-| [`is_reminder_sent`](#is_reminder_sent) | Function | L422–L432 | `bool` | Executes core domain logic for `is_reminder_sent`. |
-| [`mark_reminder_sent`](#mark_reminder_sent) | Function | L435–L444 | `None` | Executes core domain logic for `mark_reminder_sent`. |
-| [`get_topic_state_redis`](#get_topic_state_redis) | Function | L447–L457 | `int | None` | Retrieves and resolves domain data for `get_topic_state... |
-| [`set_topic_state_redis`](#set_topic_state_redis) | Function | L460–L469 | `None` | Persists state updates for `set_topic_state_redis`. |
-| [`register_message_for_cleanup`](#register_message_for_cleanup) | Function | L472–L488 | `None` | Executes core domain logic for `register_message_for_cl... |
-| [`get_expired_messages_for_cleanup`](#get_expired_messages_for_cleanup) | Function | L491–L511 | `list[tuple[int, int]]` | Retrieves and resolves domain data for `get_expired_mes... |
-| [`redis_lock`](#redis_lock) | Function | L515–L539 | `AsyncGenerator[bool, None]` | Executes core domain logic for `redis_lock`. |
-| [`nack_hw_task`](#nack_hw_task) | Function | L542–L564 | `bool` | Executes core domain logic for `nack_hw_task`. |
+| [`cache_get`](#cache_get) | Function | L36–L55 | `str | None` | Executes core domain logic for `cache_get`. |
+| [`cache_set`](#cache_set) | Function | L58–L73 | `None` | Executes core domain logic for `cache_set`. |
+| [`cache_delete`](#cache_delete) | Function | L76–L94 | `bool` | Executes core domain logic for `cache_delete`. |
+| [`cache_flush`](#cache_flush) | Function | L97–L116 | `int` | Executes core domain logic for `cache_flush`. |
+| [`is_message_processed`](#is_message_processed) | Function | L119–L130 | `bool` | Executes core domain logic for `is_message_processed`. |
+| [`mark_message_processed`](#mark_message_processed) | Function | L133–L143 | `None` | Executes core domain logic for `mark_message_processed`... |
+| [`check_user_rate_limit`](#check_user_rate_limit) | Function | L146–L167 | `bool` | Executes core domain logic for `check_user_rate_limit`. |
+| [`incr_with_ttl`](#incr_with_ttl) | Function | L170–L189 | `int` | Executes core domain logic for `incr_with_ttl`. |
+| [`is_hash_processed`](#is_hash_processed) | Function | L192–L203 | `bool` | Executes core domain logic for `is_hash_processed`. |
+| [`mark_hash_processed`](#mark_hash_processed) | Function | L206–L216 | `None` | Executes core domain logic for `mark_hash_processed`. |
+| [`push_hw_task`](#push_hw_task) | Function | L219–L238 | `bool` | Executes core domain logic for `push_hw_task`. |
+| [`schedule_hw_task`](#schedule_hw_task) | Function | L253–L273 | `bool` | Executes core domain logic for `schedule_hw_task`. |
+| [`take_pending_hw_task`](#take_pending_hw_task) | Function | L276–L294 | `dict | None` | Executes core domain logic for `take_pending_hw_task`. |
+| [`promote_due_hw_tasks`](#promote_due_hw_tasks) | Function | L297–L312 | `int` | Executes core domain logic for `promote_due_hw_tasks`. |
+| [`pop_hw_task`](#pop_hw_task) | Function | L315–L331 | `dict | None` | Executes core domain logic for `pop_hw_task`. |
+| [`ack_hw_task`](#ack_hw_task) | Function | L334–L350 | `None` | Executes core domain logic for `ack_hw_task`. |
+| [`recover_stale_hw_tasks`](#recover_stale_hw_tasks) | Function | L353–L372 | `int` | Executes core domain logic for `recover_stale_hw_tasks`... |
+| [`clear_hw_queue`](#clear_hw_queue) | Function | L375–L392 | `int` | Flushes and resets state for `clear_hw_queue`. |
+| [`save_schedule_snapshot`](#save_schedule_snapshot) | Function | L395–L422 | `None` | Saves serialized entity data to storage for `save_sched... |
+| [`load_schedule_snapshot`](#load_schedule_snapshot) | Function | L425–L444 | `tuple[dict | None, dict | None]` | Executes core domain logic for `load_schedule_snapshot`... |
+| [`load_schedule_meta`](#load_schedule_meta) | Function | L447–L461 | `dict | None` | Executes core domain logic for `load_schedule_meta`. |
+| [`request_schedule_refresh`](#request_schedule_refresh) | Function | L464–L481 | `bool` | Executes core domain logic for `request_schedule_refres... |
+| [`pop_schedule_refresh_request`](#pop_schedule_refresh_request) | Function | L484–L495 | `bool` | Executes core domain logic for `pop_schedule_refresh_re... |
+| [`is_reminder_sent`](#is_reminder_sent) | Function | L498–L508 | `bool` | Executes core domain logic for `is_reminder_sent`. |
+| [`mark_reminder_sent`](#mark_reminder_sent) | Function | L511–L520 | `None` | Executes core domain logic for `mark_reminder_sent`. |
+| [`get_topic_state_redis`](#get_topic_state_redis) | Function | L523–L533 | `int | None` | Retrieves and resolves domain data for `get_topic_state... |
+| [`set_topic_state_redis`](#set_topic_state_redis) | Function | L536–L545 | `None` | Persists state updates for `set_topic_state_redis`. |
+| [`register_message_for_cleanup`](#register_message_for_cleanup) | Function | L548–L564 | `None` | Executes core domain logic for `register_message_for_cl... |
+| [`get_expired_messages_for_cleanup`](#get_expired_messages_for_cleanup) | Function | L567–L587 | `list[tuple[int, int]]` | Retrieves and resolves domain data for `get_expired_mes... |
+| [`redis_lock`](#redis_lock) | Function | L591–L615 | `AsyncGenerator[bool, None]` | Executes core domain logic for `redis_lock`. |
+| [`nack_hw_task`](#nack_hw_task) | Function | L618–L640 | `bool` | Executes core domain logic for `nack_hw_task`. |
 
 ---
 
@@ -59,7 +62,7 @@ graph LR
 async def cache_get(key: str) -> str | None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L34-L53`](../../core/redis_cache.py#L34-L53)
+- **Source Reference**: [`core/redis_cache.py#L36-L55`](../../core/redis_cache.py#L36-L55)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str | None`
 
@@ -93,7 +96,7 @@ result = await cache_get(key=...)
 async def cache_set(key: str, value: str, ttl: int | None = REDIS_CACHE_TTL_SECONDS) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L56-L71`](../../core/redis_cache.py#L56-L71)
+- **Source Reference**: [`core/redis_cache.py#L58-L73`](../../core/redis_cache.py#L58-L73)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -129,7 +132,7 @@ result = await cache_set(key=..., value=..., ttl=...)
 async def cache_delete(key: str) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L74-L92`](../../core/redis_cache.py#L74-L92)
+- **Source Reference**: [`core/redis_cache.py#L76-L94`](../../core/redis_cache.py#L76-L94)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -162,7 +165,7 @@ result = await cache_delete(key=...)
 async def cache_flush(pattern: str = "sched:*") -> int
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L95-L114`](../../core/redis_cache.py#L95-L114)
+- **Source Reference**: [`core/redis_cache.py#L97-L116`](../../core/redis_cache.py#L97-L116)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -195,7 +198,7 @@ result = await cache_flush(pattern=...)
 async def is_message_processed(message_id: int) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L117-L128`](../../core/redis_cache.py#L117-L128)
+- **Source Reference**: [`core/redis_cache.py#L119-L130`](../../core/redis_cache.py#L119-L130)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -228,7 +231,7 @@ result = await is_message_processed(message_id=...)
 async def mark_message_processed(message_id: int) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L131-L141`](../../core/redis_cache.py#L131-L141)
+- **Source Reference**: [`core/redis_cache.py#L133-L143`](../../core/redis_cache.py#L133-L143)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -261,7 +264,7 @@ result = await mark_message_processed(message_id=...)
 async def check_user_rate_limit(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L144-L165`](../../core/redis_cache.py#L144-L165)
+- **Source Reference**: [`core/redis_cache.py#L146-L167`](../../core/redis_cache.py#L146-L167)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -294,7 +297,7 @@ result = await check_user_rate_limit(user_id=...)
 async def incr_with_ttl(key: str, ttl: int) -> int
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L168-L187`](../../core/redis_cache.py#L168-L187)
+- **Source Reference**: [`core/redis_cache.py#L170-L189`](../../core/redis_cache.py#L170-L189)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -328,7 +331,7 @@ result = await incr_with_ttl(key=..., ttl=...)
 async def is_hash_processed(content_hash: str) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L190-L201`](../../core/redis_cache.py#L190-L201)
+- **Source Reference**: [`core/redis_cache.py#L192-L203`](../../core/redis_cache.py#L192-L203)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -361,7 +364,7 @@ result = await is_hash_processed(content_hash=...)
 async def mark_hash_processed(content_hash: str) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L204-L214`](../../core/redis_cache.py#L204-L214)
+- **Source Reference**: [`core/redis_cache.py#L206-L216`](../../core/redis_cache.py#L206-L216)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -394,7 +397,7 @@ result = await mark_hash_processed(content_hash=...)
 async def push_hw_task(task_data: dict) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L217-L236`](../../core/redis_cache.py#L217-L236)
+- **Source Reference**: [`core/redis_cache.py#L219-L238`](../../core/redis_cache.py#L219-L238)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -422,12 +425,112 @@ result = await push_hw_task(task_data=...)
 
 ---
 
+### `schedule_hw_task`
+```python
+async def schedule_hw_task(task_data: dict, delay_seconds: int) -> bool
+```
+
+- **Source Reference**: [`core/redis_cache.py#L253-L273`](../../core/redis_cache.py#L253-L273)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `schedule_hw_task`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `task_data` | `dict` | Yes | Parameter `task_data` of type `dict`. |
+| `delay_seconds` | `int` | Yes | Parameter `delay_seconds` of type `int`. |
+
+#### Concurrency & Side Effects
+- Mutates or reads Redis L2 key space via asynchronous connection pool.
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import schedule_hw_task
+
+# Execute call
+result = await schedule_hw_task(task_data=..., delay_seconds=...)
+```
+
+---
+
+### `take_pending_hw_task`
+```python
+async def take_pending_hw_task(message_id: int) -> dict | None
+```
+
+- **Source Reference**: [`core/redis_cache.py#L276-L294`](../../core/redis_cache.py#L276-L294)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `dict | None`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `take_pending_hw_task`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message_id` | `int` | Yes | Parameter `message_id` of type `int`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import take_pending_hw_task
+
+# Execute call
+result = await take_pending_hw_task(message_id=...)
+```
+
+---
+
+### `promote_due_hw_tasks`
+```python
+async def promote_due_hw_tasks() -> int
+```
+
+- **Source Reference**: [`core/redis_cache.py#L297-L312`](../../core/redis_cache.py#L297-L312)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `promote_due_hw_tasks`.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from core.redis_cache import promote_due_hw_tasks
+
+# Execute call
+result = await promote_due_hw_tasks()
+```
+
+---
+
 ### `pop_hw_task`
 ```python
 async def pop_hw_task(timeout: int = 2) -> dict | None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L239-L255`](../../core/redis_cache.py#L239-L255)
+- **Source Reference**: [`core/redis_cache.py#L315-L331`](../../core/redis_cache.py#L315-L331)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict | None`
 
@@ -460,7 +563,7 @@ result = await pop_hw_task(timeout=...)
 async def ack_hw_task(task_data: dict) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L258-L274`](../../core/redis_cache.py#L258-L274)
+- **Source Reference**: [`core/redis_cache.py#L334-L350`](../../core/redis_cache.py#L334-L350)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -493,7 +596,7 @@ result = await ack_hw_task(task_data=...)
 async def recover_stale_hw_tasks() -> int
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L277-L296`](../../core/redis_cache.py#L277-L296)
+- **Source Reference**: [`core/redis_cache.py#L353-L372`](../../core/redis_cache.py#L353-L372)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -524,7 +627,7 @@ result = await recover_stale_hw_tasks()
 async def clear_hw_queue() -> int
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L299-L316`](../../core/redis_cache.py#L299-L316)
+- **Source Reference**: [`core/redis_cache.py#L375-L392`](../../core/redis_cache.py#L375-L392)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -555,7 +658,7 @@ result = await clear_hw_queue()
 async def save_schedule_snapshot(snapshot: dict, meta: dict, ttl: int = 86400) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L319-L346`](../../core/redis_cache.py#L319-L346)
+- **Source Reference**: [`core/redis_cache.py#L395-L422`](../../core/redis_cache.py#L395-L422)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -590,7 +693,7 @@ result = await save_schedule_snapshot(snapshot=..., meta=..., ttl=...)
 async def load_schedule_snapshot() -> tuple[dict | None, dict | None]
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L349-L368`](../../core/redis_cache.py#L349-L368)
+- **Source Reference**: [`core/redis_cache.py#L425-L444`](../../core/redis_cache.py#L425-L444)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[dict | None, dict | None]`
 
@@ -622,7 +725,7 @@ result = await load_schedule_snapshot()
 async def load_schedule_meta() -> dict | None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L371-L385`](../../core/redis_cache.py#L371-L385)
+- **Source Reference**: [`core/redis_cache.py#L447-L461`](../../core/redis_cache.py#L447-L461)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict | None`
 
@@ -654,7 +757,7 @@ result = await load_schedule_meta()
 async def request_schedule_refresh() -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L388-L405`](../../core/redis_cache.py#L388-L405)
+- **Source Reference**: [`core/redis_cache.py#L464-L481`](../../core/redis_cache.py#L464-L481)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -686,7 +789,7 @@ result = await request_schedule_refresh()
 async def pop_schedule_refresh_request() -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L408-L419`](../../core/redis_cache.py#L408-L419)
+- **Source Reference**: [`core/redis_cache.py#L484-L495`](../../core/redis_cache.py#L484-L495)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -718,7 +821,7 @@ result = await pop_schedule_refresh_request()
 async def is_reminder_sent(rem_key: str) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L422-L432`](../../core/redis_cache.py#L422-L432)
+- **Source Reference**: [`core/redis_cache.py#L498-L508`](../../core/redis_cache.py#L498-L508)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -751,7 +854,7 @@ result = await is_reminder_sent(rem_key=...)
 async def mark_reminder_sent(rem_key: str, ttl: int = 86400) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L435-L444`](../../core/redis_cache.py#L435-L444)
+- **Source Reference**: [`core/redis_cache.py#L511-L520`](../../core/redis_cache.py#L511-L520)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -785,7 +888,7 @@ result = await mark_reminder_sent(rem_key=..., ttl=...)
 async def get_topic_state_redis(key: str = "topic:main_msg_id") -> int | None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L447-L457`](../../core/redis_cache.py#L447-L457)
+- **Source Reference**: [`core/redis_cache.py#L523-L533`](../../core/redis_cache.py#L523-L533)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int | None`
 
@@ -818,7 +921,7 @@ result = await get_topic_state_redis(key=...)
 async def set_topic_state_redis(val: int, key: str = "topic:main_msg_id") -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L460-L469`](../../core/redis_cache.py#L460-L469)
+- **Source Reference**: [`core/redis_cache.py#L536-L545`](../../core/redis_cache.py#L536-L545)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -852,7 +955,7 @@ result = await set_topic_state_redis(val=..., key=...)
 async def register_message_for_cleanup(chat_id: int, msg_id: int, delay_sec: int = 900) -> None
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L472-L488`](../../core/redis_cache.py#L472-L488)
+- **Source Reference**: [`core/redis_cache.py#L548-L564`](../../core/redis_cache.py#L548-L564)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -887,7 +990,7 @@ result = await register_message_for_cleanup(chat_id=..., msg_id=..., delay_sec=.
 async def get_expired_messages_for_cleanup() -> list[tuple[int, int]]
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L491-L511`](../../core/redis_cache.py#L491-L511)
+- **Source Reference**: [`core/redis_cache.py#L567-L587`](../../core/redis_cache.py#L567-L587)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, int]]`
 
@@ -918,7 +1021,7 @@ result = await get_expired_messages_for_cleanup()
 async def redis_lock(key: str, ttl: int = 20) -> AsyncGenerator[bool, None]
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L515-L539`](../../core/redis_cache.py#L515-L539)
+- **Source Reference**: [`core/redis_cache.py#L591-L615`](../../core/redis_cache.py#L591-L615)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AsyncGenerator[bool, None]`
 
@@ -953,7 +1056,7 @@ result = await redis_lock(key=..., ttl=...)
 async def nack_hw_task(task_data: dict, max_retries: int = 3) -> bool
 ```
 
-- **Source Reference**: [`core/redis_cache.py#L542-L564`](../../core/redis_cache.py#L542-L564)
+- **Source Reference**: [`core/redis_cache.py#L618-L640`](../../core/redis_cache.py#L618-L640)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
