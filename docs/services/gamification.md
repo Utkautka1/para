@@ -23,20 +23,21 @@ graph TD
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`resolve_student_rank`](#resolve_student_rank) | Function | L48–L64 | `RankDefinition` | Executes core domain logic for `resolve_student_rank`. |
-| [`calculate_student_xp`](#calculate_student_xp) | Function | L67–L69 | `int` | Executes core domain logic for `calculate_student_xp`. |
-| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L72–L79 | `dict[str, Any]` | Executes core domain logic for `_extract_student_metric... |
-| [`is_starosta`](#is_starosta) | Function | L82–L84 | `bool` | Executes core domain logic for `is_starosta`. |
-| [`calculate_guild_points`](#calculate_guild_points) | Function | L87–L95 | `int` | Executes core domain logic for `calculate_guild_points`... |
-| [`build_student_profile`](#build_student_profile) | Function | L98–L123 | `StudentProfile` | Executes core domain logic for `build_student_profile`. |
-| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L126–L136 | `list[StudentProfile] | None` | Executes core domain logic for `_load_cached_leaderboar... |
-| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L139–L146 | `None` | Executes core domain logic for `_save_cached_leaderboar... |
-| [`_apply_xp_bonus`](#_apply_xp_bonus) | Function | L149–L162 | `StudentProfile` | Executes core domain logic for `_apply_xp_bonus`. |
-| [`_match_student_achievements`](#_match_student_achievements) | Function | L165–L172 | `set[str]` | Executes core domain logic for `_match_student_achievem... |
-| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L175–L199 | `list[StudentProfile]` | Retrieves and resolves domain data for `get_group_leade... |
-| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L202–L213 | `StudentProfile | None` | Retrieves and resolves domain data for `get_student_pro... |
-| [`hide_secret_achievements`](#hide_secret_achievements) | Function | L216–L230 | `StudentProfile` | Executes core domain logic for `hide_secret_achievement... |
-| [`_same_student`](#_same_student) | Function | L233–L236 | `bool` | Executes core domain logic for `_same_student`. |
+| [`resolve_student_rank`](#resolve_student_rank) | Function | L50–L66 | `RankDefinition` | Executes core domain logic for `resolve_student_rank`. |
+| [`calculate_student_xp`](#calculate_student_xp) | Function | L69–L71 | `int` | Executes core domain logic for `calculate_student_xp`. |
+| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L74–L81 | `dict[str, Any]` | Executes core domain logic for `_extract_student_metric... |
+| [`is_starosta`](#is_starosta) | Function | L84–L86 | `bool` | Executes core domain logic for `is_starosta`. |
+| [`calculate_guild_points`](#calculate_guild_points) | Function | L89–L97 | `int` | Executes core domain logic for `calculate_guild_points`... |
+| [`build_student_profile`](#build_student_profile) | Function | L100–L125 | `StudentProfile` | Executes core domain logic for `build_student_profile`. |
+| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L128–L138 | `list[StudentProfile] | None` | Executes core domain logic for `_load_cached_leaderboar... |
+| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L141–L148 | `None` | Executes core domain logic for `_save_cached_leaderboar... |
+| [`bonus_for`](#bonus_for) | Function | L151–L154 | `int` | Executes core domain logic for `bonus_for`. |
+| [`_apply_bonuses`](#_apply_bonuses) | Function | L157–L170 | `StudentProfile` | Executes core domain logic for `_apply_bonuses`. |
+| [`_match_student_achievements`](#_match_student_achievements) | Function | L173–L180 | `set[str]` | Executes core domain logic for `_match_student_achievem... |
+| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L183–L209 | `list[StudentProfile]` | Retrieves and resolves domain data for `get_group_leade... |
+| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L212–L223 | `StudentProfile | None` | Retrieves and resolves domain data for `get_student_pro... |
+| [`hide_secret_achievements`](#hide_secret_achievements) | Function | L226–L240 | `StudentProfile` | Executes core domain logic for `hide_secret_achievement... |
+| [`_same_student`](#_same_student) | Function | L243–L246 | `bool` | Executes core domain logic for `_same_student`. |
 
 ---
 
@@ -47,7 +48,7 @@ graph TD
 def resolve_student_rank(pct: float, n_count: int, o_count: int) -> RankDefinition
 ```
 
-- **Source Reference**: [`services/gamification.py#L48-L64`](../../services/gamification.py#L48-L64)
+- **Source Reference**: [`services/gamification.py#L50-L66`](../../services/gamification.py#L50-L66)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `RankDefinition`
 
@@ -82,7 +83,7 @@ result = resolve_student_rank(pct=..., n_count=..., o_count=...)
 def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> int
 ```
 
-- **Source Reference**: [`services/gamification.py#L67-L69`](../../services/gamification.py#L67-L69)
+- **Source Reference**: [`services/gamification.py#L69-L71`](../../services/gamification.py#L69-L71)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -116,7 +117,7 @@ result = calculate_student_xp(stat=..., unlocked_ach_ids=...)
 def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/gamification.py#L72-L79`](../../services/gamification.py#L72-L79)
+- **Source Reference**: [`services/gamification.py#L74-L81`](../../services/gamification.py#L74-L81)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -150,7 +151,7 @@ result = _extract_student_metrics(fio=..., raw_data=...)
 def is_starosta(fio: str) -> bool
 ```
 
-- **Source Reference**: [`services/gamification.py#L82-L84`](../../services/gamification.py#L82-L84)
+- **Source Reference**: [`services/gamification.py#L84-L86`](../../services/gamification.py#L84-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -183,7 +184,7 @@ result = is_starosta(fio=...)
 def calculate_guild_points(xp: int, raw_data: dict[str, Any], baseline: dict[str, Any] | None) -> int
 ```
 
-- **Source Reference**: [`services/gamification.py#L87-L95`](../../services/gamification.py#L87-L95)
+- **Source Reference**: [`services/gamification.py#L89-L97`](../../services/gamification.py#L89-L97)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -218,7 +219,7 @@ result = calculate_guild_points(xp=..., raw_data=..., baseline=...)
 def build_student_profile( fio: str, raw_data: dict[str, Any], extra: set[str] | None = None, baseline: dict[str, Any] | None = None ) -> StudentProfile
 ```
 
-- **Source Reference**: [`services/gamification.py#L98-L123`](../../services/gamification.py#L98-L123)
+- **Source Reference**: [`services/gamification.py#L100-L125`](../../services/gamification.py#L100-L125)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `StudentProfile`
 
@@ -254,7 +255,7 @@ result = build_student_profile(fio=..., raw_data=..., extra=...)
 async def _load_cached_leaderboard() -> list[StudentProfile] | None
 ```
 
-- **Source Reference**: [`services/gamification.py#L126-L136`](../../services/gamification.py#L126-L136)
+- **Source Reference**: [`services/gamification.py#L128-L138`](../../services/gamification.py#L128-L138)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[StudentProfile] | None`
 
@@ -285,7 +286,7 @@ result = await _load_cached_leaderboard()
 async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None
 ```
 
-- **Source Reference**: [`services/gamification.py#L139-L146`](../../services/gamification.py#L139-L146)
+- **Source Reference**: [`services/gamification.py#L141-L148`](../../services/gamification.py#L141-L148)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -313,22 +314,22 @@ result = await _save_cached_leaderboard(profiles=...)
 
 ---
 
-### `_apply_xp_bonus`
+### `bonus_for`
 ```python
-def _apply_xp_bonus(profile: StudentProfile, bonuses: dict[str, int]) -> StudentProfile
+def bonus_for(fio: str, bonuses: dict[str, int]) -> int
 ```
 
-- **Source Reference**: [`services/gamification.py#L149-L162`](../../services/gamification.py#L149-L162)
+- **Source Reference**: [`services/gamification.py#L151-L154`](../../services/gamification.py#L151-L154)
 - **Execution Mode**: `Synchronous`
-- **Return Contract**: `StudentProfile`
+- **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_xp_bonus`.
+Executes core domain logic for `bonus_for`.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `profile` | `StudentProfile` | Yes | Parameter `profile` of type `StudentProfile`. |
+| `fio` | `str` | Yes | Full canonical name of the student in Cyrillic nominative format. |
 | `bonuses` | `dict[str, int]` | Yes | Parameter `bonuses` of type `dict[str, int]`. |
 
 #### Concurrency & Side Effects
@@ -339,10 +340,45 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 
 #### Production Usage Example
 ```python
-from services.gamification import _apply_xp_bonus
+from services.gamification import bonus_for
 
 # Execute call
-result = _apply_xp_bonus(profile=..., bonuses=...)
+result = bonus_for(fio=..., bonuses=...)
+```
+
+---
+
+### `_apply_bonuses`
+```python
+def _apply_bonuses( profile: StudentProfile, xp_bonuses: dict[str, int], guild_bonuses: dict[str, int] ) -> StudentProfile
+```
+
+- **Source Reference**: [`services/gamification.py#L157-L170`](../../services/gamification.py#L157-L170)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `StudentProfile`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `_apply_bonuses`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `profile` | `StudentProfile` | Yes | Parameter `profile` of type `StudentProfile`. |
+| `xp_bonuses` | `dict[str, int]` | Yes | Parameter `xp_bonuses` of type `dict[str, int]`. |
+| `guild_bonuses` | `dict[str, int]` | Yes | Parameter `guild_bonuses` of type `dict[str, int]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.gamification import _apply_bonuses
+
+# Execute call
+result = _apply_bonuses(profile=..., xp_bonuses=..., guild_bonuses=...)
 ```
 
 ---
@@ -352,7 +388,7 @@ result = _apply_xp_bonus(profile=..., bonuses=...)
 def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]
 ```
 
-- **Source Reference**: [`services/gamification.py#L165-L172`](../../services/gamification.py#L165-L172)
+- **Source Reference**: [`services/gamification.py#L173-L180`](../../services/gamification.py#L173-L180)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -386,7 +422,7 @@ result = _match_student_achievements(fio=..., unlocked_map=...)
 async def get_group_leaderboard( provided_stats: dict[str, Any] | None = None, force_refresh: bool = False, ) -> list[StudentProfile]
 ```
 
-- **Source Reference**: [`services/gamification.py#L175-L199`](../../services/gamification.py#L175-L199)
+- **Source Reference**: [`services/gamification.py#L183-L209`](../../services/gamification.py#L183-L209)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[StudentProfile]`
 
@@ -420,7 +456,7 @@ result = await get_group_leaderboard(provided_stats=..., force_refresh=...)
 async def get_student_profile_by_fio(fio: str) -> StudentProfile | None
 ```
 
-- **Source Reference**: [`services/gamification.py#L202-L213`](../../services/gamification.py#L202-L213)
+- **Source Reference**: [`services/gamification.py#L212-L223`](../../services/gamification.py#L212-L223)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentProfile | None`
 
@@ -453,7 +489,7 @@ result = await get_student_profile_by_fio(fio=...)
 def hide_secret_achievements(profile: StudentProfile, viewer_fio: str | None) -> StudentProfile
 ```
 
-- **Source Reference**: [`services/gamification.py#L216-L230`](../../services/gamification.py#L216-L230)
+- **Source Reference**: [`services/gamification.py#L226-L240`](../../services/gamification.py#L226-L240)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `StudentProfile`
 
@@ -487,7 +523,7 @@ result = hide_secret_achievements(profile=..., viewer_fio=...)
 def _same_student(fio: str, other: str) -> bool
 ```
 
-- **Source Reference**: [`services/gamification.py#L233-L236`](../../services/gamification.py#L233-L236)
+- **Source Reference**: [`services/gamification.py#L243-L246`](../../services/gamification.py#L243-L246)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 

@@ -21,13 +21,13 @@ graph LR
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Core Invariant |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L40 | `None` | Executes core domain logic for `_register_admin_routers... |
-| [`_register_user_routers`](#_register_user_routers) | Function | L43–L67 | `None` | Executes core domain logic for `_register_user_routers`... |
-| [`register_all_routers`](#register_all_routers) | Function | L70–L84 | `None` | Executes core domain logic for `register_all_routers`. |
-| [`shutdown_bot`](#shutdown_bot) | Function | L87–L104 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L107–L130 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L133–L152 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L155–L175 | `None` | Executes core domain logic for `main`. |
+| [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L42 | `None` | Executes core domain logic for `_register_admin_routers... |
+| [`_register_user_routers`](#_register_user_routers) | Function | L45–L69 | `None` | Executes core domain logic for `_register_user_routers`... |
+| [`register_all_routers`](#register_all_routers) | Function | L72–L86 | `None` | Executes core domain logic for `register_all_routers`. |
+| [`shutdown_bot`](#shutdown_bot) | Function | L89–L106 | `None` | Executes core domain logic for `shutdown_bot`. |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L109–L132 | `None` | Executes core domain logic for `setup_all_middlewares`. |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L135–L154 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
+| [`main`](#main) | Function | L157–L177 | `None` | Executes core domain logic for `main`. |
 
 ---
 
@@ -38,7 +38,7 @@ graph LR
 def _register_admin_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L20-L40`](../../bot.py#L20-L40)
+- **Source Reference**: [`bot.py#L20-L42`](../../bot.py#L20-L42)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -69,7 +69,7 @@ result = _register_admin_routers()
 def _register_user_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L43-L67`](../../bot.py#L43-L67)
+- **Source Reference**: [`bot.py#L45-L69`](../../bot.py#L45-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -100,7 +100,7 @@ result = _register_user_routers()
 def register_all_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L70-L84`](../../bot.py#L70-L84)
+- **Source Reference**: [`bot.py#L72-L86`](../../bot.py#L72-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -131,7 +131,7 @@ result = register_all_routers()
 async def shutdown_bot() -> None
 ```
 
-- **Source Reference**: [`bot.py#L87-L104`](../../bot.py#L87-L104)
+- **Source Reference**: [`bot.py#L89-L106`](../../bot.py#L89-L106)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -162,7 +162,7 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L107-L130`](../../bot.py#L107-L130)
+- **Source Reference**: [`bot.py#L109-L132`](../../bot.py#L109-L132)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -193,7 +193,7 @@ result = setup_all_middlewares()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L133-L152`](../../bot.py#L133-L152)
+- **Source Reference**: [`bot.py#L135-L154`](../../bot.py#L135-L154)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -224,7 +224,7 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L155-L175`](../../bot.py#L155-L175)
+- **Source Reference**: [`bot.py#L157-L177`](../../bot.py#L157-L177)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

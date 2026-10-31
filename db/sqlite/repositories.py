@@ -168,6 +168,19 @@ class GamificationRepository:
             return {}
 
     @staticmethod
+    async def revoke_achievement(student_fios: set[str], achievement_id: str) -> int:
+        """
+        Снимает ачивку со студента под любым из его ФИО (журнал и реестр могут отличаться).
+
+        Возвращает количество удалённых записей.
+        """
+        stmt = delete(StudentAchievement).where(
+            StudentAchievement.achievement_id == achievement_id, StudentAchievement.student_fio.in_(student_fios)
+        )
+        async with get_async_session() as session:
+            return (await session.execute(stmt)).rowcount or 0
+
+    @staticmethod
     async def unlock_achievement(student_fio: str, achievement_id: str) -> bool:
         """Атомарно сохраняет открытое достижение студента в SQLite."""
         try:
@@ -220,6 +233,20 @@ class CounterRepository:
         stmt = stmt.on_conflict_do_update(index_elements=["student_fio", "key"], set_={"value": value})
         async with get_async_session() as session:
             await session.execute(stmt)
+
+    @staticmethod
+    async def add_value(student_fio: str, key: str, delta: int) -> int:
+        """
+        Атомарно прибавляет к счётчику delta (может быть отрицательной).
+
+        Возвращает новое значение счётчика.
+        """
+        stmt = sqlite_insert(StudentCounter).values(student_fio=student_fio, key=key, value=delta)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["student_fio", "key"], set_={"value": StudentCounter.value + delta}
+        ).returning(StudentCounter.value)
+        async with get_async_session() as session:
+            return int((await session.execute(stmt)).scalar_one())
 
     @staticmethod
     async def get_key_values(key: str) -> dict[str, int]:

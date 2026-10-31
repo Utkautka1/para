@@ -7,6 +7,7 @@
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+from bot.templates.admin.gamification import GameAdminCallback
 from config import MINIAPP_URL
 
 
@@ -54,6 +55,7 @@ def _build_action_rows() -> list:
             InlineKeyboardButton(text="📊 Статус и Кэш", callback_data="admin:status", style="primary"),
         ],
         [InlineKeyboardButton(text="🧪 Swagger UI & Тестеры API", callback_data="admin:testers", style="primary")],
+        [InlineKeyboardButton(text="🏆 Ачивки и очки", callback_data=GameAdminCallback(action="list").pack())],
         [
             InlineKeyboardButton(
                 text="👨‍🏫 Ручные ссылки преподавателей", callback_data="admin:list_custom", style="primary"

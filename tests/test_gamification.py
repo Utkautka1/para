@@ -197,11 +197,13 @@ def test_active_student_outranks_better_attendance() -> None:
     assert active.guild_points > regular.guild_points
 
 
-def test_xp_bonus_adds_to_xp_and_guild_points() -> None:
-    """Бонус XP от админа прибавляется к опыту и очкам гильдии по совпадению ФИО."""
-    from services.gamification import _apply_xp_bonus
+def test_bonuses_add_to_xp_and_guild_points() -> None:
+    """Бонус XP идёт в опыт и очки, бонус очков — только в очки; ФИО сопоставляется по вхождению."""
+    from services.gamification import _apply_bonuses
 
     profile = build_student_profile("Стрыгин Дмитрий Вячеславович", {"total": {"П": 2}}, extra={"bot_welcome"})
-    boosted = _apply_xp_bonus(profile, {"стрыгин дмитрий": 1000, "иванов иван": 5})
-    assert (boosted.xp, boosted.guild_points) == (profile.xp + 1000, profile.guild_points + 1000)
-    assert _apply_xp_bonus(profile, {}) is profile
+    boosted = _apply_bonuses(profile, {"стрыгин дмитрий": 1000, "иванов иван": 5}, {"стрыгин дмитрий": 50})
+    assert (boosted.xp, boosted.guild_points) == (profile.xp + 1000, profile.guild_points + 1050)
+    assert _apply_bonuses(profile, {}, {}) is profile
+    penalty = _apply_bonuses(profile, {}, {"стрыгин дмитрий": -10_000})
+    assert penalty.guild_points == 0

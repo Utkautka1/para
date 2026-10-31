@@ -10,12 +10,15 @@
 | `AI Prompt Sanitization` | [`core/prompt_sanitizer.py`](../core/prompt_sanitizer.py) | [📖 View Specification](core/prompt_sanitizer.md) | Enterprise Service Component |
 | `AI Queue Consumer` | [`solver.py`](../solver.py) | [📖 View Specification](entrypoints/solver.md) | Enterprise Service Component |
 | `Academic Gamification Engine` | [`services/gamification.py`](../services/gamification.py) | [📖 View Specification](services/gamification.md) | Enterprise Service Component |
+| `Achievement Rules` | [`bot/handlers/admin/gamification.py`](../bot/handlers/admin/gamification.py) | [📖 View Specification](bot/handlers_admin_gamification.md) | Enterprise Service Component |
 | `Achievement Rules` | [`bot/middlewares/achievements.py`](../bot/middlewares/achievements.py) | [📖 View Specification](bot/middlewares_achievements.md) | Enterprise Service Component |
+| `Achievement Rules` | [`bot/templates/admin/gamification.py`](../bot/templates/admin/gamification.py) | [📖 View Specification](bot/templates_admin_gamification.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_events.py`](../services/achievement_events.py) | [📖 View Specification](services/achievement_events.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_reset.py`](../services/achievement_reset.py) | [📖 View Specification](services/achievement_reset.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_rules.py`](../services/achievement_rules.py) | [📖 View Specification](services/achievement_rules.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_sync.py`](../services/achievement_sync.py) | [📖 View Specification](services/achievement_sync.md) | Enterprise Service Component |
 | `Achievement Rules` | [`services/achievement_triggers.py`](../services/achievement_triggers.py) | [📖 View Specification](services/achievement_triggers.md) | Enterprise Service Component |
+| `Achievement Rules` | [`services/gamification_admin.py`](../services/gamification_admin.py) | [📖 View Specification](services/gamification_admin.md) | Enterprise Service Component |
 | `Admin Control Panel` | [`bot/handlers/admin/panel.py`](../bot/handlers/admin/panel.py) | [📖 View Specification](bot/handlers_admin_panel.md) | Enterprise Service Component |
 | `Admin Panel Keyboards` | [`bot/templates/admin/keyboards.py`](../bot/templates/admin/keyboards.py) | [📖 View Specification](bot/templates_admin_keyboards.md) | Enterprise Service Component |
 | `Atomic Storage Engine` | [`utils/storage.py`](../utils/storage.py) | [📖 View Specification](utils/storage.md) | Enterprise Service Component |

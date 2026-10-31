@@ -21,13 +21,14 @@ def _register_admin_routers() -> None:
     """
     Регистрирует административные роутеры в диспетчере aiogram.
 
-    Подключает хэндлеры посещаемости, мутов, пингов, тестеров и админ-панели.
+    Подключает хэндлеры посещаемости, мутов, пингов, тестеров, ачивок и админ-панели.
     Соблюдает строгую последовательность приоритета перехвата событий.
 
     Ничего не возвращает.
     """
 
     from bot.handlers.admin.attendance import router as attendance_router
+    from bot.handlers.admin.gamification import router as gamification_admin_router
     from bot.handlers.admin.mute import router as mute_router
     from bot.handlers.admin.panel import router as admin_router
     from bot.handlers.admin.ping_all import router as ping_all_router
@@ -37,6 +38,7 @@ def _register_admin_routers() -> None:
     dp.include_router(mute_router)
     dp.include_router(ping_all_router)
     dp.include_router(testers_router)
+    dp.include_router(gamification_admin_router)
     dp.include_router(admin_router)
 
 

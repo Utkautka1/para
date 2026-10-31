@@ -79,7 +79,7 @@ ruff check . --fix
 # Run Bandit AST security scan
 bandit -r services/ bot/ core/ api/ -c pyproject.toml
 
-# Run the complete test suite (924 tests)
+# Run the complete test suite (931 tests)
 PYTHONPATH=. pytest tests/ -v
 ```
 
@@ -119,7 +119,7 @@ Documentation is treated as a first-class production artifact:
    - `docs(api): update gRPC servicer parameter specifications`
    - `test(solver): add chaos test for DeepSeek DLQ retry backoff`
 3. **Pull Request Checklist**:
-   - [ ] All 924+ automated unit and integration tests pass.
+   - [ ] All 931+ automated unit and integration tests pass.
    - [ ] `ruff check .` produces zero linting warnings.
    - [ ] Every new or modified method is ≤ 25 lines.
    - [ ] Documentation regenerated via `scripts/generate_docs_suite.py`.

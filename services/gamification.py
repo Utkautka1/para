@@ -36,8 +36,10 @@ log = get_logger("gamification")
 # v2 — в профиле появились очки гильдии, старый кэш без них сортировался бы неверно
 LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v2"
 
-# Ключ счётчика с бонусными XP, выданными админом вручную (сверх XP за ачивки)
+# Ключи счётчиков с бонусами, выданными админом вручную: XP (растёт и уровень, и очки)
+# и очки гильдии (только место в рейтинге)
 XP_BONUS_KEY = "xp_bonus"
+GUILD_BONUS_KEY = "guild_bonus"
 
 # Очки гильдии за посещённую пару (П или О) и штраф за прогул «Н» после точки отсчёта
 GUILD_POINTS_PER_VISIT = 10
@@ -146,20 +148,26 @@ async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None:
         log.warning("Ошибка сохранения кэша лидерборда: %s", exc)
 
 
-def _apply_xp_bonus(profile: StudentProfile, bonuses: dict[str, int]) -> StudentProfile:
-    """
-    Добавляет к XP и очкам гильдии бонус, выданный админом.
+def bonus_for(fio: str, bonuses: dict[str, int]) -> int:
+    """Суммирует бонусы студента; ФИО сопоставляется как у ачивок (одно содержит другое)."""
+    clean = fio.strip().lower()
+    return sum(v for name, v in bonuses.items() if name in clean or clean in name)
 
-    ФИО сопоставляется как у ачивок: одно имя содержит другое (журнал и реестр
-    могут отличаться отчеством).
 
-    Возвращает профиль с бонусом или тот же профиль, если бонуса нет.
+def _apply_bonuses(
+    profile: StudentProfile, xp_bonuses: dict[str, int], guild_bonuses: dict[str, int]
+) -> StudentProfile:
     """
-    clean = profile.fio.strip().lower()
-    bonus = sum(v for fio, v in bonuses.items() if fio in clean or clean in fio)
-    if not bonus:
+    Добавляет бонусы админа: XP идёт и в опыт, и в очки гильдии, бонус очков — только в очки.
+
+    Возвращает профиль с бонусами или тот же профиль, если бонусов нет.
+    """
+    xp = bonus_for(profile.fio, xp_bonuses)
+    guild = bonus_for(profile.fio, guild_bonuses)
+    if not xp and not guild:
         return profile
-    return replace(profile, xp=profile.xp + bonus, guild_points=profile.guild_points + bonus)
+    points = max(0, profile.guild_points + xp + guild)
+    return replace(profile, xp=max(0, profile.xp + xp), guild_points=points)
 
 
 def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]:
@@ -185,11 +193,13 @@ async def get_group_leaderboard(
     stats = provided_stats or await fetch_all_time_attendance()
     unlocked_map = await GamificationRepository.get_all_unlocked_map()
     baselines = await AchievementResetRepository.get_baselines()
-    bonuses = await CounterRepository.get_key_values(XP_BONUS_KEY)
+    xp_bonuses = await CounterRepository.get_key_values(XP_BONUS_KEY)
+    guild_bonuses = await CounterRepository.get_key_values(GUILD_BONUS_KEY)
     profiles = [
-        _apply_xp_bonus(
+        _apply_bonuses(
             build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map), baselines.get(fio)),
-            bonuses,
+            xp_bonuses,
+            guild_bonuses,
         )
         for fio, data in stats.items()
     ]

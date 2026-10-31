@@ -30,13 +30,15 @@ graph LR
 | [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L118–L140 | `int` | Saves serialized entity data to storage for `save_daily... |
 | [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L143–L149 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
 | [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L156–L168 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
-| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L171–L185 | `bool` | Executes core domain logic for `unlock_achievement`. |
-| [`CounterRepository.increment`](#counterrepositoryincrement) | Method | L192–L214 | `int` | Executes core domain logic for `increment`. |
-| [`CounterRepository.set_value`](#counterrepositoryset_value) | Method | L217–L222 | `None` | Persists state updates for `set_value`. |
-| [`CounterRepository.get_key_values`](#counterrepositoryget_key_values) | Method | L225–L237 | `dict[str, int]` | Retrieves and resolves domain data for `get_key_values`... |
-| [`CounterRepository.count_keys`](#counterrepositorycount_keys) | Method | L240–L256 | `int` | Executes core domain logic for `count_keys`. |
-| [`AchievementResetRepository.reset_with_baseline`](#achievementresetrepositoryreset_with_baseline) | Method | L263–L280 | `tuple[int, int]` | Executes core domain logic for `reset_with_baseline`. |
-| [`AchievementResetRepository.get_baselines`](#achievementresetrepositoryget_baselines) | Method | L283–L295 | `dict[str, dict[str, Any]]` | Retrieves and resolves domain data for `get_baselines`. |
+| [`GamificationRepository.revoke_achievement`](#gamificationrepositoryrevoke_achievement) | Method | L171–L181 | `int` | Executes core domain logic for `revoke_achievement`. |
+| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L184–L198 | `bool` | Executes core domain logic for `unlock_achievement`. |
+| [`CounterRepository.increment`](#counterrepositoryincrement) | Method | L205–L227 | `int` | Executes core domain logic for `increment`. |
+| [`CounterRepository.set_value`](#counterrepositoryset_value) | Method | L230–L235 | `None` | Persists state updates for `set_value`. |
+| [`CounterRepository.add_value`](#counterrepositoryadd_value) | Method | L238–L249 | `int` | Executes core domain logic for `add_value`. |
+| [`CounterRepository.get_key_values`](#counterrepositoryget_key_values) | Method | L252–L264 | `dict[str, int]` | Retrieves and resolves domain data for `get_key_values`... |
+| [`CounterRepository.count_keys`](#counterrepositorycount_keys) | Method | L267–L283 | `int` | Executes core domain logic for `count_keys`. |
+| [`AchievementResetRepository.reset_with_baseline`](#achievementresetrepositoryreset_with_baseline) | Method | L290–L307 | `tuple[int, int]` | Executes core domain logic for `reset_with_baseline`. |
+| [`AchievementResetRepository.get_baselines`](#achievementresetrepositoryget_baselines) | Method | L310–L322 | `dict[str, dict[str, Any]]` | Retrieves and resolves domain data for `get_baselines`. |
 
 ---
 
@@ -355,12 +357,46 @@ result = await get_all_unlocked_map()
 
 ---
 
+### `GamificationRepository.revoke_achievement`
+```python
+async def revoke_achievement(student_fios: set[str], achievement_id: str) -> int
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L171-L181`](../../db/sqlite/repositories.py#L171-L181)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `revoke_achievement`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_fios` | `set[str]` | Yes | Parameter `student_fios` of type `set[str]`. |
+| `achievement_id` | `str` | Yes | Unique identifier of academic milestone achievement. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import revoke_achievement
+
+# Execute call
+result = await revoke_achievement(student_fios=..., achievement_id=...)
+```
+
+---
+
 ### `GamificationRepository.unlock_achievement`
 ```python
 async def unlock_achievement(student_fio: str, achievement_id: str) -> bool
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L171-L185`](../../db/sqlite/repositories.py#L171-L185)
+- **Source Reference**: [`db/sqlite/repositories.py#L184-L198`](../../db/sqlite/repositories.py#L184-L198)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -398,7 +434,7 @@ Encapsulates domain entities and data transfer logic for `CounterRepository`.
 async def increment(student_fio: str, key: str, today: date | None = None) -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L192-L214`](../../db/sqlite/repositories.py#L192-L214)
+- **Source Reference**: [`db/sqlite/repositories.py#L205-L227`](../../db/sqlite/repositories.py#L205-L227)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -433,7 +469,7 @@ result = await increment(student_fio=..., key=..., today=...)
 async def set_value(student_fio: str, key: str, value: int) -> None
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L217-L222`](../../db/sqlite/repositories.py#L217-L222)
+- **Source Reference**: [`db/sqlite/repositories.py#L230-L235`](../../db/sqlite/repositories.py#L230-L235)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -463,12 +499,47 @@ result = await set_value(student_fio=..., key=..., value=...)
 
 ---
 
+### `CounterRepository.add_value`
+```python
+async def add_value(student_fio: str, key: str, delta: int) -> int
+```
+
+- **Source Reference**: [`db/sqlite/repositories.py#L238-L249`](../../db/sqlite/repositories.py#L238-L249)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `add_value`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `student_fio` | `str` | Yes | Parameter `student_fio` of type `str`. |
+| `key` | `str` | Yes | Parameter `key` of type `str`. |
+| `delta` | `int` | Yes | Parameter `delta` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from db.sqlite.repositories import add_value
+
+# Execute call
+result = await add_value(student_fio=..., key=..., delta=...)
+```
+
+---
+
 ### `CounterRepository.get_key_values`
 ```python
 async def get_key_values(key: str) -> dict[str, int]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L225-L237`](../../db/sqlite/repositories.py#L225-L237)
+- **Source Reference**: [`db/sqlite/repositories.py#L252-L264`](../../db/sqlite/repositories.py#L252-L264)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, int]`
 
@@ -501,7 +572,7 @@ result = await get_key_values(key=...)
 async def count_keys(student_fio: str, prefix: str) -> int
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L240-L256`](../../db/sqlite/repositories.py#L240-L256)
+- **Source Reference**: [`db/sqlite/repositories.py#L267-L283`](../../db/sqlite/repositories.py#L267-L283)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
@@ -539,7 +610,7 @@ Encapsulates domain entities and data transfer logic for `AchievementResetReposi
 async def reset_with_baseline(stats: dict[str, dict[str, Any]]) -> tuple[int, int]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L263-L280`](../../db/sqlite/repositories.py#L263-L280)
+- **Source Reference**: [`db/sqlite/repositories.py#L290-L307`](../../db/sqlite/repositories.py#L290-L307)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, int]`
 
@@ -572,7 +643,7 @@ result = await reset_with_baseline(stats=...)
 async def get_baselines() -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`db/sqlite/repositories.py#L283-L295`](../../db/sqlite/repositories.py#L283-L295)
+- **Source Reference**: [`db/sqlite/repositories.py#L310-L322`](../../db/sqlite/repositories.py#L310-L322)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
