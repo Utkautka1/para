@@ -17,11 +17,11 @@ from core.logger import get_logger
 from core.redis_cache import cache_delete
 from db.sqlite.repositories import GamificationRepository
 from services.classmates_auth import find_classmate_by_tg_id
+from services.gamification import LEADERBOARD_CACHE_KEY
 from services.gamification_models import AchievementDefinition
 from services.gamification_registry import ACHIEVEMENTS_MAP, SECRET_IDS
 
 log = get_logger("achievement_service")
-LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v1"
 
 
 def resolve_student_fio(user_id: int, fallback_name: str | None = None) -> str:

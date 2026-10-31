@@ -80,16 +80,21 @@ async def test_baseline_hides_marks_before_reset() -> None:
     assert ("Петров Пётр", "att_ghost") not in granted
 
 
-def test_group_context_ranks_after_reset() -> None:
+def test_group_context_uses_board_order_and_fresh_pulse() -> None:
+    board = [
+        build_student_profile("Петров Пётр", _raw(10)),
+        build_student_profile("Иванов Иван", _raw(20)),
+        build_student_profile("Стрыгин Дмитрий", _raw(25)),
+    ]
     deltas = {
         "Иванов Иван": build_student_stat(_raw(20)),
         "Петров Пётр": build_student_stat(_raw(10, n=10)),
-        "Стрыгин Дмитрий": build_student_stat(_raw(25)),
         "Сидоров Сидор": build_student_stat({}),
     }
-    places, pulse = sync._group_context(deltas)
-    assert places == {"Иванов Иван": 1, "Петров Пётр": 2}
-    assert pulse == pytest.approx((100 + 50 + 100) / 3)
+    places, pulse = sync._group_context(board, deltas)
+    # Места — ровно порядок лидерборда, староста вне рейтинга
+    assert places == {"Петров Пётр": 1, "Иванов Иван": 2}
+    assert pulse == pytest.approx((100 + 50) / 2)
 
 
 @pytest.mark.parametrize(

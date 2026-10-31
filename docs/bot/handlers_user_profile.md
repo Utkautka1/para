@@ -24,11 +24,11 @@ graph LR
 | [`_build_miniapp_keyboard`](#_build_miniapp_keyboard) | Function | L32–L39 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_miniapp_keyboard... |
 | [`_format_profile_achievements`](#_format_profile_achievements) | Function | L42–L51 | `str` | Executes core domain logic for `_format_profile_achieve... |
 | [`_render_ascii_progress`](#_render_ascii_progress) | Function | L54–L61 | `str` | Executes core domain logic for `_render_ascii_progress`... |
-| [`_format_profile_message`](#_format_profile_message) | Function | L64–L82 | `str` | Executes core domain logic for `_format_profile_message... |
-| [`handle_profile_command`](#handle_profile_command) | Function | L86–L106 | `None` | Executes core domain logic for `handle_profile_command`... |
-| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L109–L113 | `str` | Executes core domain logic for `_format_leaderboard_row... |
-| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L116–L129 | `str` | Executes core domain logic for `_format_leaderboard_mes... |
-| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L133–L144 | `None` | Executes core domain logic for `handle_leaderboard_comm... |
+| [`_format_profile_message`](#_format_profile_message) | Function | L64–L83 | `str` | Executes core domain logic for `_format_profile_message... |
+| [`handle_profile_command`](#handle_profile_command) | Function | L87–L107 | `None` | Executes core domain logic for `handle_profile_command`... |
+| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L110–L114 | `str` | Executes core domain logic for `_format_leaderboard_row... |
+| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L117–L131 | `str` | Executes core domain logic for `_format_leaderboard_mes... |
+| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L135–L146 | `None` | Executes core domain logic for `handle_leaderboard_comm... |
 
 ---
 
@@ -138,7 +138,7 @@ result = _render_ascii_progress(current=..., total=..., length=...)
 def _format_profile_message(p) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L64-L82`](../../bot/handlers/user/profile.py#L64-L82)
+- **Source Reference**: [`bot/handlers/user/profile.py#L64-L83`](../../bot/handlers/user/profile.py#L64-L83)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -171,7 +171,7 @@ result = _format_profile_message(p=...)
 async def handle_profile_command(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L86-L106`](../../bot/handlers/user/profile.py#L86-L106)
+- **Source Reference**: [`bot/handlers/user/profile.py#L87-L107`](../../bot/handlers/user/profile.py#L87-L107)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -204,7 +204,7 @@ result = await handle_profile_command(message=...)
 def _format_leaderboard_row(idx: int, p) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L109-L113`](../../bot/handlers/user/profile.py#L109-L113)
+- **Source Reference**: [`bot/handlers/user/profile.py#L110-L114`](../../bot/handlers/user/profile.py#L110-L114)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -238,7 +238,7 @@ result = _format_leaderboard_row(idx=..., p=...)
 def _format_leaderboard_message(profiles: list) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L116-L129`](../../bot/handlers/user/profile.py#L116-L129)
+- **Source Reference**: [`bot/handlers/user/profile.py#L117-L131`](../../bot/handlers/user/profile.py#L117-L131)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -271,7 +271,7 @@ result = _format_leaderboard_message(profiles=...)
 async def handle_leaderboard_command(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L133-L144`](../../bot/handlers/user/profile.py#L133-L144)
+- **Source Reference**: [`bot/handlers/user/profile.py#L135-L146`](../../bot/handlers/user/profile.py#L135-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

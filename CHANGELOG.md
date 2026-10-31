@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2026-11-01
 
 ### Gamification
+- **Leaderboard by guild points**: the ranking was attendance percent only, so students with past absences could never reach the podium. It now sorts by guild points = achievement XP + 10 per attended pair − 10 per unexcused absence, counting pairs only after the reset baseline; «Топ-3»/«Золотой пьедестал» follow the same order. Shown in the Mini App, `/top` and `/profile`.
 - **«Именинник» only on the birthday**: it was granted to everyone listed in the birthday calendar; now the worker grants it only on the student's birthday (Moscow date).
 - **Fair reset with a journal baseline**: `python -m services.achievement_reset --confirm` (run in `para-worker`) backs up SQLite, deletes all granted achievements and counters and stores the current journal as a baseline (`achievement_baselines`). Journal achievements, rating places and the group pulse for achievements count only marks after the baseline; past absences stay in the journal and the leaderboard but no longer decide who can earn what.
 - **Achievements actually unlock**: the rules for ~60 achievements (`_evaluate_all_rules`) were dead code, so over the whole semester only 17 ids were ever granted. Journal and meta achievements now live in `services/achievement_rules.py` and are granted by `para-worker` (`achievement_sync_loop`, every 10 minutes, one digest DM per student); granted achievements are never revoked.

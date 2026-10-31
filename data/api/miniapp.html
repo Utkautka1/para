@@ -889,7 +889,10 @@
 
     <div class="list-title">
       <span>Герои Гильдии</span>
-      <span style="color:#a5b4fc;">HP & XP</span>
+      <span style="color:#a5b4fc;" title="Очки гильдии = XP + 10 за пару − 10 за «Н» после сброса">⚔️ Очки гильдии</span>
+    </div>
+    <div class="empty-state" style="padding:6px 0 10px; font-size:11px;">
+      ⚔️ Очки гильдии = XP за квесты + 10 за каждую пару − 10 за прогул «Н». Все стартуют с нуля.
     </div>
     <div id="students-list">
       <div class="empty-state">Свиток славы загружается... ⏳</div>
@@ -1127,19 +1130,19 @@
           <div class="podium-crown">🥈</div>
           <div class="podium-name">${escapeHtml(top3[1].short_fio)}</div>
           <div class="podium-hp">${top3[1].attendance_pct}% HP</div>
-          <div class="podium-xp">${top3[1].xp} XP</div>
+          <div class="podium-xp">⚔️ ${top3[1].guild_points}</div>
         </div>
         <div class="podium-col podium-1" onclick="openStudentProfileByIdx(0)">
           <div class="podium-crown">👑 🥇</div>
           <div class="podium-name">${escapeHtml(top3[0].short_fio)}</div>
           <div class="podium-hp">${top3[0].attendance_pct}% HP</div>
-          <div class="podium-xp">${top3[0].xp} XP</div>
+          <div class="podium-xp">⚔️ ${top3[0].guild_points}</div>
         </div>
         <div class="podium-col podium-3" onclick="openStudentProfileByIdx(2)">
           <div class="podium-crown">🥉</div>
           <div class="podium-name">${escapeHtml(top3[2].short_fio)}</div>
           <div class="podium-hp">${top3[2].attendance_pct}% HP</div>
-          <div class="podium-xp">${top3[2].xp} XP</div>
+          <div class="podium-xp">⚔️ ${top3[2].guild_points}</div>
         </div>
       `;
       document.getElementById('podium-container').innerHTML = html;
@@ -1163,7 +1166,7 @@
             </div>
             <div class="hero-right">
               <div class="hero-hp-val" style="color:${rankColor}">${s.attendance_pct}%</div>
-              <div class="hero-xp-val">${s.xp} XP</div>
+              <div class="hero-xp-val">⚔️ ${s.guild_points} • ${s.xp} XP</div>
             </div>
           </div>
         `;

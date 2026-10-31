@@ -11,8 +11,8 @@
 ранее выданная ачивка не отзывается — проверяем только то, чего ещё нет.
 
 Журнал считается от точки отсчёта (achievement_baselines, ставится командой
-services.achievement_reset): места в «Топ-3» и пульс группы для ачивок тоже
-считаются по отметкам после сброса, иначе старые пропуски решали бы исход.
+services.achievement_reset): пульс группы для ачивок — по отметкам после сброса,
+места в «Топ-3» — по лидерборду, который тоже считает только новые отметки.
 
 Выдаёт именно worker, а не API: API строит лидерборд на каждый запрос Mini App,
 и если бы он сохранял ачивки сам, уведомления в бот терялись бы.
@@ -66,19 +66,19 @@ def _delta_stats(stats: dict[str, dict[str, Any]], baselines: dict[str, dict[str
     return result
 
 
-def _group_context(deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]:
+def _group_context(board: list[StudentProfile], deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]:
     """
-    Считает места (без старосты) и пульс группы по отметкам после точки отсчёта.
+    Считает места в рейтинге (без старосты) и пульс группы после точки отсчёта.
 
-    Возвращает ({ФИО: место}, средний процент посещаемости студентов с отметками).
+    Места берём из лидерборда (очки гильдии), чтобы «Топ-3» совпадал с тем,
+    что студенты видят в Mini App. Пульс — средний процент по отметкам после сброса.
+
+    Возвращает ({ФИО: место}, пульс группы в процентах).
     """
-    marked = {fio: s for fio, s in deltas.items() if s.overall.total > 0}
-    ranked = sorted(
-        (fio for fio in marked if not is_starosta(fio)),
-        key=lambda fio: (-marked[fio].overall.pct, -marked[fio].visited, fio),
-    )
-    pulse = sum(s.overall.pct for s in marked.values()) / len(marked) if marked else 0.0
-    return {fio: idx for idx, fio in enumerate(ranked, start=1)}, pulse
+    competing = [p.fio for p in board if not is_starosta(p.fio)]
+    marked = [s.overall.pct for s in deltas.values() if s.overall.total > 0]
+    pulse = sum(marked) / len(marked) if marked else 0.0
+    return {fio: idx for idx, fio in enumerate(competing, start=1)}, pulse
 
 
 def compute_new_achievements(
@@ -130,7 +130,7 @@ async def sync_stat_achievements(bot: Any) -> int:
         return 0
     board = await get_group_leaderboard(provided_stats=stats)
     deltas = _delta_stats(stats, await AchievementResetRepository.get_baselines())
-    places, pulse = _group_context(deltas)
+    places, pulse = _group_context(board, deltas)
     granted = 0
     for profile in board:
         new_ids = compute_new_achievements(profile, deltas[profile.fio], places, pulse)

@@ -71,7 +71,8 @@ def _format_profile_message(p) -> str:
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🎓 <b>{clean_fio}</b>\n"
         f"Ранг: {p.rank_icon} <b>{html.escape(p.rank_name)}</b>\n"
-        f"✨ Академический опыт: <b>{p.xp} XP</b>\n\n"
+        f"✨ Академический опыт: <b>{p.xp} XP</b>\n"
+        f"⚔️ Очки гильдии: <b>{p.guild_points}</b>\n\n"
         f"📊 Посещаемость: <b>{p.attendance_pct}%</b> ({p.total_classes} пар)\n"
         f"✅ Присутствовал: <b>{p.present_count}</b>  •  ⏱ Опозданий: <b>{p.late_count}</b>\n"
         f"📋 По справке: <b>{p.excused_count}</b>  •  ⛔️ Прогулов: <b>{p.unexcused_count}</b>\n\n"
@@ -110,7 +111,7 @@ def _format_leaderboard_row(idx: int, p) -> str:
     """Формирует строку студента в турнирной таблице группы."""
     medal = "🥇" if idx == 1 else ("🥈" if idx == 2 else ("🥉" if idx == 3 else f"{idx}."))
     clean_name = html.escape(p.short_fio)
-    return f"{medal} <b>{clean_name}</b> — <b>{p.attendance_pct}%</b> ({p.rank_icon} {p.xp} XP)"
+    return f"{medal} <b>{clean_name}</b> — ⚔️ <b>{p.guild_points}</b> ({p.attendance_pct}%, {p.xp} XP)"
 
 
 def _format_leaderboard_message(profiles: list) -> str:
@@ -122,7 +123,8 @@ def _format_leaderboard_message(profiles: list) -> str:
     return (
         "🏆 <b>ТУРНИРНАЯ ТАБЛИЦА • 1-КПД-3</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👥 Всего: <b>{total}</b>  •  📈 Пульс группы: <b>{pulse}%</b>\n\n"
+        f"👥 Всего: <b>{total}</b>  •  📈 Пульс группы: <b>{pulse}%</b>\n"
+        "<i>⚔️ Очки = XP + 10 за пару − 10 за «Н» (с момента сброса)</i>\n\n"
         f"{board_text}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "📱 <i>Полная интерактивная таблица всех 26 студентов доступна в Mini App:</i>"

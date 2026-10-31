@@ -102,7 +102,7 @@ result = _delta_stats(stats=..., baselines=...)
 
 ### `_group_context`
 ```python
-def _group_context(deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]
+def _group_context(board: list[StudentProfile], deltas: dict[str, StudentStat]) -> tuple[dict[str, int], float]
 ```
 
 - **Source Reference**: [`services/achievement_sync.py#L69-L81`](../../services/achievement_sync.py#L69-L81)
@@ -115,6 +115,7 @@ Executes core domain logic for `_group_context`.
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
+| `board` | `list[StudentProfile]` | Yes | Parameter `board` of type `list[StudentProfile]`. |
 | `deltas` | `dict[str, StudentStat]` | Yes | Parameter `deltas` of type `dict[str, StudentStat]`. |
 
 #### Concurrency & Side Effects
@@ -128,7 +129,7 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 from services.achievement_sync import _group_context
 
 # Execute call
-result = _group_context(deltas=...)
+result = _group_context(board=..., deltas=...)
 ```
 
 ---

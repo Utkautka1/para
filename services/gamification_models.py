@@ -79,4 +79,6 @@ class StudentProfile:
     rank_description: str
     xp: int
     unlocked_achievements: list[str] = field(default_factory=list)
+    # guild_points — очки гильдии, по ним сортируется рейтинг (см. calculate_guild_points)
+    guild_points: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)

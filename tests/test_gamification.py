@@ -124,7 +124,7 @@ async def test_get_group_leaderboard_sorting() -> None:
     }
     board = await get_group_leaderboard(fake_stats)
     assert len(board) == 3
-    # Петров Петр (100% посещаемости) на 1 месте соревновательного зачета
+    # Петров Петр (30 пар без прогулов) набрал больше всех очков гильдии
     assert board[0].fio == "Петров Петр"
     # Староста идет в отдельном зачете вне соревновательного подиума
     assert board[-1].fio == "Стрыгин Дмитрий"
@@ -176,3 +176,22 @@ async def test_gamification_api_profile_and_ranks() -> None:
 
             resp_bad = await client.get("/gamification/profile", headers=_AUTH)
             assert resp_bad.status_code == 400
+
+
+def test_guild_points_mix_xp_attendance_and_baseline() -> None:
+    """Очки гильдии: XP + 10 за пару − 10 за «Н», только после точки отсчёта, не ниже нуля."""
+    from services.gamification import calculate_guild_points
+
+    raw = {"total": {"П": 40, "О": 2, "У": 0, "Н": 8}}
+    base = {"total": {"П": 30, "О": 0, "У": 0, "Н": 5}}
+    assert calculate_guild_points(100, raw, None) == 100 + 420 - 80
+    assert calculate_guild_points(100, raw, base) == 100 + 120 - 30
+    assert calculate_guild_points(0, {"total": {"Н": 3}}, None) == 0
+
+
+def test_active_student_outranks_better_attendance() -> None:
+    """Активный студент с ачивками может обогнать того, кто просто ходит на пары."""
+    active = build_student_profile("А А", {"total": {"П": 5, "Н": 1}}, extra={"egg_jubilee_300", "bot_miniapp"})
+    regular = build_student_profile("Б Б", {"total": {"П": 20}})
+    assert active.attendance_pct < regular.attendance_pct
+    assert active.guild_points > regular.guild_points

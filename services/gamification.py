@@ -4,7 +4,10 @@
 Отвечает за:
   1. Автоматический расчет рангов (включая мем "ОХ ПЕРВЫЙ КУРС! ПОНЯЛИ?!")
   2. Начисление очков академического опыта (XP) по открытым ачивкам
-  3. Формирование турнирной таблицы лидеров группы 1-КПД-3
+  3. Формирование турнирной таблицы лидеров группы 1-КПД-3 по очкам гильдии:
+     XP + 10 за посещённую пару − 10 за «Н», пары — только после точки отсчёта
+     сброса ачивок. Попасть в топ можно и активностью, и посещаемостью,
+     а старые пропуски не закрывают дорогу наверх
   4. Скрытие секретных ачивок из чужих профилей
 
 Условия ачивок здесь не проверяются: журнальные правила живут в achievement_rules
@@ -17,7 +20,8 @@ from typing import Any
 
 from core.logger import get_logger
 from core.redis_cache import cache_get, cache_set
-from db.sqlite.repositories import GamificationRepository
+from db.sqlite.repositories import AchievementResetRepository, GamificationRepository
+from services.achievement_rules import build_student_stat
 from services.attendance_stats import fetch_all_time_attendance
 from services.attendance_topic_updater import extract_short_fio
 from services.gamification_models import RankDefinition, StudentProfile
@@ -29,7 +33,12 @@ from services.gamification_registry import (
 )
 
 log = get_logger("gamification")
-LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v1"
+# v2 — в профиле появились очки гильдии, старый кэш без них сортировался бы неверно
+LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v2"
+
+# Очки гильдии за посещённую пару (П или О) и штраф за прогул «Н» после точки отсчёта
+GUILD_POINTS_PER_VISIT = 10
+GUILD_PENALTY_PER_ABSENCE = 10
 LEADERBOARD_CACHE_TTL = 3600  # 1 час для быстрого отклика UI MiniApp
 
 
@@ -72,8 +81,21 @@ def is_starosta(fio: str) -> bool:
     return "стрыгин" in fio.lower()
 
 
-def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | None = None) -> StudentProfile:
-    """Создает объект профиля студента с нуля или с реально открытыми достижениями."""
+def calculate_guild_points(xp: int, raw_data: dict[str, Any], baseline: dict[str, Any] | None) -> int:
+    """
+    Считает очки гильдии: XP + пары после точки отсчёта − прогулы после неё.
+
+    Не уходит ниже нуля — отрицательные очки только отпугивают от рейтинга.
+    """
+    stat = build_student_stat(raw_data, baseline=baseline)
+    points = xp + stat.visited * GUILD_POINTS_PER_VISIT - stat.overall.n * GUILD_PENALTY_PER_ABSENCE
+    return max(0, points)
+
+
+def build_student_profile(
+    fio: str, raw_data: dict[str, Any], extra: set[str] | None = None, baseline: dict[str, Any] | None = None
+) -> StudentProfile:
+    """Создает профиль студента с открытыми достижениями и очками гильдии."""
     m = _extract_student_metrics(fio, raw_data)
     starosta = is_starosta(fio)
     rank = STAROSTA_RANK if starosta else resolve_student_rank(m["pct"], m["n"], m["o"])
@@ -94,6 +116,7 @@ def build_student_profile(fio: str, raw_data: dict[str, Any], extra: set[str] | 
         rank_description=rank.description,
         xp=xp,
         unlocked_achievements=unlocked,
+        guild_points=calculate_guild_points(xp, raw_data, baseline),
     )
 
 
@@ -134,7 +157,7 @@ async def get_group_leaderboard(
     provided_stats: dict[str, Any] | None = None,
     force_refresh: bool = False,
 ) -> list[StudentProfile]:
-    """Формирует упорядоченный список студентов группы 1-КПД-3 по рангу и XP."""
+    """Формирует рейтинг группы 1-КПД-3 по очкам гильдии (староста — вне рейтинга, в конце)."""
     if not provided_stats and not force_refresh:
         cached = await _load_cached_leaderboard()
         if cached:
@@ -142,37 +165,29 @@ async def get_group_leaderboard(
 
     stats = provided_stats or await fetch_all_time_attendance()
     unlocked_map = await GamificationRepository.get_all_unlocked_map()
+    baselines = await AchievementResetRepository.get_baselines()
     profiles = [
-        build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map)) for fio, data in stats.items()
+        build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map), baselines.get(fio))
+        for fio, data in stats.items()
     ]
-    profiles.sort(key=lambda s: (1 if is_starosta(s.fio) else 0, -s.attendance_pct, -s.xp, -s.present_count, s.fio))
+    profiles.sort(key=lambda s: (is_starosta(s.fio), -s.guild_points, -s.xp, s.fio))
     if not provided_stats:
         await _save_cached_leaderboard(profiles)
     return profiles
 
 
-async def get_student_profile_by_fio(fio: str, extra: set[str] | None = None) -> StudentProfile | None:
-    """Находит статистику студента по ФИО и возвращает профиль геймификации."""
-    board = await get_group_leaderboard()
+async def get_student_profile_by_fio(fio: str) -> StudentProfile | None:
+    """
+    Находит профиль студента в рейтинге группы по ФИО (полному или частичному).
+
+    Рейтинг строится по всем студентам журнала, поэтому отдельный поиск
+    по сырой статистике не нужен.
+
+    Возвращает профиль или None.
+    """
     clean = fio.strip().lower()
-    matched = next((p for p in board if clean in p.fio.lower() or p.fio.lower() in clean), None)
-    if matched and not extra:
-        return matched
-    if matched and extra:
-        raw = {
-            "total": {
-                "П": matched.present_count,
-                "О": matched.late_count,
-                "У": matched.excused_count,
-                "Н": matched.unexcused_count,
-            }
-        }
-        return build_student_profile(matched.fio, raw, extra)
-    stats = await fetch_all_time_attendance()
-    matched_fio = next((k for k in stats if clean in k.lower() or k.lower() in clean), None)
-    if not matched_fio:
-        return None
-    return build_student_profile(matched_fio, stats[matched_fio], extra)
+    board = await get_group_leaderboard()
+    return next((p for p in board if clean in p.fio.lower() or p.fio.lower() in clean), None)
 
 
 def hide_secret_achievements(profile: StudentProfile, viewer_fio: str | None) -> StudentProfile:

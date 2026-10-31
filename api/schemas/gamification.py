@@ -42,6 +42,7 @@ class StudentProfileSchema(BaseModel):
     rank_description: str = Field(..., description="Описание статуса")
     xp: int = Field(..., description="Суммарные очки опыта")
     unlocked_achievements: list[str] = Field(default_factory=list, description="Список ID открытых ачивок")
+    guild_points: int = Field(0, description="Очки гильдии: XP + 10 за пару − 10 за «Н» после сброса")
 
 
 class LeaderboardResponse(BaseModel):
