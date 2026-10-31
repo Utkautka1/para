@@ -197,9 +197,9 @@ def ask_amount_text(student: str, kind: str) -> str:
     return (
         f"✍️ <b>{BONUS_LABELS[kind]}</b> для <b>{html.escape(student)}</b>\n\n"
         "Впишите число:\n"
-        "• <code>500</code> или <code>+500</code> — прибавить\n"
-        "• <code>-30</code> — отнять\n"
-        "• <code>=1000</code> — выставить бонус ровно"
+        "• <code>5000</code> — сделать ровно 5000\n"
+        "• <code>+500</code> — прибавить\n"
+        "• <code>-30</code> — отнять"
     )
 
 
@@ -216,22 +216,22 @@ def ask_amount_ikb(idx: int) -> InlineKeyboardMarkup:
 
 incorrect_amount_text = (
     "⚠️ <b>Не понял число.</b>\n\n"
-    "Примеры: <code>500</code>, <code>-30</code>, <code>=1000</code> "
+    "Примеры: <code>5000</code>, <code>+500</code>, <code>-30</code> "
     f"(не больше {MAX_MANUAL_AMOUNT:,} по модулю). Впишите ещё раз."
 )
 
 
 def parse_amount(text: str | None) -> tuple[bool, int] | None:
     """
-    Разбирает ввод старосты: '=N' — выставить бонус ровно, иначе — прибавить N.
+    Разбирает ввод старосты: число без знака (или '=N') — итоговое значение,
+    '+N' / '-N' — прибавить или отнять.
 
     Возвращает (выставить_ровно, число) или None, если ввод не распознан.
     """
-    raw = (text or "").strip().replace(" ", "")
-    exact = raw.startswith("=")
-    number = raw[1:] if exact else raw
+    raw = (text or "").strip().replace(" ", "").lstrip("=")
+    exact = not raw.startswith(("+", "-"))
     try:
-        value = int(number)
+        value = int(raw)
     except ValueError:
         return None
     if abs(value) > MAX_MANUAL_AMOUNT or (value == 0 and not exact):

@@ -101,7 +101,7 @@ async def game_ask_amount(call: CallbackQuery, callback_data: tgame.GameAdminCal
 @router.message(tgame.GameAdminState.waiting_for_amount)
 async def game_enter_amount(message: Message, state: FSMContext) -> None:
     """
-        Применяет вписанное число и возвращает карточку на место запроса
+        Применяет вписанное число (N — ровно N, +N/−N — прибавить/отнять) и возвращает карточку
     :param message: Message
     :param state: FSMContext
     :return:
@@ -139,10 +139,10 @@ async def _edit_panel(message: Message, panel_id: int, text: str, markup: Inline
 
 
 async def _apply_amount(message: Message, target: StudentTarget, kind: str, parsed: tuple[bool, int]) -> None:
-    """Выставляет или прибавляет бонус по разобранному вводу."""
+    """Выставляет итоговое значение или прибавляет к нему по разобранному вводу."""
     exact, value = parsed
     if exact:
-        await admin.set_bonus(message.bot, target, kind, value)
+        await admin.set_total(message.bot, target, kind, value)
     else:
         await admin.adjust_bonus(message.bot, target, kind, value)
 

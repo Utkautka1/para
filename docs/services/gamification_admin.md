@@ -28,9 +28,10 @@ graph LR
 | [`_notify`](#_notify) | Function | L82–L85 | `None` | Executes core domain logic for `_notify`. |
 | [`format_bonus_notification`](#format_bonus_notification) | Function | L88–L91 | `str` | Formats message payload and presentation markup for `fo... |
 | [`adjust_bonus`](#adjust_bonus) | Function | L94–L105 | `int` | Executes core domain logic for `adjust_bonus`. |
-| [`set_bonus`](#set_bonus) | Function | L108–L119 | `int` | Persists state updates for `set_bonus`. |
-| [`reset_bonuses`](#reset_bonuses) | Function | L122–L128 | `None` | Executes core domain logic for `reset_bonuses`. |
-| [`toggle_achievement`](#toggle_achievement) | Function | L131–L149 | `bool` | Executes core domain logic for `toggle_achievement`. |
+| [`bonus_for_total`](#bonus_for_total) | Function | L108–L118 | `int` | Executes core domain logic for `bonus_for_total`. |
+| [`set_total`](#set_total) | Function | L121–L135 | `int` | Persists state updates for `set_total`. |
+| [`reset_bonuses`](#reset_bonuses) | Function | L138–L144 | `None` | Executes core domain logic for `reset_bonuses`. |
+| [`toggle_achievement`](#toggle_achievement) | Function | L147–L165 | `bool` | Executes core domain logic for `toggle_achievement`. |
 
 ---
 
@@ -275,17 +276,53 @@ result = await adjust_bonus(bot=..., target=..., kind=...)
 
 ---
 
-### `set_bonus`
+### `bonus_for_total`
 ```python
-async def set_bonus(bot: Any, target: StudentTarget, kind: str, value: int) -> int
+def bonus_for_total(target: StudentTarget, kind: str, total: int, bonuses: tuple[int, int]) -> int
 ```
 
-- **Source Reference**: [`services/gamification_admin.py#L108-L119`](../../services/gamification_admin.py#L108-L119)
+- **Source Reference**: [`services/gamification_admin.py#L108-L118`](../../services/gamification_admin.py#L108-L118)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `int`
+
+#### Overview & Architectural Purpose
+Executes core domain logic for `bonus_for_total`.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `target` | `StudentTarget` | Yes | Parameter `target` of type `StudentTarget`. |
+| `kind` | `str` | Yes | Parameter `kind` of type `str`. |
+| `total` | `int` | Yes | Parameter `total` of type `int`. |
+| `bonuses` | `tuple[int, int]` | Yes | Parameter `bonuses` of type `tuple[int, int]`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from services.gamification_admin import bonus_for_total
+
+# Execute call
+result = bonus_for_total(target=..., kind=..., total=...)
+```
+
+---
+
+### `set_total`
+```python
+async def set_total(bot: Any, target: StudentTarget, kind: str, total: int) -> int
+```
+
+- **Source Reference**: [`services/gamification_admin.py#L121-L135`](../../services/gamification_admin.py#L121-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Persists state updates for `set_bonus`.
+Persists state updates for `set_total`.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -293,7 +330,7 @@ Persists state updates for `set_bonus`.
 | `bot` | `Any` | Yes | Parameter `bot` of type `Any`. |
 | `target` | `StudentTarget` | Yes | Parameter `target` of type `StudentTarget`. |
 | `kind` | `str` | Yes | Parameter `kind` of type `str`. |
-| `value` | `int` | Yes | Parameter `value` of type `int`. |
+| `total` | `int` | Yes | Parameter `total` of type `int`. |
 
 #### Concurrency & Side Effects
 - Emits structured telemetry events to system logging subsystem.
@@ -303,10 +340,10 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 
 #### Production Usage Example
 ```python
-from services.gamification_admin import set_bonus
+from services.gamification_admin import set_total
 
 # Execute call
-result = await set_bonus(bot=..., target=..., kind=...)
+result = await set_total(bot=..., target=..., kind=...)
 ```
 
 ---
@@ -316,7 +353,7 @@ result = await set_bonus(bot=..., target=..., kind=...)
 async def reset_bonuses(bot: Any, target: StudentTarget) -> None
 ```
 
-- **Source Reference**: [`services/gamification_admin.py#L122-L128`](../../services/gamification_admin.py#L122-L128)
+- **Source Reference**: [`services/gamification_admin.py#L138-L144`](../../services/gamification_admin.py#L138-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -350,7 +387,7 @@ result = await reset_bonuses(bot=..., target=...)
 async def toggle_achievement(bot: Any, target: StudentTarget, achievement_id: str) -> bool
 ```
 
-- **Source Reference**: [`services/gamification_admin.py#L131-L149`](../../services/gamification_admin.py#L131-L149)
+- **Source Reference**: [`services/gamification_admin.py#L147-L165`](../../services/gamification_admin.py#L147-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

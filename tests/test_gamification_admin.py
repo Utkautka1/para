@@ -8,6 +8,7 @@
      категории покрывают весь каталог, включая секретные ачивки
 """
 
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -135,14 +136,13 @@ async def test_bonus_and_toggle_buttons_round_trip() -> None:
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("500", (False, 500)),
+        ("5000", (True, 5000)),
+        ("=1000", (True, 1000)),
+        ("0", (True, 0)),
+        ("1 000", (True, 1000)),
         ("+500", (False, 500)),
         ("-30", (False, -30)),
-        ("=1000", (True, 1000)),
-        ("= -5", (True, -5)),
-        ("=0", (True, 0)),
-        ("1 000", (False, 1000)),
-        ("0", None),
+        ("+0", None),
         ("abc", None),
         ("", None),
         ("99999999", None),
@@ -153,7 +153,7 @@ def test_parse_amount(text: str, expected: tuple[bool, int] | None) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(("text", "setter"), [("+250", "adjust_bonus"), ("=1000", "set_bonus")])
+@pytest.mark.parametrize(("text", "setter"), [("+250", "adjust_bonus"), ("1000", "set_total")])
 async def test_enter_amount_applies_and_clears_state(text: str, setter: str) -> None:
     from bot.handlers.admin import gamification as handlers
 
@@ -185,3 +185,15 @@ async def test_enter_amount_rejects_garbage_and_keeps_state() -> None:
     message.delete.assert_awaited_once()
     assert panel.await_args.args[1:3] == (77, tgame.incorrect_amount_text)
     state.clear.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("kind", "total", "expected_bonus"),
+    [("xp", 5000, 5000 - 20 + 0), ("guild", 100, 7 + 100 - 77)],
+)
+def test_bonus_for_total(kind: str, total: int, expected_bonus: int) -> None:
+    """Под итоговое число подгоняется только бонус; текущее значение уже включает старый бонус."""
+    target = _target({"bot_welcome"})
+    profile = replace(target.profile, xp=20, guild_points=77)
+    target = admin.StudentTarget(profile, target.owner, target.tg_id)
+    assert admin.bonus_for_total(target, kind, total, (0, 7)) == expected_bonus

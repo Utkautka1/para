@@ -105,18 +105,34 @@ async def adjust_bonus(bot: Any, target: StudentTarget, kind: str, delta: int) -
     return value
 
 
-async def set_bonus(bot: Any, target: StudentTarget, kind: str, value: int) -> int:
+def bonus_for_total(target: StudentTarget, kind: str, total: int, bonuses: tuple[int, int]) -> int:
     """
-    Выставляет бонус студента ровно в value и уведомляет его.
+    Считает бонус, при котором у студента будет ровно total XP или очков гильдии.
 
-    Возвращает установленное значение.
+    Текущее значение уже включает бонус, поэтому новый бонус = старый + (total − текущее).
+
+    Возвращает новое значение бонуса.
+    """
+    xp_bonus, guild_bonus = bonuses
+    current, bonus = (target.profile.xp, xp_bonus) if kind == "xp" else (target.profile.guild_points, guild_bonus)
+    return bonus + total - current
+
+
+async def set_total(bot: Any, target: StudentTarget, kind: str, total: int) -> int:
+    """
+    Выставляет студенту ровно total XP или очков гильдии и уведомляет его.
+
+    XP за ачивки и пары не трогаются — под нужное число подгоняется только бонус.
+
+    Возвращает новое значение бонуса.
     """
     key, label = BONUS_KINDS[kind]
-    await CounterRepository.set_value(target.owner, key, value)
+    bonus = bonus_for_total(target, kind, total, await get_bonuses(target))
+    await CounterRepository.set_value(target.owner, key, bonus)
     await invalidate_leaderboard_cache()
-    log.info("Бонус %s студента %s выставлен: %s", key, target.owner, value)
-    await _notify(bot, target, f"👑 <b>Староста выставил бонус {label}: {value:+d}</b>")
-    return value
+    log.info("Студенту %s выставлено %s %s (бонус %+d)", target.owner, total, key, bonus)
+    await _notify(bot, target, f"👑 <b>Староста выставил тебе {total} {label}</b>")
+    return bonus
 
 
 async def reset_bonuses(bot: Any, target: StudentTarget) -> None:
