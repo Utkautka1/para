@@ -214,6 +214,29 @@ class CounterRepository:
             return 0
 
     @staticmethod
+    async def set_value(student_fio: str, key: str, value: int) -> None:
+        """Записывает счётчику точное значение (например, бонус XP, выданный админом)."""
+        stmt = sqlite_insert(StudentCounter).values(student_fio=student_fio, key=key, value=value)
+        stmt = stmt.on_conflict_do_update(index_elements=["student_fio", "key"], set_={"value": value})
+        async with get_async_session() as session:
+            await session.execute(stmt)
+
+    @staticmethod
+    async def get_key_values(key: str) -> dict[str, int]:
+        """
+        Возвращает значения одного счётчика у всех студентов {ФИО в нижнем регистре: значение}.
+
+        Пустой словарь при ошибке БД — рейтинг строится и без бонусов.
+        """
+        try:
+            async with get_async_session() as session:
+                rows = (await session.execute(select(StudentCounter).where(StudentCounter.key == key))).scalars()
+                return {row.student_fio.lower(): row.value for row in rows}
+        except Exception as exc:
+            log.warning("Ошибка чтения счётчиков %s: %s", key, exc)
+            return {}
+
+    @staticmethod
     async def count_keys(student_fio: str, prefix: str) -> int:
         """
         Считает разные счётчики студента с общим префиксом.

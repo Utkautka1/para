@@ -20,7 +20,7 @@ from typing import Any
 
 from core.logger import get_logger
 from core.redis_cache import cache_get, cache_set
-from db.sqlite.repositories import AchievementResetRepository, GamificationRepository
+from db.sqlite.repositories import AchievementResetRepository, CounterRepository, GamificationRepository
 from services.achievement_rules import build_student_stat
 from services.attendance_stats import fetch_all_time_attendance
 from services.attendance_topic_updater import extract_short_fio
@@ -35,6 +35,9 @@ from services.gamification_registry import (
 log = get_logger("gamification")
 # v2 — в профиле появились очки гильдии, старый кэш без них сортировался бы неверно
 LEADERBOARD_CACHE_KEY = "gamification:leaderboard:v2"
+
+# Ключ счётчика с бонусными XP, выданными админом вручную (сверх XP за ачивки)
+XP_BONUS_KEY = "xp_bonus"
 
 # Очки гильдии за посещённую пару (П или О) и штраф за прогул «Н» после точки отсчёта
 GUILD_POINTS_PER_VISIT = 10
@@ -143,6 +146,22 @@ async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None:
         log.warning("Ошибка сохранения кэша лидерборда: %s", exc)
 
 
+def _apply_xp_bonus(profile: StudentProfile, bonuses: dict[str, int]) -> StudentProfile:
+    """
+    Добавляет к XP и очкам гильдии бонус, выданный админом.
+
+    ФИО сопоставляется как у ачивок: одно имя содержит другое (журнал и реестр
+    могут отличаться отчеством).
+
+    Возвращает профиль с бонусом или тот же профиль, если бонуса нет.
+    """
+    clean = profile.fio.strip().lower()
+    bonus = sum(v for fio, v in bonuses.items() if fio in clean or clean in fio)
+    if not bonus:
+        return profile
+    return replace(profile, xp=profile.xp + bonus, guild_points=profile.guild_points + bonus)
+
+
 def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> set[str]:
     """Находит все открытые ачивки студента по точному или частичному совпадению ФИО."""
     clean = fio.strip().lower()
@@ -166,8 +185,12 @@ async def get_group_leaderboard(
     stats = provided_stats or await fetch_all_time_attendance()
     unlocked_map = await GamificationRepository.get_all_unlocked_map()
     baselines = await AchievementResetRepository.get_baselines()
+    bonuses = await CounterRepository.get_key_values(XP_BONUS_KEY)
     profiles = [
-        build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map), baselines.get(fio))
+        _apply_xp_bonus(
+            build_student_profile(fio, data, _match_student_achievements(fio, unlocked_map), baselines.get(fio)),
+            bonuses,
+        )
         for fio, data in stats.items()
     ]
     profiles.sort(key=lambda s: (is_starosta(s.fio), -s.guild_points, -s.xp, s.fio))
