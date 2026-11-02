@@ -14,8 +14,8 @@ import uuid
 from aiogram import Bot
 
 import config
+from core.hw_queue import ack_hw_task, nack_hw_task, pop_hw_task, promote_due_hw_tasks
 from core.logger import get_logger
-from core.redis_cache import ack_hw_task, nack_hw_task, pop_hw_task, promote_due_hw_tasks
 from core.telemetry import trace_span
 from integrations.deepseek import solve_homework
 from services.solver.payload_extractor import resolve_task_payload

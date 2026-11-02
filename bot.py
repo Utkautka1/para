@@ -10,6 +10,7 @@
 import asyncio
 
 from core.api_client import close_api_client
+from core.background import drain_background
 from core.bot import bot, dp
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
@@ -97,6 +98,8 @@ async def shutdown_bot() -> None:
     """
 
     log.info("Остановка бота: закрытие сессий...")
+    # Даём доработать фоновым ачивкам и уведомлениям, пока соединения ещё открыты
+    await drain_background()
     await close_api_client()
     if dp.storage:
         await dp.storage.close()

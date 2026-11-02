@@ -5,7 +5,6 @@
 sched:week, sched:refresh с редактированием существующего сообщения.
 """
 
-import asyncio
 import json
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -32,10 +31,12 @@ from core.api_client import (
     get_api_schedule_for_date,
     get_api_week_schedule,
 )
+from core.background import spawn
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from db.subscribers import is_subscribed, toggle_subscriber
 from services.achievement_events import on_refresh_click, on_schedule_view
+from services.achievement_service import award_achievement
 from services.achievement_triggers import ScheduleView
 from services.classmates_auth import is_authorized_user, process_user_auth
 from services.login_tokens import build_login_url
@@ -191,12 +192,11 @@ async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> l
 
 def _award_today_view(message: Message, lessons: list[Lesson]) -> None:
     """Запускает в фоне выдачу ачивок за /start и /today (приветствие + время просмотра)."""
-    from services.achievement_service import award_achievement
 
     user = message.from_user
     if user and (message.text or "").startswith("/start"):
-        asyncio.create_task(award_achievement(user.id, "bot_welcome", message.bot, user.full_name))
-    asyncio.create_task(on_schedule_view(user, message.bot, ScheduleView.TODAY, lessons))
+        spawn(award_achievement(user.id, "bot_welcome", message.bot, user.full_name))
+    spawn(on_schedule_view(user, message.bot, ScheduleView.TODAY, lessons))
 
 
 async def _handle_unauthorized_user(message: Message, is_auth: bool, is_tester: bool, uid: int) -> bool:
@@ -267,12 +267,11 @@ async def cb_show_tester_key(callback: CallbackQuery) -> None:
 
 def _trigger_notify_achievements(uid: int, bot: Any, new_sub: bool, full_name: str | None) -> None:
     """Асинхронно разблокирует достижения при смене статуса напоминаний о парах."""
-    from services.achievement_service import award_achievement
 
     if new_sub:
-        asyncio.create_task(award_achievement(uid, "time_bell_on", bot, full_name))
+        spawn(award_achievement(uid, "time_bell_on", bot, full_name))
     else:
-        asyncio.create_task(award_achievement(uid, "time_bell_silent", bot, full_name))
+        spawn(award_achievement(uid, "time_bell_silent", bot, full_name))
 
 
 async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_sub: bool) -> None:
@@ -367,7 +366,7 @@ async def cb_today(callback: CallbackQuery) -> None:
     await _ack_callback(callback)
     now = datetime.now(TIMEZONE).date()
     text, lessons = await get_day_schedule_cached(now)
-    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
 
     await edit_or_answer(callback, text, lessons)
 
@@ -387,7 +386,7 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
     await _ack_callback(callback)
     tomorrow = datetime.now(TIMEZONE).date() + timedelta(days=1)
     text, lessons = await get_day_schedule_cached(tomorrow)
-    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TOMORROW, lessons))
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TOMORROW, lessons))
 
     await edit_or_answer(callback, text, lessons)
 
@@ -405,7 +404,7 @@ async def cb_week(callback: CallbackQuery) -> None:
 
     log.info("Нажата инлайн-кнопка: Эта неделя")
     await _ack_callback(callback)
-    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK, []))
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK, []))
     today = datetime.now(TIMEZONE).date()
     monday = today - timedelta(days=today.weekday())
     cache_key = f"sched:week:{monday.isoformat()}"
@@ -432,7 +431,7 @@ async def cb_week_next(callback: CallbackQuery) -> None:
     """Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Следующая неделя")
     await _ack_callback(callback)
-    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK_NEXT, []))
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK_NEXT, []))
 
     next_monday = _get_next_week_monday()
     cache_key = f"sched:week_next:{next_monday.isoformat()}"
@@ -474,11 +473,11 @@ async def cb_refresh(callback: CallbackQuery) -> None:
     """Сразу показывает расписание из кэша и просит worker скачать свежую версию КТМУ в фоне."""
     log.info("Нажата инлайн-кнопка: Обновить расписание (Сброс Redis)")
     await _ack_callback(callback, "Синхронизация с API КТМУ...")
-    asyncio.create_task(on_refresh_click(callback.from_user, callback.bot))
+    spawn(on_refresh_click(callback.from_user, callback.bot))
 
     now = datetime.now(TIMEZONE).date()
     text, lessons, count = await _refresh_and_format_schedule(now)
-    asyncio.create_task(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.TODAY, lessons))
     text += f"\n\n<i>✅ Контакты ({count}) сверены. Свежая версия расписания КТМУ запрошена — подтянется в течение минуты.</i>"
 
     await edit_or_answer(callback, text, lessons)
@@ -525,11 +524,8 @@ async def cmd_help(message: Message) -> None:
         return
 
     uid = message.from_user.id if message.from_user else 0
-    from services.achievement_service import award_achievement
 
-    asyncio.create_task(
-        award_achievement(uid, "bot_manual", message.bot, message.from_user.full_name if message.from_user else None)
-    )
+    spawn(award_achievement(uid, "bot_manual", message.bot, message.from_user.full_name if message.from_user else None))
 
     text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
     await message.answer(text)

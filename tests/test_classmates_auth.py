@@ -2,9 +2,7 @@
 Тесты для сервиса аутентификации и разовой регистрации одногруппников.
 
 Проверяет:
-  - Поиск студентов по ID и юзернейму
-  - Разовую фиксацию цифрового Telegram ID при первом входе
-  - Запрет повторной регистрации или перезаписи чужого ID
+  - Поиск студентов по Telegram ID
   - Разграничение прав администратора и одногруппников
 """
 
@@ -18,11 +16,9 @@ from config import ALLOWED_USER_ID
 from services.classmates_auth import (
     clear_registry_cache,
     find_classmate_by_tg_id,
-    find_unregistered_by_username,
     is_authorized_user,
     load_classmates_registry,
     process_user_auth,
-    update_classmate_tg_id,
 )
 
 SAMPLE_REGISTRY = [
@@ -60,49 +56,6 @@ def test_find_classmate_by_tg_id() -> None:
         assert missing is None
 
 
-def test_find_unregistered_by_username_found() -> None:
-    """Проверяет поиск студента с tg_id=None по юзернейму без учета регистра."""
-    with patch("services.classmates_auth.load_classmates_registry", return_value=SAMPLE_REGISTRY):
-        student = find_unregistered_by_username("@Etow0ndes")
-        assert student is not None
-        assert student["full_name"] == "Калинкевич Арсений"
-
-
-def test_find_unregistered_already_registered() -> None:
-    """Проверяет, что студент с уже известным tg_id не считается незарегистрированным."""
-    with patch("services.classmates_auth.load_classmates_registry", return_value=SAMPLE_REGISTRY):
-        student = find_unregistered_by_username("Arseniymazur")
-        assert student is None
-
-
-def test_update_classmate_tg_id_success() -> None:
-    """Проверяет разовую фиксацию ID и сохранение в файл и кэш."""
-    import copy
-
-    reg_copy = copy.deepcopy(SAMPLE_REGISTRY)
-    with (
-        patch("services.classmates_auth.load_classmates_registry", return_value=reg_copy),
-        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
-        patch("services.classmates_auth.add_user_to_cache") as mock_cache,
-    ):
-        updated = update_classmate_tg_id("etow0ndes", 555666777)
-        assert updated is not None
-        assert updated["tg_id"] == 555666777
-        mock_save.assert_called_once()
-        mock_cache.assert_called_once_with("etow0ndes", 555666777)
-
-
-def test_update_classmate_tg_id_already_registered_fails() -> None:
-    """Проверяет запрет перезаписи ID для уже зафиксированного пользователя."""
-    with (
-        patch("services.classmates_auth.load_classmates_registry", return_value=SAMPLE_REGISTRY),
-        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
-    ):
-        res = update_classmate_tg_id("arseniymazur", 999111222)
-        assert res is None
-        mock_save.assert_not_called()
-
-
 def test_is_authorized_user_admin() -> None:
     """Проверяет, что Главный Администратор всегда авторизован."""
     admin_user = User(id=ALLOWED_USER_ID, is_bot=False, first_name="Admin")
@@ -132,10 +85,7 @@ def test_process_user_auth_unregistered_rejected() -> None:
 
 def test_process_user_auth_stranger_rejected() -> None:
     """Проверяет отказ в доступе постороннему лицу."""
-    with (
-        patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None),
-        patch("services.classmates_auth.update_classmate_tg_id", return_value=None),
-    ):
+    with patch("services.classmates_auth.find_classmate_by_tg_id", return_value=None):
         stranger = User(id=999888, is_bot=False, first_name="Bob", username="stranger_bob")
         is_auth, is_just_reg, student = process_user_auth(stranger)
         assert is_auth is False
@@ -147,7 +97,7 @@ def test_process_user_auth_stranger_rejected() -> None:
 async def test_classmate_auth_filter_allows_authorized() -> None:
     """Проверяет работу aiogram фильтра ClassmateAuthFilter для авторизованных."""
     filt = ClassmateAuthFilter()
-    with patch("services.classmates_auth.is_authorized_user", return_value=True):
+    with patch("bot.filters.auth.is_authorized_user", return_value=True):
         msg = MagicMock(spec=Message)
         msg.from_user = User(id=1859089085, is_bot=False, first_name="Arseniy")
         assert await filt(msg) is True
@@ -157,7 +107,7 @@ async def test_classmate_auth_filter_allows_authorized() -> None:
 async def test_classmate_auth_filter_blocks_stranger() -> None:
     """Проверяет работу aiogram фильтра ClassmateAuthFilter при блокировке посторонних."""
     filt = ClassmateAuthFilter()
-    with patch("services.classmates_auth.is_authorized_user", return_value=False):
+    with patch("bot.filters.auth.is_authorized_user", return_value=False):
         cb = MagicMock(spec=CallbackQuery)
         cb.from_user = User(id=999888, is_bot=False, first_name="Stranger")
         assert await filt(cb) is False

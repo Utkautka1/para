@@ -10,9 +10,9 @@ import asyncio
 
 import config
 from core.bot import bot
+from core.hw_queue import recover_stale_hw_tasks
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
-from core.redis_cache import recover_stale_hw_tasks
 from core.telemetry import setup_telemetry
 from integrations.deepseek import close_deepseek_client
 from services.solver import run_solver_loop

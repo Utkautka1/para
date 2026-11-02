@@ -69,6 +69,13 @@ class MarkStudentRequest(BaseModel):
     )
 
 
+class CancelSessionResponse(BaseModel):
+    """Результат сброса активной сессии отметки без сохранения."""
+
+    status: str = Field(..., description="Статус операции")
+    message: str = Field(..., description="Информационное сообщение")
+
+
 class CommitAttendanceResponse(BaseModel):
     """Результат сохранения отметок в Яндекс Документы."""
 

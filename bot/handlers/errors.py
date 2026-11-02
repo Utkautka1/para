@@ -5,11 +5,15 @@
 и информирует пользователя о временной ошибке вместо зависания интерфейса.
 """
 
+import html
+
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ErrorEvent
 
 from core.logger import get_logger
+from db.sqlite.models import IncidentSeverity
+from services.alerting import send_admin_alert
 
 log = get_logger("error_handler")
 router = Router()
@@ -50,11 +54,6 @@ async def _notify_message_error(msg) -> None:
 async def _dispatch_error_alert(exc: Exception) -> None:
     """Асинхронно отправляет алерт о сбое хэндлера в Fatal топик."""
     try:
-        import html
-
-        from db.sqlite.models import IncidentSeverity
-        from services.alerting import send_admin_alert
-
         err_type = type(exc).__name__
         err_msg = str(exc) or err_type
         await send_admin_alert(

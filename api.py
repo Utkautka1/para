@@ -14,8 +14,10 @@ from fastapi import FastAPI
 
 from api import create_app
 from api.grpc.server import create_grpc_server, start_grpc_server, stop_grpc_server
+from api.router.jaeger import close_jaeger_client
 from config import API_HOST, API_PORT, GRPC_HOST, GRPC_PORT
 from core.api_client import close_api_client
+from core.background import drain_background
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
 
@@ -61,8 +63,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         yield
     finally:
         await stop_grpc_server(grpc_server)
+        await drain_background()
         await close_redis()
         await close_api_client()
+        await close_jaeger_client()
 
 
 app = create_app()

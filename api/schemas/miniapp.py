@@ -47,6 +47,13 @@ class TesterListResponse(BaseModel):
     testers: list[TesterItemResponse]
 
 
+class TesterActionResponse(BaseModel):
+    """Результат добавления или удаления тестера."""
+
+    status: str
+    user_id: int
+
+
 class MiniappActionRequest(BaseModel):
     """Запрос фиксации клиентского действия или пасхалки в Mini App."""
 

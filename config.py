@@ -448,6 +448,11 @@ HW_DELAYED_KEY: str = "hw:tasks:delayed"
 HW_PENDING_PREFIX: str = "hw:tasks:pending:"
 # Окно уточнений (секунды): реплай на своё задание в это время склеивается с ним в одно
 HW_CLARIFY_WINDOW_SECONDS: int = 30
+# Сколько хранить отметку «сообщение уже решено» (секунды) — учебный месяц, 30 дней
+HW_PROCESSED_TTL_SECONDS: int = 30 * 24 * 3600
+# Лимит заданий ДЗ из бота на пользователя: HW_RATE_LIMIT_PER_WINDOW за HW_RATE_LIMIT_WINDOW_SECONDS
+HW_RATE_LIMIT_PER_WINDOW: int = get_env_int("HW_RATE_LIMIT_PER_WINDOW", 3)
+HW_RATE_LIMIT_WINDOW_SECONDS: int = get_env_int("HW_RATE_LIMIT_WINDOW_SECONDS", 60)
 
 SOLVER_MAX_CONCURRENT_TASKS: int = solver_config.max_concurrent_tasks
 SOLVER_RATE_LIMIT_PER_MINUTE: int = solver_config.rate_limit_per_minute

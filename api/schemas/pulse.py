@@ -16,7 +16,7 @@ class PulseTraceResponse(BaseModel):
 
 
 class PulseReadingRequest(BaseModel):
-    """Итог записи кардиограммы."""
+    """Счёт забега: промежуточный (удар) или итоговый."""
 
     # Порог 100 000 — далеко за пределами честной игры, отсекает мусорные значения
     score: int = Field(..., ge=0, le=100_000)
@@ -30,3 +30,9 @@ class PulseReadingResponse(BaseModel):
     title: str | None = None
     icon: str | None = None
     xp: int = 0
+
+
+class PulseBeatResponse(BaseModel):
+    """Ответ на удар кардиограммы: держится ли ритм забега."""
+
+    steady: bool

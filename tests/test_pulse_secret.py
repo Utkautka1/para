@@ -4,9 +4,10 @@
 Проверяет:
   1. Роутер не виден в OpenAPI, а секретной ачивки нет в публичном каталоге
   2. Код игры отдаётся только по живому токену
-  3. Счёт проверяется по времени: мгновенный POST с большим счётом не проходит
+  3. Итог без цепочки ударов в честном ритме не проходит
   4. Честный забег открывает ачивку и гасит токен
-  5. В чужом профиле секретная ачивка вырезана, в своём — видна
+  5. Ритм ударов: рывки, паузы и стартовый счёт проверяются сервером
+  6. В чужом профиле секретная ачивка вырезана, в своём — видна
 """
 
 from unittest.mock import AsyncMock, patch
@@ -61,10 +62,31 @@ async def _start(client: AsyncClient) -> str:
     return resp.json()["trace"]
 
 
-def _age_trace(redis: FakeRedis, trace: str, seconds: float) -> None:
-    """Сдвигает время выдачи токена в прошлое — как будто игра шла seconds секунд."""
-    uid, issued = redis.data[pulse._trace_key(trace)].split(":")
-    redis.data[pulse._trace_key(trace)] = f"{uid}:{float(issued) - seconds}"
+class Clock:
+    """Управляемое время для pulse.time.time — удары без реального ожидания."""
+
+    def __init__(self) -> None:
+        self.now = 1_000_000.0
+
+    def time(self) -> float:
+        return self.now
+
+
+@pytest.fixture
+def clock():
+    fake = Clock()
+    with patch.object(pulse.time, "time", fake.time):
+        yield fake
+
+
+async def _run(client: AsyncClient, clock: Clock, trace: str, beats: int, rate: float = 10.0) -> int:
+    """Имитирует честный забег: удар каждые 2 секунды с темпом rate очков/с."""
+    score = 0
+    for _ in range(beats):
+        await client.post(f"/miniapp/pulse/ecg/{trace}/beat", json={"score": score})
+        clock.now += 2
+        score += int(2 * rate)
+    return score
 
 
 @pytest.mark.asyncio
@@ -89,7 +111,7 @@ async def test_script_requires_live_trace(redis) -> None:
 @pytest.mark.asyncio
 async def test_instant_high_score_is_rejected(redis) -> None:
     award = AsyncMock(return_value=True)
-    with patch("services.achievement_service.award_achievement", award):
+    with patch.object(pulse, "award_achievement", award):
         async with _client() as client:
             trace = await _start(client)
             resp = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": 5000})
@@ -99,23 +121,77 @@ async def test_instant_high_score_is_rejected(redis) -> None:
 
 
 @pytest.mark.asyncio
-async def test_honest_run_unlocks_secret_once(redis) -> None:
+async def test_waiting_without_beats_is_rejected(redis, clock) -> None:
+    """Старый обход — подождать и отправить счёт — больше не работает."""
     award = AsyncMock(return_value=True)
-    with patch("services.achievement_service.award_achievement", award):
+    with patch.object(pulse, "award_achievement", award):
         async with _client() as client:
             trace = await _start(client)
-            _age_trace(redis, trace, 20)
-            resp = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": 250})
-            again = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": 250})
+            clock.now += 60
+            resp = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": 150})
+    assert resp.json()["accepted"] is False
+    award.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_honest_run_unlocks_secret_once(redis, clock) -> None:
+    award = AsyncMock(return_value=True)
+    with patch.object(pulse, "award_achievement", award):
+        async with _client() as client:
+            trace = await _start(client)
+            score = await _run(client, clock, trace, beats=8)
+            resp = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": score})
+            again = await client.post(f"/miniapp/pulse/ecg/{trace}", json={"score": score})
     body = resp.json()
     assert body["accepted"] and body["unlocked"] and body["xp"] == 404
     award.assert_awaited_once_with(ALLOWED_USER_ID, pulse.SECRET_ACHIEVEMENT_ID)
     assert again.status_code == 404
 
 
-@pytest.mark.parametrize(("score", "elapsed", "ok"), [(99, 60, False), (100, 10, True), (300, 10, False)])
-def test_plausible_score(score: int, elapsed: float, ok: bool) -> None:
-    assert pulse.is_plausible_score(score, elapsed) is ok
+@pytest.mark.asyncio
+async def test_too_fast_rhythm_breaks_run(redis, clock) -> None:
+    """Счёт, растущий быстрее честной игры, обрывает забег."""
+    async with _client() as client:
+        trace = await _start(client)
+        await _run(client, clock, trace, beats=3)
+        resp = await client.post(f"/miniapp/pulse/ecg/{trace}/beat", json={"score": 5000})
+    assert resp.json()["steady"] is False
+
+
+@pytest.mark.parametrize(
+    ("beats", "score", "now", "ok"),
+    [
+        ([], 0, 0.0, True),
+        ([], 500, 0.0, False),
+        ([[0.0, 0]], 20, 2.0, True),
+        ([[0.0, 0]], 100, 2.0, False),
+        ([[0.0, 0]], 0, 2.0, False),
+        ([[0.0, 0]], 70, 7.0, False),
+        ([[0.0, 100]], 10, 2.0, True),
+    ],
+)
+def test_next_beats_rhythm(beats: list, score: int, now: float, ok: bool) -> None:
+    """Темп, паузы и перезапуск забега после гибели."""
+    assert bool(pulse.next_beats(beats, score, now)) is ok
+
+
+def test_early_beat_is_skipped() -> None:
+    """Удар, склеенный джиттером с прошлым, не рвёт забег и не записывается."""
+    beats = [[0.0, 0], [2.0, 20]]
+    assert pulse.next_beats(beats, 25, 2.5) == beats
+
+
+@pytest.mark.parametrize(
+    ("beats", "score", "now", "ok"),
+    [
+        ([[t * 2.0, t * 20] for t in range(8)], 150, 15.0, True),
+        ([[t * 2.0, t * 20] for t in range(3)], 150, 5.0, False),
+        ([[t * 2.0, t * 20] for t in range(8)], 99, 15.0, False),
+        ([[t * 2.0, t * 20] for t in range(8)], 500, 15.0, False),
+    ],
+)
+def test_plausible_run(beats: list, score: int, now: float, ok: bool) -> None:
+    assert pulse.is_plausible_run(beats, score, now) is ok
 
 
 def test_hide_secret_from_other_viewers() -> None:

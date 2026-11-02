@@ -8,7 +8,8 @@
 from aiogram.filters import Filter
 from aiogram.types import CallbackQuery, Message
 
-from config import ALLOWED_USER_ID
+from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID
+from services.classmates_auth import is_authorized_user
 
 
 class AuthFilter(Filter):
@@ -38,13 +39,12 @@ class ClassmateAuthFilter(Filter):
         """
         Проверяет, авторизован ли пользователь как студент группы 1-КПД-3.
 
-        Сверяет Telegram ID и username с реестром одногруппников и списком админов.
+        Сверяет числовой Telegram ID с реестром одногруппников и ID старосты.
+        Username не учитывается: его можно сменить и занять чужой.
         Обеспечивает приватность расписания и материалов группы.
 
         Возвращает True, если пользователь подтверждён в реестре, иначе False.
         """
-
-        from services.classmates_auth import is_authorized_user
 
         user = getattr(event, "from_user", None)
 
@@ -63,8 +63,6 @@ class AttendanceAuthFilter(Filter):
 
         Возвращает True, если пользователь староста или замстаросты, иначе False.
         """
-
-        from config import ALLOWED_ATTENDANCE_USER_IDS
 
         user = getattr(event, "from_user", None)
         if not user:

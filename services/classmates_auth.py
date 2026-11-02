@@ -3,11 +3,12 @@
 
 Отвечает за:
   1. Проверку принадлежности пользователя к группе (ALLOWED_USER_ID или реестр).
-  2. Разовую фиксацию цифрового Telegram ID при первом нажатии /start в ЛС бота.
+  2. Ручную привязку цифрового Telegram ID старостой через админ-панель.
   3. Сохранение привязки в data/birthdays.json и постоянный кэш user_cache.
   4. Защиту от несанкционированного доступа посторонних пользователей.
 """
 
+import asyncio
 import os
 from typing import Any
 
@@ -23,6 +24,9 @@ log = get_logger("classmates_auth")
 
 _REGISTRY_CACHE: list[dict[str, Any]] | None = None
 _REGISTRY_MTIME: float = 0.0
+
+# Реестр пишет только процесс бота (привязка из админ-панели), поэтому хватает asyncio.Lock
+_REGISTRY_WRITE_LOCK = asyncio.Lock()
 
 
 def clear_registry_cache() -> None:
@@ -95,59 +99,6 @@ def find_classmate_by_fio(fio: str) -> dict[str, Any] | None:
     return None
 
 
-def find_unregistered_by_username(username: str) -> dict[str, Any] | None:
-    """
-    Ищет запись студента по юзернейму, у которой еще не зафиксирован tg_id.
-
-    Позволяет определить студента при первом запуске бота по совпадению @username
-    из академического реестра до момента фиксации числового ID.
-
-    Возвращает словарь студента или None, если совпадение не найдено или уже зарегистрировано.
-    """
-    clean = username.lstrip("@").lower()
-    registry = load_classmates_registry()
-    for student in registry:
-        uname = student.get("username")
-        if uname and uname.lower() == clean and student.get("tg_id") is None:
-            return student
-    return None
-
-
-def _find_unregistered_student(registry: list[dict[str, Any]], clean_username: str) -> dict[str, Any] | None:
-    """
-    Ищет неподтвержденную запись студента в переданном списке реестра.
-
-    Изолирует линейный поиск по юзернейму для соблюдения лимита длины функции.
-
-    Возвращает ссылку на словарь студента или None.
-    """
-    for student in registry:
-        uname = student.get("username")
-        if uname and uname.lower() == clean_username and student.get("tg_id") is None:
-            return student
-    return None
-
-
-def update_classmate_tg_id(clean_username: str, tg_id: int) -> dict[str, Any] | None:
-    """
-    Атомарно фиксирует Telegram ID студента в реестре birthdays.json и кэше.
-
-    Выполняется разово при первой авторизации по совпадению юзернейма, навсегда
-    закрепляя аппаратный Telegram ID за профилем одногруппника.
-
-    Возвращает обновленный словарь студента или None, если запись не найдена.
-    """
-    registry = load_classmates_registry()
-    updated = _find_unregistered_student(registry, clean_username)
-    if updated:
-        updated["tg_id"] = tg_id
-        sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
-        clear_registry_cache()
-        add_user_to_cache(clean_username, tg_id)
-        log.info("🎉 Разовая фиксация ID: %s (@%s) -> tg_id=%s", updated["full_name"], clean_username, tg_id)
-    return updated
-
-
 def _find_student_by_fullname(registry: list[dict[str, Any]], target_clean: str) -> dict[str, Any] | None:
     """
     Ищет запись студента в реестре по нормализованному ФИО.
@@ -162,24 +113,45 @@ def _find_student_by_fullname(registry: list[dict[str, Any]], target_clean: str)
     return None
 
 
-def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
+def _bind_in_registry(full_name: str, tg_id: int) -> dict[str, Any] | None:
+    """
+    Привязывает tg_id к студенту прямо в файле реестра (синхронно, для to_thread).
+
+    Читает свежую копию файла, а не кэш: при сбое записи кэш с уже
+    проставленным tg_id открыл бы доступ, которого в реестре нет.
+    Отказывает, если tg_id уже закреплён за другим студентом — иначе один
+    аккаунт получил бы профиль, ачивки и посещаемость двух человек.
+
+    Возвращает обновлённый профиль или None (ФИО не найдено, ID занят, сбой записи).
+    """
+    registry = sync_load_json(BIRTHDAYS_FILE_PATH, default=[])
+    student = _find_student_by_fullname(registry, full_name.strip().lower())
+    owner = next((s for s in registry if s.get("tg_id") == tg_id), None)
+    if not student or (owner and owner is not student):
+        return None
+    student["tg_id"] = tg_id
+    return student if sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry) else None
+
+
+async def bind_student_tg_id(full_name: str, tg_id: int) -> dict[str, Any] | None:
     """
     Привязывает Telegram ID к студенту по полному ФИО (для пользователей без @username).
 
-    Позволяет администраторам связывать профили студентов, не имеющих публичного
-    юзернейма в Telegram, с сохранением в JSON и локальном кэше.
+    Чтение-изменение-запись реестра идёт под блокировкой и в отдельном потоке:
+    две параллельные привязки иначе затёрли бы друг друга, а файловый I/O
+    блокировал бы event loop бота.
 
-    Возвращает обновленный профиль студента или None, если ФИО не найдено.
+    Возвращает обновленный профиль студента или None, если привязка не удалась.
     """
-    registry = load_classmates_registry()
-    updated = _find_student_by_fullname(registry, full_name.strip().lower())
-    if updated:
-        updated["tg_id"] = tg_id
-        sync_atomic_save_json(BIRTHDAYS_FILE_PATH, registry)
-        clear_registry_cache()
-        if uname := updated.get("username"):
-            add_user_to_cache(uname.lstrip("@").lower(), tg_id)
-        log.info("Ручная привязка ID: %s -> tg_id=%s", updated["full_name"], tg_id)
+    async with _REGISTRY_WRITE_LOCK:
+        updated = await asyncio.to_thread(_bind_in_registry, full_name, tg_id)
+    if not updated:
+        log.warning("Привязка ID отклонена: %s -> tg_id=%s (не найден, занят или сбой записи)", full_name, tg_id)
+        return None
+    clear_registry_cache()
+    if uname := updated.get("username"):
+        add_user_to_cache(uname.lstrip("@").lower(), tg_id)
+    log.info("Ручная привязка ID: %s -> tg_id=%s", updated["full_name"], tg_id)
     return updated
 
 

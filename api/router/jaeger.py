@@ -41,6 +41,15 @@ _HOP_BY_HOP_HEADERS = {
     "content-encoding",
 }
 
+# Учётные данные para-api: Jaeger они не нужны, и во внутренний сервис их не отдаём
+_CREDENTIAL_HEADERS = {"cookie", "authorization", "x-api-key"}
+
+# Таймаут запроса к Jaeger UI (секунды)
+_JAEGER_TIMEOUT_SECONDS = 15.0
+
+# Один клиент на процесс: пул keep-alive соединений вместо нового TCP на каждую статику UI
+_CLIENT: httpx.AsyncClient | None = None
+
 
 def _filter_headers(headers: Any) -> dict[str, str]:
     """
@@ -51,6 +60,31 @@ def _filter_headers(headers: Any) -> dict[str, str]:
     Возвращает очищенный словарь заголовков для пересылки.
     """
     return {k: v for k, v in headers.items() if k.lower() not in _HOP_BY_HOP_HEADERS}
+
+
+def _filter_request_headers(headers: Any) -> dict[str, str]:
+    """
+    Готовит заголовки запроса к Jaeger: убирает hop-by-hop и учётные данные.
+
+    Возвращает словарь заголовков для пересылки.
+    """
+    return {k: v for k, v in _filter_headers(headers).items() if k.lower() not in _CREDENTIAL_HEADERS}
+
+
+def _get_client() -> httpx.AsyncClient:
+    """Возвращает общий HTTP-клиент к Jaeger, создавая его при первом обращении."""
+    global _CLIENT
+    if _CLIENT is None or _CLIENT.is_closed:
+        _CLIENT = httpx.AsyncClient(timeout=_JAEGER_TIMEOUT_SECONDS)
+    return _CLIENT
+
+
+async def close_jaeger_client() -> None:
+    """Закрывает пул соединений к Jaeger при остановке API."""
+    global _CLIENT
+    if _CLIENT and not _CLIENT.is_closed:
+        await _CLIENT.aclose()
+    _CLIENT = None
 
 
 def _sanitize_proxy_path(raw_path: str) -> str:
@@ -87,13 +121,12 @@ async def _forward_request(method: str, url: str, headers: dict[str, str], body:
     """
     Выполняет асинхронный HTTP-запрос к бэкенду Jaeger UI и проксирует ответ.
 
-    Использует httpx.AsyncClient с таймаутом 15 секунд и защитой от падения соединения.
+    Использует общий httpx.AsyncClient с таймаутом и защитой от падения соединения.
 
     Возвращает HTTP Response с полученным телом, статусом и заголовками.
     """
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.request(method=method, url=url, headers=headers, content=body)
+        resp = await _get_client().request(method=method, url=url, headers=headers, content=body)
         clean_resp_headers = _filter_headers(resp.headers)
         return Response(
             content=resp.content,
@@ -105,7 +138,7 @@ async def _forward_request(method: str, url: str, headers: dict[str, str], body:
         log.warning("⚠️ Ошибка соединения с Jaeger UI (%s): %s", url, exc)
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"error": "Jaeger UI service is temporarily unavailable", "detail": str(exc)},
+            content={"error": "Jaeger UI service is temporarily unavailable"},
         )
 
 
@@ -131,6 +164,6 @@ async def proxy_jaeger(request: Request, path: str = "") -> Response:
     Возвращает ответ от Jaeger с валидацией авторизации тестера.
     """
     target_url = _build_target_url(path, request.url.query)
-    req_headers = _filter_headers(request.headers)
+    req_headers = _filter_request_headers(request.headers)
     body = await request.body() if request.method in {"POST", "PUT", "PATCH"} else None
     return await _forward_request(request.method, target_url, req_headers, body)

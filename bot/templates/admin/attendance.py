@@ -7,8 +7,11 @@
   - Форматирование карточек студентов и итоговой сводки
 """
 
+from datetime import datetime, timedelta
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from config import TIMEZONE
 from services.attendance_manager import AttendanceSession
 
 
@@ -192,10 +195,6 @@ def get_days_select_kb() -> InlineKeyboardMarkup:
     Возвращает объект InlineKeyboardMarkup со списком дат.
     """
 
-    from datetime import datetime, timedelta
-
-    from config import TIMEZONE
-
     today = datetime.now(TIMEZONE).date()
     weekdays_ru = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     kb = []
@@ -221,10 +220,6 @@ def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarku
 
     Возвращает собранный объект InlineKeyboardMarkup.
     """
-
-    from datetime import datetime
-
-    from config import TIMEZONE
 
     d_obj = chosen_date or datetime.now(TIMEZONE).date()
     d_str = d_obj.isoformat()

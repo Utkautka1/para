@@ -21,6 +21,7 @@ from config import (
     MARKS_CACHE_TTL_SECONDS,
     REDIS_MARKS_CACHE_PREFIX,
 )
+from core.background import spawn
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
 from integrations.yandex_docs import (
@@ -303,7 +304,7 @@ async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, di
             return cached
         snapshot = await _load_sqlite_snapshot()
         if snapshot:
-            asyncio.create_task(_trigger_background_attendance_refresh())
+            spawn(_trigger_background_attendance_refresh())
             return snapshot
     return await _fetch_with_sync_lock(force_refresh)
 

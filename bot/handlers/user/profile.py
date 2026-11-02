@@ -7,7 +7,6 @@
   3. Инлайн-кнопки перехода в Telegram Mini App для интерактивного просмотра
 """
 
-import asyncio
 import html
 
 from aiogram import Router
@@ -16,6 +15,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, W
 
 from bot.filters.auth import ClassmateAuthFilter
 from config import ALLOWED_USER_ID, MINIAPP_URL
+from core.background import spawn
 from core.logger import get_logger
 from services.achievement_events import on_attendance_view
 from services.achievement_service import award_achievement
@@ -103,7 +103,7 @@ async def handle_profile_command(message: Message) -> None:
         return
     text = _format_profile_message(profile)
     # Профиль показывает ту же посещаемость, что и /my_attendance
-    asyncio.create_task(on_attendance_view(user, message.bot))
+    spawn(on_attendance_view(user, message.bot))
     await message.answer(text=text, parse_mode="HTML", reply_markup=_build_miniapp_keyboard())
 
 
@@ -135,9 +135,7 @@ def _format_leaderboard_message(profiles: list) -> str:
 async def handle_leaderboard_command(message: Message) -> None:
     """Отображает топ-10 студентов группы 1-КПД-3."""
     if message.from_user:
-        asyncio.create_task(
-            award_achievement(message.from_user.id, "life_hall", message.bot, message.from_user.full_name)
-        )
+        spawn(award_achievement(message.from_user.id, "life_hall", message.bot, message.from_user.full_name))
     profiles = await get_group_leaderboard()
     if not profiles:
         await message.answer("<i>Журнал посещаемости пока загружается...</i>", parse_mode="HTML")

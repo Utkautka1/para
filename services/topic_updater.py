@@ -16,6 +16,7 @@ from bot.templates.user.keyboards import get_topic_inline_kb
 from bot.templates.user.messages import format_day_schedule, format_reminder_text
 from config import TIMEZONE, TOPIC_CHAT_ID, TOPIC_STATE_FILE, TOPIC_THREAD_ID
 from core.api_client import get_api_schedule_for_date
+from core.background import spawn
 from core.bot import bot
 from core.logger import get_logger
 from services.models import Lesson
@@ -60,13 +61,12 @@ def save_topic_state(msg_id: int | None) -> None:
 
     Ничего не возвращает.
     """
-    import asyncio
 
     sync_atomic_save_json(STATE_FILE, {"main_msg_id": msg_id})
     if msg_id:
         from core.redis_cache import set_topic_state_redis
 
-        asyncio.create_task(set_topic_state_redis(msg_id))
+        spawn(set_topic_state_redis(msg_id))
 
 
 async def cleanup_expired_messages() -> None:
@@ -144,7 +144,7 @@ async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: da
     if 0 < diff_sec <= 600:
         _SENT_REMINDERS.add(rem_key)
         await mark_reminder_sent(rem_key)
-        asyncio.create_task(send_temp_topic_reminder(lesson))
+        spawn(send_temp_topic_reminder(lesson))
 
 
 def get_next_working_day(target_date: date) -> date:

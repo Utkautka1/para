@@ -24,8 +24,9 @@ from config import (
     SOLVER_RATE_LIMIT_PER_MINUTE,
     SOLVER_RATE_LIMIT_WINDOW_SECONDS,
 )
+from core.hw_queue import clear_hw_queue
 from core.redis import init_redis
-from core.redis_cache import clear_hw_queue, is_message_processed
+from core.redis_cache import allow_request, is_message_processed
 from integrations.deepseek import solve_homework
 
 router = APIRouter(tags=["AI Homework Solver"], prefix="/solver", dependencies=[Depends(verify_api_or_tester)])
@@ -77,27 +78,17 @@ def _decode_image_payload(b64: str | None) -> bytes | None:
 
 async def _check_solver_rate_limit(identity: str) -> None:
     """
-    Ограничивает частоту вызовов DeepSeek API по скользящему окну.
+    Ограничивает частоту вызовов DeepSeek API фиксированным окном в Redis.
 
-    Использует Redis INCR с TTL для защиты модели от спама и перерасхода токенов.
     Пропускает без ограничений запросы с ролью 'master_admin'.
+    Недоступный Redis трактуется как превышение лимита — см. allow_request.
 
     Ничего не возвращает (выбрасывает HTTP 429 при превышении квоты).
     """
-
     if identity == "master_admin":
         return
-
-    client = await init_redis()
-    if not client:
-        return
-
     key = f"api_rate:solver:{identity}"
-    count = await client.incr(key)
-    if count == 1:
-        await client.expire(key, SOLVER_RATE_LIMIT_WINDOW_SECONDS)
-
-    if count > SOLVER_RATE_LIMIT_PER_MINUTE:
+    if not await allow_request(key, SOLVER_RATE_LIMIT_PER_MINUTE, SOLVER_RATE_LIMIT_WINDOW_SECONDS):
         detail = (
             f"Too many solver requests (max {SOLVER_RATE_LIMIT_PER_MINUTE} per {SOLVER_RATE_LIMIT_WINDOW_SECONDS}s)"
         )

@@ -6,6 +6,8 @@
 студентов группы и ручного добавления ссылок дистанционных пар.
 """
 
+import html
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -17,8 +19,18 @@ from bot.filters.auth import AuthFilter
 from bot.templates.admin.keyboards import get_admin_main_kb
 from core.api_client import fetch_day_schedule, fetch_teachers
 from core.logger import get_logger
-from services.custom_teachers import load_custom_teachers, save_custom_teacher
-from services.topic_updater import sync_topic_main_message
+from core.redis_cache import init_redis
+from db.subscribers import load_subscribers
+from integrations.yandex_docs import get_effective_yandex_cookie
+from services.attendance_topic_updater import (
+    load_attendance_topic_state,
+    recreate_attendance_topic_message,
+    sync_attendance_topic_message,
+)
+from services.classmates_auth import bind_student_tg_id, load_classmates_registry
+from services.custom_teachers import delete_custom_teacher, load_custom_teachers, save_custom_teacher
+from services.exam_topic_updater import recreate_exam_topic_message, sync_exam_topic_message
+from services.topic_updater import recreate_topic_message, sync_topic_main_message
 
 log = get_logger("admin_panel")
 
@@ -159,8 +171,6 @@ async def _get_redis_memory_stat() -> str:
     """
 
     try:
-        from core.redis_cache import init_redis
-
         r = await init_redis()
         if r:
             info = await r.info("memory")
@@ -180,11 +190,6 @@ async def _collect_health_summary() -> str:
 
     Возвращает строку с метриками компонентов.
     """
-
-    from db.subscribers import load_subscribers
-    from integrations.yandex_docs import get_effective_yandex_cookie
-    from services.attendance_topic_updater import load_attendance_topic_state
-    from services.classmates_auth import load_classmates_registry
 
     subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
     res_t = await fetch_teachers(force_refresh=False)
@@ -252,7 +257,6 @@ async def cb_admin_recreate_topic(callback: CallbackQuery) -> None:
     """
 
     await _ack_admin_callback(callback, "🔁 Пересоздаю сообщение...")
-    from services.topic_updater import recreate_topic_message
 
     success = await recreate_topic_message()
     note = "🔁 Сообщение пересоздано!" if success else "⚠️ Ошибка пересоздания. Проверьте логи."
@@ -272,7 +276,6 @@ async def cb_admin_force_exam(callback: CallbackQuery) -> None:
     """
 
     await _ack_admin_callback(callback, "⏳ Обновляю экзамены...")
-    from services.exam_topic_updater import sync_exam_topic_message
 
     success = await sync_exam_topic_message()
     note = "📑 Экзамены обновлены!" if success else "⚠️ Не удалось обновить экзамены."
@@ -292,7 +295,6 @@ async def cb_admin_recreate_exam(callback: CallbackQuery) -> None:
     """
 
     await _ack_admin_callback(callback, "🔁 Пересоздаю экзамены...")
-    from services.exam_topic_updater import recreate_exam_topic_message
 
     success = await recreate_exam_topic_message()
     note = "🔁 Сообщение экзаменов пересоздано!" if success else "⚠️ Ошибка пересоздания."
@@ -312,7 +314,6 @@ async def cb_admin_force_att_topic(callback: CallbackQuery) -> None:
     """
 
     await _ack_admin_callback(callback, "⏳ Обновляю реестр посещаемости...")
-    from services.attendance_topic_updater import sync_attendance_topic_message
 
     success = await sync_attendance_topic_message(force_refresh=True)
     note = "📊 Реестр посещаемости обновлён!" if success else "⚠️ Не удалось обновить реестр."
@@ -332,7 +333,6 @@ async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None:
     """
 
     await _ack_admin_callback(callback, "🔁 Пересоздаю сообщение посещаемости...")
-    from services.attendance_topic_updater import recreate_attendance_topic_message
 
     success = await recreate_attendance_topic_message()
     note = "🔁 Реестр посещаемости пересоздан!" if success else "⚠️ Ошибка пересоздания."
@@ -397,8 +397,6 @@ async def cb_admin_delete_teacher(callback: CallbackQuery) -> None:
 
     Ничего не возвращает.
     """
-
-    from services.custom_teachers import delete_custom_teacher
 
     last_name = callback.data.split(":")[-1]
     delete_custom_teacher(last_name)
@@ -523,8 +521,6 @@ def _build_unbound_students_kb() -> InlineKeyboardMarkup:
     Возвращает объект InlineKeyboardMarkup.
     """
 
-    from services.classmates_auth import load_classmates_registry
-
     registry = load_classmates_registry()
     kb_rows = []
     for idx, student in enumerate(registry):
@@ -548,8 +544,6 @@ async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None:
 
     Ничего не возвращает.
     """
-
-    from services.classmates_auth import load_classmates_registry
 
     registry = load_classmates_registry()
     if not registry:
@@ -582,8 +576,6 @@ async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) ->
     Ничего не возвращает.
     """
 
-    from services.classmates_auth import load_classmates_registry
-
     idx = int(callback.data.split(":")[-1])
     registry = load_classmates_registry()
     if idx >= len(registry):
@@ -594,7 +586,7 @@ async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) ->
     await state.set_state(BindStudentState.waiting_for_tg_id)
     await state.update_data(student_name=fio)
 
-    prompt = f"👤 <b>Привязка ID: {fio}</b>\nОтправьте числовой Telegram ID (например, <code>1834107464</code>):"
+    prompt = f"👤 <b>Привязка ID: {html.escape(fio)}</b>\nОтправьте числовой Telegram ID (например, <code>1834107464</code>):"
     await _safe_edit_admin_message(callback.message, prompt)
     await callback.answer()
 
@@ -617,13 +609,13 @@ async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None:
 
     data = await state.get_data()
     fio = data.get("student_name", "")
-    from services.classmates_auth import bind_student_tg_id
 
-    updated = bind_student_tg_id(fio, int(raw_id))
+    updated = await bind_student_tg_id(fio, int(raw_id))
     await state.clear()
     if not updated:
-        await message.answer(f"❌ Не удалось привязать ID для {fio}.", reply_markup=get_admin_main_kb())
+        text = f"❌ Не удалось привязать ID для {html.escape(fio)}: студент не найден или ID уже занят."
+        await message.answer(text, reply_markup=get_admin_main_kb())
         return
 
-    text = f"🎉 <b>Студент авторизован!</b>\n👤 {fio}\n🆔 <code>{raw_id}</code>\n<i>Доступ открыт.</i>"
+    text = f"🎉 <b>Студент авторизован!</b>\n👤 {html.escape(fio)}\n🆔 <code>{raw_id}</code>\n<i>Доступ открыт.</i>"
     await message.answer(text, reply_markup=get_admin_main_kb())

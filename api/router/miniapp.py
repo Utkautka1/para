@@ -19,6 +19,7 @@ from api.schemas.miniapp import (
     MiniappAuthRequest,
     MiniappAuthResponse,
     MiniappCheckResponse,
+    TesterActionResponse,
     TesterItemResponse,
     TesterListResponse,
 )
@@ -29,8 +30,12 @@ from config import (
     MINIAPP_HTML_FILE_PATH,
     SESSION_MAX_AGE_SECONDS,
 )
+from core.background import spawn
 from core.logger import get_logger
+from services.achievement_events import on_profile_view
+from services.achievement_service import award_achievement
 from services.classmates_auth import find_classmate_by_tg_id
+from services.gamification_registry import ACHIEVEMENTS_MAP
 from services.login_tokens import LOGIN_REDIRECT_TARGETS, consume_login_token
 from services.testers_manager import (
     add_tester,
@@ -154,9 +159,8 @@ async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuth
         log.warning("🚫 Пользователь %s не в группе 1-КПД-3 и не в списке тестеров", uid)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not allowed")
     _set_tester_cookie(response, uid)
-    from services.achievement_service import award_achievement
 
-    asyncio.create_task(award_achievement(uid, "bot_miniapp", None, info.get("first_name")))
+    spawn(award_achievement(uid, "bot_miniapp", None, info.get("first_name")))
     return MiniappAuthResponse(user_id=uid, first_name=info.get("first_name"), username=info.get("username"))
 
 
@@ -217,7 +221,6 @@ MINIAPP_ACTION_ACHIEVEMENTS: dict[str, str] = {
 
 def _action_result(ach_id: str | None, unlocked: bool) -> MiniappActionResult:
     """Собирает ответ action-эндпоинта с паспортом открытой ачивки."""
-    from services.gamification_registry import ACHIEVEMENTS_MAP
 
     ach = ACHIEVEMENTS_MAP.get(ach_id or "")
     if not unlocked or not ach:
@@ -246,8 +249,6 @@ async def trigger_miniapp_action(
 ) -> MiniappActionResult:
     """Разблокирует клиентские достижения Mini App (пасхалки, темы, вкладки, профили)."""
     uid = require_group_member(resolve_action_uid(payload.init_data, para_session))
-    from services.achievement_events import on_profile_view
-    from services.achievement_service import award_achievement
 
     if payload.action == "view_profile":
         unlocked = await on_profile_view(uid, payload.target or "")
@@ -275,37 +276,37 @@ async def list_api_testers() -> TesterListResponse:
     return TesterListResponse(count=len(items), testers=items)
 
 
-@router.post("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
-async def api_add_tester(user_id: int) -> dict:
+@router.post("/testers/{user_id}", response_model=TesterActionResponse, dependencies=[Depends(verify_admin_access)])
+async def api_add_tester(user_id: int) -> TesterActionResponse:
     """
     Добавляет пользователя в постоянный список тестеров API (Admin only).
 
     Сохраняет Telegram ID в Redis-множество тестеров.
     Выбрасывает HTTP 400 при невозможности добавления.
 
-    Возвращает подтверждающий словарь со статусом 'ok' и ID тестера.
+    Возвращает TesterActionResponse со статусом 'ok' и ID тестера.
     """
 
     success = await add_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to add tester")
 
-    return {"status": "ok", "user_id": user_id}
+    return TesterActionResponse(status="ok", user_id=user_id)
 
 
-@router.delete("/testers/{user_id}", dependencies=[Depends(verify_admin_access)])
-async def api_remove_tester(user_id: int) -> dict:
+@router.delete("/testers/{user_id}", response_model=TesterActionResponse, dependencies=[Depends(verify_admin_access)])
+async def api_remove_tester(user_id: int) -> TesterActionResponse:
     """
     Удаляет пользователя из списка авторизованных тестеров API (Admin only).
 
     Запрещает удаление главных администраторов проекта из белого списка.
     Выбрасывает HTTP 400 при попытке удаления админа или сбое хранилища.
 
-    Возвращает словарь со статусом 'ok' и ID удаленного тестера.
+    Возвращает TesterActionResponse со статусом 'ok' и ID удаленного тестера.
     """
 
     success = await remove_tester(user_id)
     if not success:
         raise HTTPException(status_code=400, detail="Cannot remove admin or error")
 
-    return {"status": "ok", "user_id": user_id}
+    return TesterActionResponse(status="ok", user_id=user_id)

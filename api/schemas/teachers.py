@@ -58,6 +58,13 @@ class CustomTeacherCreateRequest(BaseModel):
     )
 
 
+class TeacherDeleteResponse(BaseModel):
+    """Результат удаления пользовательского переопределения преподавателя."""
+
+    status: str
+    deleted: str
+
+
 class TeachersRefreshResponse(BaseModel):
     """Результат обновления справочника с Яндекс Диска."""
 

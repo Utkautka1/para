@@ -23,6 +23,7 @@ from config import (
     REDIS_STUDENTS_CACHE_KEY,
     STUDENTS_CACHE_TTL_SECONDS,
 )
+from core.background import spawn
 from core.logger import get_logger
 from core.redis import get_redis
 from integrations.yandex_docs import (
@@ -414,7 +415,7 @@ async def commit_session_to_table(session: AttendanceSession) -> bool:
     if success:
         log.info("✅ Посещаемость пары %s зафиксирована", session.lesson_num)
         await clear_session()
-        asyncio.create_task(_post_commit_sync())
+        spawn(_post_commit_sync())
         return True
 
     log.error("❌ Все %s попытки записи пары %s провалились", MAX_COMMIT_RETRIES, session.lesson_num)

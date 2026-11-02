@@ -37,6 +37,7 @@ from config import (
     SCHEDULE_STALE_LIMIT_SECONDS,
     SCHEDULE_SYNC_CHECK_SECONDS,
 )
+from core.background import spawn
 from core.logger import get_logger
 from integrations.docx_parser import TeacherData, get_teacher_links
 from services.models import Lesson
@@ -463,7 +464,7 @@ def _persist_snapshot_to_redis(snapshot: dict[str, Any]) -> None:
         "last_modified": _LAST_MODIFIED,
         "published_at": _LAST_PUBLISHED_AT,
     }
-    asyncio.create_task(save_schedule_snapshot(snapshot, meta))
+    spawn(save_schedule_snapshot(snapshot, meta))
 
 
 def _handle_non_200_status(status_code: int, now: float) -> tuple[float, dict[str, Any] | None]:
@@ -622,7 +623,7 @@ def _dispatch_schedule_alert(err_msg: str) -> None:
     try:
         from services.alerting import IncidentType, send_admin_alert
 
-        asyncio.create_task(
+        spawn(
             send_admin_alert(
                 incident_type=IncidentType.TIMETABLE_API_DOWN,
                 title="API расписания КТМУ недоступно",
@@ -708,7 +709,7 @@ async def _trigger_stale_refresh(now: float) -> None:
     Ничего не возвращает.
     """
     if now >= _COOLDOWN_UNTIL:
-        asyncio.create_task(refresh_schedule_in_background())
+        spawn(refresh_schedule_in_background())
 
 
 async def _get_cached_or_revalidate(now: float) -> dict[str, Any] | None:
@@ -833,7 +834,7 @@ def _handle_missing_remote_teacher(raw_teacher: str, subj_name: str) -> None:
     """
     from services.notifier import notify_missing_teacher
 
-    asyncio.create_task(notify_missing_teacher(raw_teacher, subj_name))
+    spawn(notify_missing_teacher(raw_teacher, subj_name))
 
 
 def _extract_existing_teacher_creds(

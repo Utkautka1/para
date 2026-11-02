@@ -11,13 +11,14 @@
      «исправленное решение» к исходному заданию (revision_of), а не как новая задача
 """
 
-import asyncio
 import hashlib
 
 from aiogram import Bot, F, Router
 from aiogram.types import Message, ReactionTypeEmoji
 
 import config
+from core.background import spawn
+from core.hw_queue import push_hw_task, schedule_hw_task, take_pending_hw_task
 from core.logger import get_logger
 from core.redis_cache import (
     check_user_rate_limit,
@@ -25,9 +26,6 @@ from core.redis_cache import (
     is_message_processed,
     mark_hash_processed,
     mark_message_processed,
-    push_hw_task,
-    schedule_hw_task,
-    take_pending_hw_task,
 )
 from services.achievement_events import on_homework_task
 from services.achievement_triggers import HomeworkTask, homework_kind
@@ -37,6 +35,28 @@ router = Router()
 
 # Максимальный размер файла — ограничение Telegram Bot API
 MAX_HW_FILE_SIZE = config.HW_MAX_FILE_SIZE
+
+# Короткие реплики чата, которые точно не задание
+_FLOOD_WORDS = frozenset({"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"})
+
+# Маркеры учебного задания; текст длиннее 25 символов считается заданием и без них
+_HOMEWORK_KEYWORDS = (
+    "реши",
+    "вычисли",
+    "найди",
+    "доказать",
+    "дз",
+    "вариант",
+    "задача",
+    "задание",
+    "номер",
+    "№",
+    "=",
+    "+",
+    "-",
+    "?",
+    "ответ",
+)
 
 
 def combine_prompt_and_instructions(msg: Message, target: Message) -> str:
@@ -67,34 +87,12 @@ def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool:
 
     Возвращает True, если текст похож на учебное задание, иначе False.
     """
-
     if not text:
         return False
-
     t = text.lower().strip()
-    flood_words = {"привет", "хай", "как дела", "спасибо", "спасбо", "спсибо", "ок", "понял", "ку"}
-    if t in flood_words or len(t) < 4:
+    if t in _FLOOD_WORDS or len(t) < 4:
         return False
-
-    kw_list = [
-        "реши",
-        "вычисли",
-        "найди",
-        "доказать",
-        "дз",
-        "вариант",
-        "задача",
-        "задание",
-        "номер",
-        "№",
-        "=",
-        "+",
-        "-",
-        "?",
-        "ответ",
-    ]
-
-    return any(kw in t for kw in kw_list) or len(t) >= 25
+    return any(kw in t for kw in _HOMEWORK_KEYWORDS) or len(t) >= 25
 
 
 def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str | None, str | None, str | None, int]:
@@ -328,7 +326,7 @@ async def handle_new_homework(msg: Message, bot: Bot) -> None:
     merged = own_reply and await merge_into_pending(bot, msg, target)
     if merged or await _accept_new_task(bot, msg, target, user_id, own_reply):
         task_info = _describe_task(msg, target, combine_prompt_and_instructions(msg, target), own_reply)
-        asyncio.create_task(on_homework_task(user_id, _sender_name(msg), bot, task_info))
+        spawn(on_homework_task(user_id, _sender_name(msg), bot, task_info))
 
 
 async def _accept_new_task(bot: Bot, msg: Message, target: Message, user_id: int, own_reply: bool) -> bool:

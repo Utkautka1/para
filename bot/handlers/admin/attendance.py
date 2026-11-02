@@ -5,8 +5,8 @@
 исключительно для старосты (ALLOWED_USER_ID) и замстаросты (DEPUTY_USER_ID).
 """
 
-import asyncio
-from datetime import datetime
+import html
+from datetime import date, datetime
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -18,11 +18,14 @@ from bot.templates.admin.attendance import (
     format_partner_cancel_report,
     format_student_card,
     format_summary_text,
+    get_days_select_kb,
     get_lesson_select_kb,
     get_student_poll_kb,
 )
-from config import TIMEZONE
+from config import ALLOWED_USER_ID, DEPUTY_USER_ID, TIMEZONE
 from core.api_client import get_api_schedule_for_date
+from core.background import spawn
+from core.bot import bot
 from core.logger import get_logger
 from services.attendance_manager import (
     calculate_summary_stats,
@@ -34,6 +37,8 @@ from services.attendance_manager import (
     record_student_mark,
     step_back,
 )
+from services.attendance_stats import apply_session_optimistic_update
+from services.attendance_topic_updater import sync_attendance_topic_message
 
 log = get_logger("attendance_handlers")
 
@@ -78,9 +83,6 @@ async def _instant_topic_sync(session) -> None:
     """
 
     try:
-        from services.attendance_stats import apply_session_optimistic_update
-        from services.attendance_topic_updater import sync_attendance_topic_message
-
         await apply_session_optimistic_update(session)
         await sync_attendance_topic_message(force_refresh=False)
         log.info("⚡️ Мгновенное обновление топика для пары %s выполнено", session.lesson_num)
@@ -97,8 +99,6 @@ def get_partner_admin_id(current_user_id: int) -> int | None:
 
     Возвращает Telegram ID второго администратора или None.
     """
-
-    from config import ALLOWED_USER_ID, DEPUTY_USER_ID
 
     if current_user_id == ALLOWED_USER_ID:
         return DEPUTY_USER_ID if DEPUTY_USER_ID != ALLOWED_USER_ID else None
@@ -129,8 +129,6 @@ async def notify_partner_about_attendance(session, stats: dict[str, int], user_f
 
     text = format_partner_attendance_report(session, stats, title)
     try:
-        from core.bot import bot
-
         await bot.send_message(partner_id, text)
         log.info("Статистика пары %s отправлена партнеру %s", session.lesson_num, partner_id)
     except Exception as e:
@@ -157,9 +155,9 @@ async def finish_and_notify(cb: CallbackQuery, session) -> None:
         except Exception as e:
             log.debug("Не удалось обновить статус сообщения посещаемости: %s", e)
 
-    asyncio.create_task(_instant_topic_sync(session))
-    asyncio.create_task(_async_commit_and_update(cb.message, session, stats))
-    asyncio.create_task(notify_partner_about_attendance(session, stats, cb.from_user.full_name))
+    spawn(_instant_topic_sync(session))
+    spawn(_async_commit_and_update(cb.message, session, stats))
+    spawn(notify_partner_about_attendance(session, stats, cb.from_user.full_name))
     log.info("Сводка пары %s выдана, запущены оптимистичный апдейт и выгрузка", session.lesson_num)
 
 
@@ -174,8 +172,6 @@ async def show_attendance_menu(event: Message | CallbackQuery) -> None:
 
     Ничего не возвращает.
     """
-
-    from bot.templates.admin.attendance import get_days_select_kb
 
     text = "📋 <b>Отметка посещаемости</b>\n\nВыберите учебный день для отметки пар:"
     kb = get_days_select_kb()
@@ -198,8 +194,6 @@ async def cb_select_day(cb: CallbackQuery) -> None:
     Ничего не возвращает.
     """
 
-    from datetime import date
-
     day_str = cb.data.split(":")[2]
     target_date = date.fromisoformat(day_str)
     lessons = await get_api_schedule_for_date(target_date)
@@ -221,8 +215,6 @@ def parse_start_callback(data: str):
     Возвращает кортеж (date, lesson_num).
     """
 
-    from datetime import date
-
     parts = data.split(":")
     if len(parts) == 4:
         return date.fromisoformat(parts[2]), int(parts[3])
@@ -239,8 +231,6 @@ def get_initiator_title(initiator_id: int) -> str:
 
     Возвращает строку 'Староста' или 'Замстаросты'.
     """
-
-    from config import ALLOWED_USER_ID
 
     return "Староста" if initiator_id == ALLOWED_USER_ID else "Замстаросты"
 
@@ -314,11 +304,17 @@ async def _init_session_safe(cb: CallbackQuery, target_date, lesson_num: int, ti
 
     try:
         return await create_attendance_session(target_date, lesson_num, title, cb.from_user.id)
+    except (PermissionError, ValueError) as e:
+        # Доменные отказы (сессия занята, нет колонки) — их текст понятен старосте
+        log.warning("⚠️ Сессия посещаемости не создана: %s", e)
+        reason = html.escape(str(e))
     except Exception as e:
+        # Сетевые и прочие сбои: детали только в лог, в HTML-сообщение их не пускаем
         log.error("Сбой инициализации сессии: %s", e)
-        if cb.message:
-            await cb.message.edit_text(f"❌ Не удалось открыть таблицу: {e}")
-        return None
+        reason = "таблица недоступна, попробуйте позже"
+    if cb.message:
+        await cb.message.edit_text(f"❌ Не удалось открыть таблицу: {reason}")
+    return None
 
 
 @router.callback_query(F.data.startswith("att:start:"))
@@ -438,8 +434,6 @@ async def notify_partner_about_cancellation(
     Ничего не возвращает.
     """
 
-    from core.bot import bot
-
     partner_id = get_partner_admin_id(user_id)
     if not partner_id:
         return
@@ -471,7 +465,7 @@ async def cb_cancel_lesson(cb: CallbackQuery) -> None:
     if cb.message:
         await cb.message.edit_text(f"❌ Отметка посещаемости за пару {lesson_num} отменена.")
 
-    asyncio.create_task(notify_partner_about_cancellation(lesson_num, cb.from_user.id, cb.from_user.full_name))
+    spawn(notify_partner_about_cancellation(lesson_num, cb.from_user.id, cb.from_user.full_name))
     await cb.answer()
 
 

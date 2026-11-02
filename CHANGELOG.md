@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] - 2026-11-02
+
+### Security
+- **CSRF on cookie-authenticated endpoints**: the `para_session` cookie is `SameSite=None` (needed inside the Telegram iframe), so a form on any site could call body-less admin endpoints (`POST/DELETE /miniapp/testers/{id}`, `/system/cache/flush`, `/*/refresh`, `DELETE /attendance/session`). Unsafe methods authenticated by the cookie are now rejected when `Sec-Fetch-Site`/`Origin` show another site (`api/deps.py:_reject_cookie_csrf`); header keys are unaffected.
+- **Jaeger proxy leaked credentials**: `Cookie`, `Authorization` and `X-API-Key` were forwarded to the internal Jaeger; they are stripped now, connection errors no longer echo exception text, and the proxy reuses one `httpx.AsyncClient`.
+- **Rate limits fail closed and are atomic**: `INCR` and `EXPIRE` were separate commands, so a crash between them left a counter without TTL and blocked the user forever; with Redis down the DeepSeek limits were skipped entirely. `allow_request` (`core/redis_cache.py`) runs `SET NX EX` + `INCR` in one `MULTI` and denies requests without Redis; the bot limit moved to `HW_RATE_LIMIT_PER_WINDOW`/`HW_RATE_LIMIT_WINDOW_SECONDS`.
+- **CI bot token**: `.env.ci` contained a real-format Telegram token; replaced with a fake one.
+
+### Fixed
+- **Homework tasks were duplicated on retry**: `nack_hw_task` incremented `retries` before `LREM`, so the original payload stayed in `hw:tasks:processing` and was re-queued by `recover_stale_hw_tasks` after every restart with the retry counter reset. The move now happens in one Lua script (`LUA_REQUEUE`) using the payload as it was popped.
+- **Admin endpoints from the Mini App**: the headman's session resolves to `classmate:<id>`, which `verify_admin_access` rejected; both `tester:` and `classmate:` identities of the headman/deputy are accepted now.
+- **Telegram ID binding**: `bind_student_tg_id` is async, runs under a lock in a thread, refuses an ID already bound to another student and no longer mutates the cached registry before the write succeeds.
+- **Exception text in HTML messages**: attendance session errors no longer put raw exception text into a `parse_mode=HTML` message.
+- **Lost background tasks**: ~30 bare `asyncio.create_task` calls kept no reference and swallowed exceptions; they go through `core/background.py:spawn`, and `bot`/`api`/`worker` drain pending tasks on shutdown.
+
+### Changed
+- **Pulse game anti-cheat**: waiting 10 seconds and posting a score unlocked the secret achievement. The client now sends a beat every 2 s (`POST /miniapp/pulse/ecg/{trace}/beat`); the server times the beats itself and accepts the final score only after a steady chain of beats.
+- **Homework queue module**: queue operations moved from `core/redis_cache.py` to `core/hw_queue.py`.
+- **Typed responses**: tester add/remove, custom teacher delete and attendance session cancel return Pydantic schemas instead of dicts.
+- **Docs generator**: summaries come from module and function docstrings; invented metadata, generic diagrams and wrong «Achievement Rules» labels removed; `|` escaped in tables.
+- Removed the broken `main.py`, the `services/solver/prompt_sanitizer.py` re-export, unused username-binding helpers and the duplicate PR template; function-level imports in handlers and routers hoisted to module level.
+
 ## [Unreleased] - 2026-11-01
 
 ### Homework solver

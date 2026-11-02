@@ -54,10 +54,8 @@ async def test_jaeger_proxy_authorized_forward(app) -> None:
 
     mock_client = MagicMock()
     mock_client.request = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("api.router.jaeger.httpx.AsyncClient", return_value=mock_client):
+    with patch("api.router.jaeger._get_client", return_value=mock_client):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.get("/jaeger/", headers={"X-API-Key": API_SECRET_KEY})
             assert resp.status_code == 200
@@ -69,15 +67,29 @@ async def test_jaeger_proxy_service_unavailable(app) -> None:
     """Проверяет отдачу 503 Service Unavailable при ошибке сети до контейнера jaeger."""
     mock_client = MagicMock()
     mock_client.request = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("api.router.jaeger.httpx.AsyncClient", return_value=mock_client):
+    with patch("api.router.jaeger._get_client", return_value=mock_client):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.get("/jaeger/api/services", headers={"X-API-Key": API_SECRET_KEY})
             assert resp.status_code == 503
             data = resp.json()
             assert "error" in data
+
+
+@pytest.mark.asyncio
+async def test_jaeger_proxy_strips_credentials(app) -> None:
+    """Ключ API, Bearer и куки не уходят во внутренний Jaeger."""
+    mock_client = MagicMock()
+    mock_client.request = AsyncMock(return_value=httpx.Response(status_code=200, content=b"{}"))
+    headers = {"X-API-Key": API_SECRET_KEY, "Cookie": "para_session=s", "Accept": "application/json"}
+
+    with patch("api.router.jaeger._get_client", return_value=mock_client):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            await client.get("/jaeger/api/services", headers=headers)
+
+    forwarded = {k.lower() for k in mock_client.request.call_args.kwargs["headers"]}
+    assert forwarded.isdisjoint({"x-api-key", "cookie", "authorization"})
+    assert "accept" in forwarded
 
 
 def test_miniapp_html_tabs_structure() -> None:

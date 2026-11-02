@@ -236,8 +236,8 @@ async def test_admin_att_topic_callbacks():
     cb.message.edit_text = AsyncMock()
     cb.answer = AsyncMock()
     with (
-        patch("services.attendance_topic_updater.sync_attendance_topic_message", return_value=True),
-        patch("services.attendance_topic_updater.recreate_attendance_topic_message", return_value=True),
+        patch("bot.handlers.admin.panel.sync_attendance_topic_message", return_value=True),
+        patch("bot.handlers.admin.panel.recreate_attendance_topic_message", return_value=True),
     ):
         await cb_admin_force_att_topic(cb)
         await cb_admin_recreate_att_topic(cb)

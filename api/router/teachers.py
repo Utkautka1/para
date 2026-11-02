@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.teachers import (
     CustomTeacherCreateRequest,
+    TeacherDeleteResponse,
     TeacherItem,
     TeacherSearchItem,
     TeacherSearchResponse,
@@ -103,20 +104,20 @@ async def add_custom_teacher(payload: CustomTeacherCreateRequest) -> TeacherSing
     return TeacherSingleResponse(key=key, teacher=item)
 
 
-@router.delete("/custom/{last_name}", dependencies=[Depends(verify_admin_access)])
-async def remove_custom_teacher(last_name: str) -> dict[str, str]:
+@router.delete("/custom/{last_name}", response_model=TeacherDeleteResponse, dependencies=[Depends(verify_admin_access)])
+async def remove_custom_teacher(last_name: str) -> TeacherDeleteResponse:
     """
     Удаляет пользовательское переопределение преподавателя (Admin only).
 
     Возвращает поведение ссылки к значению по умолчанию из документа Яндекс Диска.
     Защищён verify_admin_access.
 
-    Возвращает словарь со статусом 'ok' и удаленной фамилией.
+    Возвращает TeacherDeleteResponse со статусом 'ok' и удаленной фамилией.
     """
 
     delete_custom_teacher(last_name.strip().lower())
 
-    return {"status": "ok", "deleted": last_name}
+    return TeacherDeleteResponse(status="ok", deleted=last_name)
 
 
 @router.post("/refresh", response_model=TeachersRefreshResponse, dependencies=[Depends(verify_admin_access)])

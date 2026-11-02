@@ -11,6 +11,7 @@ from aiogram.types import ChatPermissions, Message
 
 from config import ALLOWED_USER_ID, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
 from core.logger import get_logger
+from services.classmates_auth import load_classmates_registry
 from services.user_cache import add_user_to_cache, get_cached_user_id
 from utils.mute_parser import parse_duration_to_seconds
 
@@ -73,8 +74,6 @@ def _find_in_registry(clean: str) -> tuple[int, str] | None:
 
     Возвращает кортеж (tg_id, formatted_name) или None.
     """
-
-    from services.classmates_auth import load_classmates_registry
 
     registry = load_classmates_registry()
     for student in registry:

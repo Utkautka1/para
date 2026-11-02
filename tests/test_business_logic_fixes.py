@@ -115,21 +115,49 @@ async def test_create_session_collision_protection() -> None:
         await create_attendance_session(date(2026, 10, 5), 1, "Новая пара", initiator_id=DEPUTY_USER_ID)
 
 
-def test_bind_student_tg_id() -> None:
-    """Проверяет ручную привязку Telegram ID для студента без юзернейма."""
-    registry = [
+def _bind_registry() -> list[dict]:
+    """Реестр: студент без ID и студент с уже привязанным ID."""
+    return [
         {"full_name": "Куулар Алдын-Сай", "username": None, "tg_id": None},
         {"full_name": "Мазур Арсений", "username": "mazur", "tg_id": 12345},
     ]
+
+
+@pytest.mark.asyncio
+async def test_bind_student_tg_id() -> None:
+    """Проверяет ручную привязку Telegram ID для студента без юзернейма."""
     with (
-        patch("services.classmates_auth.load_classmates_registry", return_value=registry),
-        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
+        patch("services.classmates_auth.sync_load_json", return_value=_bind_registry()),
+        patch("services.classmates_auth.sync_atomic_save_json", return_value=True) as mock_save,
         patch("services.classmates_auth.clear_registry_cache"),
     ):
-        updated = bind_student_tg_id("Куулар Алдын-Сай", 777888999)
+        updated = await bind_student_tg_id("Куулар Алдын-Сай", 777888999)
         assert updated is not None
         assert updated["tg_id"] == 777888999
         mock_save.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_bind_student_tg_id_rejects_taken_id() -> None:
+    """ID, уже закреплённый за другим студентом, повторно не привязывается."""
+    with (
+        patch("services.classmates_auth.sync_load_json", return_value=_bind_registry()),
+        patch("services.classmates_auth.sync_atomic_save_json") as mock_save,
+    ):
+        assert await bind_student_tg_id("Куулар Алдын-Сай", 12345) is None
+        mock_save.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_bind_student_tg_id_failed_save_keeps_cache() -> None:
+    """При сбое записи кэш реестра не сбрасывается и привязка не считается успешной."""
+    with (
+        patch("services.classmates_auth.sync_load_json", return_value=_bind_registry()),
+        patch("services.classmates_auth.sync_atomic_save_json", return_value=False),
+        patch("services.classmates_auth.clear_registry_cache") as mock_clear,
+    ):
+        assert await bind_student_tg_id("Куулар Алдын-Сай", 777888999) is None
+        mock_clear.assert_not_called()
 
 
 def test_exam_date_range_dynamic_semester() -> None:

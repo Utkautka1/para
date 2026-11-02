@@ -1,5 +1,5 @@
 """
-Тесты окна уточнений солвера ДЗ (отложенная очередь в core/redis_cache.py и хэндлер).
+Тесты окна уточнений солвера ДЗ (отложенная очередь в core/hw_queue.py и хэндлер).
 
 Баг: реплай студента на своё задание уходил в solver отдельной задачей — два решения.
 Проверяет:
@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import core.redis_cache as rc
+import core.hw_queue as rc
 from bot.handlers.user import hw_solver
 from services.solver.telegram_reporter import build_solution_caption
 
@@ -96,7 +96,7 @@ def handler_env():
         patch.object(hw_solver, "mark_message_processed", AsyncMock()),
         patch.object(hw_solver, "acknowledge_hw_task", AsyncMock()),
         patch.object(hw_solver, "on_homework_task", MagicMock()),
-        patch.object(hw_solver.asyncio, "create_task", MagicMock()),
+        patch.object(hw_solver, "spawn", MagicMock()),
         patch.object(hw_solver, "push_hw_task", AsyncMock()) as push,
         patch.object(hw_solver, "schedule_hw_task", AsyncMock()) as schedule,
         patch.object(hw_solver, "take_pending_hw_task", AsyncMock(return_value=None)) as take,

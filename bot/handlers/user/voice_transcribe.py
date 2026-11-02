@@ -32,8 +32,10 @@ from config import (
     MAX_CONCURRENT_PER_USER,
     TOPIC_CHAT_ID,
 )
+from core.background import spawn
 from core.bot import bot
 from core.logger import get_logger
+from services.achievement_service import award_achievement
 from services.classmates_auth import is_authorized_user
 from services.stt_queue import resolve_audio_dir, transcribe_via_stt
 from services.testers_manager import is_tester_allowed
@@ -373,11 +375,10 @@ async def process_audio_pipeline(
     try:
         text = await _download_and_transcribe(file_id)
         await deliver_transcription(message, status_msg, sender, duration, text)
-        from services.achievement_service import award_achievement
 
-        asyncio.create_task(award_achievement(user_id, "bot_voice_stt", message.bot, sender))
+        spawn(award_achievement(user_id, "bot_voice_stt", message.bot, sender))
         if duration >= 60:
-            asyncio.create_task(award_achievement(user_id, "bot_podcast", message.bot, sender))
+            spawn(award_achievement(user_id, "bot_podcast", message.bot, sender))
         elapsed = time.monotonic() - start_time
         log.info("✅ Аудио от %s (id=%s) обработано за %.2fс (%s симв.)", sender, user_id, elapsed, len(text))
     except Exception as e:

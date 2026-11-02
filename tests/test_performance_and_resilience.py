@@ -9,22 +9,21 @@ Unit-тесты для подсистем оптимизации произво�
   5. Отслеживание и очистку временных сообщений по расписанию в Redis ZSET
 """
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from core.api_client import _get_client
+from core.hw_queue import ack_hw_task, pop_hw_task, recover_stale_hw_tasks
 from core.redis import get_redis_pool
 from core.redis_cache import (
-    ack_hw_task,
     get_expired_messages_for_cleanup,
     get_topic_state_redis,
     is_reminder_sent,
     load_schedule_snapshot,
     mark_reminder_sent,
-    pop_hw_task,
-    recover_stale_hw_tasks,
     register_message_for_cleanup,
     save_schedule_snapshot,
     set_topic_state_redis,
@@ -99,7 +98,7 @@ async def test_reliable_queue_pop_and_ack() -> None:
     task = {"message_id": 101, "prompt": "реши 2+2"}
     mock_redis = AsyncMock()
     mock_redis.blmove.return_value = json.dumps(task)
-    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.hw_queue.init_redis", AsyncMock(return_value=mock_redis)):
         popped = await pop_hw_task(timeout=1)
         assert popped == task
         await ack_hw_task(task)
@@ -111,7 +110,7 @@ async def test_recover_stale_hw_tasks() -> None:
     """Проверяет восстановление зависших задач из processing очереди."""
     mock_redis = AsyncMock()
     mock_redis.rpoplpush.side_effect = ["task1", "task2", None]
-    with patch("core.redis_cache.init_redis", AsyncMock(return_value=mock_redis)):
+    with patch("core.hw_queue.init_redis", AsyncMock(return_value=mock_redis)):
         recovered = await recover_stale_hw_tasks()
         assert recovered == 2
         assert mock_redis.rpoplpush.call_count == 3
@@ -259,11 +258,11 @@ async def test_collect_health_summary() -> None:
     from bot.handlers.admin.panel import _collect_health_summary
 
     with (
-        patch("db.subscribers.load_subscribers", return_value={1, 2}),
-        patch("services.classmates_auth.load_classmates_registry", return_value=[{"tg_id": 1}]),
+        patch("bot.handlers.admin.panel.load_subscribers", return_value={1, 2}),
+        patch("bot.handlers.admin.panel.load_classmates_registry", return_value=[{"tg_id": 1}]),
         patch("bot.handlers.admin.panel.fetch_teachers", AsyncMock(return_value={"count": 15})),
-        patch("integrations.yandex_docs.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")),
-        patch("core.redis_cache.init_redis", AsyncMock(return_value=None)),
+        patch("bot.handlers.admin.panel.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")),
+        patch("bot.handlers.admin.panel.init_redis", AsyncMock(return_value=None)),
     ):
         summary = await _collect_health_summary()
         assert "ДИАГНОСТИКА СИСТЕМЫ" in summary
@@ -328,3 +327,34 @@ async def test_week_schedule_single_fetch() -> None:
         assert len(res) == 6
         mock_fetch.assert_called_once_with(force_refresh=True)
         assert mock_day.call_count == 6
+
+
+# === Фоновые задачи core/background ===
+
+
+@pytest.mark.asyncio
+async def test_spawn_keeps_reference_and_logs_failure() -> None:
+    """spawn держит ссылку до завершения и логирует исключение задачи."""
+    from core import background
+
+    async def boom() -> None:
+        raise RuntimeError("fail")
+
+    with patch.object(background.log, "error") as log_error:
+        task = background.spawn(boom())
+        assert task in background._TASKS
+        await asyncio.gather(task, return_exceptions=True)
+        await asyncio.sleep(0)
+    assert task not in background._TASKS
+    log_error.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_drain_background_cancels_stuck_tasks() -> None:
+    """Зависшие задачи отменяются после таймаута ожидания."""
+    from core import background
+
+    task = background.spawn(asyncio.sleep(10))
+    await background.drain_background(timeout=0.01)
+    await asyncio.sleep(0)
+    assert task.cancelled()

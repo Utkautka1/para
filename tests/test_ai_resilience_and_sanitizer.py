@@ -5,12 +5,12 @@
 import pytest
 
 from core.circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitState, async_retry_with_backoff
-from integrations.deepseek import build_deepseek_messages
-from services.solver.prompt_sanitizer import (
+from core.prompt_sanitizer import (
     escape_context_delimiters,
     remove_invisible_control_chars,
     sanitize_prompt,
 )
+from integrations.deepseek import build_deepseek_messages
 
 
 def test_sanitize_prompt_clean_text() -> None:

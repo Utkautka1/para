@@ -2,8 +2,9 @@
  * Кардиомонитор группы: динозаврик бежит по линии пульса и прыгает через пики.
  *
  * Отдаётся сервером только по одноразовому токену (/miniapp/pulse/ecg.js?t=...),
- * поэтому в miniapp.html этого кода нет. Счёт после каждого забега уходит на
- * /miniapp/pulse/ecg/<токен> — сервер сам проверяет, что он правдоподобен по времени.
+ * поэтому в miniapp.html этого кода нет. Во время забега каждые BEAT_INTERVAL_MS
+ * счёт уходит «ударом» на /miniapp/pulse/ecg/<токен>/beat: сервер сам замеряет время
+ * между ударами и проверяет темп. Итог забега — на /miniapp/pulse/ecg/<токен>.
  */
 (() => {
   const trace = new URL(document.currentScript.src).searchParams.get('t');
@@ -17,8 +18,10 @@
   const JUMP_VELOCITY = -0.82;
   const START_SPEED = 0.3;
   const MAX_SPEED = 0.6;
-  // Очки за миллисекунду на стартовой скорости (~10 в секунду, сервер ждёт не больше 25)
+  // Очки за миллисекунду на стартовой скорости (~10 в секунду, сервер ждёт не больше 30)
   const POINTS_PER_MS = 0.01;
+  // Шаг ударов кардиограммы; сервер обрывает забег после паузы дольше 6 секунд
+  const BEAT_INTERVAL_MS = 2000;
   const PIXEL = 3;
 
   // Свой пиксельный динозавр, два кадра бега (# — закрашено)
@@ -93,6 +96,7 @@
   let gridOffset;
   let deadAt = 0;
   let lastTs = 0;
+  let lastBeatAt = 0;
   let rafId = 0;
 
   function resetRun() {
@@ -102,6 +106,7 @@
     score = 0;
     nextSpikeIn = 500;
     gridOffset = 0;
+    lastBeatAt = performance.now();
   }
 
   // Пик кардиограммы: иногда сдвоенный, чтобы прыжки не были одинаковыми
@@ -231,10 +236,23 @@
     drawHud();
   }
 
+  // Удар идёт из цикла отрисовки, а не таймера: на свёрнутой вкладке игра стоит — и удары тоже
+  function sendBeat(ts) {
+    if (state !== 'running' || ts - lastBeatAt < BEAT_INTERVAL_MS) return;
+    lastBeatAt = ts;
+    fetch(`/miniapp/pulse/ecg/${encodeURIComponent(trace)}/beat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: Math.floor(score) }),
+      credentials: 'include',
+    }).catch((err) => console.warn('pulse beat:', err));
+  }
+
   function frame(ts) {
     const dt = Math.min(50, ts - (lastTs || ts));
     lastTs = ts;
     if (state === 'running') update(dt);
+    sendBeat(ts);
     render();
     rafId = requestAnimationFrame(frame);
   }

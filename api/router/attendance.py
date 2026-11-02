@@ -12,6 +12,7 @@ from api.deps import verify_admin_access, verify_api_or_tester
 from api.schemas.attendance import (
     ActiveSessionResponse,
     AttendanceStatsResponse,
+    CancelSessionResponse,
     CommitAttendanceResponse,
     MarkStudentRequest,
     StartSessionRequest,
@@ -218,17 +219,17 @@ async def commit_session() -> CommitAttendanceResponse:
     return CommitAttendanceResponse(status="ok", message="Marks saved to Yandex Docs", marks_committed=count)
 
 
-@router.delete("/session", dependencies=[Depends(verify_admin_access)])
-async def cancel_session() -> dict:
+@router.delete("/session", response_model=CancelSessionResponse, dependencies=[Depends(verify_admin_access)])
+async def cancel_session() -> CancelSessionResponse:
     """
     Сбрасывает и отменяет текущую незавершённую сессию старосты (Admin only).
 
     Очищает ключ сессии в Redis без сохранения данных в Яндекс Таблицу.
     Защищён verify_admin_access.
 
-    Возвращает словарь подтверждения сброса сессии.
+    Возвращает CancelSessionResponse с подтверждением сброса сессии.
     """
 
     await clear_session()
 
-    return {"status": "ok", "message": "Attendance session cleared"}
+    return CancelSessionResponse(status="ok", message="Attendance session cleared")

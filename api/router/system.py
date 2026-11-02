@@ -18,6 +18,9 @@ from api.schemas.system import (
 from config import SAFE_CACHE_FLUSH_PREFIXES, TIMEZONE
 from core.redis import init_redis
 from core.redis_cache import cache_flush
+from db.sqlite.repositories import IncidentRepository
+from services.backup_manager import run_backup_pipeline
+from services.schedule_parser import clear_resolved_day_cache
 
 router = APIRouter(tags=["System"], prefix="/system", dependencies=[Depends(verify_api_or_tester)])
 
@@ -72,8 +75,6 @@ async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
     """Выполняет принудительную очистку ключей Redis по безопасной маске (Admin only)."""
     _validate_flush_pattern(payload.pattern)
     if payload.pattern.startswith("sched:"):
-        from services.schedule_parser import clear_resolved_day_cache
-
         clear_resolved_day_cache()
 
     count = await cache_flush(pattern=payload.pattern)
@@ -84,7 +85,6 @@ async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse:
 @router.get("/incidents", response_model=IncidentListResponse, dependencies=[Depends(verify_admin_access)])
 async def list_system_incidents(limit: int = 50, unresolved_only: bool = False) -> IncidentListResponse:
     """Возвращает журнал системных инцидентов и сетевых сбоев из SQLite (Admin only)."""
-    from db.sqlite.repositories import IncidentRepository
 
     records = await IncidentRepository.get_recent_incidents(limit=limit, unresolved_only=unresolved_only)
     items = [
@@ -107,7 +107,6 @@ async def list_system_incidents(limit: int = 50, unresolved_only: bool = False) 
 @router.post("/backup", response_model=BackupTriggerResponse, dependencies=[Depends(verify_admin_access)])
 async def trigger_system_backup() -> BackupTriggerResponse:
     """Запускает процесс резервного копирования SQLite и Redis (Admin only)."""
-    from services.backup_manager import run_backup_pipeline
 
     ok = await run_backup_pipeline()
     if not ok:

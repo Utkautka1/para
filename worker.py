@@ -15,6 +15,7 @@ from datetime import datetime
 
 from config import TIMEZONE
 from core.api_client import close_api_client, get_api_schedule_for_date
+from core.background import drain_background
 from core.bot import bot
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
@@ -69,6 +70,9 @@ async def shutdown_worker() -> None:
     log.info("Остановка воркера: освобождение сетевых ресурсов...")
     if scheduler.running:
         scheduler.shutdown(wait=False)
+
+    # Даём доработать фоновым задачам, пока соединения ещё открыты
+    await drain_background()
 
     await close_redis()
     await close_api_client()

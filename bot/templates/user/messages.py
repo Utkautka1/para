@@ -6,9 +6,10 @@
 """
 
 import html
-from datetime import date
+import re
+from datetime import date, datetime
 
-from config import GROUP_NAME
+from config import GROUP_NAME, TIMEZONE
 from services.models import Lesson
 
 WEEKDAYS_RU = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
@@ -102,8 +103,6 @@ def _parse_time_interval_minutes(time_str: str) -> tuple[int, int] | None:
     Возвращает кортеж (start_min, end_min) или None при ошибке парсинга.
     """
 
-    import re
-
     matches = re.findall(r"(\d{1,2})[:\.](\d{2})", time_str)
     if len(matches) < 2:
         return None
@@ -149,10 +148,6 @@ def get_lesson_status_banner(lessons: list[Lesson], target_date: date) -> str:
 
     Возвращает HTML-строку баннера статуса или пустую строку.
     """
-
-    from datetime import datetime
-
-    from config import TIMEZONE
 
     now_dt = datetime.now(TIMEZONE)
     if target_date != now_dt.date() or not lessons:

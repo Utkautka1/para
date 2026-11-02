@@ -8,7 +8,6 @@
   4. Обновлять сводку в топике по кнопке att_topic:refresh
 """
 
-import asyncio
 import html
 from typing import Any
 
@@ -23,6 +22,7 @@ from aiogram.types import (
 )
 
 from bot.filters.auth import ClassmateAuthFilter
+from core.background import spawn
 from core.logger import get_logger
 from services.achievement_events import on_attendance_view
 from services.attendance_stats import fetch_all_time_attendance, find_student_attendance
@@ -144,7 +144,7 @@ def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | N
 
 async def _respond_personal_attendance(message: Message, fio: str, data: dict[str, Any]) -> None:
     """Отправляет карточку посещаемости и фиксирует ачивку самопроверки."""
-    asyncio.create_task(on_attendance_view(message.from_user, message.bot))
+    spawn(on_attendance_view(message.from_user, message.bot))
     text = format_personal_attendance_card(data.get("fio", fio), data)
     await message.answer(text, reply_markup=get_personal_attendance_kb())
 
@@ -179,7 +179,7 @@ async def cb_my_attendance_refresh(callback: CallbackQuery) -> None:
         await callback.answer("⚠️ Данные не найдены", show_alert=True)
         return
 
-    asyncio.create_task(on_attendance_view(callback.from_user, callback.bot))
+    spawn(on_attendance_view(callback.from_user, callback.bot))
     text = format_personal_attendance_card(data.get("fio", fio), data)
     try:
         if callback.message:

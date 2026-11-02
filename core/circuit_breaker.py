@@ -12,6 +12,7 @@ from collections.abc import Awaitable, Callable
 from enum import StrEnum
 from typing import TypeVar
 
+from core.background import spawn
 from core.logger import get_logger
 
 log = get_logger("circuit_breaker")
@@ -82,7 +83,7 @@ class CircuitBreaker:
         try:
             from services.alerting import IncidentType, send_admin_alert
 
-            asyncio.create_task(
+            spawn(
                 send_admin_alert(
                     incident_type=IncidentType.CIRCUIT_BREAKER_OPEN,
                     title=f"Circuit Breaker '{self.name}' перешел в состояние OPEN",
