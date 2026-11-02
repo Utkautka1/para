@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - 2026-11-02
+## [v3.0.0] - 2026-11-02
 
-### Security
+Major release: everything since v2.9.0 (55 commits). The headline changes are a hardened
+security boundary, a reworked achievements system with a fair reset, a dedicated
+speech-to-text service and continuous deployment behind a 57-job CI gate.
+
+### ⚠️ Breaking changes
+- **API keys are no longer accepted in URLs**: `?key=` / `?api_key=` and `GET /miniapp/dev-login` are removed. Use the `X-API-Key` header, `Authorization: Bearer`, or a one-time login link from the bot (`GET /miniapp/login?t=`).
+- **Endpoints now require authentication**: `/gamification/leaderboard`, `/gamification/profile` (`verify_api_or_tester`) and `/metrics` (admin only). Prometheus scrapers must send the master key header.
+- **Cross-site cookie requests rejected**: unsafe methods authenticated by the `para_session` cookie return 403 when `Sec-Fetch-Site`/`Origin` show another site.
+- **Speech-to-text is a separate service** `para-stt` (`stt.py`, `stt.dockerfile`, GPU reservation); the bot no longer bundles CUDA/faster-whisper. Deployments must run the new container.
+- **Achievements were reset with a journal baseline**: catalog reworked, leaderboard ranks by guild points instead of attendance percent; previous XP and places do not carry over.
+- **Sessions are signed with `SESSION_SECRET`** (falls back to `API_SECRET_KEY` until set); sessions issued by older versions become invalid once it is set.
+- **Removed** the broken `main.py` entrypoint.
+- **Git history was rewritten** on 2026-11-02: all commit hashes since 2026-10-10 changed and old signatures were dropped. Re-clone or reset existing checkouts to `origin/main`.
+
+### 2026-11-02 — Audit fixes, CI expansion
+
+#### Security
 - **CSRF on cookie-authenticated endpoints**: the `para_session` cookie is `SameSite=None` (needed inside the Telegram iframe), so a form on any site could call body-less admin endpoints (`POST/DELETE /miniapp/testers/{id}`, `/system/cache/flush`, `/*/refresh`, `DELETE /attendance/session`). Unsafe methods authenticated by the cookie are now rejected when `Sec-Fetch-Site`/`Origin` show another site (`api/deps.py:_reject_cookie_csrf`); header keys are unaffected.
 - **Jaeger proxy leaked credentials**: `Cookie`, `Authorization` and `X-API-Key` were forwarded to the internal Jaeger; they are stripped now, connection errors no longer echo exception text, and the proxy reuses one `httpx.AsyncClient`.
 - **Rate limits fail closed and are atomic**: `INCR` and `EXPIRE` were separate commands, so a crash between them left a counter without TTL and blocked the user forever; with Redis down the DeepSeek limits were skipped entirely. `allow_request` (`core/redis_cache.py`) runs `SET NX EX` + `INCR` in one `MULTI` and denies requests without Redis; the bot limit moved to `HW_RATE_LIMIT_PER_WINDOW`/`HW_RATE_LIMIT_WINDOW_SECONDS`.
-- **CI bot token**: `.env.ci` contained a real-format Telegram token; replaced with a fake one.
+- **CI bot token placeholder**: the token-shaped placeholder in `.env.ci` matched the secret-scan pattern; replaced with `123456789:ci-placeholder-not-a-real-token`.
 
-### Fixed
+#### Fixed
 - **Autodeploy made changed files unreadable for containers**: `autodeploy.sh` sets `umask 077` for its log and state, and the `git merge` inside `deploy_remote.sh` inherited it, writing changed modules as `600 root`; containers (uid 1000) crashed with `PermissionError`. `deploy_remote.sh` now sets `umask 022` itself.
 - **Homework tasks were duplicated on retry**: `nack_hw_task` incremented `retries` before `LREM`, so the original payload stayed in `hw:tasks:processing` and was re-queued by `recover_stale_hw_tasks` after every restart with the retry counter reset. The move now happens in one Lua script (`LUA_REQUEUE`) using the payload as it was popped.
 - **Admin endpoints from the Mini App**: the headman's session resolves to `classmate:<id>`, which `verify_admin_access` rejected; both `tester:` and `classmate:` identities of the headman/deputy are accepted now.
@@ -23,23 +39,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Exception text in HTML messages**: attendance session errors no longer put raw exception text into a `parse_mode=HTML` message.
 - **Lost background tasks**: ~30 bare `asyncio.create_task` calls kept no reference and swallowed exceptions; they go through `core/background.py:spawn`, and `bot`/`api`/`worker` drain pending tasks on shutdown.
 
-### CI
+#### CI
 - **14 new checks** (gate for `ci-passed`): function length ≤ 25 lines and module docstrings across the whole project, Markdown relative links, ShellCheck, Hadolint, Actionlint, Yamllint, Vulture dead code, Xenon complexity budget, Bandit for `utils`/`integrations`/`db`/`scripts`/entrypoints (previously unscanned), Gitleaks over the full history, detect-secrets against `.secrets.baseline`, standalone import of every module (catches circular imports), `pip check`. Coverage gate `--cov-fail-under=65`. Container tools are pinned by digest, Python tools by version.
 - Intentional patterns are annotated instead of silenced globally (`# nosec` / `# hadolint ignore` / `# shellcheck disable` with reasons); `.gitleaks.toml` allows the detect-secrets baseline, `.gitleaksignore` lists one historical test-fixture fingerprint.
 
-### Changed
+#### Changed
 - **Pulse game anti-cheat**: waiting 10 seconds and posting a score unlocked the secret achievement. The client now sends a beat every 2 s (`POST /miniapp/pulse/ecg/{trace}/beat`); the server times the beats itself and accepts the final score only after a steady chain of beats.
 - **Homework queue module**: queue operations moved from `core/redis_cache.py` to `core/hw_queue.py`.
 - **Typed responses**: tester add/remove, custom teacher delete and attendance session cancel return Pydantic schemas instead of dicts.
 - **Docs generator**: summaries come from module and function docstrings; invented metadata, generic diagrams and wrong «Achievement Rules» labels removed; `|` escaped in tables.
 - Removed the broken `main.py`, the `services/solver/prompt_sanitizer.py` re-export, unused username-binding helpers and the duplicate PR template; function-level imports in handlers and routers hoisted to module level.
 
-## [Unreleased] - 2026-11-01
+### 2026-11-01 — Achievements rework
 
-### Homework solver
+#### Homework solver
 - **Clarification replies no longer create a second task**: a reply to your own task was hashed as a new prompt and solved separately. New tasks now wait `HW_CLARIFY_WINDOW_SECONDS` (30 s) in a delayed Redis queue (`hw:tasks:delayed`, promoted by the solver loop with an atomic Lua script); a reply from the author inside the window is merged into the same task. A reply after the task reached the solver is solved immediately as a «🔁 Исправленное решение» linked to the original task (`revision_of`), and does not count as a new task for achievements.
 
-### Gamification
+#### Gamification
 - **«🏆 Ачивки и очки» in `/admin`**: the headman picks a student and adjusts bonus XP and guild points with ±10/100/1000 buttons or a typed number (`5000` sets the student's total to exactly 5000, `+500`/`-30` add or subtract — only the bonus is adjusted; the typed message is deleted and the prompt turns back into the card in the same message), resets bonuses and grants or revokes any achievement (including hidden ones) by category with ✅/➖ toggles. The student is notified about every change. Logic lives in `services/gamification_admin.py`; guild-point bonus is the `guild_bonus` counter (rating only), XP bonus raises the level too.
 - **Admin XP bonus**: a manual XP bonus per student (`student_counters` key `xp_bonus`, `CounterRepository.set_value`) is added to XP and guild points; it is cleared by an achievement reset like other counters.
 - **Owners see their hidden achievements**: the Mini App session identity is `classmate:<id>`, but the owner check accepted only `tester:<id>`, so hidden achievements were cut even from their owner's profile (XP was counted).
@@ -52,13 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New event sources**: homework topic (count, formats, code files, follow-ups, night tasks), group chat via an outer middleware (messages, stickers, replies, reply to the headman, 15 minutes after `/all`, birthday greetings — counters only, no text stored), Mini App tabs and classmates' profiles. Counters are atomic upserts in the new `student_counters` table.
 - **Mini App**: an unlocked card now lights up right away (the client stored the action name instead of the achievement id); the collection bar is capped at 100%.
 
-## [2026-10-31]
+### 2026-10-31 — Security hardening, STT service, continuous deployment
 
-### Infrastructure
+#### Infrastructure
 - **Edge gateway moved from `claude` to `vpn`** (185.230.67.217): Caddy (`scripts/vps/Caddyfile`), the API tunnel, the sshd fallback tunnel (`ssh home-tunnel`) and the SOCKS proxy for tailscaled now use `vpn` via the restricted `tunnel` user with a pinned host key. Port 443 on `vpn` belongs to Amnezia Xray, so the public site is `https://185-230-67-217.sslip.io:8443` (Let's Encrypt via HTTP-01 on :80). `para-socks-claude.service` renamed to `para-socks.service`; `MINIAPP_URL`/`SWAGGER_URL` updated on the server, the bot re-registers the menu button on start.
 
 
-### Security
+#### Security
 - **Autodeploy trusts only signed commits from `main`**: moving `ci-passed` used to be enough to run code as root on the server. `scripts/deploy_remote.sh` now requires the target to be an ancestor of `origin/main` and every new commit to carry an SSH signature from `/etc/para/allowed_signers` (root-owned, outside the repo). A failed revision is remembered in `/var/lib/para` and not retried every 2 minutes.
 - **CI token read-only by default**: `permissions: contents: read` for the workflow (write only in `deploy-gate`), `persist-credentials: false` on checkouts, all third-party actions pinned by commit SHA.
 - **Secret scan actually fails**: `! git grep` never failed a step under `bash -e`; rewritten with `if`, patterns extended with Telegram bot tokens, DeepSeek keys and OpenSSH/EC private keys.
@@ -78,22 +94,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Remote ssh script via stdin**: `scripts/sync_yandex_cookie.py` no longer builds `python3 -c "..."` command strings.
 - **Private temp dir for voice audio**: per-process `mkdtemp` (0700) instead of fixed `/dev/shm/para_audio`.
 
-### Performance
+#### Performance
 - **STT microservice**: speech recognition moved from the bot into `para-stt` (`stt.py`, `stt.dockerfile`, GPU reservation). Bot and STT exchange jobs via Redis (`services/stt_queue.py`) and audio via a shared tmpfs volume `stt_audio`. Bot image drops CUDA/faster-whisper (~5.4 GB → ~0.5 GB), memory limit 4 GB → 1 GB; bot restarts no longer reload Whisper into VRAM.
 - Topic post: identical edits are skipped (≈1.7k 'message is not modified' API calls per 4 days), with a forced edit every 10 minutes to detect a manually deleted post.
 - **Background schedule refresh**: only `para-worker` downloads the ~57 MB KTMU payload (`services/schedule_refresher.py`, every `SCHEDULE_REFRESH_INTERVAL_SECONDS`=900). `para-api` serves the Redis snapshot and re-reads it only when `meta.version` changes; `force_refresh` («🔄 Обновить», admin sync) returns instantly and queues a refresh via `schedule:refresh_requested`. Readers fall back to their own download if the snapshot is older than 3 intervals. Cuts ~155 downloads/day (~8.7 GB) to ~96 and removes the ~10 s wait from user requests.
 
-### Fixed
+#### Fixed
 - **Attestations did not match the grid**: rooms came from `preferredRoomIds` (planner wish) instead of the assigned `assignment.roomId`, so addresses were wrong (e.g. math on Voznesensky shown as Tsvetochnaya, philosophy 40 instead of 50). Assessments already placed in the grid now show weekday, date, pair number and bell times; unassigned ones show «Кабинет уточняется» without guessing a campus. Weeks after the last `publishedWeeks` are marked «Предварительно». `ExamItem` and `ExamItemProto` gained `exam_date`, `pair_number`, `time_str`, `is_preliminary`.
 - **Schedule substitutions ignored**: the bot read only the base grid and dropped the KTMU `substitutions` list, so one-off changes were lost (31.10: foreign language moved from pair 2 to pair 1 on the site, bot still showed pair 2). New `services/schedule_substitutions.py` overlays them per date: `sub`/`join_subgroup` patch period, room, teacher and format; `cancel`, `cancel_assignment`, `pending_move`, `excursion` and `moved` remove the lesson on its date; `stream_group_cancel` applies only to excluded groups; `moved` lessons appear on `targetDate`/`targetPeriod`. A legacy Redis snapshot without substitutions drops its ETag so the worker refetches once.
 - **Log rotation**: every `get_logger()` opened its own `RotatingFileHandler` on the shared `logs/bot.log` (~60 per process × 4 containers), so rotation renamed the file under the other handlers. Handlers are now process-wide singletons and each service writes its own `logs/{api,bot,worker,solver}.log`.
 
-### Deployment
+#### Deployment
 - **Continuous deployment**: CI job `deploy-gate` (needs all 42 jobs) moves branch `ci-passed`; the server polls it every 2 minutes (`scripts/autodeploy.sh`, `scripts/systemd/para-autodeploy.timer`) and deploys without GitHub having any server access. Result is sent to the admin in Telegram (`services/deploy_notifier.py`, `DEPLOY_SUCCESS`/`DEPLOY_FAILED`).
 - **One-command deploy**: `scripts/deploy.sh` → `scripts/deploy_remote.sh` over `ssh home-tunnel`: ff-only pull with timeouts, restarts only services whose mounted code changed (from `docker compose config`), rebuilds on requirements/Dockerfile changes, then verifies health, restart counts and new log errors. Shared `flock` with autodeploy.
 - **Code mounts completed**: `solver` had no code mounted (baked by `COPY . .`), and `api`/`bot`/`worker` were missing `integrations/` (and `api/`, `bot/` where imported), so `git pull` silently left those packages on the image version. All four services now mount every project package they import — deploy is `git pull` + restart, no rebuild.
 
-### Changed
+#### Changed
 - Primary schedule API moved from the dead `timetable-ktmu.ru` (TLS alerts since 2026-10-26) to `raspisanie-ktmu.ru` (`SCHEDULE_API_URL`, `EXAM_SCHEDULE_API_URL`).
 - Log noise: routine gRPC reads (~2.6k/day), per-minute topic edits (~1.1k/day) and snapshot saves moved to `DEBUG` / logged only on `force_refresh`.
 - Lazy `%`-formatting in all logging calls (304 call sites); ruff `G004` enabled.
