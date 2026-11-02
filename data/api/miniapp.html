@@ -37,6 +37,23 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* Непрозрачный фон корня: вебвью Telegram Desktop прозрачное, и непрорисованные
+       области иначе показывают рабочий стол */
+    html {
+      background: var(--bg);
+    }
+
+    /* Облегчённый режим для Telegram Desktop на Linux (WebKitGTK): размытие подложки
+       и бесконечные анимации там вызывают мерцание и зависание вебвью */
+    html.low-fx *,
+    html.low-fx *::before,
+    html.low-fx *::after {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+
     body {
       background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0d1124 50%, var(--bg) 90%);
       color: var(--text);
@@ -820,7 +837,7 @@
       title="⚔️ Академическая Гильдия 1-КПД-3">
       <span>⚔️ 1-КПД-3</span>
       <span class="badge badge-rpg" id="version-badge" onclick="event.stopPropagation(); promptDevLogin();"
-        style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v2.9</span>
+        style="cursor:pointer;" title="Кликните для ввода ключа разработчика">RPG v3.0</span>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="btn-theme-toggle" class="badge badge-rpg" onclick="toggleMatrixTheme()"
@@ -1002,7 +1019,14 @@
     // Вкладки, открытые за сессию, — для квеста «Исследователь»
     const visitedTabs = new Set(['leaderboard']);
 
+    // Telegram Desktop и его форки (AyuGram) на Linux рендерят вебвью через WebKitGTK
+    function isLinuxDesktopClient() {
+      const ua = navigator.userAgent;
+      return tg?.platform === 'tdesktop' && /Linux/.test(ua) && !/Android/.test(ua);
+    }
+
     function initTelegram() {
+      if (isLinuxDesktopClient()) document.documentElement.classList.add('low-fx');
       if (!tg) return;
       tg.ready();
       tg.expand();
@@ -1092,7 +1116,7 @@
       if (bSw) bSw.style.display = 'inline-flex';
       if (bJg) bJg.style.display = 'inline-flex';
       const badge = document.getElementById('version-badge');
-      if (badge) badge.innerText = 'v2.9 • 🔑 Tester';
+      if (badge) badge.innerText = 'v3.0 • 🔑 Tester';
     }
 
     async function loadLeaderboard() {
