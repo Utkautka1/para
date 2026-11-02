@@ -14,7 +14,7 @@ import json
 import os
 import shutil
 import sqlite3
-import subprocess
+import subprocess  # nosec B404 — операторский скрипт: ssh/docker с фиксированными аргументами
 import sys
 import urllib.parse
 import urllib.request
@@ -136,7 +136,8 @@ def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str
     req = urllib.request.Request(passport_url, headers={"User-Agent": "Mozilla/5.0", "Cookie": cookie_str})
 
     class NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Не следуем редиректу: нужны Set-Cookie из самого ответа 302
+        def redirect_request(self, *_args):
             return None
 
     try:
@@ -188,7 +189,7 @@ def verify_yandex_cookie(cookie_hdr: str, test_url: str = TEST_DOC_URL) -> bool:
     }
     req = urllib.request.Request(test_url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=15) as res:
+        with urllib.request.urlopen(req, timeout=15) as res:  # nosec B310 — URL собран из https-констант
             body = res.read().decode("utf-8", errors="replace")
             return 'id="client-config"' in body and "Авторизация" not in body
     except Exception as exc:
@@ -241,7 +242,7 @@ def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: s
         f"res = re.sub(r'YANDEX_COOKIE=.*\\n', v, s) if 'YANDEX_COOKIE=' in s else s + v; "
         f"open(p, 'w').write(res)"
     )
-    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)  # nosec B603 B607 — host из CLI оператора
 
 
 def _build_env_update_script(remote_dir: str, b64_payload: str) -> str:
@@ -286,7 +287,7 @@ def send_api_urls_to_remote_env(
     }
     b64 = base64.b64encode(json.dumps(updates).encode("utf-8")).decode("ascii")
     py = _build_env_update_script(remote_dir, b64)
-    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)  # nosec B603 B607 — host из CLI оператора
 
 
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None:
@@ -308,7 +309,7 @@ def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_
     )
     # Скрипт идёт через stdin, а не `python3 -c "..."`: удалённый shell не разбирает
     # содержимое, и кавычки в путях или ключах не могут сломать/подменить команду
-    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)
+    subprocess.run(["ssh", host, "python3 -"], input=py.encode("utf-8"), check=True)  # nosec B603 B607 — host из CLI оператора
 
 
 def sync_cookies(host: str = "home") -> bool:

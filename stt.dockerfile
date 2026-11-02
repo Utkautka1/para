@@ -10,6 +10,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# ffmpeg берём из репозитория базового образа (закреплён по digest), отдельный пин версии не нужен
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -21,6 +23,8 @@ RUN groupadd -g 1000 appuser && \
 # (requirements.txt + requirements-bot.txt). Кэш pip переживает пересборки.
 # Только версии из lock с проверкой sha256 (--require-hashes): подменённый пакет на PyPI не установится
 COPY requirements-stt.lock ./
+# Кэш pip — это BuildKit cache mount, в слой образа он не попадает
+# hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --require-hashes -r requirements-stt.lock
 

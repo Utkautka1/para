@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Exception text in HTML messages**: attendance session errors no longer put raw exception text into a `parse_mode=HTML` message.
 - **Lost background tasks**: ~30 bare `asyncio.create_task` calls kept no reference and swallowed exceptions; they go through `core/background.py:spawn`, and `bot`/`api`/`worker` drain pending tasks on shutdown.
 
+### CI
+- **14 new checks** (gate for `ci-passed`): function length ≤ 25 lines and module docstrings across the whole project, Markdown relative links, ShellCheck, Hadolint, Actionlint, Yamllint, Vulture dead code, Xenon complexity budget, Bandit for `utils`/`integrations`/`db`/`scripts`/entrypoints (previously unscanned), Gitleaks over the full history, detect-secrets against `.secrets.baseline`, standalone import of every module (catches circular imports), `pip check`. Coverage gate `--cov-fail-under=65`. Container tools are pinned by digest, Python tools by version.
+- Intentional patterns are annotated instead of silenced globally (`# nosec` / `# hadolint ignore` / `# shellcheck disable` with reasons); `.gitleaks.toml` allows the detect-secrets baseline, `.gitleaksignore` lists one historical test-fixture fingerprint.
+
 ### Changed
 - **Pulse game anti-cheat**: waiting 10 seconds and posting a score unlocked the secret achievement. The client now sends a beat every 2 s (`POST /miniapp/pulse/ecg/{trace}/beat`); the server times the beats itself and accepts the final score only after a steady chain of beats.
 - **Homework queue module**: queue operations moved from `core/redis_cache.py` to `core/hw_queue.py`.

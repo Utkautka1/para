@@ -1,0 +1,3 @@
+# Ложные срабатывания gitleaks (отпечаток commit:file:rule:line):
+# тестовый ключ в старой версии фикстуры — не секрет
+a6fcf3ef6bc20a58cae024b0347f1158ad2d5d31:tests/test_miniapp_and_testers.py:generic-api-key:212

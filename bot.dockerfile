@@ -14,6 +14,8 @@ RUN groupadd -g 1000 appuser && \
 
 # Только версии из lock с проверкой sha256 (--require-hashes): подменённый пакет на PyPI не установится
 COPY requirements.lock ./
+# Кэш pip — это BuildKit cache mount, в слой образа он не попадает
+# hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --require-hashes -r requirements.lock
 

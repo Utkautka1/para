@@ -91,9 +91,11 @@ apply_changes() {
   elif grep -qx 'compose.yml' <<<"$files"; then
     log "изменился compose.yml — пересоздание изменённых контейнеров"
     timeout 300 docker compose up -d --wait || fail "docker compose up не прошёл"
+    # shellcheck disable=SC2086 # $services — список имён через пробел, разбиение на слова намеренное
     [[ -z "$services" ]] || timeout 300 docker compose restart $services
   elif [[ -n "$services" ]]; then
     log "перезапуск: $services"
+    # shellcheck disable=SC2086 # $services — список имён через пробел, разбиение на слова намеренное
     timeout 300 docker compose restart $services || fail "restart не прошёл"
   else
     log "изменения не затрагивают код сервисов — перезапуск не нужен"

@@ -787,7 +787,7 @@ jobs:
       - name: "Install Dependencies"
         run: pip install -r requirements.txt -r requirements-dev.txt
       - name: "Run Full Test Suite on Python 3.12 with XML Coverage"
-        run: cp .env.ci .env && PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=xml:coverage.xml --cov-report=term:skip-covered
+        run: cp .env.ci .env && PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=xml:coverage.xml --cov-report=term:skip-covered --cov-fail-under=65
       - name: "Upload Coverage Artifact"
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -853,6 +853,284 @@ jobs:
           severity: 'CRITICAL'
 
   # =========================================================================
+  # 8. Whole-Project Quality, Infrastructure Linters & Secret Scanning
+  # =========================================================================
+  check-function-length-all:
+    name: "📏 Function Length ≤ 25 Lines (Whole Project)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Audit Function Bodies"
+        # Тело без docstring, как в правилах проекта; сгенерированные *_pb2 и тесты не проверяем
+        run: |
+          python3 -c "
+          import ast, subprocess, sys
+          files = [f for f in subprocess.run(['git', 'ls-files', '*.py'], capture_output=True, text=True).stdout.split()
+                   if not f.startswith('tests/') and '_pb2' not in f]
+          errors = []
+          for path in files:
+              for node in ast.walk(ast.parse(open(path, encoding='utf-8').read(), filename=path)):
+                  if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                      continue
+                  body = node.body[1:] if ast.get_docstring(node) else node.body
+                  if body and body[-1].end_lineno - body[0].lineno + 1 > 25:
+                      errors.append(f'{path}:{node.lineno} {node.name}')
+          if errors:
+              print('Functions longer than 25 lines:', *errors, sep='\n  ')
+              sys.exit(1)
+          print(f'All functions in {len(files)} files are <= 25 lines')
+          "
+
+  check-docstrings-all:
+    name: "📝 Module Docstrings (Whole Project)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Audit Module Docstrings"
+        run: |
+          python3 -c "
+          import ast, subprocess, sys
+          files = [f for f in subprocess.run(['git', 'ls-files', '*.py'], capture_output=True, text=True).stdout.split()
+                   if not f.startswith('tests/') and '_pb2' not in f]
+          missing = [f for f in files if open(f, encoding='utf-8').read().strip()
+                     and not ast.get_docstring(ast.parse(open(f, encoding='utf-8').read()))]
+          if missing:
+              print('Missing module docstring:', *missing, sep='\n  ')
+              sys.exit(1)
+          print(f'Module docstrings present in {len(files)} files')
+          "
+
+  check-markdown-links:
+    name: "🔗 Markdown Relative Links Integrity"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Verify Relative Links Resolve"
+        run: |
+          python3 -c "
+          import os, re, subprocess, sys
+          broken = []
+          for f in subprocess.run(['git', 'ls-files', '*.md'], capture_output=True, text=True).stdout.split():
+              for link in re.findall(r'\]\(([^)\s]+)\)', open(f, encoding='utf-8').read()):
+                  path = link.split('#')[0]
+                  if not path or re.match(r'^(https?|mailto):', link):
+                      continue
+                  if not os.path.exists(os.path.normpath(os.path.join(os.path.dirname(f), path))):
+                      broken.append(f'{f} -> {link}')
+          if broken:
+              print('Broken links:', *broken, sep='\n  ')
+              sys.exit(1)
+          print('All relative Markdown links resolve')
+          "
+
+  lint-shellcheck:
+    name: "🐚 ShellCheck: Deploy & Ops Scripts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Run ShellCheck"
+        run: docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.10.0@sha256:2097951f02e735b613f4a34de20c40f937a6c8f18ecb170612c88c34517221fb scripts/*.sh
+
+  lint-hadolint:
+    name: "🐳 Hadolint: Dockerfile Best Practices"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Run Hadolint on All Dockerfiles"
+        run: |
+          for f in *.dockerfile; do
+            echo "== $f"
+            docker run --rm -i hadolint/hadolint:v2.12.0@sha256:30a8fd2e785ab6176eed53f74769e04f125afb2f74a6c52aef7d463583b6d45e hadolint - < "$f"
+          done
+
+  lint-actionlint:
+    name: "⚙️ Actionlint: GitHub Workflow Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Run Actionlint"
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.7@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 -color
+
+  lint-yaml:
+    name: "📐 YAML Lint: Compose & Workflows"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Yamllint"
+        run: pip install yamllint==1.38.0
+      - name: "Run Yamllint"
+        run: |
+          yamllint -d '{extends: relaxed, rules: {line-length: disable}}' compose.yml .github/ .pre-commit-config.yaml
+
+  quality-dead-code:
+    name: "🧹 Vulture: Dead Code Detection"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Vulture"
+        run: pip install vulture==2.16
+      - name: "Find Unused Code (confidence >= 80%)"
+        run: vulture --min-confidence 80 api bot core services utils integrations db scripts ./*.py
+
+  quality-complexity:
+    name: "🌀 Xenon: Cyclomatic Complexity Budget"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Xenon"
+        run: pip install xenon==0.9.3 radon==6.0.1
+      - name: "Enforce Complexity Limits"
+        # Ни одна функция сложнее C, ни один модуль сложнее B, средняя по проекту — A
+        run: xenon --max-absolute C --max-modules B --max-average A api bot core services utils integrations db
+
+  security-bandit-infra:
+    name: "🛡️ Bandit AST Security: Utils, Integrations, DB & Scripts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Bandit"
+        run: pip install bandit==1.9.4
+      - name: "Scan Remaining Layers and Entrypoints"
+        run: bandit -c pyproject.toml -r utils integrations db scripts api.py bot.py worker.py solver.py stt.py config.py
+
+  security-gitleaks:
+    name: "🔑 Gitleaks: Secrets in Full Git History"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository (full history)"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: "Scan Every Commit"
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo zricethezav/gitleaks:v8.24.3@sha256:e1b35e12a8c6fa8901f060459cfb6b2fc4c484d3afbe3b029733a3bbfab07055 git . --no-banner --redact --config .gitleaks.toml
+
+  security-detect-secrets:
+    name: "🕵️ Detect-Secrets: Baseline Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Detect-Secrets"
+        run: pip install detect-secrets==1.5.0
+      - name: "Compare Tracked Files Against Baseline"
+        # Новый секрет вне .secrets.baseline валит джобу; ложное срабатывание — обновить baseline
+        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+
+  arch-module-imports:
+    name: "🔄 Standalone Module Imports & Circular Import Detection"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Dependencies"
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: "Import Every Module in a Fresh Interpreter"
+        # Каждый модуль — в своём процессе: цикл импорта, скрытый порядком загрузки, тут проявится
+        run: |
+          cp .env.ci .env
+          git ls-files '*.py' | grep -vE '^(tests|scripts)/|_pb2|__init__\.py$' | sed 's/\.py$//; s|/|.|g' \
+            | xargs -P "$(nproc)" -I{} sh -c 'PYTHONPATH=. python -c "import importlib; importlib.import_module(\"{}\")" >/dev/null 2>&1 || { echo "FAIL {}"; exit 255; }'
+          echo "All modules import standalone"
+
+  deps-pip-check:
+    name: "📦 Installed Dependencies Consistency (pip check)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: "Set up Python"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: "Install Dependencies"
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: "Verify No Broken Requirements"
+        run: pip check
+
+  # =========================================================================
   # Deploy gate: ветка ci-passed указывает на последний коммит main,
   # прошедший ВСЕ джобы. Сервер сам опрашивает её (scripts/autodeploy.sh)
   # и деплоит — GitHub не получает ни ssh-ключей, ни доступа к серверу.
@@ -906,6 +1184,20 @@ jobs:
       - docker-compose-validate
       - docker-images-build
       - docker-trivy-security
+      - check-function-length-all
+      - check-docstrings-all
+      - check-markdown-links
+      - lint-shellcheck
+      - lint-hadolint
+      - lint-actionlint
+      - lint-yaml
+      - quality-dead-code
+      - quality-complexity
+      - security-bandit-infra
+      - security-gitleaks
+      - security-detect-secrets
+      - arch-module-imports
+      - deps-pip-check
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

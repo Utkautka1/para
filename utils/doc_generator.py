@@ -14,7 +14,7 @@ import os
 import re
 import tempfile
 from datetime import datetime
-from xml.sax.saxutils import escape as xml_escape
+from xml.sax.saxutils import escape as xml_escape  # nosec B406 — экранирование вывода, XML не парсится
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH

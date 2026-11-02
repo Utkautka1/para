@@ -2340,7 +2340,7 @@ sequenceDiagram
     participant Bot as para-worker (deploy_notifier)
 
     Dev->>GH: git push main
-    GH->>GH: 42 jobs (lint, types, security, tests, docker)
+    GH->>GH: 57 jobs (lint, types, security, secrets, infra linters, tests, docker)
     GH->>GH: deploy-gate (only job with contents: write): git push HEAD:ci-passed
     Timer->>GH: git ls-remote refs/heads/ci-passed
     alt ci-passed not in HEAD

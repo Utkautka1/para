@@ -1,0 +1,7 @@
+# Настройки gitleaks: стандартные правила + исключения, которые не являются секретами
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Baseline detect-secrets хранит хеши найденных строк, а не сами секреты"
+paths = ['''^\.secrets\.baseline$''']

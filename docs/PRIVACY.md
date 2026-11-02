@@ -218,4 +218,4 @@ For any questions, privacy requests, data deletion inquiries, or bug reports reg
 
 - **GitHub Issues:** [https://github.com/Utkautka1/para/issues](https://github.com/Utkautka1/para/issues)
 - **Telegram Administration:** Contact the group headman or deputy headman in the official 1-KPD-3 chat.
-- **Repository Documentation:** [docs/UML.md](docs/UML.md)
+- **Repository Documentation:** [docs/UML.md](UML.md)

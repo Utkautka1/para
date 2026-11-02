@@ -14,15 +14,15 @@
 | [`get_target_doc_url`](#get_target_doc_url) | Function | L56–L70 | `str` | Получает целевой URL таблицы посещаемости из боевой кон... |
 | [`find_zen_cookies_db`](#find_zen_cookies_db) | Function | L73–L88 | `Path` | Определяет путь к активной базе данных cookies.sqlite б... |
 | [`extract_raw_yandex_cookies`](#extract_raw_yandex_cookies) | Function | L91–L119 | `dict[str, str]` | Извлекает куки авторизации Яндекс из базы данных профил... |
-| [`refresh_yandex_session`](#refresh_yandex_session) | Function | L122–L150 | `dict[str, str]` | Продлевает срок жизни сессии Яндекс через эндпоинт обно... |
-| [`build_cookie_header`](#build_cookie_header) | Function | L153–L168 | `str` | Формирует строку HTTP-заголовка Cookie из словаря парам... |
-| [`verify_yandex_cookie`](#verify_yandex_cookie) | Function | L171–L196 | `bool` | Проверяет валидность сгенерированного Cookie-заголовка ... |
-| [`update_env_file`](#update_env_file) | Function | L199–L221 | `None` | Обновляет переменную YANDEX_COOKIE в локальном файле пе... |
-| [`send_cookie_to_remote_env`](#send_cookie_to_remote_env) | Function | L224–L244 | `None` | Передает и обновляет YANDEX_COOKIE в файле .env на удал... |
-| [`_build_env_update_script`](#_build_env_update_script) | Function | L247–L269 | `str` | Генерирует безопасную команду python с base64-скриптом ... |
-| [`send_api_urls_to_remote_env`](#send_api_urls_to_remote_env) | Function | L272–L289 | `None` | Синхронизирует основной и резервный URL-адреса API расп... |
-| [`update_remote_redis_and_restart`](#update_remote_redis_and_restart) | Function | L292–L311 | `None` | Записывает актуальные Cookie в Redis на сервере и перез... |
-| [`sync_cookies`](#sync_cookies) | Function | L314–L342 | `bool` | Выполняет полный цикл синхронизации учетных данных Янде... |
+| [`refresh_yandex_session`](#refresh_yandex_session) | Function | L122–L151 | `dict[str, str]` | Продлевает срок жизни сессии Яндекс через эндпоинт обно... |
+| [`build_cookie_header`](#build_cookie_header) | Function | L154–L169 | `str` | Формирует строку HTTP-заголовка Cookie из словаря парам... |
+| [`verify_yandex_cookie`](#verify_yandex_cookie) | Function | L172–L197 | `bool` | Проверяет валидность сгенерированного Cookie-заголовка ... |
+| [`update_env_file`](#update_env_file) | Function | L200–L222 | `None` | Обновляет переменную YANDEX_COOKIE в локальном файле пе... |
+| [`send_cookie_to_remote_env`](#send_cookie_to_remote_env) | Function | L225–L245 | `None` | Передает и обновляет YANDEX_COOKIE в файле .env на удал... |
+| [`_build_env_update_script`](#_build_env_update_script) | Function | L248–L270 | `str` | Генерирует безопасную команду python с base64-скриптом ... |
+| [`send_api_urls_to_remote_env`](#send_api_urls_to_remote_env) | Function | L273–L290 | `None` | Синхронизирует основной и резервный URL-адреса API расп... |
+| [`update_remote_redis_and_restart`](#update_remote_redis_and_restart) | Function | L293–L312 | `None` | Записывает актуальные Cookie в Redis на сервере и перез... |
+| [`sync_cookies`](#sync_cookies) | Function | L315–L343 | `bool` | Выполняет полный цикл синхронизации учетных данных Янде... |
 
 ---
 
@@ -162,7 +162,7 @@ result = extract_raw_yandex_cookies(db_path=...)
 def refresh_yandex_session(cookies: dict[str, str], target_url: str) -> dict[str, str]
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L122-L150`](../../scripts/sync_yandex_cookie.py#L122-L150)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L122-L151`](../../scripts/sync_yandex_cookie.py#L122-L151)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -196,7 +196,7 @@ result = refresh_yandex_session(cookies=..., target_url=...)
 def build_cookie_header(cookies: dict[str, str]) -> str
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L153-L168`](../../scripts/sync_yandex_cookie.py#L153-L168)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L154-L169`](../../scripts/sync_yandex_cookie.py#L154-L169)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -229,7 +229,7 @@ result = build_cookie_header(cookies=...)
 def verify_yandex_cookie(cookie_hdr: str, test_url: str = TEST_DOC_URL) -> bool
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L171-L196`](../../scripts/sync_yandex_cookie.py#L171-L196)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L172-L197`](../../scripts/sync_yandex_cookie.py#L172-L197)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -263,7 +263,7 @@ result = verify_yandex_cookie(cookie_hdr=..., test_url=...)
 def update_env_file(env_path: Path, cookie_hdr: str) -> None
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L199-L221`](../../scripts/sync_yandex_cookie.py#L199-L221)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L200-L222`](../../scripts/sync_yandex_cookie.py#L200-L222)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -297,7 +297,7 @@ result = update_env_file(env_path=..., cookie_hdr=...)
 def send_cookie_to_remote_env(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L224-L244`](../../scripts/sync_yandex_cookie.py#L224-L244)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L225-L245`](../../scripts/sync_yandex_cookie.py#L225-L245)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -332,7 +332,7 @@ result = send_cookie_to_remote_env(cookie_hdr=..., host=..., remote_dir=...)
 def _build_env_update_script(remote_dir: str, b64_payload: str) -> str
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L247-L269`](../../scripts/sync_yandex_cookie.py#L247-L269)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L248-L270`](../../scripts/sync_yandex_cookie.py#L248-L270)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -366,7 +366,7 @@ result = _build_env_update_script(remote_dir=..., b64_payload=...)
 def send_api_urls_to_remote_env( primary_url: str = "https://raspisanie-ktmu.ru/api/storage/schedule-data-v2", fallback_url: str = "https://nikkhl0358-max-time-f5e2.twc1.net/api/storage/schedule-data-v2", host: str = "home", remote_dir: str = "/root/para", ) -> None
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L272-L289`](../../scripts/sync_yandex_cookie.py#L272-L289)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L273-L290`](../../scripts/sync_yandex_cookie.py#L273-L290)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -402,7 +402,7 @@ result = send_api_urls_to_remote_env(primary_url=..., fallback_url=..., host=...
 def update_remote_redis_and_restart(cookie_hdr: str, host: str = "home", remote_dir: str = "/root/para") -> None
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L292-L311`](../../scripts/sync_yandex_cookie.py#L292-L311)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L293-L312`](../../scripts/sync_yandex_cookie.py#L293-L312)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -437,7 +437,7 @@ result = update_remote_redis_and_restart(cookie_hdr=..., host=..., remote_dir=..
 def sync_cookies(host: str = "home") -> bool
 ```
 
-- **Source Reference**: [`scripts/sync_yandex_cookie.py#L314-L342`](../../scripts/sync_yandex_cookie.py#L314-L342)
+- **Source Reference**: [`scripts/sync_yandex_cookie.py#L315-L343`](../../scripts/sync_yandex_cookie.py#L315-L343)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
