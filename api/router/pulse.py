@@ -48,7 +48,7 @@ router = APIRouter(prefix="/miniapp/pulse", include_in_schema=False)
 _GAME_PATH = Path(MINIAPP_HTML_FILE_PATH).with_name("pulse.js")
 
 # Секретная ачивка, которую открывает игра
-SECRET_ACHIEVEMENT_ID = "egg_dino"
+SECRET_ACHIEVEMENT_ID = "egg_dino"  # nosec B105 — id ачивки, не пароль
 
 # Время жизни токена записи (секунды)
 TRACE_TTL_SECONDS = 3600

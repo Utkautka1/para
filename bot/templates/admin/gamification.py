@@ -24,7 +24,7 @@ MAX_MANUAL_AMOUNT = 1_000_000
 BONUS_STEPS = (-1000, -100, -10, 10, 100, 1000)
 
 # Секретные ачивки показываются отдельной «категорией», их нет в публичных категориях
-SECRET_CATEGORY = "secret"
+SECRET_CATEGORY = "secret"  # nosec B105 — имя категории ачивок, не пароль
 
 CATEGORY_TITLES: dict[str, str] = {
     AchievementCategory.ATTENDANCE: "📅 Посещаемость",
