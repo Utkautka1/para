@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI bot token**: `.env.ci` contained a real-format Telegram token; replaced with a fake one.
 
 ### Fixed
+- **Autodeploy made changed files unreadable for containers**: `autodeploy.sh` sets `umask 077` for its log and state, and the `git merge` inside `deploy_remote.sh` inherited it, writing changed modules as `600 root`; containers (uid 1000) crashed with `PermissionError`. `deploy_remote.sh` now sets `umask 022` itself.
 - **Homework tasks were duplicated on retry**: `nack_hw_task` incremented `retries` before `LREM`, so the original payload stayed in `hw:tasks:processing` and was re-queued by `recover_stale_hw_tasks` after every restart with the retry counter reset. The move now happens in one Lua script (`LUA_REQUEUE`) using the payload as it was popped.
 - **Admin endpoints from the Mini App**: the headman's session resolves to `classmate:<id>`, which `verify_admin_access` rejected; both `tester:` and `classmate:` identities of the headman/deputy are accepted now.
 - **Telegram ID binding**: `bind_student_tg_id` is async, runs under a lock in a thread, refuses an ID already bound to another student and no longer mutates the cached registry before the write succeeds.

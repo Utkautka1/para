@@ -48,6 +48,7 @@ deploy() {
 
 main() {
   cd "$PROJECT_DIR"
+  # 077 — только для своего лога и state; deploy_remote.sh сам ставит 022 для рабочей копии
   umask 077
   mkdir -p "$STATE_DIR"
   local rev
