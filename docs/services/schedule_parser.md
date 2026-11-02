@@ -6,8 +6,8 @@
 > **Persistence Backend**: `L1 RAM In-Memory (<10µs) + L2 Redis Snapshots`
 > **Service Level Objective**: `< 5ms Cached Response / 500ms Upstream Harvest`
 
-## 1. Architectural Role & Responsibilities
-The `services/schedule_parser.py` module implements core operational logic for the `KTMU Timetable Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль парсинга API расписания КТМУ с расчетом звонков по четности недели.
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -20,62 +20,62 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`enable_schedule_fetch_ownership`](#enable_schedule_fetch_ownership) | Function | L70–L79 | `None` | Executes core domain logic for `enable_schedule_fetch_o... |
-| [`clear_resolved_day_cache`](#clear_resolved_day_cache) | Function | L82–L91 | `None` | Flushes and resets state for `clear_resolved_day_cache`... |
-| [`resolve_room_address`](#resolve_room_address) | Function | L94–L109 | `str` | Executes core domain logic for `resolve_room_address`. |
-| [`extract_zoom_creds`](#extract_zoom_creds) | Function | L112–L133 | `tuple[str | None, str | None, str | None]` | Executes core domain logic for `extract_zoom_creds`. |
-| [`clean_subject_title`](#clean_subject_title) | Function | L136–L150 | `str` | Executes core domain logic for `clean_subject_title`. |
-| [`calculate_week_number`](#calculate_week_number) | Function | L153–L169 | `int` | Executes core domain logic for `calculate_week_number`. |
-| [`week_day_to_date`](#week_day_to_date) | Function | L172–L184 | `date` | Executes core domain logic for `week_day_to_date`. |
-| [`is_instance_active_for_week`](#is_instance_active_for_week) | Function | L187–L207 | `bool` | Executes core domain logic for `is_instance_active_for_... |
-| [`is_item_for_group`](#is_item_for_group) | Function | L210–L229 | `bool` | Executes core domain logic for `is_item_for_group`. |
-| [`is_stream_lesson`](#is_stream_lesson) | Function | L232–L250 | `bool` | Executes core domain logic for `is_stream_lesson`. |
-| [`extract_subgroup`](#extract_subgroup) | Function | L253–L272 | `int` | Executes core domain logic for `extract_subgroup`. |
-| [`_lookup_period_time`](#_lookup_period_time) | Function | L275–L286 | `str | None` | Executes core domain logic for `_lookup_period_time`. |
-| [`_find_group_period_time`](#_find_group_period_time) | Function | L289–L298 | `str | None` | Executes core domain logic for `_find_group_period_time... |
-| [`get_period_time_str`](#get_period_time_str) | Function | L301–L324 | `str` | Retrieves and resolves domain data for `get_period_time... |
-| [`_create_http_client`](#_create_http_client) | Function | L334–L356 | `httpx.AsyncClient` | Executes core domain logic for `_create_http_client`. |
-| [`get_http_client`](#get_http_client) | Function | L359–L372 | `httpx.AsyncClient` | Retrieves and resolves domain data for `get_http_client... |
-| [`update_cache_headers`](#update_cache_headers) | Function | L375–L390 | `None` | Synchronizes and updates domain state for `update_cache... |
-| [`_filter_group_schedule`](#_filter_group_schedule) | Function | L393–L403 | `tuple[list, dict]` | Executes core domain logic for `_filter_group_schedule`... |
-| [`filter_snapshot_for_target_group`](#filter_snapshot_for_target_group) | Function | L406–L431 | `dict[str, Any]` | Executes core domain logic for `filter_snapshot_for_tar... |
-| [`_parse_and_clean_payload`](#_parse_and_clean_payload) | Function | L434–L448 | `tuple[str | None, dict[str, Any]]` | Executes core domain logic for `_parse_and_clean_payloa... |
-| [`_persist_snapshot_to_redis`](#_persist_snapshot_to_redis) | Function | L451–L466 | `None` | Executes core domain logic for `_persist_snapshot_to_re... |
-| [`_handle_non_200_status`](#_handle_non_200_status) | Function | L469–L482 | `tuple[float, dict[str, Any] | None]` | Executes core domain logic for `_handle_non_200_status`... |
-| [`_apply_new_snapshot`](#_apply_new_snapshot) | Function | L485–L499 | `None` | Executes core domain logic for `_apply_new_snapshot`. |
-| [`process_api_response`](#process_api_response) | Function | L502–L522 | `dict[str, Any] | None` | Executes core domain logic for `process_api_response`. |
-| [`_build_cache_headers`](#_build_cache_headers) | Function | L528–L544 | `dict[str, str]` | Executes core domain logic for `_build_cache_headers`. |
-| [`_fetch_single_endpoint`](#_fetch_single_endpoint) | Function | L547–L560 | `httpx.Response` | Executes core domain logic for `_fetch_single_endpoint`... |
-| [`_try_fetch_endpoint`](#_try_fetch_endpoint) | Function | L563–L579 | `httpx.Response | None` | Executes core domain logic for `_try_fetch_endpoint`. |
-| [`_get_schedule_endpoints`](#_get_schedule_endpoints) | Function | L582–L590 | `list[str]` | Executes core domain logic for `_get_schedule_endpoints... |
-| [`_fetch_remote_schedule`](#_fetch_remote_schedule) | Function | L593–L617 | `httpx.Response` | Executes core domain logic for `_fetch_remote_schedule`... |
-| [`_dispatch_schedule_alert`](#_dispatch_schedule_alert) | Function | L620–L634 | `None` | Executes core domain logic for `_dispatch_schedule_aler... |
-| [`refresh_schedule_in_background`](#refresh_schedule_in_background) | Function | L637–L655 | `None` | Executes core domain logic for `refresh_schedule_in_bac... |
-| [`_restorable_cache_headers`](#_restorable_cache_headers) | Function | L658–L673 | `tuple[str | None, str | None]` | Executes core domain logic for `_restorable_cache_heade... |
-| [`init_schedule_cache_from_redis`](#init_schedule_cache_from_redis) | Function | L676–L699 | `bool` | Executes core domain logic for `init_schedule_cache_fro... |
-| [`_trigger_stale_refresh`](#_trigger_stale_refresh) | Function | L702–L711 | `None` | Executes core domain logic for `_trigger_stale_refresh`... |
-| [`_get_cached_or_revalidate`](#_get_cached_or_revalidate) | Function | L714–L730 | `dict[str, Any] | None` | Executes core domain logic for `_get_cached_or_revalida... |
-| [`_is_shared_snapshot_fresh`](#_is_shared_snapshot_fresh) | Function | L733–L735 | `bool` | Executes core domain logic for `_is_shared_snapshot_fre... |
-| [`_sync_from_shared_snapshot`](#_sync_from_shared_snapshot) | Function | L738–L762 | `bool` | Executes core domain logic for `_sync_from_shared_snaps... |
-| [`_read_shared_schedule`](#_read_shared_schedule) | Function | L765–L775 | `bool` | Executes core domain logic for `_read_shared_schedule`. |
-| [`fetch_schedule_data`](#fetch_schedule_data) | Function | L778–L803 | `dict[str, Any] | None` | Executes core domain logic for `fetch_schedule_data`. |
-| [`extract_entity_maps`](#extract_entity_maps) | Function | L806–L825 | `tuple[dict, dict, dict, dict, dict]` | Executes core domain logic for `extract_entity_maps`. |
-| [`_handle_missing_remote_teacher`](#_handle_missing_remote_teacher) | Function | L828–L836 | `None` | Executes core domain logic for `_handle_missing_remote_... |
-| [`_extract_existing_teacher_creds`](#_extract_existing_teacher_creds) | Function | L839–L849 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `_extract_existing_teach... |
-| [`resolve_teacher_contact_info`](#resolve_teacher_contact_info) | Function | L852–L876 | `tuple[str, str | None, str | None, str | None]` | Executes core domain logic for `resolve_teacher_contact... |
-| [`resolve_room_name`](#resolve_room_name) | Function | L879–L891 | `str` | Executes core domain logic for `resolve_room_name`. |
-| [`_resolve_lesson_meta`](#_resolve_lesson_meta) | Function | L894–L912 | `Any` | Executes core domain logic for `_resolve_lesson_meta`. |
-| [`_build_lesson_payload`](#_build_lesson_payload) | Function | L915–L948 | `dict[str, Any]` | Executes core domain logic for `_build_lesson_payload`. |
-| [`build_lesson_object`](#build_lesson_object) | Function | L951–L966 | `Lesson` | Executes core domain logic for `build_lesson_object`. |
-| [`is_placed_lesson_active`](#is_placed_lesson_active) | Function | L969–L980 | `bool` | Executes core domain logic for `is_placed_lesson_active... |
-| [`_resolve_day_entry`](#_resolve_day_entry) | Function | L983–L1002 | `tuple[dict[str, Any], dict[str, Any]] | None` | Executes core domain logic for `_resolve_day_entry`. |
-| [`_collect_day_instances`](#_collect_day_instances) | Function | L1005–L1028 | `list[tuple[dict[str, Any], dict[str, Any]]]` | Executes core domain logic for `_collect_day_instances`... |
-| [`_collect_moved_in`](#_collect_moved_in) | Function | L1031–L1056 | `list[tuple[dict[str, Any], dict[str, Any]]]` | Executes core domain logic for `_collect_moved_in`. |
-| [`_extract_lessons_for_day`](#_extract_lessons_for_day) | Function | L1059–L1085 | `list[Lesson]` | Executes core domain logic for `_extract_lessons_for_da... |
-| [`get_schedule_for_date`](#get_schedule_for_date) | Function | L1088–L1111 | `list[Lesson]` | Retrieves and resolves domain data for `get_schedule_fo... |
-| [`get_week_schedule`](#get_week_schedule) | Function | L1114–L1133 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_week_schedu... |
+| [`enable_schedule_fetch_ownership`](#enable_schedule_fetch_ownership) | Function | L71–L80 | `None` | Делает текущий процесс единственным загрузчиком API КТМ... |
+| [`clear_resolved_day_cache`](#clear_resolved_day_cache) | Function | L83–L92 | `None` | Сбрасывает оперативный L1 in-memory кэш предрассчитанны... |
+| [`resolve_room_address`](#resolve_room_address) | Function | L95–L110 | `str` | Определяет физический адрес учебного корпуса по номеру ... |
+| [`extract_zoom_creds`](#extract_zoom_creds) | Function | L113–L134 | `tuple[str \| None, str \| None, str \| None]` | Извлекает URL подключения, Meeting ID и пароль конферен... |
+| [`clean_subject_title`](#clean_subject_title) | Function | L137–L151 | `str` | Устраняет дублирование наименований учебных дисциплин. |
+| [`calculate_week_number`](#calculate_week_number) | Function | L154–L170 | `int` | Рассчитывает порядковый номер учебной недели относитель... |
+| [`week_day_to_date`](#week_day_to_date) | Function | L173–L185 | `date` | Переводит номер учебной недели и день недели в календар... |
+| [`is_instance_active_for_week`](#is_instance_active_for_week) | Function | L188–L208 | `bool` | Проверяет актуальность занятия для конкретного номера у... |
+| [`is_item_for_group`](#is_item_for_group) | Function | L211–L230 | `bool` | Проверяет принадлежность занятия или нагрузки к целевой... |
+| [`is_stream_lesson`](#is_stream_lesson) | Function | L233–L251 | `bool` | Определяет, является ли занятие потоковой лекцией для н... |
+| [`extract_subgroup`](#extract_subgroup) | Function | L254–L273 | `int` | Извлекает номер подгруппы целевой группы с учетом поток... |
+| [`_lookup_period_time`](#_lookup_period_time) | Function | L276–L287 | `str \| None` | Безопасно извлекает временной интервал пары по индексу ... |
+| [`_find_group_period_time`](#_find_group_period_time) | Function | L290–L299 | `str \| None` | Ищет звонки пары в расписании группы по четности или об... |
+| [`get_period_time_str`](#get_period_time_str) | Function | L302–L325 | `str` | Определяет точный временной интервал пары с учетом четн... |
+| [`_create_http_client`](#_create_http_client) | Function | L335–L357 | `httpx.AsyncClient` | Создает новый настроенный экземпляр HTTP-клиента с пуло... |
+| [`get_http_client`](#get_http_client) | Function | L360–L373 | `httpx.AsyncClient` | Предоставляет общий синглтон HTTP-клиента с пулом посто... |
+| [`update_cache_headers`](#update_cache_headers) | Function | L376–L391 | `None` | Сохраняет заголовки HTTP ETag и Last-Modified из ответа... |
+| [`_filter_group_schedule`](#_filter_group_schedule) | Function | L394–L404 | `tuple[list, dict]` | Фильтрует инстансы и назначения для целевой академическ... |
+| [`filter_snapshot_for_target_group`](#filter_snapshot_for_target_group) | Function | L407–L432 | `dict[str, Any]` | Очищает объемный 50 МБ снимок всего колледжа, оставляя ... |
+| [`_parse_and_clean_payload`](#_parse_and_clean_payload) | Function | L435–L449 | `tuple[str \| None, dict[str, Any]]` | Синхронно парсит сырой бинарный JSON API и фильтрует це... |
+| [`_persist_snapshot_to_redis`](#_persist_snapshot_to_redis) | Function | L452–L467 | `None` | Сохраняет нормализованный снимок расписания и HTTP-заго... |
+| [`_handle_non_200_status`](#_handle_non_200_status) | Function | L470–L483 | `tuple[float, dict[str, Any] \| None]` | Определяет статус кулдауна и кэша при кодах ответов API... |
+| [`_apply_new_snapshot`](#_apply_new_snapshot) | Function | L486–L500 | `None` | Применяет обновленный снимок расписания, сбрасывая кэш ... |
+| [`process_api_response`](#process_api_response) | Function | L503–L523 | `dict[str, Any] \| None` | Обрабатывает HTTP-ответ от сервера расписания КТМУ. |
+| [`_build_cache_headers`](#_build_cache_headers) | Function | L529–L545 | `dict[str, str]` | Формирует заголовки условного HTTP-запроса If-None-Matc... |
+| [`_fetch_single_endpoint`](#_fetch_single_endpoint) | Function | L548–L561 | `httpx.Response` | Выполняет HTTP GET запрос к конкретному URL расписания ... |
+| [`_try_fetch_endpoint`](#_try_fetch_endpoint) | Function | L564–L580 | `httpx.Response \| None` | Пытается выполнить запрос к конкретному эндпоинту распи... |
+| [`_get_schedule_endpoints`](#_get_schedule_endpoints) | Function | L583–L591 | `list[str]` | Формирует упорядоченный список уникальных URL эндпоинто... |
+| [`_fetch_remote_schedule`](#_fetch_remote_schedule) | Function | L594–L618 | `httpx.Response` | Запрашивает расписание из основного API с авто-переходо... |
+| [`_dispatch_schedule_alert`](#_dispatch_schedule_alert) | Function | L621–L635 | `None` | Асинхронно отправляет алерт при недоступности API распи... |
+| [`refresh_schedule_in_background`](#refresh_schedule_in_background) | Function | L638–L656 | `None` | Асинхронно опрашивает API расписания в фоновом режиме с... |
+| [`_restorable_cache_headers`](#_restorable_cache_headers) | Function | L659–L674 | `tuple[str \| None, str \| None]` | Отдаёт ETag/Last-Modified снапшота, если его формат акт... |
+| [`init_schedule_cache_from_redis`](#init_schedule_cache_from_redis) | Function | L677–L700 | `bool` | Восстанавливает снимок расписания и ETag из Redis при х... |
+| [`_trigger_stale_refresh`](#_trigger_stale_refresh) | Function | L703–L712 | `None` | Запускает фоновое обновление расписания при истечении к... |
+| [`_get_cached_or_revalidate`](#_get_cached_or_revalidate) | Function | L715–L731 | `dict[str, Any] \| None` | Возвращает кэшированный снимок расписания, запуская фон... |
+| [`_is_shared_snapshot_fresh`](#_is_shared_snapshot_fresh) | Function | L734–L736 | `bool` | Проверяет, что снапшот в Redis есть и worker обновлял е... |
+| [`_sync_from_shared_snapshot`](#_sync_from_shared_snapshot) | Function | L739–L763 | `bool` | Синхронизирует кэш читателя со снапшотом, который подде... |
+| [`_read_shared_schedule`](#_read_shared_schedule) | Function | L766–L776 | `bool` | Путь читателя: отдаёт снапшот worker'а, а force_refresh... |
+| [`fetch_schedule_data`](#fetch_schedule_data) | Function | L779–L804 | `dict[str, Any] \| None` | Предоставляет актуальный снимок расписания из памяти, R... |
+| [`extract_entity_maps`](#extract_entity_maps) | Function | L807–L826 | `tuple[dict, dict, dict, dict, dict]` | Формирует быстрые O(1) словари соответствия сущностей п... |
+| [`_handle_missing_remote_teacher`](#_handle_missing_remote_teacher) | Function | L829–L837 | `None` | Инициирует фоновое оповещение старосты об отсутствующей... |
+| [`_extract_existing_teacher_creds`](#_extract_existing_teacher_creds) | Function | L840–L850 | `tuple[str, str \| None, str \| None, str \| None]` | Извлекает ФИО и доступы к Zoom/Телемост для найденного ... |
+| [`resolve_teacher_contact_info`](#resolve_teacher_contact_info) | Function | L853–L877 | `tuple[str, str \| None, str \| None, str \| None]` | Сопоставляет преподавателя с реестром ссылок и извлекае... |
+| [`resolve_room_name`](#resolve_room_name) | Function | L880–L892 | `str` | Определяет текстовый номер аудитории или маркер дистант... |
+| [`_resolve_lesson_meta`](#_resolve_lesson_meta) | Function | L895–L913 | `Any` | Определяет формат, аудиторию, адрес и контакты преподав... |
+| [`_build_lesson_payload`](#_build_lesson_payload) | Function | L916–L949 | `dict[str, Any]` | Формирует словарь полей для валидации и создания Pydant... |
+| [`build_lesson_object`](#build_lesson_object) | Function | L952–L967 | `Lesson` | Конструирует объект Lesson с точным расписанием звонков... |
+| [`is_placed_lesson_active`](#is_placed_lesson_active) | Function | L970–L981 | `bool` | Проверяет, размещено ли занятие в сетке расписания на у... |
+| [`_resolve_day_entry`](#_resolve_day_entry) | Function | L984–L1003 | `tuple[dict[str, Any], dict[str, Any]] \| None` | Накладывает на занятие замену, действующую в этот день. |
+| [`_collect_day_instances`](#_collect_day_instances) | Function | L1006–L1029 | `list[tuple[dict[str, Any], dict[str, Any]]]` | Отбирает активные в этот день занятия группы с учётом з... |
+| [`_collect_moved_in`](#_collect_moved_in) | Function | L1032–L1057 | `list[tuple[dict[str, Any], dict[str, Any]]]` | Достаёт занятия, перенесённые на эту дату с других дней... |
+| [`_extract_lessons_for_day`](#_extract_lessons_for_day) | Function | L1060–L1086 | `list[Lesson]` | Извлекает и упорядочивает список занятий группы на дату... |
+| [`get_schedule_for_date`](#get_schedule_for_date) | Function | L1089–L1112 | `list[Lesson]` | Формирует список занятий группы на целевую дату с двуху... |
+| [`get_week_schedule`](#get_week_schedule) | Function | L1115–L1134 | `list[tuple[date, list[Lesson]]]` | Формирует структурированное расписание на всю учебную н... |
 
 ---
 
@@ -86,12 +86,12 @@ graph TD
 def enable_schedule_fetch_ownership() -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L70-L79`](../../services/schedule_parser.py#L70-L79)
+- **Source Reference**: [`services/schedule_parser.py#L71-L80`](../../services/schedule_parser.py#L71-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `enable_schedule_fetch_ownership`.
+Делает текущий процесс единственным загрузчиком API КТМУ.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -117,12 +117,12 @@ result = enable_schedule_fetch_ownership()
 def clear_resolved_day_cache() -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L82-L91`](../../services/schedule_parser.py#L82-L91)
+- **Source Reference**: [`services/schedule_parser.py#L83-L92`](../../services/schedule_parser.py#L83-L92)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Flushes and resets state for `clear_resolved_day_cache`.
+Сбрасывает оперативный L1 in-memory кэш предрассчитанных занятий.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -148,12 +148,12 @@ result = clear_resolved_day_cache()
 def resolve_room_address(room_name: str, is_remote: bool) -> str
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L94-L109`](../../services/schedule_parser.py#L94-L109)
+- **Source Reference**: [`services/schedule_parser.py#L95-L110`](../../services/schedule_parser.py#L95-L110)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_room_address`.
+Определяет физический адрес учебного корпуса по номеру аудитории.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -182,12 +182,12 @@ result = resolve_room_address(room_name=..., is_remote=...)
 def extract_zoom_creds(text: str) -> tuple[str | None, str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L112-L133`](../../services/schedule_parser.py#L112-L133)
+- **Source Reference**: [`services/schedule_parser.py#L113-L134`](../../services/schedule_parser.py#L113-L134)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str | None, str | None, str | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_zoom_creds`.
+Извлекает URL подключения, Meeting ID и пароль конференции из текста преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -215,12 +215,12 @@ result = extract_zoom_creds(text=...)
 def clean_subject_title(subject: str) -> str
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L136-L150`](../../services/schedule_parser.py#L136-L150)
+- **Source Reference**: [`services/schedule_parser.py#L137-L151`](../../services/schedule_parser.py#L137-L151)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `clean_subject_title`.
+Устраняет дублирование наименований учебных дисциплин.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -248,12 +248,12 @@ result = clean_subject_title(subject=...)
 def calculate_week_number(target_date: date, semester_start_str: str) -> int
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L153-L169`](../../services/schedule_parser.py#L153-L169)
+- **Source Reference**: [`services/schedule_parser.py#L154-L170`](../../services/schedule_parser.py#L154-L170)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `calculate_week_number`.
+Рассчитывает порядковый номер учебной недели относительно даты старта семестра.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -282,12 +282,12 @@ result = calculate_week_number(target_date=..., semester_start_str=...)
 def week_day_to_date(week_num: int, day_idx: int, semester_start_str: str) -> date
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L172-L184`](../../services/schedule_parser.py#L172-L184)
+- **Source Reference**: [`services/schedule_parser.py#L173-L185`](../../services/schedule_parser.py#L173-L185)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `week_day_to_date`.
+Переводит номер учебной недели и день недели в календарную дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -317,12 +317,12 @@ result = week_day_to_date(week_num=..., day_idx=..., semester_start_str=...)
 def is_instance_active_for_week(inst: dict[str, Any], week_num: int) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L187-L207`](../../services/schedule_parser.py#L187-L207)
+- **Source Reference**: [`services/schedule_parser.py#L188-L208`](../../services/schedule_parser.py#L188-L208)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_instance_active_for_week`.
+Проверяет актуальность занятия для конкретного номера учебной недели.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -351,12 +351,12 @@ result = is_instance_active_for_week(inst=..., week_num=...)
 def is_item_for_group(item: dict[str, Any], group_id: str) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L210-L229`](../../services/schedule_parser.py#L210-L229)
+- **Source Reference**: [`services/schedule_parser.py#L211-L230`](../../services/schedule_parser.py#L211-L230)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_item_for_group`.
+Проверяет принадлежность занятия или нагрузки к целевой академической группе.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -385,12 +385,12 @@ result = is_item_for_group(item=..., group_id=...)
 def is_stream_lesson(inst: dict[str, Any]) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L232-L250`](../../services/schedule_parser.py#L232-L250)
+- **Source Reference**: [`services/schedule_parser.py#L233-L251`](../../services/schedule_parser.py#L233-L251)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_stream_lesson`.
+Определяет, является ли занятие потоковой лекцией для нескольких групп.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -418,12 +418,12 @@ result = is_stream_lesson(inst=...)
 def extract_subgroup(inst: dict[str, Any], group_id: str) -> int
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L253-L272`](../../services/schedule_parser.py#L253-L272)
+- **Source Reference**: [`services/schedule_parser.py#L254-L273`](../../services/schedule_parser.py#L254-L273)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_subgroup`.
+Извлекает номер подгруппы целевой группы с учетом потокового участия.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -452,12 +452,12 @@ result = extract_subgroup(inst=..., group_id=...)
 def _lookup_period_time(times_list: list[str], period_idx: int) -> str | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L275-L286`](../../services/schedule_parser.py#L275-L286)
+- **Source Reference**: [`services/schedule_parser.py#L276-L287`](../../services/schedule_parser.py#L276-L287)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_lookup_period_time`.
+Безопасно извлекает временной интервал пары по индексу периода.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -486,12 +486,12 @@ result = _lookup_period_time(times_list=..., period_idx=...)
 def _find_group_period_time(group_data: dict[str, Any], day_idx: int, period_idx: int, parity: str) -> str | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L289-L298`](../../services/schedule_parser.py#L289-L298)
+- **Source Reference**: [`services/schedule_parser.py#L290-L299`](../../services/schedule_parser.py#L290-L299)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_group_period_time`.
+Ищет звонки пары в расписании группы по четности или обычному дню.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -522,12 +522,12 @@ result = _find_group_period_time(group_data=..., day_idx=..., period_idx=...)
 def get_period_time_str( group_data: dict[str, Any], day_idx: int, period_idx: int, week_num: int, global_config: dict[str, Any] | None = None, ) -> str
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L301-L324`](../../services/schedule_parser.py#L301-L324)
+- **Source Reference**: [`services/schedule_parser.py#L302-L325`](../../services/schedule_parser.py#L302-L325)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_period_time_str`.
+Определяет точный временной интервал пары с учетом четности недели и дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -559,12 +559,12 @@ result = get_period_time_str(group_data=..., day_idx=..., period_idx=...)
 def _create_http_client() -> httpx.AsyncClient
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L334-L356`](../../services/schedule_parser.py#L334-L356)
+- **Source Reference**: [`services/schedule_parser.py#L335-L357`](../../services/schedule_parser.py#L335-L357)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `httpx.AsyncClient`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_create_http_client`.
+Создает новый настроенный экземпляр HTTP-клиента с пулом соединений.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -590,12 +590,12 @@ result = _create_http_client()
 def get_http_client() -> httpx.AsyncClient
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L359-L372`](../../services/schedule_parser.py#L359-L372)
+- **Source Reference**: [`services/schedule_parser.py#L360-L373`](../../services/schedule_parser.py#L360-L373)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `httpx.AsyncClient`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_http_client`.
+Предоставляет общий синглтон HTTP-клиента с пулом постоянных соединений.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -621,12 +621,12 @@ result = get_http_client()
 def update_cache_headers(headers: httpx.Headers) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L375-L390`](../../services/schedule_parser.py#L375-L390)
+- **Source Reference**: [`services/schedule_parser.py#L376-L391`](../../services/schedule_parser.py#L376-L391)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Synchronizes and updates domain state for `update_cache_headers`.
+Сохраняет заголовки HTTP ETag и Last-Modified из ответа сервера КТМУ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -654,12 +654,12 @@ result = update_cache_headers(headers=...)
 def _filter_group_schedule(sched: dict[str, Any]) -> tuple[list, dict]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L393-L403`](../../services/schedule_parser.py#L393-L403)
+- **Source Reference**: [`services/schedule_parser.py#L394-L404`](../../services/schedule_parser.py#L394-L404)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[list, dict]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_filter_group_schedule`.
+Фильтрует инстансы и назначения для целевой академической группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -687,12 +687,12 @@ result = _filter_group_schedule(sched=...)
 def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L406-L431`](../../services/schedule_parser.py#L406-L431)
+- **Source Reference**: [`services/schedule_parser.py#L407-L432`](../../services/schedule_parser.py#L407-L432)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `filter_snapshot_for_target_group`.
+Очищает объемный 50 МБ снимок всего колледжа, оставляя только данные 1-КПД-3.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -720,12 +720,12 @@ result = filter_snapshot_for_target_group(snapshot=...)
 def _parse_and_clean_payload(content: bytes) -> tuple[str | None, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L434-L448`](../../services/schedule_parser.py#L434-L448)
+- **Source Reference**: [`services/schedule_parser.py#L435-L449`](../../services/schedule_parser.py#L435-L449)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str | None, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_parse_and_clean_payload`.
+Синхронно парсит сырой бинарный JSON API и фильтрует целевую группу.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -753,12 +753,12 @@ result = _parse_and_clean_payload(content=...)
 def _persist_snapshot_to_redis(snapshot: dict[str, Any]) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L451-L466`](../../services/schedule_parser.py#L451-L466)
+- **Source Reference**: [`services/schedule_parser.py#L452-L467`](../../services/schedule_parser.py#L452-L467)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_persist_snapshot_to_redis`.
+Сохраняет нормализованный снимок расписания и HTTP-заголовки в Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -786,12 +786,12 @@ result = _persist_snapshot_to_redis(snapshot=...)
 def _handle_non_200_status(status_code: int, now: float) -> tuple[float, dict[str, Any] | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L469-L482`](../../services/schedule_parser.py#L469-L482)
+- **Source Reference**: [`services/schedule_parser.py#L470-L483`](../../services/schedule_parser.py#L470-L483)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[float, dict[str, Any] | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_non_200_status`.
+Определяет статус кулдауна и кэша при кодах ответов API отличных от HTTP 200.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -820,12 +820,12 @@ result = _handle_non_200_status(status_code=..., now=...)
 def _apply_new_snapshot(pub_at: str | None, cleaned: dict[str, Any], now: float) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L485-L499`](../../services/schedule_parser.py#L485-L499)
+- **Source Reference**: [`services/schedule_parser.py#L486-L500`](../../services/schedule_parser.py#L486-L500)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_new_snapshot`.
+Применяет обновленный снимок расписания, сбрасывая кэш и сохраняя в Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -855,12 +855,12 @@ result = _apply_new_snapshot(pub_at=..., cleaned=..., now=...)
 async def process_api_response(res: httpx.Response, now: float) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L502-L522`](../../services/schedule_parser.py#L502-L522)
+- **Source Reference**: [`services/schedule_parser.py#L503-L523`](../../services/schedule_parser.py#L503-L523)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `process_api_response`.
+Обрабатывает HTTP-ответ от сервера расписания КТМУ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -889,12 +889,12 @@ result = await process_api_response(res=..., now=...)
 def _build_cache_headers() -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L528-L544`](../../services/schedule_parser.py#L528-L544)
+- **Source Reference**: [`services/schedule_parser.py#L529-L545`](../../services/schedule_parser.py#L529-L545)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_cache_headers`.
+Формирует заголовки условного HTTP-запроса If-None-Match и If-Modified-Since.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -920,12 +920,12 @@ result = _build_cache_headers()
 async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Response
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L547-L560`](../../services/schedule_parser.py#L547-L560)
+- **Source Reference**: [`services/schedule_parser.py#L548-L561`](../../services/schedule_parser.py#L548-L561)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `httpx.Response`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_single_endpoint`.
+Выполняет HTTP GET запрос к конкретному URL расписания с коротким таймаутом соединения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -954,12 +954,12 @@ result = await _fetch_single_endpoint(url=..., headers=...)
 async def _try_fetch_endpoint(url: str, idx: int, headers: dict[str, str]) -> httpx.Response | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L563-L579`](../../services/schedule_parser.py#L563-L579)
+- **Source Reference**: [`services/schedule_parser.py#L564-L580`](../../services/schedule_parser.py#L564-L580)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `httpx.Response | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_try_fetch_endpoint`.
+Пытается выполнить запрос к конкретному эндпоинту расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -989,12 +989,12 @@ result = await _try_fetch_endpoint(url=..., idx=..., headers=...)
 def _get_schedule_endpoints() -> list[str]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L582-L590`](../../services/schedule_parser.py#L582-L590)
+- **Source Reference**: [`services/schedule_parser.py#L583-L591`](../../services/schedule_parser.py#L583-L591)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_schedule_endpoints`.
+Формирует упорядоченный список уникальных URL эндпоинтов расписания.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -1020,12 +1020,12 @@ result = _get_schedule_endpoints()
 async def _fetch_remote_schedule() -> httpx.Response
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L593-L617`](../../services/schedule_parser.py#L593-L617)
+- **Source Reference**: [`services/schedule_parser.py#L594-L618`](../../services/schedule_parser.py#L594-L618)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `httpx.Response`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_remote_schedule`.
+Запрашивает расписание из основного API с авто-переходом на резервный URL.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -1051,12 +1051,12 @@ result = await _fetch_remote_schedule()
 def _dispatch_schedule_alert(err_msg: str) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L620-L634`](../../services/schedule_parser.py#L620-L634)
+- **Source Reference**: [`services/schedule_parser.py#L621-L635`](../../services/schedule_parser.py#L621-L635)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_dispatch_schedule_alert`.
+Асинхронно отправляет алерт при недоступности API расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1084,12 +1084,12 @@ result = _dispatch_schedule_alert(err_msg=...)
 async def refresh_schedule_in_background(force: bool = False) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L637-L655`](../../services/schedule_parser.py#L637-L655)
+- **Source Reference**: [`services/schedule_parser.py#L638-L656`](../../services/schedule_parser.py#L638-L656)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `refresh_schedule_in_background`.
+Асинхронно опрашивает API расписания в фоновом режиме с защитой от спама.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1117,12 +1117,12 @@ result = await refresh_schedule_in_background(force=...)
 def _restorable_cache_headers(snap: dict[str, Any], meta: dict[str, Any]) -> tuple[str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L658-L673`](../../services/schedule_parser.py#L658-L673)
+- **Source Reference**: [`services/schedule_parser.py#L659-L674`](../../services/schedule_parser.py#L659-L674)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str | None, str | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_restorable_cache_headers`.
+Отдаёт ETag/Last-Modified снапшота, если его формат актуален.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1151,12 +1151,12 @@ result = _restorable_cache_headers(snap=..., meta=...)
 async def init_schedule_cache_from_redis(now: float) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L676-L699`](../../services/schedule_parser.py#L676-L699)
+- **Source Reference**: [`services/schedule_parser.py#L677-L700`](../../services/schedule_parser.py#L677-L700)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `init_schedule_cache_from_redis`.
+Восстанавливает снимок расписания и ETag из Redis при холодном старте сервиса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1184,12 +1184,12 @@ result = await init_schedule_cache_from_redis(now=...)
 async def _trigger_stale_refresh(now: float) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L702-L711`](../../services/schedule_parser.py#L702-L711)
+- **Source Reference**: [`services/schedule_parser.py#L703-L712`](../../services/schedule_parser.py#L703-L712)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_trigger_stale_refresh`.
+Запускает фоновое обновление расписания при истечении кулдауна.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1217,12 +1217,12 @@ result = await _trigger_stale_refresh(now=...)
 async def _get_cached_or_revalidate(now: float) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L714-L730`](../../services/schedule_parser.py#L714-L730)
+- **Source Reference**: [`services/schedule_parser.py#L715-L731`](../../services/schedule_parser.py#L715-L731)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_cached_or_revalidate`.
+Возвращает кэшированный снимок расписания, запуская фоновое обновление при устаревании.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1250,12 +1250,12 @@ result = await _get_cached_or_revalidate(now=...)
 def _is_shared_snapshot_fresh(meta: dict[str, Any] | None, now: float) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L733-L735`](../../services/schedule_parser.py#L733-L735)
+- **Source Reference**: [`services/schedule_parser.py#L734-L736`](../../services/schedule_parser.py#L734-L736)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_shared_snapshot_fresh`.
+Проверяет, что снапшот в Redis есть и worker обновлял его не дольше SCHEDULE_STALE_LIMIT_SECONDS назад.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1284,12 +1284,12 @@ result = _is_shared_snapshot_fresh(meta=..., now=...)
 async def _sync_from_shared_snapshot(now: float) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L738-L762`](../../services/schedule_parser.py#L738-L762)
+- **Source Reference**: [`services/schedule_parser.py#L739-L763`](../../services/schedule_parser.py#L739-L763)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_sync_from_shared_snapshot`.
+Синхронизирует кэш читателя со снапшотом, который поддерживает worker.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1317,12 +1317,12 @@ result = await _sync_from_shared_snapshot(now=...)
 async def _read_shared_schedule(now: float, force_refresh: bool) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L765-L775`](../../services/schedule_parser.py#L765-L775)
+- **Source Reference**: [`services/schedule_parser.py#L766-L776`](../../services/schedule_parser.py#L766-L776)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_read_shared_schedule`.
+Путь читателя: отдаёт снапшот worker'а, а force_refresh превращает в запрос worker'у.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1351,12 +1351,12 @@ result = await _read_shared_schedule(now=..., force_refresh=...)
 async def fetch_schedule_data(force_refresh: bool = False) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L778-L803`](../../services/schedule_parser.py#L778-L803)
+- **Source Reference**: [`services/schedule_parser.py#L779-L804`](../../services/schedule_parser.py#L779-L804)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_schedule_data`.
+Предоставляет актуальный снимок расписания из памяти, Redis или внешнего API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1384,12 +1384,12 @@ result = await fetch_schedule_data(force_refresh=...)
 def extract_entity_maps(data: dict[str, Any]) -> tuple[dict, dict, dict, dict, dict]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L806-L825`](../../services/schedule_parser.py#L806-L825)
+- **Source Reference**: [`services/schedule_parser.py#L807-L826`](../../services/schedule_parser.py#L807-L826)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[dict, dict, dict, dict, dict]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_entity_maps`.
+Формирует быстрые O(1) словари соответствия сущностей по их ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1417,12 +1417,12 @@ result = extract_entity_maps(data=...)
 def _handle_missing_remote_teacher(raw_teacher: str, subj_name: str) -> None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L828-L836`](../../services/schedule_parser.py#L828-L836)
+- **Source Reference**: [`services/schedule_parser.py#L829-L837`](../../services/schedule_parser.py#L829-L837)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_missing_remote_teacher`.
+Инициирует фоновое оповещение старосты об отсутствующей ссылке преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1451,12 +1451,12 @@ result = _handle_missing_remote_teacher(raw_teacher=..., subj_name=...)
 def _extract_existing_teacher_creds( t_info: TeacherData, raw_teacher: str, is_remote: bool ) -> tuple[str, str | None, str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L839-L849`](../../services/schedule_parser.py#L839-L849)
+- **Source Reference**: [`services/schedule_parser.py#L840-L850`](../../services/schedule_parser.py#L840-L850)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str | None, str | None, str | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_existing_teacher_creds`.
+Извлекает ФИО и доступы к Zoom/Телемост для найденного в реестре преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1486,12 +1486,12 @@ result = _extract_existing_teacher_creds(t_info=..., raw_teacher=..., is_remote=
 def resolve_teacher_contact_info( raw_teacher: str, teacher_data_map: dict[str, TeacherData], is_remote: bool, subj_name: str, ) -> tuple[str, str | None, str | None, str | None]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L852-L876`](../../services/schedule_parser.py#L852-L876)
+- **Source Reference**: [`services/schedule_parser.py#L853-L877`](../../services/schedule_parser.py#L853-L877)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str | None, str | None, str | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_teacher_contact_info`.
+Сопоставляет преподавателя с реестром ссылок и извлекает Zoom/Телемост доступы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1522,12 +1522,12 @@ result = resolve_teacher_contact_info(raw_teacher=..., teacher_data_map=..., is_
 def resolve_room_name(asgn: dict[str, Any], inst: dict[str, Any], rms: dict[str, str], is_remote: bool) -> str
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L879-L891`](../../services/schedule_parser.py#L879-L891)
+- **Source Reference**: [`services/schedule_parser.py#L880-L892`](../../services/schedule_parser.py#L880-L892)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_room_name`.
+Определяет текстовый номер аудитории или маркер дистанта.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1558,12 +1558,12 @@ result = resolve_room_name(asgn=..., inst=..., rms=...)
 def _resolve_lesson_meta( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], teacher_map: dict[str, TeacherData], )
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L894-L912`](../../services/schedule_parser.py#L894-L912)
+- **Source Reference**: [`services/schedule_parser.py#L895-L913`](../../services/schedule_parser.py#L895-L913)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_lesson_meta`.
+Определяет формат, аудиторию, адрес и контакты преподавателя для занятия.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1594,12 +1594,12 @@ result = _resolve_lesson_meta(inst=..., asgn=..., maps=...)
 def _build_lesson_payload( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None,
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L915-L948`](../../services/schedule_parser.py#L915-L948)
+- **Source Reference**: [`services/schedule_parser.py#L916-L949`](../../services/schedule_parser.py#L916-L949)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_lesson_payload`.
+Формирует словарь полей для валидации и создания Pydantic-модели Lesson.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1633,12 +1633,12 @@ result = _build_lesson_payload(inst=..., asgn=..., maps=...)
 def build_lesson_object( inst: dict[str, Any], asgn: dict[str, Any], maps: tuple[dict, dict, dict, dict, dict], day_idx: int, week_num: int, teacher_map: dict[str, TeacherData], cfg: dict[str, Any] | None = None,
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L951-L966`](../../services/schedule_parser.py#L951-L966)
+- **Source Reference**: [`services/schedule_parser.py#L952-L967`](../../services/schedule_parser.py#L952-L967)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Lesson`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_lesson_object`.
+Конструирует объект Lesson с точным расписанием звонков, адресом и ссылками.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1672,12 +1672,12 @@ result = build_lesson_object(inst=..., asgn=..., maps=...)
 def is_placed_lesson_active(inst: dict[str, Any], asgn: dict[str, Any] | None, day_idx: int, week_num: int) -> bool
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L969-L980`](../../services/schedule_parser.py#L969-L980)
+- **Source Reference**: [`services/schedule_parser.py#L970-L981`](../../services/schedule_parser.py#L970-L981)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_placed_lesson_active`.
+Проверяет, размещено ли занятие в сетке расписания на указанный день и неделю.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1708,12 +1708,12 @@ result = is_placed_lesson_active(inst=..., asgn=..., day_idx=...)
 def _resolve_day_entry( inst: dict[str, Any], asgn: dict[str, Any], day_subs: dict[str, dict[str, Any]] ) -> tuple[dict[str, Any], dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L983-L1002`](../../services/schedule_parser.py#L983-L1002)
+- **Source Reference**: [`services/schedule_parser.py#L984-L1003`](../../services/schedule_parser.py#L984-L1003)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[dict[str, Any], dict[str, Any]] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_day_entry`.
+Накладывает на занятие замену, действующую в этот день.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1743,12 +1743,12 @@ result = _resolve_day_entry(inst=..., asgn=..., day_subs=...)
 def _collect_day_instances( insts: list[dict[str, Any]], asgns: dict[str, Any], day_subs: dict[str, dict[str, Any]], day_idx: int, week_num: int, ) -> list[tuple[dict[str, Any], dict[str, Any]]]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L1005-L1028`](../../services/schedule_parser.py#L1005-L1028)
+- **Source Reference**: [`services/schedule_parser.py#L1006-L1029`](../../services/schedule_parser.py#L1006-L1029)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[dict[str, Any], dict[str, Any]]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_collect_day_instances`.
+Отбирает активные в этот день занятия группы с учётом замен на дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1780,12 +1780,12 @@ result = _collect_day_instances(insts=..., asgns=..., day_subs=...)
 def _collect_moved_in( insts: list[dict[str, Any]], asgns: dict[str, Any], subs: list[dict[str, Any]], iso_date: str, ) -> list[tuple[dict[str, Any], dict[str, Any]]]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L1031-L1056`](../../services/schedule_parser.py#L1031-L1056)
+- **Source Reference**: [`services/schedule_parser.py#L1032-L1057`](../../services/schedule_parser.py#L1032-L1057)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[dict[str, Any], dict[str, Any]]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_collect_moved_in`.
+Достаёт занятия, перенесённые на эту дату с других дней.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1816,12 +1816,12 @@ result = _collect_moved_in(insts=..., asgns=..., subs=...)
 def _extract_lessons_for_day( data: dict[str, Any], target_date: date, week_num: int, links: dict[str, TeacherData], ) -> list[Lesson]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L1059-L1085`](../../services/schedule_parser.py#L1059-L1085)
+- **Source Reference**: [`services/schedule_parser.py#L1060-L1086`](../../services/schedule_parser.py#L1060-L1086)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[Lesson]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_lessons_for_day`.
+Извлекает и упорядочивает список занятий группы на дату с учётом замен.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1852,12 +1852,12 @@ result = _extract_lessons_for_day(data=..., target_date=..., week_num=...)
 async def get_schedule_for_date(target_date: date, force_refresh: bool = False) -> list[Lesson]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L1088-L1111`](../../services/schedule_parser.py#L1088-L1111)
+- **Source Reference**: [`services/schedule_parser.py#L1089-L1112`](../../services/schedule_parser.py#L1089-L1112)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_schedule_for_date`.
+Формирует список занятий группы на целевую дату с двухуровневым кэшированием L1/L2.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1886,12 +1886,12 @@ result = await get_schedule_for_date(target_date=..., force_refresh=...)
 async def get_week_schedule(monday_date: date, force_refresh: bool = False) -> list[tuple[date, list[Lesson]]]
 ```
 
-- **Source Reference**: [`services/schedule_parser.py#L1114-L1133`](../../services/schedule_parser.py#L1114-L1133)
+- **Source Reference**: [`services/schedule_parser.py#L1115-L1134`](../../services/schedule_parser.py#L1115-L1134)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[date, list[Lesson]]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_week_schedule`.
+Формирует структурированное расписание на всю учебную неделю (пн-сб).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

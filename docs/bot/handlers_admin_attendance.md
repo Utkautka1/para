@@ -1,47 +1,36 @@
 # Component Reference: `bot/handlers/admin/attendance.py`
 > **File Path**: [`bot/handlers/admin/attendance.py`](../../bot/handlers/admin/attendance.py)
 > **Subsystem**: `Headman Attendance Polling`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/attendance.py` module implements core operational logic for the `Headman Attendance Polling` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры управления процессом отметки посещаемости.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L45–L67 | `None` | Executes core domain logic for `_async_commit_and_updat... |
-| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L70–L88 | `None` | Executes core domain logic for `_instant_topic_sync`. |
-| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L91–L109 | `int | None` | Retrieves and resolves domain data for `get_partner_adm... |
-| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L112–L137 | `None` | Executes core domain logic for `notify_partner_about_at... |
-| [`finish_and_notify`](#finish_and_notify) | Function | L140–L163 | `None` | Executes core domain logic for `finish_and_notify`. |
-| [`show_attendance_menu`](#show_attendance_menu) | Function | L168–L187 | `None` | Executes core domain logic for `show_attendance_menu`. |
-| [`cb_select_day`](#cb_select_day) | Function | L191–L211 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`parse_start_callback`](#parse_start_callback) | Function | L214–L230 | `Any` | Parses and extracts structured entities from `parse_sta... |
-| [`get_initiator_title`](#get_initiator_title) | Function | L233–L245 | `str` | Retrieves and resolves domain data for `get_initiator_t... |
-| [`check_session_ownership`](#check_session_ownership) | Function | L248–L267 | `bool` | Executes core domain logic for `check_session_ownership... |
-| [`_resolve_lesson_title_for_start`](#_resolve_lesson_title_for_start) | Function | L270–L283 | `str` | Executes core domain logic for `_resolve_lesson_title_f... |
-| [`_ensure_session_available`](#_ensure_session_available) | Function | L286–L302 | `bool` | Executes core domain logic for `_ensure_session_availab... |
-| [`_init_session_safe`](#_init_session_safe) | Function | L305–L321 | `Any` | Executes core domain logic for `_init_session_safe`. |
-| [`cb_start_attendance`](#cb_start_attendance) | Function | L325–L347 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`cb_mark_student`](#cb_mark_student) | Function | L351–L375 | `None` | Handles Telegram inline callback query events for `cb_m... |
-| [`cb_step_back`](#cb_step_back) | Function | L379–L402 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`cb_all_present`](#cb_all_present) | Function | L406–L426 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L429–L455 | `None` | Executes core domain logic for `notify_partner_about_ca... |
-| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L459–L475 | `None` | Handles Telegram inline callback query events for `cb_c... |
-| [`cb_abort_survey`](#cb_abort_survey) | Function | L479–L499 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_close_menu`](#cb_close_menu) | Function | L503–L516 | `None` | Handles Telegram inline callback query events for `cb_c... |
+| [`_async_commit_and_update`](#_async_commit_and_update) | Function | L50–L72 | `None` | Выполняет фоновую фиксацию посещаемости в Яндекс Таблиц... |
+| [`_instant_topic_sync`](#_instant_topic_sync) | Function | L75–L90 | `None` | Мгновенно обновляет топик посещаемости в Telegram через... |
+| [`get_partner_admin_id`](#get_partner_admin_id) | Function | L93–L109 | `int \| None` | Определяет Telegram ID напарника по модерации (староста... |
+| [`notify_partner_about_attendance`](#notify_partner_about_attendance) | Function | L112–L135 | `None` | Отправляет полный отчет о завершении отметки пары второ... |
+| [`finish_and_notify`](#finish_and_notify) | Function | L138–L161 | `None` | Мгновенно выводит сводку старосте и запускает асинхронн... |
+| [`show_attendance_menu`](#show_attendance_menu) | Function | L166–L183 | `None` | Отображает интерактивное меню выбора учебного дня для о... |
+| [`cb_select_day`](#cb_select_day) | Function | L187–L205 | `None` | Формирует и отображает кнопки доступных пар на выбранну... |
+| [`parse_start_callback`](#parse_start_callback) | Function | L208–L222 | `Any` | Парсит целевую дату и номер пары из строки callback_dat... |
+| [`get_initiator_title`](#get_initiator_title) | Function | L225–L235 | `str` | Возвращает русскоязычное наименование роли старосты по ... |
+| [`check_session_ownership`](#check_session_ownership) | Function | L238–L257 | `bool` | Проверяет, принадлежит ли активная сессия опроса текуще... |
+| [`_resolve_lesson_title_for_start`](#_resolve_lesson_title_for_start) | Function | L260–L273 | `str` | Определяет наименование дисциплины по номеру пары из ра... |
+| [`_ensure_session_available`](#_ensure_session_available) | Function | L276–L292 | `bool` | Проверяет доступность запуска нового опроса посещаемост... |
+| [`_init_session_safe`](#_init_session_safe) | Function | L295–L317 | `Any` | Безопасно создает сессию посещаемости с обработкой ошиб... |
+| [`cb_start_attendance`](#cb_start_attendance) | Function | L321–L343 | `None` | Инициализирует интерактивную сессию опроса посещаемости... |
+| [`cb_mark_student`](#cb_mark_student) | Function | L347–L371 | `None` | Фиксирует статус студента и переходит к следующему шагу... |
+| [`cb_step_back`](#cb_step_back) | Function | L375–L398 | `None` | Возвращает старосту к предыдущему студенту для исправле... |
+| [`cb_all_present`](#cb_all_present) | Function | L402–L422 | `None` | Проставляет статус 'П' (Присутствует) всем оставшимся с... |
+| [`notify_partner_about_cancellation`](#notify_partner_about_cancellation) | Function | L425–L449 | `None` | Оповещает второго администратора об отмене проведения п... |
+| [`cb_cancel_lesson`](#cb_cancel_lesson) | Function | L453–L469 | `None` | Отменяет опрос для указанной пары и уведомляет напарник... |
+| [`cb_abort_survey`](#cb_abort_survey) | Function | L473–L493 | `None` | Прерывает активный опрос посещаемости по запросу его ин... |
+| [`cb_close_menu`](#cb_close_menu) | Function | L497–L510 | `None` | Удаляет сообщение с интерактивным меню посещаемости из ... |
 
 ---
 
@@ -52,12 +41,12 @@ graph LR
 async def _async_commit_and_update(message: Message | None, session, stats: dict[str, int]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L45-L67`](../../bot/handlers/admin/attendance.py#L45-L67)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L50-L72`](../../bot/handlers/admin/attendance.py#L50-L72)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_async_commit_and_update`.
+Выполняет фоновую фиксацию посещаемости в Яндекс Таблицу с обновлением сообщения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -87,12 +76,12 @@ result = await _async_commit_and_update(message=..., session=..., stats=...)
 async def _instant_topic_sync(session) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L70-L88`](../../bot/handlers/admin/attendance.py#L70-L88)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L75-L90`](../../bot/handlers/admin/attendance.py#L75-L90)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_instant_topic_sync`.
+Мгновенно обновляет топик посещаемости в Telegram через оптимистичные метки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -120,12 +109,12 @@ result = await _instant_topic_sync(session=...)
 def get_partner_admin_id(current_user_id: int) -> int | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L91-L109`](../../bot/handlers/admin/attendance.py#L91-L109)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L93-L109`](../../bot/handlers/admin/attendance.py#L93-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_partner_admin_id`.
+Определяет Telegram ID напарника по модерации (староста <-> замстаросты).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -153,12 +142,12 @@ result = get_partner_admin_id(current_user_id=...)
 async def notify_partner_about_attendance(session, stats: dict[str, int], user_full_name: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L112-L137`](../../bot/handlers/admin/attendance.py#L112-L137)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L112-L135`](../../bot/handlers/admin/attendance.py#L112-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_partner_about_attendance`.
+Отправляет полный отчет о завершении отметки пары второму администратору в ЛС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -188,12 +177,12 @@ result = await notify_partner_about_attendance(session=..., stats=..., user_full
 async def finish_and_notify(cb: CallbackQuery, session) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L140-L163`](../../bot/handlers/admin/attendance.py#L140-L163)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L138-L161`](../../bot/handlers/admin/attendance.py#L138-L161)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `finish_and_notify`.
+Мгновенно выводит сводку старосте и запускает асинхронные задачи сохранения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -222,12 +211,12 @@ result = await finish_and_notify(cb=..., session=...)
 async def show_attendance_menu(event: Message | CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L168-L187`](../../bot/handlers/admin/attendance.py#L168-L187)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L166-L183`](../../bot/handlers/admin/attendance.py#L166-L183)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `show_attendance_menu`.
+Отображает интерактивное меню выбора учебного дня для отметки пар.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -255,12 +244,12 @@ result = await show_attendance_menu(event=...)
 async def cb_select_day(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L191-L211`](../../bot/handlers/admin/attendance.py#L191-L211)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L187-L205`](../../bot/handlers/admin/attendance.py#L187-L205)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_select_day`.
+Формирует и отображает кнопки доступных пар на выбранную старостой дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -288,12 +277,12 @@ result = await cb_select_day(cb=...)
 def parse_start_callback(data: str)
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L214-L230`](../../bot/handlers/admin/attendance.py#L214-L230)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L208-L222`](../../bot/handlers/admin/attendance.py#L208-L222)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_start_callback`.
+Парсит целевую дату и номер пары из строки callback_data.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -321,12 +310,12 @@ result = parse_start_callback(data=...)
 def get_initiator_title(initiator_id: int) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L233-L245`](../../bot/handlers/admin/attendance.py#L233-L245)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L225-L235`](../../bot/handlers/admin/attendance.py#L225-L235)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_initiator_title`.
+Возвращает русскоязычное наименование роли старосты по его Telegram ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -354,12 +343,12 @@ result = get_initiator_title(initiator_id=...)
 async def check_session_ownership(cb: CallbackQuery, session) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L248-L267`](../../bot/handlers/admin/attendance.py#L248-L267)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L238-L257`](../../bot/handlers/admin/attendance.py#L238-L257)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_session_ownership`.
+Проверяет, принадлежит ли активная сессия опроса текущему пользователю.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -388,12 +377,12 @@ result = await check_session_ownership(cb=..., session=...)
 async def _resolve_lesson_title_for_start(target_date, lesson_num: int) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L270-L283`](../../bot/handlers/admin/attendance.py#L270-L283)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L260-L273`](../../bot/handlers/admin/attendance.py#L260-L273)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_lesson_title_for_start`.
+Определяет наименование дисциплины по номеру пары из расписания на дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -422,12 +411,12 @@ result = await _resolve_lesson_title_for_start(target_date=..., lesson_num=...)
 async def _ensure_session_available(cb: CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L286-L302`](../../bot/handlers/admin/attendance.py#L286-L302)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L276-L292`](../../bot/handlers/admin/attendance.py#L276-L292)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_ensure_session_available`.
+Проверяет доступность запуска нового опроса посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -455,12 +444,12 @@ result = await _ensure_session_available(cb=...)
 async def _init_session_safe(cb: CallbackQuery, target_date, lesson_num: int, title: str)
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L305-L321`](../../bot/handlers/admin/attendance.py#L305-L321)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L295-L317`](../../bot/handlers/admin/attendance.py#L295-L317)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_init_session_safe`.
+Безопасно создает сессию посещаемости с обработкой ошибок API/таблицы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -491,12 +480,12 @@ result = await _init_session_safe(cb=..., target_date=..., lesson_num=...)
 async def cb_start_attendance(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L325-L347`](../../bot/handlers/admin/attendance.py#L325-L347)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L321-L343`](../../bot/handlers/admin/attendance.py#L321-L343)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_start_attendance`.
+Инициализирует интерактивную сессию опроса посещаемости и открывает карточку.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -524,12 +513,12 @@ result = await cb_start_attendance(cb=...)
 async def cb_mark_student(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L351-L375`](../../bot/handlers/admin/attendance.py#L351-L375)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L347-L371`](../../bot/handlers/admin/attendance.py#L347-L371)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_mark_student`.
+Фиксирует статус студента и переходит к следующему шагу опроса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -557,12 +546,12 @@ result = await cb_mark_student(cb=...)
 async def cb_step_back(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L379-L402`](../../bot/handlers/admin/attendance.py#L379-L402)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L375-L398`](../../bot/handlers/admin/attendance.py#L375-L398)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_step_back`.
+Возвращает старосту к предыдущему студенту для исправления отметки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -590,12 +579,12 @@ result = await cb_step_back(cb=...)
 async def cb_all_present(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L406-L426`](../../bot/handlers/admin/attendance.py#L406-L426)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L402-L422`](../../bot/handlers/admin/attendance.py#L402-L422)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_all_present`.
+Проставляет статус 'П' (Присутствует) всем оставшимся студентам группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -623,12 +612,12 @@ result = await cb_all_present(cb=...)
 async def notify_partner_about_cancellation( lesson_num: int | str, user_id: int, user_full_name: str | None = None ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L429-L455`](../../bot/handlers/admin/attendance.py#L429-L455)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L425-L449`](../../bot/handlers/admin/attendance.py#L425-L449)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_partner_about_cancellation`.
+Оповещает второго администратора об отмене проведения пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -658,12 +647,12 @@ result = await notify_partner_about_cancellation(lesson_num=..., user_id=..., us
 async def cb_cancel_lesson(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L459-L475`](../../bot/handlers/admin/attendance.py#L459-L475)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L453-L469`](../../bot/handlers/admin/attendance.py#L453-L469)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_cancel_lesson`.
+Отменяет опрос для указанной пары и уведомляет напарника старосты.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -691,12 +680,12 @@ result = await cb_cancel_lesson(cb=...)
 async def cb_abort_survey(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L479-L499`](../../bot/handlers/admin/attendance.py#L479-L499)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L473-L493`](../../bot/handlers/admin/attendance.py#L473-L493)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_abort_survey`.
+Прерывает активный опрос посещаемости по запросу его инициатора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -724,12 +713,12 @@ result = await cb_abort_survey(cb=...)
 async def cb_close_menu(cb: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/attendance.py#L503-L516`](../../bot/handlers/admin/attendance.py#L503-L516)
+- **Source Reference**: [`bot/handlers/admin/attendance.py#L497-L510`](../../bot/handlers/admin/attendance.py#L497-L510)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_close_menu`.
+Удаляет сообщение с интерактивным меню посещаемости из чата.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

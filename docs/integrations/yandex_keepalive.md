@@ -1,29 +1,18 @@
 # Component Reference: `integrations/yandex_keepalive.py`
 > **File Path**: [`integrations/yandex_keepalive.py`](../../integrations/yandex_keepalive.py)
 > **Subsystem**: `Session Keepalive`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `integrations/yandex_keepalive.py` module implements core operational logic for the `Session Keepalive` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Фоновый сервис автоматического продления (Keep-Alive) сессии Яндекс Документов.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_dispatch_yandex_alert`](#_dispatch_yandex_alert) | Function | L21–L33 | `None` | Executes core domain logic for `_dispatch_yandex_alert`... |
-| [`ping_yandex_session`](#ping_yandex_session) | Function | L36–L48 | `bool` | Executes core domain logic for `ping_yandex_session`. |
-| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L51–L72 | `None` | Executes core domain logic for `yandex_session_keepaliv... |
+| [`_dispatch_yandex_alert`](#_dispatch_yandex_alert) | Function | L21–L33 | `None` | Отправляет уведомление администратору об инвалидации ку... |
+| [`ping_yandex_session`](#ping_yandex_session) | Function | L36–L48 | `bool` | Выполняет одиночный проверочный запрос для продления се... |
+| [`yandex_session_keepalive_loop`](#yandex_session_keepalive_loop) | Function | L51–L72 | `None` | Запускает бесконечный цикл периодического пинга сессии ... |
 
 ---
 
@@ -39,7 +28,7 @@ async def _dispatch_yandex_alert(details: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_dispatch_yandex_alert`.
+Отправляет уведомление администратору об инвалидации кук Яндекс.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -72,7 +61,7 @@ async def ping_yandex_session() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `ping_yandex_session`.
+Выполняет одиночный проверочный запрос для продления сессии и обновления Cookie.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -103,7 +92,7 @@ async def yandex_session_keepalive_loop( interval: int = KEEPALIVE_INTERVAL_SECO
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `yandex_session_keepalive_loop`.
+Запускает бесконечный цикл периодического пинга сессии Яндекс Документов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,36 +1,25 @@
 # Component Reference: `bot/handlers/admin/testers.py`
 > **File Path**: [`bot/handlers/admin/testers.py`](../../bot/handlers/admin/testers.py)
 > **Subsystem**: `Tester Management Flow`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/testers.py` module implements core operational logic for the `Tester Management Flow` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры управления списком тестеров Swagger UI и запуск Mini App.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_get_admin_key`](#_get_admin_key) | Function | L40–L42 | `str` | Executes core domain logic for `_get_admin_key`. |
-| [`_build_testers_panel`](#_build_testers_panel) | Function | L45–L57 | `tuple[str, InlineKeyboardMarkup]` | Executes core domain logic for `_build_testers_panel`. |
-| [`cmd_list_testers`](#cmd_list_testers) | Function | L61–L73 | `None` | Processes inbound Telegram slash command for `cmd_list_... |
-| [`cmd_add_tester`](#cmd_add_tester) | Function | L77–L99 | `None` | Processes inbound Telegram slash command for `cmd_add_t... |
-| [`cmd_del_tester`](#cmd_del_tester) | Function | L103–L122 | `None` | Processes inbound Telegram slash command for `cmd_del_t... |
-| [`cmd_open_swagger`](#cmd_open_swagger) | Function | L126–L137 | `None` | Processes inbound Telegram slash command for `cmd_open_... |
-| [`cb_admin_testers`](#cb_admin_testers) | Function | L141–L154 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_start_add_tester`](#cb_start_add_tester) | Function | L158–L170 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`process_tester_id_input`](#process_tester_id_input) | Function | L174–L196 | `None` | Executes core domain logic for `process_tester_id_input... |
-| [`cb_delete_tester`](#cb_delete_tester) | Function | L200–L217 | `None` | Handles Telegram inline callback query events for `cb_d... |
+| [`_get_admin_key`](#_get_admin_key) | Function | L40–L42 | `str` | Возвращает мастер-ключ для старосты или пустую строку. |
+| [`_build_testers_panel`](#_build_testers_panel) | Function | L45–L57 | `tuple[str, InlineKeyboardMarkup]` | Собирает текст и клавиатуру панели тестеров для конкрет... |
+| [`cmd_list_testers`](#cmd_list_testers) | Function | L61–L73 | `None` | Отображает список всех авторизованных тестеров Swagger ... |
+| [`cmd_add_tester`](#cmd_add_tester) | Function | L77–L99 | `None` | Добавляет пользователя в тестеры по команде /add_tester... |
+| [`cmd_del_tester`](#cmd_del_tester) | Function | L103–L122 | `None` | Удаляет пользователя из списка тестеров по команде /del... |
+| [`cmd_open_swagger`](#cmd_open_swagger) | Function | L126–L137 | `None` | Отправляет карточку быстрого запуска Swagger UI портала... |
+| [`cb_admin_testers`](#cb_admin_testers) | Function | L141–L154 | `None` | Открывает раздел управления тестировщиками из главного ... |
+| [`cb_start_add_tester`](#cb_start_add_tester) | Function | L158–L170 | `None` | Переводит диалог в FSM-состояние ожидания ввода ID ново... |
+| [`process_tester_id_input`](#process_tester_id_input) | Function | L174–L196 | `None` | Валидирует введенный Telegram ID, добавляет в белый спи... |
+| [`cb_delete_tester`](#cb_delete_tester) | Function | L200–L217 | `None` | Удаляет выбранного тестера по клику на кнопку в инлайн-... |
 
 ---
 
@@ -46,7 +35,7 @@ def _get_admin_key(user_id: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_admin_key`.
+Возвращает мастер-ключ для старосты или пустую строку.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -79,7 +68,7 @@ async def _build_testers_panel(user_id: int) -> tuple[str, InlineKeyboardMarkup]
 - **Return Contract**: `tuple[str, InlineKeyboardMarkup]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_testers_panel`.
+Собирает текст и клавиатуру панели тестеров для конкретного администратора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -112,7 +101,7 @@ async def cmd_list_testers(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_list_testers`.
+Отображает список всех авторизованных тестеров Swagger UI и ссылку на портал.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -145,7 +134,7 @@ async def cmd_add_tester(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_add_tester`.
+Добавляет пользователя в тестеры по команде /add_tester <id> и генерирует ключ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -178,7 +167,7 @@ async def cmd_del_tester(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_del_tester`.
+Удаляет пользователя из списка тестеров по команде /del_tester <id>.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -211,7 +200,7 @@ async def cmd_open_swagger(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_open_swagger`.
+Отправляет карточку быстрого запуска Swagger UI портала через Mini App.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -244,7 +233,7 @@ async def cb_admin_testers(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_testers`.
+Открывает раздел управления тестировщиками из главного меню панели старосты.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -277,7 +266,7 @@ async def cb_start_add_tester(callback: CallbackQuery, state: FSMContext) -> Non
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_start_add_tester`.
+Переводит диалог в FSM-состояние ожидания ввода ID нового тестера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -311,7 +300,7 @@ async def process_tester_id_input(message: Message, state: FSMContext) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `process_tester_id_input`.
+Валидирует введенный Telegram ID, добавляет в белый список и сбрасывает FSM.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -345,7 +334,7 @@ async def cb_delete_tester(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_delete_tester`.
+Удаляет выбранного тестера по клику на кнопку в инлайн-списке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

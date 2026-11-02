@@ -1,41 +1,30 @@
 # Component Reference: `bot/handlers/user/hw_solver.py`
 > **File Path**: [`bot/handlers/user/hw_solver.py`](../../bot/handlers/user/hw_solver.py)
 > **Subsystem**: `AI Homework Flow`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/user/hw_solver.py` module implements core operational logic for the `AI Homework Flow` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлер перехвата новых ДЗ в целевом топике (ID 405).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`combine_prompt_and_instructions`](#combine_prompt_and_instructions) | Function | L42–L58 | `str` | Executes core domain logic for `combine_prompt_and_inst... |
-| [`is_valid_homework_prompt`](#is_valid_homework_prompt) | Function | L61–L97 | `bool` | Executes core domain logic for `is_valid_homework_promp... |
-| [`extract_media_meta`](#extract_media_meta) | Function | L100–L120 | `tuple[str | None, str | None, str | None, str | None, int]` | Executes core domain logic for `extract_media_meta`. |
-| [`_describe_task`](#_describe_task) | Function | L123–L131 | `HomeworkTask` | Executes core domain logic for `_describe_task`. |
-| [`_sender_name`](#_sender_name) | Function | L134–L136 | `str | None` | Executes core domain logic for `_sender_name`. |
-| [`compute_content_hash`](#compute_content_hash) | Function | L139–L156 | `str` | Executes core domain logic for `compute_content_hash`. |
-| [`is_hw_allowed`](#is_hw_allowed) | Function | L159–L183 | `bool` | Executes core domain logic for `is_hw_allowed`. |
-| [`acknowledge_hw_task`](#acknowledge_hw_task) | Function | L186–L203 | `None` | Executes core domain logic for `acknowledge_hw_task`. |
-| [`build_hw_task`](#build_hw_task) | Function | L206–L232 | `dict` | Executes core domain logic for `build_hw_task`. |
-| [`dispatch_hw_task`](#dispatch_hw_task) | Function | L235–L250 | `None` | Executes core domain logic for `dispatch_hw_task`. |
-| [`is_own_task_reply`](#is_own_task_reply) | Function | L253–L264 | `bool` | Executes core domain logic for `is_own_task_reply`. |
-| [`merge_into_pending`](#merge_into_pending) | Function | L267–L283 | `bool` | Executes core domain logic for `merge_into_pending`. |
-| [`validate_hw_file_size`](#validate_hw_file_size) | Function | L286–L309 | `bool` | Validates architectural invariants and constraints for ... |
-| [`handle_new_homework`](#handle_new_homework) | Function | L313–L331 | `None` | Executes core domain logic for `handle_new_homework`. |
-| [`_accept_new_task`](#_accept_new_task) | Function | L334–L351 | `bool` | Executes core domain logic for `_accept_new_task`. |
+| [`combine_prompt_and_instructions`](#combine_prompt_and_instructions) | Function | L62–L78 | `str` | Объединяет инструкцию из подписи/текста реплая и основн... |
+| [`is_valid_homework_prompt`](#is_valid_homework_prompt) | Function | L81–L95 | `bool` | Проверяет, содержит ли сообщение запрос на решение учеб... |
+| [`extract_media_meta`](#extract_media_meta) | Function | L98–L118 | `tuple[str \| None, str \| None, str \| None, str \| None, int]` | Извлекает идентификаторы и метаданные медиафайла (фото ... |
+| [`_describe_task`](#_describe_task) | Function | L121–L129 | `HomeworkTask` | Описывает принятое сообщение для ачивок топика ДЗ. |
+| [`_sender_name`](#_sender_name) | Function | L132–L134 | `str \| None` | Имя автора сообщения для fallback-ФИО ачивок. |
+| [`compute_content_hash`](#compute_content_hash) | Function | L137–L154 | `str` | Вычисляет SHA256 хэш промпта и уникального ID файла для... |
+| [`is_hw_allowed`](#is_hw_allowed) | Function | L157–L181 | `bool` | Комплексно проверяет право пользователя и валидность за... |
+| [`acknowledge_hw_task`](#acknowledge_hw_task) | Function | L184–L201 | `None` | Ставит реакцию 👀 на сообщение студента для мгновенной о... |
+| [`build_hw_task`](#build_hw_task) | Function | L204–L230 | `dict` | Собирает payload задания для очереди solver. |
+| [`dispatch_hw_task`](#dispatch_hw_task) | Function | L233–L248 | `None` | Ставит задание в очередь и подтверждает приём реакцией. |
+| [`is_own_task_reply`](#is_own_task_reply) | Function | L251–L262 | `bool` | Проверяет, что сообщение — реплай автора на его же прин... |
+| [`merge_into_pending`](#merge_into_pending) | Function | L265–L281 | `bool` | Дописывает уточнение к заданию, которое ещё ждёт в окне... |
+| [`validate_hw_file_size`](#validate_hw_file_size) | Function | L284–L307 | `bool` | Проверяет размер медиафайла для защиты сервиса от исчер... |
+| [`handle_new_homework`](#handle_new_homework) | Function | L311–L329 | `None` | Перехватывает сообщение с ДЗ в топике и передает в очер... |
+| [`_accept_new_task`](#_accept_new_task) | Function | L332–L349 | `bool` | Проверяет файл и дубликаты и ставит задание (или исправ... |
 
 ---
 
@@ -46,12 +35,12 @@ graph LR
 def combine_prompt_and_instructions(msg: Message, target: Message) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L42-L58`](../../bot/handlers/user/hw_solver.py#L42-L58)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L62-L78`](../../bot/handlers/user/hw_solver.py#L62-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `combine_prompt_and_instructions`.
+Объединяет инструкцию из подписи/текста реплая и основное задание.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -80,12 +69,12 @@ result = combine_prompt_and_instructions(msg=..., target=...)
 def is_valid_homework_prompt(text: str | None, has_media: bool) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L61-L97`](../../bot/handlers/user/hw_solver.py#L61-L97)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L81-L95`](../../bot/handlers/user/hw_solver.py#L81-L95)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_valid_homework_prompt`.
+Проверяет, содержит ли сообщение запрос на решение учебной задачи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -114,12 +103,12 @@ result = is_valid_homework_prompt(text=..., has_media=...)
 def extract_media_meta(msg: Message, target: Message) -> tuple[str | None, str | None, str | None, str | None, int]
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L100-L120`](../../bot/handlers/user/hw_solver.py#L100-L120)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L98-L118`](../../bot/handlers/user/hw_solver.py#L98-L118)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str | None, str | None, str | None, str | None, int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_media_meta`.
+Извлекает идентификаторы и метаданные медиафайла (фото или документа).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -148,12 +137,12 @@ result = extract_media_meta(msg=..., target=...)
 def _describe_task(msg: Message, target: Message, prompt: str, is_followup: bool) -> HomeworkTask
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L123-L131`](../../bot/handlers/user/hw_solver.py#L123-L131)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L121-L129`](../../bot/handlers/user/hw_solver.py#L121-L129)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `HomeworkTask`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_describe_task`.
+Описывает принятое сообщение для ачивок топика ДЗ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -184,12 +173,12 @@ result = _describe_task(msg=..., target=..., prompt=...)
 def _sender_name(msg: Message) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L134-L136`](../../bot/handlers/user/hw_solver.py#L134-L136)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L132-L134`](../../bot/handlers/user/hw_solver.py#L132-L134)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_sender_name`.
+Имя автора сообщения для fallback-ФИО ачивок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -217,12 +206,12 @@ result = _sender_name(msg=...)
 def compute_content_hash(text: str | None, unique_id: str | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L139-L156`](../../bot/handlers/user/hw_solver.py#L139-L156)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L137-L154`](../../bot/handlers/user/hw_solver.py#L137-L154)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `compute_content_hash`.
+Вычисляет SHA256 хэш промпта и уникального ID файла для дедупликации.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -251,12 +240,12 @@ result = compute_content_hash(text=..., unique_id=...)
 async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L159-L183`](../../bot/handlers/user/hw_solver.py#L159-L183)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L157-L181`](../../bot/handlers/user/hw_solver.py#L157-L181)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_hw_allowed`.
+Комплексно проверяет право пользователя и валидность задачи на решение.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -286,12 +275,12 @@ result = await is_hw_allowed(msg=..., target=..., user_id=...)
 async def acknowledge_hw_task(bot: Bot, msg: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L186-L203`](../../bot/handlers/user/hw_solver.py#L186-L203)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L184-L201`](../../bot/handlers/user/hw_solver.py#L184-L201)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `acknowledge_hw_task`.
+Ставит реакцию 👀 на сообщение студента для мгновенной обратной связи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -320,12 +309,12 @@ result = await acknowledge_hw_task(bot=..., msg=...)
 def build_hw_task( msg: Message, user_id: int, prompt: str, meta: tuple[str | None, str | None, str | None, int], revision_of: int | None = None, ) -> dict
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L206-L232`](../../bot/handlers/user/hw_solver.py#L206-L232)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L204-L230`](../../bot/handlers/user/hw_solver.py#L204-L230)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_hw_task`.
+Собирает payload задания для очереди solver.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -357,12 +346,12 @@ result = build_hw_task(msg=..., user_id=..., prompt=...)
 async def dispatch_hw_task(bot: Bot, msg: Message, task: dict, c_hash: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L235-L250`](../../bot/handlers/user/hw_solver.py#L235-L250)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L233-L248`](../../bot/handlers/user/hw_solver.py#L233-L248)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `dispatch_hw_task`.
+Ставит задание в очередь и подтверждает приём реакцией.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -393,12 +382,12 @@ result = await dispatch_hw_task(bot=..., msg=..., task=...)
 async def is_own_task_reply(msg: Message, target: Message, user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L253-L264`](../../bot/handlers/user/hw_solver.py#L253-L264)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L251-L262`](../../bot/handlers/user/hw_solver.py#L251-L262)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_own_task_reply`.
+Проверяет, что сообщение — реплай автора на его же принятое задание.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -428,12 +417,12 @@ result = await is_own_task_reply(msg=..., target=..., user_id=...)
 async def merge_into_pending(bot: Bot, msg: Message, target: Message) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L267-L283`](../../bot/handlers/user/hw_solver.py#L267-L283)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L265-L281`](../../bot/handlers/user/hw_solver.py#L265-L281)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `merge_into_pending`.
+Дописывает уточнение к заданию, которое ещё ждёт в окне уточнений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -463,12 +452,12 @@ result = await merge_into_pending(bot=..., msg=..., target=...)
 async def validate_hw_file_size(bot: Bot, msg: Message, f_size: int, f_name: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L286-L309`](../../bot/handlers/user/hw_solver.py#L286-L309)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L284-L307`](../../bot/handlers/user/hw_solver.py#L284-L307)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Validates architectural invariants and constraints for `validate_hw_file_size`.
+Проверяет размер медиафайла для защиты сервиса от исчерпания памяти.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -499,12 +488,12 @@ result = await validate_hw_file_size(bot=..., msg=..., f_size=...)
 async def handle_new_homework(msg: Message, bot: Bot) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L313-L331`](../../bot/handlers/user/hw_solver.py#L313-L331)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L311-L329`](../../bot/handlers/user/hw_solver.py#L311-L329)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_new_homework`.
+Перехватывает сообщение с ДЗ в топике и передает в очередь solver.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -533,12 +522,12 @@ result = await handle_new_homework(msg=..., bot=...)
 async def _accept_new_task(bot: Bot, msg: Message, target: Message, user_id: int, own_reply: bool) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/hw_solver.py#L334-L351`](../../bot/handlers/user/hw_solver.py#L334-L351)
+- **Source Reference**: [`bot/handlers/user/hw_solver.py#L332-L349`](../../bot/handlers/user/hw_solver.py#L332-L349)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_accept_new_task`.
+Проверяет файл и дубликаты и ставит задание (или исправление) в очередь.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

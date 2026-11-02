@@ -1,31 +1,20 @@
 # Component Reference: `api/router/system.py`
 > **File Path**: [`api/router/system.py`](../../api/router/system.py)
 > **Subsystem**: `System Admin API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/system.py` module implements core operational logic for the `System Admin API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер системной диагностики — GET /system/info, POST /system/cache/flush.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_system_info`](#get_system_info) | Function | L26–L57 | `SystemInfoResponse` | Retrieves and resolves domain data for `get_system_info... |
-| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L60–L67 | `None` | Executes core domain logic for `_validate_flush_pattern... |
-| [`flush_cache`](#flush_cache) | Function | L71–L81 | `CacheFlushResponse` | Executes core domain logic for `flush_cache`. |
-| [`list_system_incidents`](#list_system_incidents) | Function | L85–L104 | `IncidentListResponse` | Executes core domain logic for `list_system_incidents`. |
-| [`trigger_system_backup`](#trigger_system_backup) | Function | L108–L115 | `BackupTriggerResponse` | Executes core domain logic for `trigger_system_backup`. |
+| [`get_system_info`](#get_system_info) | Function | L29–L60 | `SystemInfoResponse` | Возвращает диагностическую сводку о состоянии сервиса и... |
+| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L63–L70 | `None` | Проверяет безопасность маски для предотвращения сброса ... |
+| [`flush_cache`](#flush_cache) | Function | L74–L82 | `CacheFlushResponse` | Выполняет принудительную очистку ключей Redis по безопа... |
+| [`list_system_incidents`](#list_system_incidents) | Function | L86–L104 | `IncidentListResponse` | Возвращает журнал системных инцидентов и сетевых сбоев ... |
+| [`trigger_system_backup`](#trigger_system_backup) | Function | L108–L114 | `BackupTriggerResponse` | Запускает процесс резервного копирования SQLite и Redis... |
 
 ---
 
@@ -36,12 +25,12 @@ graph LR
 async def get_system_info() -> SystemInfoResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L26-L57`](../../api/router/system.py#L26-L57)
+- **Source Reference**: [`api/router/system.py#L29-L60`](../../api/router/system.py#L29-L60)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SystemInfoResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_system_info`.
+Возвращает диагностическую сводку о состоянии сервиса и подсистем.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -67,12 +56,12 @@ result = await get_system_info()
 def _validate_flush_pattern(pattern: str) -> None
 ```
 
-- **Source Reference**: [`api/router/system.py#L60-L67`](../../api/router/system.py#L60-L67)
+- **Source Reference**: [`api/router/system.py#L63-L70`](../../api/router/system.py#L63-L70)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_validate_flush_pattern`.
+Проверяет безопасность маски для предотвращения сброса служебных ключей Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -100,12 +89,12 @@ result = _validate_flush_pattern(pattern=...)
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L71-L81`](../../api/router/system.py#L71-L81)
+- **Source Reference**: [`api/router/system.py#L74-L82`](../../api/router/system.py#L74-L82)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CacheFlushResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `flush_cache`.
+Выполняет принудительную очистку ключей Redis по безопасной маске (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -133,12 +122,12 @@ result = await flush_cache(payload=...)
 async def list_system_incidents(limit: int = 50, unresolved_only: bool = False) -> IncidentListResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L85-L104`](../../api/router/system.py#L85-L104)
+- **Source Reference**: [`api/router/system.py#L86-L104`](../../api/router/system.py#L86-L104)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `IncidentListResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `list_system_incidents`.
+Возвращает журнал системных инцидентов и сетевых сбоев из SQLite (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -167,12 +156,12 @@ result = await list_system_incidents(limit=..., unresolved_only=...)
 async def trigger_system_backup() -> BackupTriggerResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L108-L115`](../../api/router/system.py#L108-L115)
+- **Source Reference**: [`api/router/system.py#L108-L114`](../../api/router/system.py#L108-L114)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `BackupTriggerResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `trigger_system_backup`.
+Запускает процесс резервного копирования SQLite и Redis (Admin only).
 
 #### Parameters Contract
 *This method takes no input parameters.*

@@ -1,43 +1,32 @@
 # Component Reference: `core/api_client.py`
 > **File Path**: [`core/api_client.py`](../../core/api_client.py)
 > **Subsystem**: `Internal RPC Client`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/api_client.py` module implements core operational logic for the `Internal RPC Client` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Клиент для обращения к сервису para-api по протоколу gRPC (с HTTP fallback).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_grpc_metadata`](#_build_grpc_metadata) | Function | L45–L49 | `tuple[tuple[str, str], ...]` | Executes core domain logic for `_build_grpc_metadata`. |
-| [`_get_client`](#_get_client) | Function | L52–L70 | `httpx.AsyncClient` | Executes core domain logic for `_get_client`. |
-| [`_get_grpc_channel`](#_get_grpc_channel) | Function | L73–L93 | `grpc.aio.Channel` | Executes core domain logic for `_get_grpc_channel`. |
-| [`close_api_client`](#close_api_client) | Function | L96–L111 | `None` | Executes core domain logic for `close_api_client`. |
-| [`_api_get`](#_api_get) | Function | L114–L138 | `dict[str, Any]` | Executes core domain logic for `_api_get`. |
-| [`_fetch_day_schedule_grpc`](#_fetch_day_schedule_grpc) | Function | L141–L159 | `dict[str, Any]` | Executes core domain logic for `_fetch_day_schedule_grp... |
-| [`fetch_day_schedule`](#fetch_day_schedule) | Function | L162–L178 | `dict[str, Any]` | Executes core domain logic for `fetch_day_schedule`. |
-| [`_fetch_week_schedule_grpc`](#_fetch_week_schedule_grpc) | Function | L181–L199 | `dict[str, Any]` | Executes core domain logic for `_fetch_week_schedule_gr... |
-| [`fetch_week_schedule`](#fetch_week_schedule) | Function | L202–L218 | `dict[str, Any]` | Executes core domain logic for `fetch_week_schedule`. |
-| [`_fetch_exams_grpc`](#_fetch_exams_grpc) | Function | L221–L236 | `dict[str, Any]` | Executes core domain logic for `_fetch_exams_grpc`. |
-| [`fetch_exams`](#fetch_exams) | Function | L239–L252 | `dict[str, Any]` | Executes core domain logic for `fetch_exams`. |
-| [`_fetch_teachers_grpc`](#_fetch_teachers_grpc) | Function | L255–L270 | `dict[str, Any]` | Executes core domain logic for `_fetch_teachers_grpc`. |
-| [`fetch_teachers`](#fetch_teachers) | Function | L273–L286 | `dict[str, Any]` | Executes core domain logic for `fetch_teachers`. |
-| [`get_api_schedule_for_date`](#get_api_schedule_for_date) | Function | L289–L299 | `list[Lesson]` | Retrieves and resolves domain data for `get_api_schedul... |
-| [`get_api_week_schedule`](#get_api_week_schedule) | Function | L302–L319 | `list[tuple[date, list[Lesson]]]` | Retrieves and resolves domain data for `get_api_week_sc... |
-| [`get_api_exams`](#get_api_exams) | Function | L322–L332 | `list[ExamItem]` | Retrieves and resolves domain data for `get_api_exams`. |
-| [`get_api_teachers`](#get_api_teachers) | Function | L335–L345 | `dict[str, Any]` | Retrieves and resolves domain data for `get_api_teacher... |
+| [`_build_grpc_metadata`](#_build_grpc_metadata) | Function | L45–L49 | `tuple[tuple[str, str], ...]` | Формирует метаданные вызова gRPC с ключом API и W3C Tra... |
+| [`_get_client`](#_get_client) | Function | L52–L70 | `httpx.AsyncClient` | Возвращает или создает персистентный HTTP-клиент к para... |
+| [`_get_grpc_channel`](#_get_grpc_channel) | Function | L73–L93 | `grpc.aio.Channel` | Создает или возвращает персистентный асинхронный gRPC к... |
+| [`close_api_client`](#close_api_client) | Function | L96–L111 | `None` | Корректно закрывает соединения HTTP-клиента и асинхронн... |
+| [`_api_get`](#_api_get) | Function | L114–L138 | `dict[str, Any]` | Выполняет HTTP GET-запрос к para-api с однократным повт... |
+| [`_fetch_day_schedule_grpc`](#_fetch_day_schedule_grpc) | Function | L141–L159 | `dict[str, Any]` | Запрашивает расписание на день через высокопроизводител... |
+| [`fetch_day_schedule`](#fetch_day_schedule) | Function | L162–L178 | `dict[str, Any]` | Получает дневное расписание по gRPC с прозрачным отказо... |
+| [`_fetch_week_schedule_grpc`](#_fetch_week_schedule_grpc) | Function | L181–L199 | `dict[str, Any]` | Запрашивает расписание на неделю через gRPC протокол. |
+| [`fetch_week_schedule`](#fetch_week_schedule) | Function | L202–L218 | `dict[str, Any]` | Получает недельное расписание по gRPC с автоматическим ... |
+| [`_fetch_exams_grpc`](#_fetch_exams_grpc) | Function | L221–L236 | `dict[str, Any]` | Запрашивает список экзаменов через бинарный gRPC сервис... |
+| [`fetch_exams`](#fetch_exams) | Function | L239–L252 | `dict[str, Any]` | Получает реестр экзаменов по gRPC с резервным переключе... |
+| [`_fetch_teachers_grpc`](#_fetch_teachers_grpc) | Function | L255–L270 | `dict[str, Any]` | Запрашивает контакты преподавателей через gRPC метод Ge... |
+| [`fetch_teachers`](#fetch_teachers) | Function | L273–L286 | `dict[str, Any]` | Получает телефонно-адресный справочник преподавателей с... |
+| [`get_api_schedule_for_date`](#get_api_schedule_for_date) | Function | L289–L299 | `list[Lesson]` | Предоставляет типизированный список занятий на целевой ... |
+| [`get_api_week_schedule`](#get_api_week_schedule) | Function | L302–L319 | `list[tuple[date, list[Lesson]]]` | Возвращает недельное расписание в виде структурированны... |
+| [`get_api_exams`](#get_api_exams) | Function | L322–L332 | `list[ExamItem]` | Предоставляет типизированный список экзаменов и зачетов... |
+| [`get_api_teachers`](#get_api_teachers) | Function | L335–L345 | `dict[str, Any]` | Возвращает словарь контактов преподавателей с фильтраци... |
 
 ---
 
@@ -53,7 +42,7 @@ def _build_grpc_metadata() -> tuple[tuple[str, str], ...]
 - **Return Contract**: `tuple[tuple[str, str], ...]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_grpc_metadata`.
+Формирует метаданные вызова gRPC с ключом API и W3C TraceContext.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -84,7 +73,7 @@ def _get_client() -> httpx.AsyncClient
 - **Return Contract**: `httpx.AsyncClient`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_client`.
+Возвращает или создает персистентный HTTP-клиент к para-api.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -115,7 +104,7 @@ def _get_grpc_channel() -> grpc.aio.Channel
 - **Return Contract**: `grpc.aio.Channel`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_grpc_channel`.
+Создает или возвращает персистентный асинхронный gRPC канал.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -146,7 +135,7 @@ async def close_api_client() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `close_api_client`.
+Корректно закрывает соединения HTTP-клиента и асинхронного gRPC-канала.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -177,7 +166,7 @@ async def _api_get(path: str, params: dict[str, Any] | None = None) -> dict[str,
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_api_get`.
+Выполняет HTTP GET-запрос к para-api с однократным повтором при сетевом сбое.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -211,7 +200,7 @@ async def _fetch_day_schedule_grpc(target_date: date | None, force_refresh: bool
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_day_schedule_grpc`.
+Запрашивает расписание на день через высокопроизводительный gRPC метод.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -245,7 +234,7 @@ async def fetch_day_schedule(target_date: date | None = None, force_refresh: boo
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_day_schedule`.
+Получает дневное расписание по gRPC с прозрачным отказоустойчивым переходом на HTTP.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -279,7 +268,7 @@ async def _fetch_week_schedule_grpc(monday: date | None, force_refresh: bool) ->
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_week_schedule_grpc`.
+Запрашивает расписание на неделю через gRPC протокол.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -313,7 +302,7 @@ async def fetch_week_schedule(monday: date | None = None, force_refresh: bool = 
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_week_schedule`.
+Получает недельное расписание по gRPC с автоматическим fallback на HTTP REST.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -347,7 +336,7 @@ async def _fetch_exams_grpc(force_refresh: bool) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_exams_grpc`.
+Запрашивает список экзаменов через бинарный gRPC сервис.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -380,7 +369,7 @@ async def fetch_exams(force_refresh: bool = False) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_exams`.
+Получает реестр экзаменов по gRPC с резервным переключением на REST эндпоинт.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -413,7 +402,7 @@ async def _fetch_teachers_grpc(force_refresh: bool) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_teachers_grpc`.
+Запрашивает контакты преподавателей через gRPC метод GetTeachers.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -446,7 +435,7 @@ async def fetch_teachers(force_refresh: bool = False) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_teachers`.
+Получает телефонно-адресный справочник преподавателей с gRPC/HTTP fallback.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -479,7 +468,7 @@ async def get_api_schedule_for_date(target_date: date | None = None, force_refre
 - **Return Contract**: `list[Lesson]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_api_schedule_for_date`.
+Предоставляет типизированный список занятий на целевой день в моделях Lesson.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -513,7 +502,7 @@ async def get_api_week_schedule( monday: date | None = None, force_refresh: bool
 - **Return Contract**: `list[tuple[date, list[Lesson]]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_api_week_schedule`.
+Возвращает недельное расписание в виде структурированных пар (дата, занятия).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -547,7 +536,7 @@ async def get_api_exams(force_refresh: bool = False) -> list[ExamItem]
 - **Return Contract**: `list[ExamItem]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_api_exams`.
+Предоставляет типизированный список экзаменов и зачетов в моделях ExamItem.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -580,7 +569,7 @@ async def get_api_teachers(force_refresh: bool = False) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_api_teachers`.
+Возвращает словарь контактов преподавателей с фильтрацией по фамилиям.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

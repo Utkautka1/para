@@ -1,6 +1,6 @@
 # Architecture Specification for «para»
 
-Обновлено: 2026-11-01 — раздел «🏆 Ачивки и очки» в /admin (`bot/handlers/admin/gamification.py`, `services/gamification_admin.py`: бонусы `xp_bonus`/`guild_bonus`, выдача и снятие ачивок с уведомлением); окно уточнений ДЗ: отложенная очередь `hw:tasks:delayed` (`schedule_hw_task`, `take_pending_hw_task`, `promote_due_hw_tasks`), реплай автора склеивается с заданием или решается как исправление (`revision_of`); рейтинг по очкам гильдии (`calculate_guild_points`: XP + 10 за пару − 10 за «Н» после точки отсчёта, `StudentProfile.guild_points`), «Именинник» только в день рождения; сброс ачивок с точкой отсчёта журнала (`achievement_baselines`, `services/achievement_reset.py`: журнальные ачивки и места считаются только по отметкам после сброса); ачивки переработаны: каталог из 80 с условием = описанием, журнальные и мета-правила (`services/achievement_rules.py`) выдаёт worker (`achievement_sync_loop`), событийные — хэндлеры и middleware (`services/achievement_triggers.py`, `services/achievement_events.py`, `bot/middlewares/achievements.py`), счётчики в `student_counters` (раздел 17.6); 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
+Обновлено: 2026-11-02 — аудит: очередь ДЗ вынесена в `core/hw_queue.py`, `nack_hw_task` атомарно перекладывает задание Lua-скриптом `LUA_REQUEUE` (раздел 5); фоновые задачи через `core/background.py` (`spawn`, `drain_background` при остановке); атомарный лимит `allow_request` (MULTI: SET NX EX + INCR, без Redis — отказ); `verify_admin_access` принимает `classmate:` старосты, `_reject_cookie_csrf` блокирует межсайтовые изменяющие запросы с кукой (раздел 9.4); прокси Jaeger не пересылает Cookie/X-API-Key/Authorization и держит общий клиент; ритм забега pulse (`POST /miniapp/pulse/ecg/{trace}/beat`); `bind_student_tg_id` async под блокировкой и с проверкой занятого ID; удалены `main.py`, `services/solver/prompt_sanitizer.py`, `update_classmate_tg_id`; 2026-11-01 — раздел «🏆 Ачивки и очки» в /admin (`bot/handlers/admin/gamification.py`, `services/gamification_admin.py`: бонусы `xp_bonus`/`guild_bonus`, выдача и снятие ачивок с уведомлением); окно уточнений ДЗ: отложенная очередь `hw:tasks:delayed` (`schedule_hw_task`, `take_pending_hw_task`, `promote_due_hw_tasks`), реплай автора склеивается с заданием или решается как исправление (`revision_of`); рейтинг по очкам гильдии (`calculate_guild_points`: XP + 10 за пару − 10 за «Н» после точки отсчёта, `StudentProfile.guild_points`), «Именинник» только в день рождения; сброс ачивок с точкой отсчёта журнала (`achievement_baselines`, `services/achievement_reset.py`: журнальные ачивки и места считаются только по отметкам после сброса); ачивки переработаны: каталог из 80 с условием = описанием, журнальные и мета-правила (`services/achievement_rules.py`) выдаёт worker (`achievement_sync_loop`), событийные — хэндлеры и middleware (`services/achievement_triggers.py`, `services/achievement_events.py`, `bot/middlewares/achievements.py`), счётчики в `student_counters` (раздел 17.6); 2026-10-31 — публичный шлюз и туннели переехали с claude на vpn (185.230.67.217, сайт на :8443; раздел 9.5); 2026-10-30 — безопасность: образы ставят зависимости из lock с хешами, базовый образ по digest; туннели на VPS под пользователем `tunnel` с закреплённым ключом хоста (раздел 9.5); код в контейнерах `:ro`, сервисы получают только свои секреты (`compose.yml`); ключи API выдаются только в ЛС, сессии подписываются `SESSION_SECRET`, STT в ЛС только для группы и тестеров (`is_voice_request_allowed`), `/metrics` только админу с шаблонами маршрутов в лейблах, экранирование XML в docx (`to_xml_text`), `/miniapp/action` только для группы; автодеплой проверяет, что коммиты из `main` и подписаны ключом из `/etc/para/allowed_signers`; CI с `permissions: contents: read` и actions по SHA (раздел 9.6); аттестации: кабинет, дата и пара из сетки, пометка «предварительно» (`ExamItem.exam_date/pair_number/time_str/is_preliminary`, `ExamParser`); замены КТМУ (`services/schedule_substitutions.py`: сдвиг пары, отмены, переносы) применяются к расписанию (раздел 3.1); распознавание речи вынесено в сервис stt (раздел 8.16); автодеплой после зелёного CI (раздел 9.6); логи по сервисам (принцип 6); фоновое обновление расписания (`services/schedule_refresher.py`, раздел 3.1); основной API расписания переехал на `raspisanie-ktmu.ru`; одноразовые login-токены (`services/login_tokens.py`, `GET /miniapp/login`) вместо `?key=` и `/miniapp/dev-login`; `/gamification/leaderboard` и `/profile` закрыты `verify_api_or_tester`.
 
 Technical specification of the distributed system architecture, end-to-end data flows, object models, and execution lifecycles for the Telegram group bot, timetable API service, and background workers.
 
@@ -148,8 +148,7 @@ classDiagram
     class ClassmatesAuthService {
         +is_authorized_user(user) bool
         +find_classmate_by_tg_id(user_id) dict
-        +find_unregistered_by_username(username) dict
-        +update_classmate_tg_id(username, tg_id) dict
+        +bind_student_tg_id(full_name, tg_id)$ async dict
         +process_user_auth(user) tuple
     }
 
@@ -182,11 +181,8 @@ classDiagram
     class RedisStateManager {
         +get_snapshot(key) dict
         +set_snapshot(key, data, ttl) void
-        +push_task(queue, item) void
-        +pop_hw_task(timeout) dict
-        +ack_hw_task(task_data) void
-        +nack_hw_task(task_data, max_retries) bool
-        +recover_stale_hw_tasks() int
+        +allow_request(key, limit, window_seconds) bool
+        +incr_with_ttl(key, ttl) int
         +redis_lock(key, ttl) AsyncGenerator
         +zadd_cleanup(set, score, item) void
         +zpop_expired(set, max_score) list
@@ -412,9 +408,6 @@ classDiagram
     class RedisCacheManager {
         +save_snapshot(group, data) bool
         +load_snapshot(group) dict
-        +pop_hw_task(timeout) str
-        +ack_hw_task(raw_task) bool
-        +recover_stale_hw_tasks() int
         +is_reminder_sent(key) bool
         +mark_reminder_sent(key, ttl) void
         +register_message_for_cleanup(chat_id, msg_id, delay) void
@@ -639,12 +632,24 @@ classDiagram
         +str created_at
     }
 
-    class RedisCacheManager {
-        +push_hw_task(task_json) void
+    class HwQueue {
+        <<module core/hw_queue.py>>
+        +push_hw_task(task_data) bool
+        +schedule_hw_task(task_data, delay_seconds) bool
+        +take_pending_hw_task(message_id) dict
+        +promote_due_hw_tasks() int
         +pop_hw_task(timeout) dict
-        +ack_hw_task(raw_task) void
+        +ack_hw_task(task_data) void
         +nack_hw_task(task_data, max_retries) bool
         +recover_stale_hw_tasks() int
+        +clear_hw_queue() int
+        +LUA_REQUEUE str
+    }
+
+    class BackgroundTasks {
+        <<module core/background.py>>
+        +spawn(coro, name) Task
+        +drain_background(timeout) void
     }
 
     class SolverEntrypoint {
@@ -684,7 +689,8 @@ classDiagram
     }
 
     SolverEntrypoint --> TaskProcessor : orchestrates worker loop
-    TaskProcessor --> RedisCacheManager : BLMOVE / LREM / ACK / NACK queue operations
+    TaskProcessor --> HwQueue : BLMOVE / LREM / ACK / NACK (LUA_REQUEUE) queue operations
+    SolverEntrypoint --> HwQueue : recover_stale_hw_tasks on start
     TaskProcessor ..> HomeworkTask : deserializes JSON
     TaskProcessor --> PayloadExtractor : downloads & extracts task attachments
     TaskProcessor --> DeepSeekClient : requests step reasoning
@@ -696,7 +702,7 @@ classDiagram
 
 1. **Atomic Ingestion (`BLMOVE`)**: The consumer extracts tasks from `hw:tasks:queue` and simultaneously moves them to `hw:tasks:processing`. If the container crashes mid-computation, the task remains preserved in `processing`.
 2. **Daemon Crash Recovery**: On startup, `recover_stale_hw_tasks` safely relocates any orphaned tasks from `processing` back to `queue` via atomic `RPOPLPUSH`.
-3. **Fault-Tolerant Retries & DLQ**: When a task encounters unrecoverable errors or parsing timeouts, `nack_hw_task` retries up to 3 times before shunting the poisoned task into Dead Letter Queue `hw:tasks:dlq`, alerting admins and keeping the main queue unblocked.
+3. **Fault-Tolerant Retries & DLQ**: When a task encounters unrecoverable errors or parsing timeouts, `nack_hw_task` retries up to `HW_MAX_TASK_RETRIES` times before shunting the poisoned task into Dead Letter Queue `hw:tasks:dlq`, alerting admins and keeping the main queue unblocked. Removal from `processing` and the push to queue/DLQ run in one Lua script (`LUA_REQUEUE`), and `LREM` matches the payload serialized *before* `retries` is incremented — otherwise the original stayed in `processing` and was re-run after every restart.
 4. **GOST Academic Formatting**: Solved Markdown formulas are translated into Microsoft Word `.docx` documents adhering strictly to Russian academic GOST formatting (Times New Roman 14pt, 1.5 line spacing, 30-15-20-20 mm margins). The task is acknowledged via `LREM` only after document delivery.
 
 ---
@@ -1922,8 +1928,8 @@ classDiagram
         +authenticate_miniapp(payload, response) MiniappAuthResponse
         +check_tester_status(session) MiniappCheckResponse
         +list_api_testers() TesterListResponse
-        +api_add_tester(user_id) dict
-        +api_remove_tester(user_id) dict
+        +api_add_tester(user_id) TesterActionResponse
+        +api_remove_tester(user_id) TesterActionResponse
     }
 
     class MiniappAuthService {
@@ -2175,10 +2181,10 @@ classDiagram
     class SecurityDependencies {
         +verify_api_or_tester(key, bearer, cookie) str
         +verify_admin_access(auth_identity) str
-        -_resolve_key_identity(key) str
-        -_resolve_token_identity(token) str
-        -_log_audit_access(identity, request) void
+        +verify_api_key(key) str
     }
+    note for SecurityDependencies "admin = master_admin или tester:/classmate: c uid старосты/зама.\nPOST/DELETE с кукой para_session со стороннего сайта\n(Sec-Fetch-Site / Origin) -> 403"
+
 
     class ScheduleRouter {
         +GET /schedule/day
@@ -2200,7 +2206,7 @@ classDiagram
         +GET /teachers/search
         +GET /teachers/:last_name
         +POST /teachers/custom
-        +DELETE /teachers/custom/:last_name
+        +DELETE /teachers/custom/:last_name -> TeacherDeleteResponse
         +POST /teachers/refresh
     }
 
@@ -2212,7 +2218,7 @@ classDiagram
         +POST /attendance/session/mark
         +POST /attendance/session/batch_present
         +POST /attendance/session/commit
-        +DELETE /attendance/session
+        +DELETE /attendance/session -> CancelSessionResponse
     }
 
     class ClassmatesRouter {
@@ -2253,14 +2259,26 @@ classDiagram
         +POST /miniapp/action
         +GET /miniapp/status
         +GET /miniapp/testers
-        +POST /miniapp/testers/:uid
-        +DELETE /miniapp/testers/:uid
+        +POST /miniapp/testers/:uid -> TesterActionResponse
+        +DELETE /miniapp/testers/:uid -> TesterActionResponse
+    }
+
+    class PulseRouter {
+        <<router /miniapp/pulse, скрыт из OpenAPI>>
+        +POST /ecg -> PulseTraceResponse
+        +GET /ecg.js
+        +POST /ecg/:trace/beat -> PulseBeatResponse
+        +POST /ecg/:trace -> PulseReadingResponse
+        +next_beats(beats, score, now) list
+        +is_plausible_run(beats, score, now) bool
     }
 
     class JaegerProxyRouter {
         +GET /jaeger
         +ANY /jaeger/{path}
+        +close_jaeger_client() void
     }
+    note for JaegerProxyRouter "общий httpx.AsyncClient; Cookie, Authorization,\nX-API-Key в Jaeger не пересылаются" 
 
     class HealthRouter {
         +GET /health
@@ -2285,6 +2303,7 @@ classDiagram
     FastApiApplication --> SystemRouter : mounts
     FastApiApplication --> MiniappRouter : mounts
     FastApiApplication --> JaegerProxyRouter : mounts
+    FastApiApplication --> PulseRouter : mounts
     FastApiApplication --> HealthRouter : mounts
     FastApiApplication --> GamificationRouter : mounts
 
@@ -2807,7 +2826,7 @@ To protect multimodal AI processing from prompt injection attacks, jailbreaks, a
 flowchart TD
     TaskIngress(["📥 Student Homework Task\n(raw_text, media_paths)"]) --> ExtractPayload["services/solver/payload_extractor\n(resolve_task_payload)"]
 
-    subgraph Sanitization["1. Prompt Hygiene & Context Isolation (services/solver/prompt_sanitizer)"]
+    subgraph Sanitization["1. Prompt Hygiene & Context Isolation (core/prompt_sanitizer)"]
         CleanChars["remove_invisible_control_chars\n(Strip null bytes & zero-width chars)"]
         DetectInjection["detect_injection_indicators\n(Regex audit for prompt injection & jailbreak)"]
         EscapeDelim["escape_context_delimiters\n(Escape XML tags & </учебное_задание>)"]
@@ -2835,7 +2854,7 @@ flowchart TD
     subgraph Delivery["3. Solution Delivery & Reporting (services/solver)"]
         DocGen["utils/doc_generator\n(GOST 7.32-2017 .docx Builder)"]
         TgReport["services/solver/telegram_reporter\n(send_solution_to_telegram)"]
-        AckTask["core/redis_cache\n(ack_hw_task via atomic LREM)"]
+        AckTask["core/hw_queue\n(ack_hw_task via atomic LREM)"]
     end
 
     RecordSuccess --> DocGen

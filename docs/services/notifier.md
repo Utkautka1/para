@@ -1,44 +1,33 @@
 # Component Reference: `services/notifier.py`
 > **File Path**: [`services/notifier.py`](../../services/notifier.py)
 > **Subsystem**: `Notification Dispatcher`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/notifier.py` module implements core operational logic for the `Notification Dispatcher` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис рассылки уведомлений и динамических напоминаний.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`build_missing_teacher_alert`](#build_missing_teacher_alert) | Function | L40–L60 | `tuple[str, InlineKeyboardMarkup]` | Executes core domain logic for `build_missing_teacher_a... |
-| [`notify_missing_teacher`](#notify_missing_teacher) | Function | L63–L78 | `None` | Executes core domain logic for `notify_missing_teacher`... |
-| [`send_to_user`](#send_to_user) | Function | L81–L93 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`parse_lesson_start_time`](#parse_lesson_start_time) | Function | L96–L112 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
-| [`parse_lesson_end_time`](#parse_lesson_end_time) | Function | L115–L131 | `dtime | None` | Parses and extracts structured entities from `parse_les... |
-| [`_send_reminder_to_chat`](#_send_reminder_to_chat) | Function | L134–L153 | `None` | Executes core domain logic for `_send_reminder_to_chat`... |
-| [`send_single_reminder`](#send_single_reminder) | Function | L156–L175 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`_add_lesson_reminder_job`](#_add_lesson_reminder_job) | Function | L178–L193 | `None` | Executes core domain logic for `_add_lesson_reminder_jo... |
-| [`schedule_lesson_reminder`](#schedule_lesson_reminder) | Function | L196–L212 | `None` | Executes core domain logic for `schedule_lesson_reminde... |
-| [`_send_attendance_to_admin`](#_send_attendance_to_admin) | Function | L215–L231 | `None` | Executes core domain logic for `_send_attendance_to_adm... |
-| [`send_attendance_prompt`](#send_attendance_prompt) | Function | L234–L247 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`auto_close_attendance_session`](#auto_close_attendance_session) | Function | L250–L267 | `None` | Executes core domain logic for `auto_close_attendance_s... |
-| [`_schedule_attendance_poll_job`](#_schedule_attendance_poll_job) | Function | L270–L286 | `None` | Executes core domain logic for `_schedule_attendance_po... |
-| [`_schedule_attendance_close_job`](#_schedule_attendance_close_job) | Function | L289–L304 | `None` | Executes core domain logic for `_schedule_attendance_cl... |
-| [`schedule_attendance_poll`](#schedule_attendance_poll) | Function | L307–L325 | `None` | Executes core domain logic for `schedule_attendance_pol... |
-| [`daily_schedule_dispatch`](#daily_schedule_dispatch) | Function | L328–L348 | `None` | Executes core domain logic for `daily_schedule_dispatch... |
-| [`_register_backup_job`](#_register_backup_job) | Function | L351–L362 | `None` | Executes core domain logic for `_register_backup_job`. |
-| [`setup_scheduler`](#setup_scheduler) | Function | L365–L379 | `AsyncIOScheduler` | Executes core domain logic for `setup_scheduler`. |
+| [`build_missing_teacher_alert`](#build_missing_teacher_alert) | Function | L40–L60 | `tuple[str, InlineKeyboardMarkup]` | Формирует текст и клавиатуру предупреждения об отсутств... |
+| [`notify_missing_teacher`](#notify_missing_teacher) | Function | L63–L78 | `None` | Уведомляет администратора в ЛС, если преподаватель дист... |
+| [`send_to_user`](#send_to_user) | Function | L81–L93 | `None` | Отправляет сервисное HTML-сообщение администратору в ЛС... |
+| [`parse_lesson_start_time`](#parse_lesson_start_time) | Function | L96–L112 | `dtime \| None` | Парсит время начала пары из строки любого формата ('08:... |
+| [`parse_lesson_end_time`](#parse_lesson_end_time) | Function | L115–L131 | `dtime \| None` | Парсит время окончания пары из строки диапазона ('08:30... |
+| [`_send_reminder_to_chat`](#_send_reminder_to_chat) | Function | L134–L153 | `None` | Отправляет персональное напоминание одному подписчику п... |
+| [`send_single_reminder`](#send_single_reminder) | Function | L156–L175 | `None` | Отправляет 10-минутное напоминание о паре всем активным... |
+| [`_add_lesson_reminder_job`](#_add_lesson_reminder_job) | Function | L178–L193 | `None` | Регистрирует отложенную отправку напоминания в планиров... |
+| [`schedule_lesson_reminder`](#schedule_lesson_reminder) | Function | L196–L212 | `None` | Планирует таймер напоминания за 10 минут до пары. |
+| [`_send_attendance_to_admin`](#_send_attendance_to_admin) | Function | L215–L231 | `None` | Отправляет запрос подтверждения пары старосте или замст... |
+| [`send_attendance_prompt`](#send_attendance_prompt) | Function | L234–L247 | `None` | Отправляет запрос подтверждения проведения пары старост... |
+| [`auto_close_attendance_session`](#auto_close_attendance_session) | Function | L250–L267 | `None` | Автоматически закрывает неактивную сессию отметки по ок... |
+| [`_schedule_attendance_poll_job`](#_schedule_attendance_poll_job) | Function | L270–L286 | `None` | Планирует отправку опроса старосте через 30 минут после... |
+| [`_schedule_attendance_close_job`](#_schedule_attendance_close_job) | Function | L289–L304 | `None` | Планирует автоматическое закрытие нетронутой сессии по ... |
+| [`schedule_attendance_poll`](#schedule_attendance_poll) | Function | L307–L325 | `None` | Планирует опрос через 30 минут от старта пары и автозав... |
+| [`daily_schedule_dispatch`](#daily_schedule_dispatch) | Function | L328–L348 | `None` | Ежедневный воркер расчёта таймеров (пропускает воскресе... |
+| [`_register_backup_job`](#_register_backup_job) | Function | L351–L362 | `None` | Регистрирует ежедневную крон-задачу резервного копирова... |
+| [`setup_scheduler`](#setup_scheduler) | Function | L365–L379 | `AsyncIOScheduler` | Инициализирует и запускает планировщик задач APSchedule... |
 
 ---
 
@@ -54,7 +43,7 @@ def build_missing_teacher_alert(raw_teacher: str, subj_name: str) -> tuple[str, 
 - **Return Contract**: `tuple[str, InlineKeyboardMarkup]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_missing_teacher_alert`.
+Формирует текст и клавиатуру предупреждения об отсутствии преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -88,7 +77,7 @@ async def notify_missing_teacher(raw_teacher: str, subj_name: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_missing_teacher`.
+Уведомляет администратора в ЛС, если преподаватель дистанционной пары не найден.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -122,7 +111,7 @@ async def send_to_user(text: str, reply_markup: Any = None) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_to_user`.
+Отправляет сервисное HTML-сообщение администратору в ЛС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -156,7 +145,7 @@ def parse_lesson_start_time(time_str: str) -> dtime | None
 - **Return Contract**: `dtime | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_lesson_start_time`.
+Парсит время начала пары из строки любого формата ('08:30–09:55', '8:30-09:55').
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -189,7 +178,7 @@ def parse_lesson_end_time(time_str: str) -> dtime | None
 - **Return Contract**: `dtime | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_lesson_end_time`.
+Парсит время окончания пары из строки диапазона ('08:30–09:55').
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -222,7 +211,7 @@ async def _send_reminder_to_chat( chat_id: int, text: str, lesson: Lesson, sem: 
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_reminder_to_chat`.
+Отправляет персональное напоминание одному подписчику под контролем семафора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -258,7 +247,7 @@ async def send_single_reminder(lesson: Lesson) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_single_reminder`.
+Отправляет 10-минутное напоминание о паре всем активным подписчикам конкурентно.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -291,7 +280,7 @@ def _add_lesson_reminder_job(today: date, lesson: Lesson, remind_dt: datetime) -
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_add_lesson_reminder_job`.
+Регистрирует отложенную отправку напоминания в планировщике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -326,7 +315,7 @@ def schedule_lesson_reminder(today: date, lesson: Lesson, now_dt: datetime) -> N
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_lesson_reminder`.
+Планирует таймер напоминания за 10 минут до пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -361,7 +350,7 @@ async def _send_attendance_to_admin( user_id: int, text: str, kb: Any, sem: asyn
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_attendance_to_admin`.
+Отправляет запрос подтверждения пары старосте или замстаросты под семафором.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -397,7 +386,7 @@ async def send_attendance_prompt(lesson: Lesson) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_attendance_prompt`.
+Отправляет запрос подтверждения проведения пары старосте и замстаросты параллельно.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -430,7 +419,7 @@ async def auto_close_attendance_session(lesson_num: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `auto_close_attendance_session`.
+Автоматически закрывает неактивную сессию отметки по окончании пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -463,7 +452,7 @@ def _schedule_attendance_poll_job(today: date, lesson: Lesson, poll_dt: datetime
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_schedule_attendance_poll_job`.
+Планирует отправку опроса старосте через 30 минут после начала пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -499,7 +488,7 @@ def _schedule_attendance_close_job(today: date, lesson: Lesson, end_dt: datetime
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_schedule_attendance_close_job`.
+Планирует автоматическое закрытие нетронутой сессии по окончании пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -535,7 +524,7 @@ def schedule_attendance_poll(today: date, lesson: Lesson, now_dt: datetime) -> N
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_attendance_poll`.
+Планирует опрос через 30 минут от старта пары и автозавершение в конце.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -570,7 +559,7 @@ async def daily_schedule_dispatch() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `daily_schedule_dispatch`.
+Ежедневный воркер расчёта таймеров (пропускает воскресенье).
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -601,7 +590,7 @@ def _register_backup_job() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_register_backup_job`.
+Регистрирует ежедневную крон-задачу резервного копирования в 03:00 МСК.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -632,7 +621,7 @@ def setup_scheduler() -> AsyncIOScheduler
 - **Return Contract**: `AsyncIOScheduler`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_scheduler`.
+Инициализирует и запускает планировщик задач APScheduler.
 
 #### Parameters Contract
 *This method takes no input parameters.*

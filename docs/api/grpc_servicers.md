@@ -1,32 +1,21 @@
 # Component Reference: `api/grpc/servicers.py`
 > **File Path**: [`api/grpc/servicers.py`](../../api/grpc/servicers.py)
 > **Subsystem**: `gRPC RPC Servicers`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/grpc/servicers.py` module implements core operational logic for the `gRPC RPC Servicers` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервисеры gRPC (ScheduleService, ExamsService, TeachersService).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_resolve_day`](#_resolve_day) | Function | L35–L46 | `date` | Executes core domain logic for `_resolve_day`. |
-| [`_resolve_monday`](#_resolve_monday) | Function | L49–L61 | `date` | Executes core domain logic for `_resolve_monday`. |
-| [`ScheduleServicer.GetDaySchedule`](#scheduleservicergetdayschedule) | Method | L67–L87 | `schedule_pb2.DayScheduleResponse` | Executes core domain logic for `GetDaySchedule`. |
-| [`ScheduleServicer.GetWeekSchedule`](#scheduleservicergetweekschedule) | Method | L89–L108 | `schedule_pb2.WeekScheduleResponse` | Executes core domain logic for `GetWeekSchedule`. |
-| [`ExamsServicer.GetExams`](#examsservicergetexams) | Method | L114–L132 | `exams_pb2.ExamsResponse` | Executes core domain logic for `GetExams`. |
-| [`TeachersServicer.GetTeachers`](#teachersservicergetteachers) | Method | L138–L154 | `teachers_pb2.TeachersResponse` | Executes core domain logic for `GetTeachers`. |
+| [`_resolve_day`](#_resolve_day) | Function | L35–L46 | `date` | Парсит ISO дату или возвращает сегодняшнюю дату по часо... |
+| [`_resolve_monday`](#_resolve_monday) | Function | L49–L61 | `date` | Парсит дату понедельника или вычисляет дату понедельник... |
+| [`ScheduleServicer.GetDaySchedule`](#scheduleservicergetdayschedule) | Method | L67–L87 | `schedule_pb2.DayScheduleResponse` | Возвращает расписание занятий группы на целевой день в ... |
+| [`ScheduleServicer.GetWeekSchedule`](#scheduleservicergetweekschedule) | Method | L89–L108 | `schedule_pb2.WeekScheduleResponse` | Возвращает недельное расписание занятий академической г... |
+| [`ExamsServicer.GetExams`](#examsservicergetexams) | Method | L114–L132 | `exams_pb2.ExamsResponse` | Возвращает список контрольных мероприятий и экзаменов с... |
+| [`TeachersServicer.GetTeachers`](#teachersservicergetteachers) | Method | L138–L154 | `teachers_pb2.TeachersResponse` | Возвращает справочник контактов и видеоконференций преп... |
 
 ---
 
@@ -42,7 +31,7 @@ def _resolve_day(raw_date: str) -> date
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_day`.
+Парсит ISO дату или возвращает сегодняшнюю дату по часовому поясу МСК.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -75,7 +64,7 @@ def _resolve_monday(raw_monday: str) -> date
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_monday`.
+Парсит дату понедельника или вычисляет дату понедельника текущей недели.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -100,7 +89,7 @@ result = _resolve_monday(raw_monday=...)
 
 ## Class Model: `ScheduleServicer`
 
-Encapsulates domain entities and data transfer logic for `ScheduleServicer`.
+Серверный обработчик gRPC-запросов расписания.
 
 ### `ScheduleServicer.GetDaySchedule`
 ```python
@@ -112,7 +101,7 @@ async def GetDaySchedule( self, request: schedule_pb2.DayScheduleRequest, contex
 - **Return Contract**: `schedule_pb2.DayScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `GetDaySchedule`.
+Возвращает расписание занятий группы на целевой день в формате Protobuf.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -146,7 +135,7 @@ async def GetWeekSchedule( self, request: schedule_pb2.WeekScheduleRequest, cont
 - **Return Contract**: `schedule_pb2.WeekScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `GetWeekSchedule`.
+Возвращает недельное расписание занятий академической группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -172,7 +161,7 @@ result = await GetWeekSchedule(request=..., context=...)
 
 ## Class Model: `ExamsServicer`
 
-Encapsulates domain entities and data transfer logic for `ExamsServicer`.
+Серверный обработчик gRPC-запросов экзаменов.
 
 ### `ExamsServicer.GetExams`
 ```python
@@ -184,7 +173,7 @@ async def GetExams( self, request: exams_pb2.ExamsRequest, context: grpc.aio.Ser
 - **Return Contract**: `exams_pb2.ExamsResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `GetExams`.
+Возвращает список контрольных мероприятий и экзаменов сессии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -210,7 +199,7 @@ result = await GetExams(request=..., context=...)
 
 ## Class Model: `TeachersServicer`
 
-Encapsulates domain entities and data transfer logic for `TeachersServicer`.
+Серверный обработчик gRPC-запросов преподавателей.
 
 ### `TeachersServicer.GetTeachers`
 ```python
@@ -222,7 +211,7 @@ async def GetTeachers( self, request: teachers_pb2.TeachersRequest, context: grp
 - **Return Contract**: `teachers_pb2.TeachersResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `GetTeachers`.
+Возвращает справочник контактов и видеоконференций преподавателей.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,51 +1,40 @@
 # Component Reference: `bot/handlers/admin/panel.py`
 > **File Path**: [`bot/handlers/admin/panel.py`](../../bot/handlers/admin/panel.py)
 > **Subsystem**: `Admin Control Panel`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/panel.py` module implements core operational logic for the `Admin Control Panel` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры управления панелью администратора (только для ALLOWED_USER_ID).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L39–L55 | `None` | Executes core domain logic for `_ack_admin_callback`. |
-| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L58–L80 | `None` | Executes core domain logic for `_safe_edit_admin_messag... |
-| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L83–L102 | `str` | Formats message payload and presentation markup for `fo... |
-| [`cb_admin_menu`](#cb_admin_menu) | Function | L107–L125 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_sync`](#cb_admin_sync) | Function | L129–L148 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L151–L171 | `str` | Executes core domain logic for `_get_redis_memory_stat`... |
-| [`_collect_health_summary`](#_collect_health_summary) | Function | L174–L206 | `str` | Executes core domain logic for `_collect_health_summary... |
-| [`cb_admin_status`](#cb_admin_status) | Function | L210–L222 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L226–L240 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L244–L260 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L264–L280 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L284–L300 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L304–L320 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L324–L340 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L343–L367 | `tuple[str, list]` | Executes core domain logic for `_build_custom_teachers_... |
-| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L371–L387 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L391–L408 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L412–L437 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L441–L461 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L465–L484 | `None` | Executes core domain logic for `msg_admin_got_teacher_n... |
-| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L488–L513 | `None` | Executes core domain logic for `msg_admin_got_teacher_l... |
-| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L516–L538 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_unbound_students... |
-| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L542–L571 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L575–L599 | `None` | Handles Telegram inline callback query events for `cb_a... |
-| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L603–L629 | `None` | Executes core domain logic for `msg_admin_got_student_i... |
+| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L51–L67 | `None` | Мгновенно подтверждает callback в админ-панели с обрабо... |
+| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L70–L92 | `None` | Безопасно обновляет сообщение админки, перехватывая 'no... |
+| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L95–L114 | `str` | Формирует приветственный HTML-текст главной панели упра... |
+| [`cb_admin_menu`](#cb_admin_menu) | Function | L119–L137 | `None` | Отображает главную панель управления старосты с инлайн-... |
+| [`cb_admin_sync`](#cb_admin_sync) | Function | L141–L160 | `None` | Принудительно скачивает расписание КТМУ и таблицу препо... |
+| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L163–L181 | `str` | Безопасно извлекает объем используемой оперативной памя... |
+| [`_collect_health_summary`](#_collect_health_summary) | Function | L184–L211 | `str` | Собирает диагностические метрики всех компонентов и сер... |
+| [`cb_admin_status`](#cb_admin_status) | Function | L215–L227 | `None` | Отображает подробный дашборд состояния компонентов и се... |
+| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L231–L245 | `None` | Принудительно публикует или обновляет сообщение расписа... |
+| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L249–L264 | `None` | Удаляет старое сообщение топика и создает новое с фикса... |
+| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L268–L283 | `None` | Принудительно обновляет сообщение сессии и экзаменов в ... |
+| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L287–L302 | `None` | Удаляет закрепленное сообщение экзаменов и создает ново... |
+| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L306–L321 | `None` | Принудительно обновляет сводный реестр посещаемости в т... |
+| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L325–L340 | `None` | Удаляет старое сообщение реестра и создает новое в топи... |
+| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L343–L367 | `tuple[str, list]` | Формирует текст списка кастомных преподавателей и ряды ... |
+| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L371–L387 | `None` | Отображает список кастомных преподавателей с кнопками д... |
+| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L391–L406 | `None` | Удаляет запись преподавателя из пользовательского реест... |
+| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L410–L435 | `None` | Запускает сценарий FSM для редактирования ссылки встреч... |
+| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L439–L459 | `None` | Инициирует пошаговый диалог FSM для добавления нового п... |
+| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L463–L482 | `None` | Принимает ФИО преподавателя и переключает FSM на ожидан... |
+| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L486–L511 | `None` | Сохраняет преподавателя в пользовательский реестр и сбр... |
+| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L514–L534 | `InlineKeyboardMarkup` | Формирует клавиатуру со списком студентов группы для пр... |
+| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L538–L565 | `None` | Отображает интерактивный список студентов группы для пр... |
+| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L569–L591 | `None` | Запрашивает числовой Telegram ID для выбранного из реес... |
+| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L595–L621 | `None` | Фиксирует Telegram ID студента в реестре одногруппников... |
 
 ---
 
@@ -53,23 +42,23 @@ graph LR
 
 ## Class Model: `AddTeacherState`
 
-Encapsulates domain entities and data transfer logic for `AddTeacherState`.
+Класс `AddTeacherState`.
 
 ## Class Model: `BindStudentState`
 
-Encapsulates domain entities and data transfer logic for `BindStudentState`.
+Класс `BindStudentState`.
 
 ### `_ack_admin_callback`
 ```python
 async def _ack_admin_callback(callback: CallbackQuery, text: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L39-L55`](../../bot/handlers/admin/panel.py#L39-L55)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L51-L67`](../../bot/handlers/admin/panel.py#L51-L67)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_ack_admin_callback`.
+Мгновенно подтверждает callback в админ-панели с обработкой устаревания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -98,12 +87,12 @@ result = await _ack_admin_callback(callback=..., text=...)
 async def _safe_edit_admin_message( message: Message | None, text: str, reply_markup: InlineKeyboardMarkup | None = None ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L58-L80`](../../bot/handlers/admin/panel.py#L58-L80)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L70-L92`](../../bot/handlers/admin/panel.py#L70-L92)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_safe_edit_admin_message`.
+Безопасно обновляет сообщение админки, перехватывая 'not modified'.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -133,12 +122,12 @@ result = await _safe_edit_admin_message(message=..., text=..., reply_markup=...)
 def format_admin_panel_text(status_note: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L83-L102`](../../bot/handlers/admin/panel.py#L83-L102)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L95-L114`](../../bot/handlers/admin/panel.py#L95-L114)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_admin_panel_text`.
+Формирует приветственный HTML-текст главной панели управления администратора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -166,12 +155,12 @@ result = format_admin_panel_text(status_note=...)
 async def cb_admin_menu(event: Message | CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L107-L125`](../../bot/handlers/admin/panel.py#L107-L125)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L119-L137`](../../bot/handlers/admin/panel.py#L119-L137)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_menu`.
+Отображает главную панель управления старосты с инлайн-кнопками.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -199,12 +188,12 @@ result = await cb_admin_menu(event=...)
 async def cb_admin_sync(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L129-L148`](../../bot/handlers/admin/panel.py#L129-L148)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L141-L160`](../../bot/handlers/admin/panel.py#L141-L160)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_sync`.
+Принудительно скачивает расписание КТМУ и таблицу преподавателей.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -232,12 +221,12 @@ result = await cb_admin_sync(callback=...)
 async def _get_redis_memory_stat() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L151-L171`](../../bot/handlers/admin/panel.py#L151-L171)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L163-L181`](../../bot/handlers/admin/panel.py#L163-L181)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_redis_memory_stat`.
+Безопасно извлекает объем используемой оперативной памяти Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -263,12 +252,12 @@ result = await _get_redis_memory_stat()
 async def _collect_health_summary() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L174-L206`](../../bot/handlers/admin/panel.py#L174-L206)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L184-L211`](../../bot/handlers/admin/panel.py#L184-L211)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_collect_health_summary`.
+Собирает диагностические метрики всех компонентов и сервисов системы.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -294,12 +283,12 @@ result = await _collect_health_summary()
 async def cb_admin_status(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L210-L222`](../../bot/handlers/admin/panel.py#L210-L222)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L215-L227`](../../bot/handlers/admin/panel.py#L215-L227)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_status`.
+Отображает подробный дашборд состояния компонентов и сервисов бота.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -327,12 +316,12 @@ result = await cb_admin_status(callback=...)
 async def cb_admin_force_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L226-L240`](../../bot/handlers/admin/panel.py#L226-L240)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L231-L245`](../../bot/handlers/admin/panel.py#L231-L245)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_force_topic`.
+Принудительно публикует или обновляет сообщение расписания в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -360,12 +349,12 @@ result = await cb_admin_force_topic(callback=...)
 async def cb_admin_recreate_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L244-L260`](../../bot/handlers/admin/panel.py#L244-L260)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L249-L264`](../../bot/handlers/admin/panel.py#L249-L264)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_recreate_topic`.
+Удаляет старое сообщение топика и создает новое с фиксацией message_id.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -393,12 +382,12 @@ result = await cb_admin_recreate_topic(callback=...)
 async def cb_admin_force_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L264-L280`](../../bot/handlers/admin/panel.py#L264-L280)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L268-L283`](../../bot/handlers/admin/panel.py#L268-L283)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_force_exam`.
+Принудительно обновляет сообщение сессии и экзаменов в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -426,12 +415,12 @@ result = await cb_admin_force_exam(callback=...)
 async def cb_admin_recreate_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L284-L300`](../../bot/handlers/admin/panel.py#L284-L300)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L287-L302`](../../bot/handlers/admin/panel.py#L287-L302)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_recreate_exam`.
+Удаляет закрепленное сообщение экзаменов и создает новое в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -459,12 +448,12 @@ result = await cb_admin_recreate_exam(callback=...)
 async def cb_admin_force_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L304-L320`](../../bot/handlers/admin/panel.py#L304-L320)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L306-L321`](../../bot/handlers/admin/panel.py#L306-L321)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_force_att_topic`.
+Принудительно обновляет сводный реестр посещаемости в топике Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -492,12 +481,12 @@ result = await cb_admin_force_att_topic(callback=...)
 async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L324-L340`](../../bot/handlers/admin/panel.py#L324-L340)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L325-L340`](../../bot/handlers/admin/panel.py#L325-L340)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_recreate_att_topic`.
+Удаляет старое сообщение реестра и создает новое в топике посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -530,7 +519,7 @@ def _build_custom_teachers_view(custom: dict) -> tuple[str, list]
 - **Return Contract**: `tuple[str, list]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_custom_teachers_view`.
+Формирует текст списка кастомных преподавателей и ряды кнопок управления.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -563,7 +552,7 @@ async def cb_admin_list_custom(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_list_custom`.
+Отображает список кастомных преподавателей с кнопками добавления и удаления.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -591,12 +580,12 @@ result = await cb_admin_list_custom(callback=...)
 async def cb_admin_delete_teacher(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L391-L408`](../../bot/handlers/admin/panel.py#L391-L408)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L391-L406`](../../bot/handlers/admin/panel.py#L391-L406)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_delete_teacher`.
+Удаляет запись преподавателя из пользовательского реестра и обновляет меню.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -624,12 +613,12 @@ result = await cb_admin_delete_teacher(callback=...)
 async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L412-L437`](../../bot/handlers/admin/panel.py#L412-L437)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L410-L435`](../../bot/handlers/admin/panel.py#L410-L435)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_edit_teacher`.
+Запускает сценарий FSM для редактирования ссылки встречи преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -658,12 +647,12 @@ result = await cb_admin_edit_teacher(callback=..., state=...)
 async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L441-L461`](../../bot/handlers/admin/panel.py#L441-L461)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L439-L459`](../../bot/handlers/admin/panel.py#L439-L459)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_start_add_teacher`.
+Инициирует пошаговый диалог FSM для добавления нового преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -692,12 +681,12 @@ result = await cb_admin_start_add_teacher(callback=..., state=...)
 async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L465-L484`](../../bot/handlers/admin/panel.py#L465-L484)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L463-L482`](../../bot/handlers/admin/panel.py#L463-L482)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `msg_admin_got_teacher_name`.
+Принимает ФИО преподавателя и переключает FSM на ожидание ссылки подключения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -726,12 +715,12 @@ result = await msg_admin_got_teacher_name(message=..., state=...)
 async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L488-L513`](../../bot/handlers/admin/panel.py#L488-L513)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L486-L511`](../../bot/handlers/admin/panel.py#L486-L511)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `msg_admin_got_teacher_link`.
+Сохраняет преподавателя в пользовательский реестр и сбрасывает стейт FSM.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -760,12 +749,12 @@ result = await msg_admin_got_teacher_link(message=..., state=...)
 def _build_unbound_students_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L516-L538`](../../bot/handlers/admin/panel.py#L516-L538)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L514-L534`](../../bot/handlers/admin/panel.py#L514-L534)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_unbound_students_kb`.
+Формирует клавиатуру со списком студентов группы для привязки Telegram ID.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -791,12 +780,12 @@ result = _build_unbound_students_kb()
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L542-L571`](../../bot/handlers/admin/panel.py#L542-L571)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L538-L565`](../../bot/handlers/admin/panel.py#L538-L565)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_list_students_for_binding`.
+Отображает интерактивный список студентов группы для привязки Telegram ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -824,12 +813,12 @@ result = await cb_admin_list_students_for_binding(callback=...)
 async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L575-L599`](../../bot/handlers/admin/panel.py#L575-L599)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L569-L591`](../../bot/handlers/admin/panel.py#L569-L591)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_admin_select_student`.
+Запрашивает числовой Telegram ID для выбранного из реестра студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -858,12 +847,12 @@ result = await cb_admin_select_student(callback=..., state=...)
 async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L603-L629`](../../bot/handlers/admin/panel.py#L603-L629)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L595-L621`](../../bot/handlers/admin/panel.py#L595-L621)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `msg_admin_got_student_id`.
+Фиксирует Telegram ID студента в реестре одногруппников и сбрасывает FSM.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

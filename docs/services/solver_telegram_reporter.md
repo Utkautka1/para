@@ -1,30 +1,19 @@
 # Component Reference: `services/solver/telegram_reporter.py`
 > **File Path**: [`services/solver/telegram_reporter.py`](../../services/solver/telegram_reporter.py)
 > **Subsystem**: `Solver Delivery & Reporting`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/solver/telegram_reporter.py` module implements core operational logic for the `Solver Delivery & Reporting` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль доставки готовых решений и уведомлений в Telegram.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`build_post_link`](#build_post_link) | Function | L17–L27 | `str` | Executes core domain logic for `build_post_link`. |
-| [`build_solution_caption`](#build_solution_caption) | Function | L30–L45 | `str` | Executes core domain logic for `build_solution_caption`... |
-| [`send_solution_to_telegram`](#send_solution_to_telegram) | Function | L48–L68 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`notify_task_error`](#notify_task_error) | Function | L71–L91 | `None` | Executes core domain logic for `notify_task_error`. |
+| [`build_post_link`](#build_post_link) | Function | L17–L27 | `str` | Формирует прямую t.me-ссылку на оригинальное сообщение ... |
+| [`build_solution_caption`](#build_solution_caption) | Function | L30–L45 | `str` | Формирует подпись к решению: обычное или исправленное п... |
+| [`send_solution_to_telegram`](#send_solution_to_telegram) | Function | L48–L68 | `None` | Отправляет готовый .docx файл решения в топик готовых Д... |
+| [`notify_task_error`](#notify_task_error) | Function | L71–L91 | `None` | Отправляет уведомление об ошибке решения в чат или топи... |
 
 ---
 
@@ -40,7 +29,7 @@ def build_post_link(chat_id: int, message_id: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_post_link`.
+Формирует прямую t.me-ссылку на оригинальное сообщение задания в Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -74,7 +63,7 @@ def build_solution_caption(chat_id: int, message_id: int, revision_of: int | Non
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_solution_caption`.
+Формирует подпись к решению: обычное или исправленное по уточнению студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ async def send_solution_to_telegram(tg_bot: Bot, task: dict, doc_path: str) -> N
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_solution_to_telegram`.
+Отправляет готовый .docx файл решения в топик готовых ДЗ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -144,7 +133,7 @@ async def notify_task_error(tg_bot: Bot, task: dict) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_task_error`.
+Отправляет уведомление об ошибке решения в чат или топик пользователя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

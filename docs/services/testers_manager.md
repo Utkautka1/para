@@ -1,32 +1,21 @@
 # Component Reference: `services/testers_manager.py`
 > **File Path**: [`services/testers_manager.py`](../../services/testers_manager.py)
 > **Subsystem**: `Testing Whitelist`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/testers_manager.py` module implements core operational logic for the `Testing Whitelist` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Менеджер белого списка тестировщиков и персональных API-ключей para-api.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L47 | `str | None` | Executes core domain logic for `generate_or_get_tester_... |
-| [`get_tester_by_key`](#get_tester_by_key) | Function | L50–L68 | `int | None` | Retrieves and resolves domain data for `get_tester_by_k... |
-| [`add_tester`](#add_tester) | Function | L71–L86 | `bool` | Executes core domain logic for `add_tester`. |
-| [`remove_tester`](#remove_tester) | Function | L89–L110 | `bool` | Executes core domain logic for `remove_tester`. |
-| [`is_tester_allowed`](#is_tester_allowed) | Function | L113–L127 | `bool` | Executes core domain logic for `is_tester_allowed`. |
-| [`get_all_testers`](#get_all_testers) | Function | L130–L146 | `list[int]` | Retrieves and resolves domain data for `get_all_testers... |
+| [`generate_or_get_tester_key`](#generate_or_get_tester_key) | Function | L26–L47 | `str \| None` | Генерирует или возвращает существующий персональный API... |
+| [`get_tester_by_key`](#get_tester_by_key) | Function | L50–L68 | `int \| None` | Определяет Telegram ID тестера по переданному значению ... |
+| [`add_tester`](#add_tester) | Function | L71–L86 | `bool` | Добавляет пользователя в белый список тестеров и генери... |
+| [`remove_tester`](#remove_tester) | Function | L89–L110 | `bool` | Удаляет пользователя из белого списка тестеров и отзыва... |
+| [`is_tester_allowed`](#is_tester_allowed) | Function | L113–L127 | `bool` | Проверяет наличие прав на тестирование API и использова... |
+| [`get_all_testers`](#get_all_testers) | Function | L130–L146 | `list[int]` | Возвращает отсортированный список всех авторизованных т... |
 
 ---
 
@@ -42,7 +31,7 @@ async def generate_or_get_tester_key(user_id: int) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `generate_or_get_tester_key`.
+Генерирует или возвращает существующий персональный API-ключ тестера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -76,7 +65,7 @@ async def get_tester_by_key(api_key: str) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_tester_by_key`.
+Определяет Telegram ID тестера по переданному значению API-ключа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ async def add_tester(user_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_tester`.
+Добавляет пользователя в белый список тестеров и генерирует ему API-ключ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ async def remove_tester(user_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `remove_tester`.
+Удаляет пользователя из белого списка тестеров и отзывает его API-ключ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -177,7 +166,7 @@ async def is_tester_allowed(user_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_tester_allowed`.
+Проверяет наличие прав на тестирование API и использование Swagger UI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -210,7 +199,7 @@ async def get_all_testers() -> list[int]
 - **Return Contract**: `list[int]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_all_testers`.
+Возвращает отсортированный список всех авторизованных тестеров и администраторов.
 
 #### Parameters Contract
 *This method takes no input parameters.*

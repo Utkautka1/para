@@ -1,29 +1,18 @@
 # Component Reference: `services/custom_teachers.py`
 > **File Path**: [`services/custom_teachers.py`](../../services/custom_teachers.py)
 > **Subsystem**: `Faculty Registry`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/custom_teachers.py` module implements core operational logic for the `Faculty Registry` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль локального хранения персональных контактов преподавателей.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_custom_teachers`](#load_custom_teachers) | Function | L12–L21 | `dict[str, TeacherData]` | Executes core domain logic for `load_custom_teachers`. |
-| [`save_custom_teacher`](#save_custom_teacher) | Function | L24–L35 | `None` | Saves serialized entity data to storage for `save_custo... |
-| [`delete_custom_teacher`](#delete_custom_teacher) | Function | L38–L50 | `None` | Evicts and removes record from storage for `delete_cust... |
+| [`load_custom_teachers`](#load_custom_teachers) | Function | L12–L21 | `dict[str, TeacherData]` | Загружает переопределенные контакты и ссылки преподават... |
+| [`save_custom_teacher`](#save_custom_teacher) | Function | L24–L35 | `None` | Атомарно сохраняет или обновляет контакты преподавателя... |
+| [`delete_custom_teacher`](#delete_custom_teacher) | Function | L38–L50 | `None` | Удаляет переопределенные данные преподавателя по его фа... |
 
 ---
 
@@ -39,7 +28,7 @@ def load_custom_teachers() -> dict[str, TeacherData]
 - **Return Contract**: `dict[str, TeacherData]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_custom_teachers`.
+Загружает переопределенные контакты и ссылки преподавателей из локального JSON.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -70,7 +59,7 @@ def save_custom_teacher(last_name: str, full_name: str, link_info: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_custom_teacher`.
+Атомарно сохраняет или обновляет контакты преподавателя в файле.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -105,7 +94,7 @@ def delete_custom_teacher(last_name: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Evicts and removes record from storage for `delete_custom_teacher`.
+Удаляет переопределенные данные преподавателя по его фамилии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

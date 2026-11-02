@@ -1,30 +1,19 @@
 # Component Reference: `api/handlers.py`
 > **File Path**: [`api/handlers.py`](../../api/handlers.py)
 > **Subsystem**: `REST Request Handlers`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/handlers.py` module implements core operational logic for the `REST Request Handlers` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Централизованные обработчики исключений (Exception Handlers) для para-api.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`http_exception_handler`](#http_exception_handler) | Function | L19–L29 | `JSONResponse` | Executes core domain logic for `http_exception_handler`... |
-| [`validation_exception_handler`](#validation_exception_handler) | Function | L32–L46 | `JSONResponse` | Executes core domain logic for `validation_exception_ha... |
-| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L49–L60 | `JSONResponse` | Executes core domain logic for `unhandled_exception_han... |
-| [`register_exception_handlers`](#register_exception_handlers) | Function | L63–L73 | `None` | Executes core domain logic for `register_exception_hand... |
+| [`http_exception_handler`](#http_exception_handler) | Function | L19–L29 | `JSONResponse` | Обрабатывает стандартные HTTPException и возвращает уни... |
+| [`validation_exception_handler`](#validation_exception_handler) | Function | L32–L46 | `JSONResponse` | Обрабатывает ошибки валидации параметров Pydantic (HTTP... |
+| [`unhandled_exception_handler`](#unhandled_exception_handler) | Function | L49–L60 | `JSONResponse` | Перехватывает любые непредвиденные сбои, логирует стек ... |
+| [`register_exception_handlers`](#register_exception_handlers) | Function | L63–L73 | `None` | Регистрирует все централизованные обработчики исключени... |
 
 ---
 
@@ -40,7 +29,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 - **Return Contract**: `JSONResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `http_exception_handler`.
+Обрабатывает стандартные HTTPException и возвращает унифицированный JSON.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -74,7 +63,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 - **Return Contract**: `JSONResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `validation_exception_handler`.
+Обрабатывает ошибки валидации параметров Pydantic (HTTP 422).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -108,7 +97,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 - **Return Contract**: `JSONResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `unhandled_exception_handler`.
+Перехватывает любые непредвиденные сбои, логирует стек и возвращает HTTP 500.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -142,7 +131,7 @@ def register_exception_handlers(app: FastAPI) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `register_exception_handlers`.
+Регистрирует все централизованные обработчики исключений в приложении.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

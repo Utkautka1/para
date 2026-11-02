@@ -1,32 +1,24 @@
 # Component Reference: `api/router/jaeger.py`
 > **File Path**: [`api/router/jaeger.py`](../../api/router/jaeger.py)
 > **Subsystem**: `Jaeger Tracing Proxy API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/jaeger.py` module implements core operational logic for the `Jaeger Tracing Proxy API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер реверс-проксирования интерфейса Jaeger UI в защищенный портал Mini App.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_filter_headers`](#_filter_headers) | Function | L45–L53 | `dict[str, str]` | Executes core domain logic for `_filter_headers`. |
-| [`_sanitize_proxy_path`](#_sanitize_proxy_path) | Function | L56–L69 | `str` | Executes core domain logic for `_sanitize_proxy_path`. |
-| [`_build_target_url`](#_build_target_url) | Function | L72–L83 | `str` | Executes core domain logic for `_build_target_url`. |
-| [`_forward_request`](#_forward_request) | Function | L86–L109 | `Response` | Executes core domain logic for `_forward_request`. |
-| [`redirect_jaeger_root`](#redirect_jaeger_root) | Function | L113–L121 | `RedirectResponse` | Executes core domain logic for `redirect_jaeger_root`. |
-| [`proxy_jaeger`](#proxy_jaeger) | Function | L125–L136 | `Response` | Executes core domain logic for `proxy_jaeger`. |
+| [`_filter_headers`](#_filter_headers) | Function | L54–L62 | `dict[str, str]` | Фильтрует транзитные сетевые заголовки HTTP/1.1 (hop-by... |
+| [`_filter_request_headers`](#_filter_request_headers) | Function | L65–L71 | `dict[str, str]` | Готовит заголовки запроса к Jaeger: убирает hop-by-hop ... |
+| [`_get_client`](#_get_client) | Function | L74–L79 | `httpx.AsyncClient` | Возвращает общий HTTP-клиент к Jaeger, создавая его при... |
+| [`close_jaeger_client`](#close_jaeger_client) | Function | L82–L87 | `None` | Закрывает пул соединений к Jaeger при остановке API. |
+| [`_sanitize_proxy_path`](#_sanitize_proxy_path) | Function | L90–L103 | `str` | Очищает и нормализует путь проксирования, блокируя попы... |
+| [`_build_target_url`](#_build_target_url) | Function | L106–L117 | `str` | Формирует проверенный целевой адрес Jaeger с учетом без... |
+| [`_forward_request`](#_forward_request) | Function | L120–L142 | `Response` | Выполняет асинхронный HTTP-запрос к бэкенду Jaeger UI и... |
+| [`redirect_jaeger_root`](#redirect_jaeger_root) | Function | L146–L154 | `RedirectResponse` | Перенаправляет запрос с /jaeger на /jaeger/ со слэшем. |
+| [`proxy_jaeger`](#proxy_jaeger) | Function | L158–L169 | `Response` | Проксирует все статические ресурсы, HTML и REST API Jae... |
 
 ---
 
@@ -37,12 +29,12 @@ graph LR
 def _filter_headers(headers: Any) -> dict[str, str]
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L45-L53`](../../api/router/jaeger.py#L45-L53)
+- **Source Reference**: [`api/router/jaeger.py#L54-L62`](../../api/router/jaeger.py#L54-L62)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_filter_headers`.
+Фильтрует транзитные сетевые заголовки HTTP/1.1 (hop-by-hop).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -65,17 +57,112 @@ result = _filter_headers(headers=...)
 
 ---
 
+### `_filter_request_headers`
+```python
+def _filter_request_headers(headers: Any) -> dict[str, str]
+```
+
+- **Source Reference**: [`api/router/jaeger.py#L65-L71`](../../api/router/jaeger.py#L65-L71)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, str]`
+
+#### Overview & Architectural Purpose
+Готовит заголовки запроса к Jaeger: убирает hop-by-hop и учётные данные.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `headers` | `Any` | Yes | Parameter `headers` of type `Any`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.jaeger import _filter_request_headers
+
+# Execute call
+result = _filter_request_headers(headers=...)
+```
+
+---
+
+### `_get_client`
+```python
+def _get_client() -> httpx.AsyncClient
+```
+
+- **Source Reference**: [`api/router/jaeger.py#L74-L79`](../../api/router/jaeger.py#L74-L79)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `httpx.AsyncClient`
+
+#### Overview & Architectural Purpose
+Возвращает общий HTTP-клиент к Jaeger, создавая его при первом обращении.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.jaeger import _get_client
+
+# Execute call
+result = _get_client()
+```
+
+---
+
+### `close_jaeger_client`
+```python
+async def close_jaeger_client() -> None
+```
+
+- **Source Reference**: [`api/router/jaeger.py#L82-L87`](../../api/router/jaeger.py#L82-L87)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Закрывает пул соединений к Jaeger при остановке API.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.jaeger import close_jaeger_client
+
+# Execute call
+result = await close_jaeger_client()
+```
+
+---
+
 ### `_sanitize_proxy_path`
 ```python
 def _sanitize_proxy_path(raw_path: str) -> str
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L56-L69`](../../api/router/jaeger.py#L56-L69)
+- **Source Reference**: [`api/router/jaeger.py#L90-L103`](../../api/router/jaeger.py#L90-L103)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_sanitize_proxy_path`.
+Очищает и нормализует путь проксирования, блокируя попытки Path Traversal.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -103,12 +190,12 @@ result = _sanitize_proxy_path(raw_path=...)
 def _build_target_url(path: str, query: str) -> str
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L72-L83`](../../api/router/jaeger.py#L72-L83)
+- **Source Reference**: [`api/router/jaeger.py#L106-L117`](../../api/router/jaeger.py#L106-L117)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_target_url`.
+Формирует проверенный целевой адрес Jaeger с учетом безопасного пути.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -137,12 +224,12 @@ result = _build_target_url(path=..., query=...)
 async def _forward_request(method: str, url: str, headers: dict[str, str], body: bytes | None) -> Response
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L86-L109`](../../api/router/jaeger.py#L86-L109)
+- **Source Reference**: [`api/router/jaeger.py#L120-L142`](../../api/router/jaeger.py#L120-L142)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_forward_request`.
+Выполняет асинхронный HTTP-запрос к бэкенду Jaeger UI и проксирует ответ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -154,7 +241,6 @@ Executes core domain logic for `_forward_request`.
 
 #### Concurrency & Side Effects
 - Emits structured telemetry events to system logging subsystem.
-- Performs non-blocking network I/O over HTTP or gRPC.
 
 #### Fault Tolerance & Error Modes
 Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
@@ -174,12 +260,12 @@ result = await _forward_request(method=..., url=..., headers=...)
 async def redirect_jaeger_root() -> RedirectResponse
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L113-L121`](../../api/router/jaeger.py#L113-L121)
+- **Source Reference**: [`api/router/jaeger.py#L146-L154`](../../api/router/jaeger.py#L146-L154)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `RedirectResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `redirect_jaeger_root`.
+Перенаправляет запрос с /jaeger на /jaeger/ со слэшем.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -205,12 +291,12 @@ result = await redirect_jaeger_root()
 async def proxy_jaeger(request: Request, path: str = "") -> Response
 ```
 
-- **Source Reference**: [`api/router/jaeger.py#L125-L136`](../../api/router/jaeger.py#L125-L136)
+- **Source Reference**: [`api/router/jaeger.py#L158-L169`](../../api/router/jaeger.py#L158-L169)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `proxy_jaeger`.
+Проксирует все статические ресурсы, HTML и REST API Jaeger UI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

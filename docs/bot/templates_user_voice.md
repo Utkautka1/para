@@ -6,30 +6,23 @@
 > **Persistence Backend**: `Stateless HTML Escape & Telegram Formatter`
 > **Service Level Objective**: `Sub-1µs Render Latency`
 
-## 1. Architectural Role & Responsibilities
-The `bot/templates/user/voice.py` module implements core operational logic for the `Voice Message Templates` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Шаблоны сообщений для расшифровки голосовых и видеосообщений в Telegram.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_transcription_status`](#format_transcription_status) | Function | L12–L22 | `str` | Formats initial progress indicator message. |
-| [`format_duration_str`](#format_duration_str) | Function | L25–L41 | `str` | Formats integer seconds into human-readable (M:SS) time... |
-| [`format_transcription_result`](#format_transcription_result) | Function | L44–L58 | `str` | Formats completed speech transcription into quotation b... |
-| [`format_transcription_empty`](#format_transcription_empty) | Function | L61–L74 | `str` | Formats notice indicating no audible speech was detecte... |
-| [`format_transcription_error`](#format_transcription_error) | Function | L77–L87 | `str` | Formats error notification message for speech recogniti... |
-| [`format_too_long_error`](#format_too_long_error) | Function | L90–L102 | `str` | Formats validation error message when audio duration ex... |
-| [`format_too_big_error`](#format_too_big_error) | Function | L105–L115 | `str` | Formats validation error message when file size exceeds... |
-| [`format_rate_limit_error`](#format_rate_limit_error) | Function | L118–L128 | `str` | Formats throttle warning when user exceeds concurrent t... |
-| [`format_queue_status`](#format_queue_status) | Function | L131–L141 | `str` | Renders queue position indicator for pending speech rec... |
+| [`format_transcription_status`](#format_transcription_status) | Function | L12–L22 | `str` | Возвращает текст временного статуса начала распознавани... |
+| [`format_duration_str`](#format_duration_str) | Function | L25–L41 | `str` | Форматирует хронометраж аудиосообщения в формат (минуты... |
+| [`format_transcription_result`](#format_transcription_result) | Function | L44–L58 | `str` | Формирует красивое итоговое сообщение с расшифрованным ... |
+| [`format_transcription_empty`](#format_transcription_empty) | Function | L61–L74 | `str` | Формирует уведомление о неразборчивой или тихой аудиоза... |
+| [`format_transcription_error`](#format_transcription_error) | Function | L77–L87 | `str` | Возвращает сообщение о техническом сбое при обработке а... |
+| [`format_too_long_error`](#format_too_long_error) | Function | L90–L102 | `str` | Возвращает предупреждение о превышении допустимого хрон... |
+| [`format_too_big_error`](#format_too_big_error) | Function | L105–L115 | `str` | Возвращает предупреждение о превышении максимального ра... |
+| [`format_rate_limit_error`](#format_rate_limit_error) | Function | L118–L128 | `str` | Возвращает сообщение о троттлинге параллельных запросов... |
+| [`format_queue_status`](#format_queue_status) | Function | L131–L141 | `str` | Возвращает текст статуса нахождения аудиосообщения в оч... |
 
 ---
 
@@ -45,7 +38,7 @@ def format_transcription_status() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats initial progress indicator message.
+Возвращает текст временного статуса начала распознавания аудиосообщения.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -76,7 +69,7 @@ def format_duration_str(duration_seconds: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats integer seconds into human-readable (M:SS) timestamp.
+Форматирует хронометраж аудиосообщения в формат (минуты:секунды).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +102,7 @@ def format_transcription_result(sender_name: str, duration_sec: int, transcripti
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats completed speech transcription into quotation block.
+Формирует красивое итоговое сообщение с расшифрованным текстом речи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -144,7 +137,7 @@ def format_transcription_empty(sender_name: str, duration_sec: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats notice indicating no audible speech was detected.
+Формирует уведомление о неразборчивой или тихой аудиозаписи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -178,7 +171,7 @@ def format_transcription_error() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats error notification message for speech recognition failures.
+Возвращает сообщение о техническом сбое при обработке аудиофайла.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -209,7 +202,7 @@ def format_too_long_error(max_seconds: int = 300) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats validation error message when audio duration exceeds limit.
+Возвращает предупреждение о превышении допустимого хронометража аудио.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -242,7 +235,7 @@ def format_too_big_error(max_mb: int = 20) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats validation error message when file size exceeds limit.
+Возвращает предупреждение о превышении максимального размера файла.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -275,7 +268,7 @@ def format_rate_limit_error() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats throttle warning when user exceeds concurrent task limit.
+Возвращает сообщение о троттлинге параллельных запросов одного пользователя.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -306,7 +299,7 @@ def format_queue_status(queue_pos: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Renders queue position indicator for pending speech recognition.
+Возвращает текст статуса нахождения аудиосообщения в очереди на GPU.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

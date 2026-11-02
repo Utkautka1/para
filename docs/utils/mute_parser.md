@@ -1,27 +1,16 @@
 # Component Reference: `utils/mute_parser.py`
 > **File Path**: [`utils/mute_parser.py`](../../utils/mute_parser.py)
 > **Subsystem**: `Ban Duration Parser`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `utils/mute_parser.py` module implements core operational logic for the `Ban Duration Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Утилита парсинга строк времени мута в секунды.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L25 | `int | None` | Parses and extracts structured entities from `parse_dur... |
+| [`parse_duration_to_seconds`](#parse_duration_to_seconds) | Function | L11–L25 | `int \| None` | Парсит текстовое выражение длительности ('5с', '10м', '... |
 
 ---
 
@@ -37,7 +26,7 @@ def parse_duration_to_seconds(time_str: str) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_duration_to_seconds`.
+Парсит текстовое выражение длительности ('5с', '10м', '2ч', '1д') в секунды.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

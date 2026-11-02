@@ -1,52 +1,41 @@
 # Component Reference: `utils/doc_generator.py`
 > **File Path**: [`utils/doc_generator.py`](../../utils/doc_generator.py)
 > **Subsystem**: `GOST Document Generator`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `utils/doc_generator.py` module implements core operational logic for the `GOST Document Generator` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль генерации отчетов в формате DOCX по точному образцу файла ГОСТ 7.32-2017.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`setup_gost_margins`](#setup_gost_margins) | Function | L31–L44 | `None` | Executes core domain logic for `setup_gost_margins`. |
-| [`setup_page_numbering`](#setup_page_numbering) | Function | L47–L62 | `None` | Executes core domain logic for `setup_page_numbering`. |
-| [`setup_gost_styles`](#setup_gost_styles) | Function | L65–L78 | `None` | Executes core domain logic for `setup_gost_styles`. |
-| [`format_table_row_cells`](#format_table_row_cells) | Function | L81–L96 | `None` | Formats message payload and presentation markup for `fo... |
-| [`add_title_signature_table`](#add_title_signature_table) | Function | L99–L126 | `None` | Executes core domain logic for `add_title_signature_tab... |
-| [`add_title_header`](#add_title_header) | Function | L129–L144 | `None` | Executes core domain logic for `add_title_header`. |
-| [`create_title_page`](#create_title_page) | Function | L147–L172 | `None` | Initializes and constructs a new instance of `create_ti... |
-| [`clean_math_text`](#clean_math_text) | Function | L175–L188 | `str` | Executes core domain logic for `clean_math_text`. |
-| [`format_gost_paragraph`](#format_gost_paragraph) | Function | L191–L204 | `None` | Formats message payload and presentation markup for `fo... |
-| [`add_bookmark_to_paragraph`](#add_bookmark_to_paragraph) | Function | L207–L219 | `None` | Executes core domain logic for `add_bookmark_to_paragra... |
-| [`to_xml_text`](#to_xml_text) | Function | L226–L235 | `str` | Executes core domain logic for `to_xml_text`. |
-| [`add_toc_hyperlink`](#add_toc_hyperlink) | Function | L238–L259 | `None` | Executes core domain logic for `add_toc_hyperlink`. |
-| [`extract_headings_from_text`](#extract_headings_from_text) | Function | L262–L282 | `list[tuple[str, str, int, int]]` | Executes core domain logic for `extract_headings_from_t... |
-| [`build_table_of_contents`](#build_table_of_contents) | Function | L285–L299 | `None` | Executes core domain logic for `build_table_of_contents... |
-| [`_apply_heading_formatting`](#_apply_heading_formatting) | Function | L302–L321 | `None` | Executes core domain logic for `_apply_heading_formatti... |
-| [`add_gost_heading`](#add_gost_heading) | Function | L324–L336 | `None` | Executes core domain logic for `add_gost_heading`. |
-| [`add_gost_heading_with_bookmark`](#add_gost_heading_with_bookmark) | Function | L339–L352 | `None` | Executes core domain logic for `add_gost_heading_with_b... |
-| [`parse_markdown_table_rows`](#parse_markdown_table_rows) | Function | L355–L371 | `list[list[str]]` | Parses and extracts structured entities from `parse_mar... |
-| [`_append_cell_run`](#_append_cell_run) | Function | L374–L387 | `None` | Executes core domain logic for `_append_cell_run`. |
-| [`fill_table_cell`](#fill_table_cell) | Function | L390–L408 | `None` | Executes core domain logic for `fill_table_cell`. |
-| [`add_docx_table_from_markdown`](#add_docx_table_from_markdown) | Function | L411–L429 | `None` | Executes core domain logic for `add_docx_table_from_mar... |
-| [`_consume_markdown_table`](#_consume_markdown_table) | Function | L432–L446 | `tuple[list[str], int]` | Executes core domain logic for `_consume_markdown_table... |
-| [`process_document_content_lines`](#process_document_content_lines) | Function | L449–L470 | `None` | Executes core domain logic for `process_document_conten... |
-| [`add_formatted_paragraph`](#add_formatted_paragraph) | Function | L473–L491 | `None` | Executes core domain logic for `add_formatted_paragraph... |
-| [`init_gost_document`](#init_gost_document) | Function | L494–L507 | `Document` | Executes core domain logic for `init_gost_document`. |
-| [`create_solution_docx`](#create_solution_docx) | Function | L510–L536 | `str` | Initializes and constructs a new instance of `create_so... |
+| [`setup_gost_margins`](#setup_gost_margins) | Function | L31–L44 | `None` | Настраивает размеры полей документа по государственному... |
+| [`setup_page_numbering`](#setup_page_numbering) | Function | L47–L62 | `None` | Настраивает нумерацию страниц по центру нижнего колонти... |
+| [`setup_gost_styles`](#setup_gost_styles) | Function | L65–L78 | `None` | Устанавливает типографику по умолчанию для базового сти... |
+| [`format_table_row_cells`](#format_table_row_cells) | Function | L81–L96 | `None` | Заполняет и стилизует ячейки в строке таблицы подписей ... |
+| [`add_title_signature_table`](#add_title_signature_table) | Function | L99–L126 | `None` | Добавляет аккуратную таблицу подписей 'Выполнил/Провери... |
+| [`add_title_header`](#add_title_header) | Function | L129–L144 | `None` | Добавляет официальную шапку Министерства и Университета... |
+| [`create_title_page`](#create_title_page) | Function | L147–L172 | `None` | Создает официальный титульный лист по образцу ГОСТ с по... |
+| [`clean_math_text`](#clean_math_text) | Function | L175–L188 | `str` | Очищает LaTeX конструкции и спецсимволы формул для текс... |
+| [`format_gost_paragraph`](#format_gost_paragraph) | Function | L191–L204 | `None` | Применяет форматирование основного текста по ГОСТ к абз... |
+| [`add_bookmark_to_paragraph`](#add_bookmark_to_paragraph) | Function | L207–L219 | `None` | Внедряет внутреннюю XML-закладку Word (bookmark) в указ... |
+| [`to_xml_text`](#to_xml_text) | Function | L226–L235 | `str` | Готовит произвольную строку к вставке в текстовый узел ... |
+| [`add_toc_hyperlink`](#add_toc_hyperlink) | Function | L238–L259 | `None` | Добавляет строку в раздел СОДЕРЖАНИЕ с активной кликабе... |
+| [`extract_headings_from_text`](#extract_headings_from_text) | Function | L262–L282 | `list[tuple[str, str, int, int]]` | Извлекает заголовки уровней H1 (#) и H2 (##) из Markdow... |
+| [`build_table_of_contents`](#build_table_of_contents) | Function | L285–L299 | `None` | Формирует отдельную страницу СОДЕРЖАНИЕ со списком разд... |
+| [`_apply_heading_formatting`](#_apply_heading_formatting) | Function | L302–L321 | `None` | Применяет визуальный стиль ГОСТ к параграфу заголовка. |
+| [`add_gost_heading`](#add_gost_heading) | Function | L324–L336 | `None` | Добавляет структурный заголовок раздела в документ Word... |
+| [`add_gost_heading_with_bookmark`](#add_gost_heading_with_bookmark) | Function | L339–L352 | `None` | Добавляет заголовок главы с привязкой внутренней заклад... |
+| [`parse_markdown_table_rows`](#parse_markdown_table_rows) | Function | L355–L371 | `list[list[str]]` | Парсит текстовые строки Markdown-таблицы в двумерный ма... |
+| [`_append_cell_run`](#_append_cell_run) | Function | L374–L387 | `None` | Добавляет фрагмент текста в параграф ячейки таблицы с н... |
+| [`fill_table_cell`](#fill_table_cell) | Function | L390–L408 | `None` | Заполняет ячейку таблицы Word с поддержкой Markdown-раз... |
+| [`add_docx_table_from_markdown`](#add_docx_table_from_markdown) | Function | L411–L429 | `None` | Создает аккуратную таблицу Word стиля 'Table Grid' из M... |
+| [`_consume_markdown_table`](#_consume_markdown_table) | Function | L432–L446 | `tuple[list[str], int]` | Выделяет непрерывную группу строк Markdown-таблицы из о... |
+| [`process_document_content_lines`](#process_document_content_lines) | Function | L449–L470 | `None` | Последовательно обрабатывает текстовые строки решения з... |
+| [`add_formatted_paragraph`](#add_formatted_paragraph) | Function | L473–L491 | `None` | Добавляет форматированный текстовый абзац по стандарту ... |
+| [`init_gost_document`](#init_gost_document) | Function | L494–L507 | `Document` | Создает и настраивает новый объект Word-документа по ГО... |
+| [`create_solution_docx`](#create_solution_docx) | Function | L510–L536 | `str` | Генерирует академический DOCX-отчет по образцу ГОСТ 7.3... |
 
 ---
 
@@ -62,7 +51,7 @@ def setup_gost_margins(doc: Document) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_gost_margins`.
+Настраивает размеры полей документа по государственному стандарту ГОСТ 7.32-2017.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -95,7 +84,7 @@ def setup_page_numbering(doc: Document) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_page_numbering`.
+Настраивает нумерацию страниц по центру нижнего колонтитула.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -128,7 +117,7 @@ def setup_gost_styles(doc: Document) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_gost_styles`.
+Устанавливает типографику по умолчанию для базового стиля 'Normal'.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -161,7 +150,7 @@ def format_table_row_cells(row, left_txt: str, right_txt: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_table_row_cells`.
+Заполняет и стилизует ячейки в строке таблицы подписей исполнителей.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -196,7 +185,7 @@ def add_title_signature_table( doc: Document, student_name: str = "Student", tea
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_title_signature_table`.
+Добавляет аккуратную таблицу подписей 'Выполнил/Проверил' по образцу ГОСТ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -233,7 +222,7 @@ def add_title_header(doc: Document) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_title_header`.
+Добавляет официальную шапку Министерства и Университета на титульный лист.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -266,7 +255,7 @@ def create_title_page( doc: Document, student_name: str = "Student", teacher_nam
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_title_page`.
+Создает официальный титульный лист по образцу ГОСТ с последующим разрывом страницы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -303,7 +292,7 @@ def clean_math_text(text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `clean_math_text`.
+Очищает LaTeX конструкции и спецсимволы формул для текстового вывода.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -336,7 +325,7 @@ def format_gost_paragraph(p) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_gost_paragraph`.
+Применяет форматирование основного текста по ГОСТ к абзацу Word.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -369,7 +358,7 @@ def add_bookmark_to_paragraph(p, bookmark_name: str, bookmark_id: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_bookmark_to_paragraph`.
+Внедряет внутреннюю XML-закладку Word (bookmark) в указанный параграф.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -404,7 +393,7 @@ def to_xml_text(text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `to_xml_text`.
+Готовит произвольную строку к вставке в текстовый узел WordprocessingML.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -437,7 +426,7 @@ def add_toc_hyperlink(doc: Document, text: str, bookmark_name: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_toc_hyperlink`.
+Добавляет строку в раздел СОДЕРЖАНИЕ с активной кликабельной гиперссылкой.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -472,7 +461,7 @@ def extract_headings_from_text(solution_text: str) -> list[tuple[str, str, int, 
 - **Return Contract**: `list[tuple[str, str, int, int]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_headings_from_text`.
+Извлекает заголовки уровней H1 (#) и H2 (##) из Markdown-текста решения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -505,7 +494,7 @@ def build_table_of_contents(doc: Document, headings: list[tuple[str, str, int, i
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_table_of_contents`.
+Формирует отдельную страницу СОДЕРЖАНИЕ со списком разделов и гиперссылками.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -539,7 +528,7 @@ def _apply_heading_formatting(p, title: str, level: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_heading_formatting`.
+Применяет визуальный стиль ГОСТ к параграфу заголовка.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -574,7 +563,7 @@ def add_gost_heading(doc: Document, title: str, level: int, page_break: bool = F
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_gost_heading`.
+Добавляет структурный заголовок раздела в документ Word.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -610,7 +599,7 @@ def add_gost_heading_with_bookmark(doc: Document, title: str, level: int, bm_id:
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_gost_heading_with_bookmark`.
+Добавляет заголовок главы с привязкой внутренней закладки Word.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -646,7 +635,7 @@ def parse_markdown_table_rows(table_lines: list[str]) -> list[list[str]]
 - **Return Contract**: `list[list[str]]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_markdown_table_rows`.
+Парсит текстовые строки Markdown-таблицы в двумерный массив ячеек.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -679,7 +668,7 @@ def _append_cell_run(p, text_part: str, is_header: bool, is_bold: bool) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_append_cell_run`.
+Добавляет фрагмент текста в параграф ячейки таблицы с нужным начертанием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -715,7 +704,7 @@ def fill_table_cell(cell, cell_text: str, is_header: bool) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fill_table_cell`.
+Заполняет ячейку таблицы Word с поддержкой Markdown-разметки жирного шрифта.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -750,7 +739,7 @@ def add_docx_table_from_markdown(doc: Document, table_lines: list[str]) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_docx_table_from_markdown`.
+Создает аккуратную таблицу Word стиля 'Table Grid' из Markdown-блока.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -784,7 +773,7 @@ def _consume_markdown_table(lines: list[str], start_idx: int) -> tuple[list[str]
 - **Return Contract**: `tuple[list[str], int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_consume_markdown_table`.
+Выделяет непрерывную группу строк Markdown-таблицы из общего списка строк.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -818,7 +807,7 @@ def process_document_content_lines(doc: Document, lines: list[str], heading_map:
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `process_document_content_lines`.
+Последовательно обрабатывает текстовые строки решения задачи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -853,7 +842,7 @@ def add_formatted_paragraph(doc: Document, line: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_formatted_paragraph`.
+Добавляет форматированный текстовый абзац по стандарту ГОСТ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -887,7 +876,7 @@ def init_gost_document() -> Document
 - **Return Contract**: `Document`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `init_gost_document`.
+Создает и настраивает новый объект Word-документа по ГОСТ.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -918,7 +907,7 @@ def create_solution_docx( solution_text: str, output_path: str | None = None, st
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_solution_docx`.
+Генерирует академический DOCX-отчет по образцу ГОСТ 7.32-2017 из текста решения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

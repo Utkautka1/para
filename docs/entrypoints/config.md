@@ -1,32 +1,21 @@
 # Component Reference: `config.py`
 > **File Path**: [`config.py`](../../config.py)
 > **Subsystem**: `System Configuration`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `config.py` module implements core operational logic for the `System Configuration` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Централизованный модуль конфигурации распределенной системы Para.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_required_env`](#get_required_env) | Function | L38–L51 | `str` | Retrieves and resolves domain data for `get_required_en... |
-| [`get_env`](#get_env) | Function | L54–L63 | `str` | Retrieves and resolves domain data for `get_env`. |
-| [`get_env_int`](#get_env_int) | Function | L66–L81 | `int` | Retrieves and resolves domain data for `get_env_int`. |
-| [`get_env_float`](#get_env_float) | Function | L84–L98 | `float` | Retrieves and resolves domain data for `get_env_float`. |
-| [`get_env_list`](#get_env_list) | Function | L101–L113 | `tuple[str, ...]` | Retrieves and resolves domain data for `get_env_list`. |
-| [`get_env_bool`](#get_env_bool) | Function | L116–L128 | `bool` | Retrieves and resolves domain data for `get_env_bool`. |
+| [`get_required_env`](#get_required_env) | Function | L38–L51 | `str` | Извлекает обязательную строковую переменную из окружени... |
+| [`get_env`](#get_env) | Function | L54–L63 | `str` | Извлекает опциональную строковую переменную окружения с... |
+| [`get_env_int`](#get_env_int) | Function | L66–L81 | `int` | Извлекает целочисленный параметр окружения с приведение... |
+| [`get_env_float`](#get_env_float) | Function | L84–L98 | `float` | Извлекает параметр с плавающей точкой с приведением тип... |
+| [`get_env_list`](#get_env_list) | Function | L101–L113 | `tuple[str, ...]` | Парсит разделенный запятыми список строк из переменной ... |
+| [`get_env_bool`](#get_env_bool) | Function | L116–L128 | `bool` | Парсит булево значение из переменной окружения. |
 
 ---
 
@@ -42,7 +31,7 @@ def get_required_env(key: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_required_env`.
+Извлекает обязательную строковую переменную из окружения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -75,7 +64,7 @@ def get_env(key: str, default: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_env`.
+Извлекает опциональную строковую переменную окружения с фолбэком.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ def get_env_int(key: str, default: int | None = None) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_env_int`.
+Извлекает целочисленный параметр окружения с приведением типа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ def get_env_float(key: str, default: float | None = None) -> float
 - **Return Contract**: `float`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_env_float`.
+Извлекает параметр с плавающей точкой с приведением типа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -177,7 +166,7 @@ def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]
 - **Return Contract**: `tuple[str, ...]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_env_list`.
+Парсит разделенный запятыми список строк из переменной окружения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -211,7 +200,7 @@ def get_env_bool(key: str, default: bool = False) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_env_bool`.
+Парсит булево значение из переменной окружения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

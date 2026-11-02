@@ -1,34 +1,23 @@
 # Component Reference: `api/grpc/server.py`
 > **File Path**: [`api/grpc/server.py`](../../api/grpc/server.py)
 > **Subsystem**: `gRPC HTTP/2 Server`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/grpc/server.py` module implements core operational logic for the `gRPC HTTP/2 Server` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Управление асинхронным gRPC сервером para-api.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_wrap_unary_handler`](#_wrap_unary_handler) | Function | L35–L43 | `Any` | Executes core domain logic for `_wrap_unary_handler`. |
-| [`GrpcTracingInterceptor.intercept_service`](#grpctracinginterceptorintercept_service) | Method | L49–L69 | `grpc.RpcMethodHandler` | Executes core domain logic for `intercept_service`. |
-| [`ApiKeyAuthInterceptor._abort_unauthenticated`](#apikeyauthinterceptor_abort_unauthenticated) | Method | L76–L82 | `Any` | Executes core domain logic for `_abort_unauthenticated`... |
-| [`ApiKeyAuthInterceptor.intercept_service`](#apikeyauthinterceptorintercept_service) | Method | L84–L102 | `grpc.RpcMethodHandler` | Executes core domain logic for `intercept_service`. |
-| [`_register_servicers`](#_register_servicers) | Function | L105–L115 | `None` | Executes core domain logic for `_register_servicers`. |
-| [`create_grpc_server`](#create_grpc_server) | Function | L118–L142 | `grpc.aio.Server` | Initializes and constructs a new instance of `create_gr... |
-| [`start_grpc_server`](#start_grpc_server) | Function | L145–L157 | `None` | Executes core domain logic for `start_grpc_server`. |
-| [`stop_grpc_server`](#stop_grpc_server) | Function | L160–L171 | `None` | Executes core domain logic for `stop_grpc_server`. |
+| [`_wrap_unary_handler`](#_wrap_unary_handler) | Function | L35–L43 | `Any` | Оборачивает унарный RPC обработчик в спан OpenTelemetry... |
+| [`GrpcTracingInterceptor.intercept_service`](#grpctracinginterceptorintercept_service) | Method | L49–L69 | `grpc.RpcMethodHandler` | Извлекает W3C TraceContext из метаданных и связывает до... |
+| [`ApiKeyAuthInterceptor._abort_unauthenticated`](#apikeyauthinterceptor_abort_unauthenticated) | Method | L76–L82 | `Any` | Прерывает вызов с кодом UNAUTHENTICATED при невалидном ... |
+| [`ApiKeyAuthInterceptor.intercept_service`](#apikeyauthinterceptorintercept_service) | Method | L84–L102 | `grpc.RpcMethodHandler` | Перехватывает RPC-вызов и проверяет соответствие ключа ... |
+| [`_register_servicers`](#_register_servicers) | Function | L105–L115 | `None` | Регистрирует все gRPC сервисеры на экземпляре сервера. |
+| [`create_grpc_server`](#create_grpc_server) | Function | L118–L142 | `grpc.aio.Server` | Создает и настраивает экземпляр gRPC сервера с HTTP/2 k... |
+| [`start_grpc_server`](#start_grpc_server) | Function | L145–L157 | `None` | Привязывает сокет и запускает обработку входящих gRPC с... |
+| [`stop_grpc_server`](#stop_grpc_server) | Function | L160–L171 | `None` | Останавливает gRPC сервер с ожиданием завершения активн... |
 
 ---
 
@@ -44,7 +33,7 @@ def _wrap_unary_handler(fn: Any, method: str, parent_ctx: Any) -> Any
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_wrap_unary_handler`.
+Оборачивает унарный RPC обработчик в спан OpenTelemetry.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -71,7 +60,7 @@ result = _wrap_unary_handler(fn=..., method=..., parent_ctx=...)
 
 ## Class Model: `GrpcTracingInterceptor`
 
-Encapsulates domain entities and data transfer logic for `GrpcTracingInterceptor`.
+Интерцептор распределенного трейсинга OpenTelemetry для входящих gRPC вызовов.
 
 ### `GrpcTracingInterceptor.intercept_service`
 ```python
@@ -83,7 +72,7 @@ async def intercept_service( self, continuation: Callable[[grpc.HandlerCallDetai
 - **Return Contract**: `grpc.RpcMethodHandler`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `intercept_service`.
+Извлекает W3C TraceContext из метаданных и связывает дочерние спаны сервисеров.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ result = await intercept_service(continuation=..., handler_call_details=...)
 
 ## Class Model: `ApiKeyAuthInterceptor`
 
-Encapsulates domain entities and data transfer logic for `ApiKeyAuthInterceptor`.
+Интерцептор проверки X-API-Key заголовка для защиты gRPC эндпоинтов.
 
 ### `ApiKeyAuthInterceptor._abort_unauthenticated`
 ```python
@@ -121,7 +110,7 @@ async def _abort_unauthenticated(_req: Any, context: grpc.aio.ServicerContext) -
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_abort_unauthenticated`.
+Прерывает вызов с кодом UNAUTHENTICATED при невалидном ключе.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -155,7 +144,7 @@ async def intercept_service( self, continuation: Callable[[grpc.HandlerCallDetai
 - **Return Contract**: `grpc.RpcMethodHandler`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `intercept_service`.
+Перехватывает RPC-вызов и проверяет соответствие ключа авторизации в метаданных.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -189,7 +178,7 @@ def _register_servicers(server: grpc.aio.Server) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_register_servicers`.
+Регистрирует все gRPC сервисеры на экземпляре сервера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -222,7 +211,7 @@ def create_grpc_server() -> grpc.aio.Server
 - **Return Contract**: `grpc.aio.Server`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_grpc_server`.
+Создает и настраивает экземпляр gRPC сервера с HTTP/2 keepalive опциями.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -253,7 +242,7 @@ async def start_grpc_server(server: grpc.aio.Server, host: str, port: int) -> No
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `start_grpc_server`.
+Привязывает сокет и запускает обработку входящих gRPC соединений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -288,7 +277,7 @@ async def stop_grpc_server(server: grpc.aio.Server | None, grace: float = 5.0) -
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `stop_grpc_server`.
+Останавливает gRPC сервер с ожиданием завершения активных вызовов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

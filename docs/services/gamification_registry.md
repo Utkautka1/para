@@ -1,27 +1,16 @@
 # Component Reference: `services/gamification_registry.py`
 > **File Path**: [`services/gamification_registry.py`](../../services/gamification_registry.py)
 > **Subsystem**: `Gamification Registry`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/gamification_registry.py` module implements core operational logic for the `Gamification Registry` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Реестр рангов и 80 достижений академической системы 1-КПД-3.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_all_achievements`](#get_all_achievements) | Function | L251–L261 | `list[AchievementDefinition]` | Retrieves and resolves domain data for `get_all_achieve... |
+| [`get_all_achievements`](#get_all_achievements) | Function | L251–L261 | `list[AchievementDefinition]` | Возвращает публичный каталог из 80 достижений. |
 
 ---
 
@@ -37,7 +26,7 @@ def get_all_achievements() -> list[AchievementDefinition]
 - **Return Contract**: `list[AchievementDefinition]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_all_achievements`.
+Возвращает публичный каталог из 80 достижений.
 
 #### Parameters Contract
 *This method takes no input parameters.*

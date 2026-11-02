@@ -1,36 +1,25 @@
 # Component Reference: `services/exam_parser.py`
 > **File Path**: [`services/exam_parser.py`](../../services/exam_parser.py)
 > **Subsystem**: `Examination Parser`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/exam_parser.py` module implements core operational logic for the `Examination Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис парсинга и взаимодействия с экзаменами и аттестациями КТМУ.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`is_assessment_type`](#is_assessment_type) | Function | L35–L46 | `tuple[bool, str]` | Executes core domain logic for `is_assessment_type`. |
-| [`resolve_teacher_name`](#resolve_teacher_name) | Function | L49–L60 | `str` | Executes core domain logic for `resolve_teacher_name`. |
-| [`extract_load_weeks`](#extract_load_weeks) | Function | L63–L73 | `list[int]` | Executes core domain logic for `extract_load_weeks`. |
-| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L76–L105 | `tuple[str, ExamItem] | None` | Parses and extracts structured entities from `parse_exa... |
-| [`apply_exam_slot`](#apply_exam_slot) | Function | L108–L126 | `None` | Executes core domain logic for `apply_exam_slot`. |
-| [`resolve_exam_room`](#resolve_exam_room) | Function | L129–L138 | `str` | Executes core domain logic for `resolve_exam_room`. |
-| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L141–L172 | `None` | Executes core domain logic for `enrich_exam_from_instan... |
-| [`mark_preliminary`](#mark_preliminary) | Function | L175–L189 | `None` | Executes core domain logic for `mark_preliminary`. |
-| [`_collect_exams_from_loads`](#_collect_exams_from_loads) | Function | L192–L204 | `dict[str, ExamItem]` | Executes core domain logic for `_collect_exams_from_loa... |
-| [`get_group_exams`](#get_group_exams) | Function | L207–L228 | `list[ExamItem]` | Retrieves and resolves domain data for `get_group_exams... |
+| [`is_assessment_type`](#is_assessment_type) | Function | L35–L46 | `tuple[bool, str]` | Проверяет принадлежность идентификатора занятия к форма... |
+| [`resolve_teacher_name`](#resolve_teacher_name) | Function | L49–L60 | `str` | Определяет актуальное полное ФИО преподавателя по справ... |
+| [`extract_load_weeks`](#extract_load_weeks) | Function | L63–L73 | `list[int]` | Извлекает и упорядочивает номера учебных недель проведе... |
+| [`parse_exam_from_load`](#parse_exam_from_load) | Function | L76–L105 | `tuple[str, ExamItem] \| None` | Формирует объект аттестации ExamItem из блока учебной н... |
+| [`apply_exam_slot`](#apply_exam_slot) | Function | L108–L126 | `None` | Проставляет дату, номер и звонки пары, если аттестация ... |
+| [`resolve_exam_room`](#resolve_exam_room) | Function | L129–L138 | `str` | Определяет кабинет аттестации по назначению в сетке. |
+| [`enrich_exam_from_instance`](#enrich_exam_from_instance) | Function | L141–L172 | `None` | Обогащает аттестацию кабинетом, неделями и слотом из се... |
+| [`mark_preliminary`](#mark_preliminary) | Function | L175–L189 | `None` | Помечает аттестации на неделях, которые ещё не опублико... |
+| [`_collect_exams_from_loads`](#_collect_exams_from_loads) | Function | L192–L204 | `dict[str, ExamItem]` | Строит реестр аттестаций группы из плана учебной нагруз... |
+| [`get_group_exams`](#get_group_exams) | Function | L207–L228 | `list[ExamItem]` | Извлекает полный реестр экзаменов и аттестаций группы н... |
 
 ---
 
@@ -46,7 +35,7 @@ def is_assessment_type(type_id: str, l_types: dict[str, str]) -> tuple[bool, str
 - **Return Contract**: `tuple[bool, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_assessment_type`.
+Проверяет принадлежность идентификатора занятия к формам промежуточной аттестации.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -80,7 +69,7 @@ def resolve_teacher_name(raw_teacher: str, teacher_links: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_teacher_name`.
+Определяет актуальное полное ФИО преподавателя по справочнику контактов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -114,7 +103,7 @@ def extract_load_weeks(load: dict[str, Any]) -> list[int]
 - **Return Contract**: `list[int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_load_weeks`.
+Извлекает и упорядочивает номера учебных недель проведения аттестации.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -147,7 +136,7 @@ def parse_exam_from_load( load: dict[str, Any], entity_maps: tuple[dict, dict, d
 - **Return Contract**: `tuple[str, ExamItem] | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_exam_from_load`.
+Формирует объект аттестации ExamItem из блока учебной нагрузки (loads).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -182,7 +171,7 @@ def apply_exam_slot(item: ExamItem, inst: dict[str, Any], asgn: dict[str, Any] |
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `apply_exam_slot`.
+Проставляет дату, номер и звонки пары, если аттестация стоит в сетке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -218,7 +207,7 @@ def resolve_exam_room(asgn: dict[str, Any] | None, rms: dict[str, str], is_remot
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_exam_room`.
+Определяет кабинет аттестации по назначению в сетке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -253,7 +242,7 @@ def enrich_exam_from_instance( inst: dict[str, Any], data: dict[str, Any], entit
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `enrich_exam_from_instance`.
+Обогащает аттестацию кабинетом, неделями и слотом из сетки расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -289,7 +278,7 @@ def mark_preliminary(exams: list[ExamItem], published_weeks: list[int]) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `mark_preliminary`.
+Помечает аттестации на неделях, которые ещё не опубликованы на сайте.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -323,7 +312,7 @@ def _collect_exams_from_loads( data: dict[str, Any], entity_maps: tuple[dict, di
 - **Return Contract**: `dict[str, ExamItem]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_collect_exams_from_loads`.
+Строит реестр аттестаций группы из плана учебной нагрузки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -358,7 +347,7 @@ async def get_group_exams() -> list[ExamItem]
 - **Return Contract**: `list[ExamItem]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_group_exams`.
+Извлекает полный реестр экзаменов и аттестаций группы на текущий семестр.
 
 #### Parameters Contract
 *This method takes no input parameters.*

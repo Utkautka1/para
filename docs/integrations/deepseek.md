@@ -1,32 +1,21 @@
 # Component Reference: `integrations/deepseek.py`
 > **File Path**: [`integrations/deepseek.py`](../../integrations/deepseek.py)
 > **Subsystem**: `DeepSeek LLM Integration`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `integrations/deepseek.py` module implements core operational logic for the `DeepSeek LLM Integration` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Интеграция с нейросетевым API DeepSeek (модели Vision/Flash).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_deepseek_client`](#get_deepseek_client) | Function | L27–L35 | `AsyncOpenAI` | Retrieves and resolves domain data for `get_deepseek_cl... |
-| [`close_deepseek_client`](#close_deepseek_client) | Function | L38–L43 | `None` | Executes core domain logic for `close_deepseek_client`. |
-| [`encode_image_bytes`](#encode_image_bytes) | Function | L46–L48 | `str` | Executes core domain logic for `encode_image_bytes`. |
-| [`build_deepseek_messages`](#build_deepseek_messages) | Function | L51–L75 | `list[dict[str, Any]]` | Executes core domain logic for `build_deepseek_messages... |
-| [`_call_deepseek_api`](#_call_deepseek_api) | Function | L78–L89 | `str` | Executes core domain logic for `_call_deepseek_api`. |
-| [`solve_homework`](#solve_homework) | Function | L92–L110 | `str` | Executes core domain logic for `solve_homework`. |
+| [`get_deepseek_client`](#get_deepseek_client) | Function | L27–L35 | `AsyncOpenAI` | Предоставляет синглтон асинхронного клиента для взаимод... |
+| [`close_deepseek_client`](#close_deepseek_client) | Function | L38–L43 | `None` | Корректно закрывает сетевую сессию и пул соединений кли... |
+| [`encode_image_bytes`](#encode_image_bytes) | Function | L46–L48 | `str` | Кодирует сырые байты изображения задания в строку форма... |
+| [`build_deepseek_messages`](#build_deepseek_messages) | Function | L51–L75 | `list[dict[str, Any]]` | Формирует изолированный массив контекстных сообщений с ... |
+| [`_call_deepseek_api`](#_call_deepseek_api) | Function | L78–L89 | `str` | Выполняет единичный асинхронный вызов OpenAI SDK для по... |
+| [`solve_homework`](#solve_homework) | Function | L92–L110 | `str` | Отправляет мультимодальный запрос в DeepSeek с защитой ... |
 
 ---
 
@@ -42,7 +31,7 @@ def get_deepseek_client() -> AsyncOpenAI
 - **Return Contract**: `AsyncOpenAI`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_deepseek_client`.
+Предоставляет синглтон асинхронного клиента для взаимодействия с API DeepSeek.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -73,7 +62,7 @@ async def close_deepseek_client() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `close_deepseek_client`.
+Корректно закрывает сетевую сессию и пул соединений клиента DeepSeek.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -104,7 +93,7 @@ def encode_image_bytes(image_bytes: bytes) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `encode_image_bytes`.
+Кодирует сырые байты изображения задания в строку формата Base64.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -137,7 +126,7 @@ def build_deepseek_messages( image_bytes: bytes | None, text_prompt: str | None,
 - **Return Contract**: `list[dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_deepseek_messages`.
+Формирует изолированный массив контекстных сообщений с санитарной очисткой.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -171,7 +160,7 @@ async def _call_deepseek_api(messages: list[dict[str, Any]]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_call_deepseek_api`.
+Выполняет единичный асинхронный вызов OpenAI SDK для получения ответа DeepSeek.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -204,7 +193,7 @@ async def solve_homework( image_bytes: bytes | None = None, text_prompt: str | N
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `solve_homework`.
+Отправляет мультимодальный запрос в DeepSeek с защитой Circuit Breaker и retry backoff.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

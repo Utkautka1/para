@@ -1,34 +1,23 @@
 # Component Reference: `db/subscribers.py`
 > **File Path**: [`db/subscribers.py`](../../db/subscribers.py)
 > **Subsystem**: `Subscriber Store`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `db/subscribers.py` module implements core operational logic for the `Subscriber Store` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль персистентного хранения подписчиков бота с поддержкой SQLite (WAL) и JSON-фолбэка.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_query_sqlite_subscribers`](#_query_sqlite_subscribers) | Function | L18–L30 | `set[int] | None` | Executes core domain logic for `_query_sqlite_subscribe... |
-| [`_update_sqlite_subscriber`](#_update_sqlite_subscriber) | Function | L33–L49 | `None` | Executes core domain logic for `_update_sqlite_subscrib... |
-| [`load_subscribers`](#load_subscribers) | Function | L52–L58 | `set[int]` | Executes core domain logic for `load_subscribers`. |
-| [`save_subscribers`](#save_subscribers) | Function | L61–L68 | `bool` | Saves serialized entity data to storage for `save_subsc... |
-| [`add_subscriber`](#add_subscriber) | Function | L71–L80 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`remove_subscriber`](#remove_subscriber) | Function | L83–L92 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`is_subscribed`](#is_subscribed) | Function | L95–L97 | `bool` | Executes core domain logic for `is_subscribed`. |
-| [`toggle_subscriber`](#toggle_subscriber) | Function | L100–L109 | `bool` | Executes core domain logic for `toggle_subscriber`. |
+| [`_query_sqlite_subscribers`](#_query_sqlite_subscribers) | Function | L18–L30 | `set[int] \| None` | Извлекает активных подписчиков из базы данных SQLite. |
+| [`_update_sqlite_subscriber`](#_update_sqlite_subscriber) | Function | L33–L49 | `None` | Атомарно обновляет статус подписчика в SQLite. |
+| [`load_subscribers`](#load_subscribers) | Function | L52–L58 | `set[int]` | Загружает множество идентификаторов подписчиков из SQLi... |
+| [`save_subscribers`](#save_subscribers) | Function | L61–L68 | `bool` | Сохраняет актуальное множество подписчиков в JSON-файл ... |
+| [`add_subscriber`](#add_subscriber) | Function | L71–L80 | `bool` | Добавляет новый идентификатор чата в список активных по... |
+| [`remove_subscriber`](#remove_subscriber) | Function | L83–L92 | `bool` | Удаляет идентификатор чата из списка получателей рассыл... |
+| [`is_subscribed`](#is_subscribed) | Function | L95–L97 | `bool` | Проверяет, подписан ли пользователь на персональные уве... |
+| [`toggle_subscriber`](#toggle_subscriber) | Function | L100–L109 | `bool` | Переключает статус подписки пользователя на противополо... |
 
 ---
 
@@ -44,7 +33,7 @@ def _query_sqlite_subscribers() -> set[int] | None
 - **Return Contract**: `set[int] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_query_sqlite_subscribers`.
+Извлекает активных подписчиков из базы данных SQLite.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -75,7 +64,7 @@ def _update_sqlite_subscriber(chat_id: int, is_active: bool) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_update_sqlite_subscriber`.
+Атомарно обновляет статус подписчика в SQLite.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ def load_subscribers() -> set[int]
 - **Return Contract**: `set[int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_subscribers`.
+Загружает множество идентификаторов подписчиков из SQLite с фолбэком на JSON.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -140,7 +129,7 @@ def save_subscribers(subs: set[int]) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_subscribers`.
+Сохраняет актуальное множество подписчиков в JSON-файл и SQLite.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -173,7 +162,7 @@ def add_subscriber(chat_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_subscriber`.
+Добавляет новый идентификатор чата в список активных подписчиков.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -206,7 +195,7 @@ def remove_subscriber(chat_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `remove_subscriber`.
+Удаляет идентификатор чата из списка получателей рассылки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -239,7 +228,7 @@ def is_subscribed(chat_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_subscribed`.
+Проверяет, подписан ли пользователь на персональные уведомления в ЛС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -272,7 +261,7 @@ def toggle_subscriber(chat_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `toggle_subscriber`.
+Переключает статус подписки пользователя на противоположный (Toggle).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

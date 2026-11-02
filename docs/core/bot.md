@@ -1,28 +1,17 @@
 # Component Reference: `core/bot.py`
 > **File Path**: [`core/bot.py`](../../core/bot.py)
 > **Subsystem**: `Bot Instance Singleton`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/bot.py` module implements core operational logic for the `Bot Instance Singleton` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Инициализация aiogram Bot и Dispatcher.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`create_bot_session`](#create_bot_session) | Function | L19–L31 | `AiohttpSession` | Initializes and constructs a new instance of `create_bo... |
-| [`create_fsm_storage`](#create_fsm_storage) | Function | L34–L58 | `Any` | Initializes and constructs a new instance of `create_fs... |
+| [`create_bot_session`](#create_bot_session) | Function | L19–L31 | `AiohttpSession` | Создает сессию сетевого взаимодействия aiohttp для Tele... |
+| [`create_fsm_storage`](#create_fsm_storage) | Function | L34–L58 | `Any` | Создает постоянное хранилище состояний FSM диалогов на ... |
 
 ---
 
@@ -38,7 +27,7 @@ def create_bot_session() -> AiohttpSession
 - **Return Contract**: `AiohttpSession`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_bot_session`.
+Создает сессию сетевого взаимодействия aiohttp для Telegram Bot API.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -70,7 +59,7 @@ def create_fsm_storage()
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_fsm_storage`.
+Создает постоянное хранилище состояний FSM диалогов на базе Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*

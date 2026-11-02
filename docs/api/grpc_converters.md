@@ -1,32 +1,21 @@
 # Component Reference: `api/grpc/converters.py`
 > **File Path**: [`api/grpc/converters.py`](../../api/grpc/converters.py)
 > **Subsystem**: `Protobuf Converters`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/grpc/converters.py` module implements core operational logic for the `Protobuf Converters` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Конвертеры между доменными Pydantic-моделями и Protobuf-сообщениями.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`lesson_to_proto`](#lesson_to_proto) | Function | L17–L39 | `LessonProto` | Executes core domain logic for `lesson_to_proto`. |
-| [`proto_to_lesson`](#proto_to_lesson) | Function | L42–L64 | `Lesson` | Executes core domain logic for `proto_to_lesson`. |
-| [`week_days_to_proto`](#week_days_to_proto) | Function | L67–L81 | `list[WeekDayProto]` | Executes core domain logic for `week_days_to_proto`. |
-| [`exam_item_to_proto`](#exam_item_to_proto) | Function | L84–L105 | `ExamItemProto` | Executes core domain logic for `exam_item_to_proto`. |
-| [`proto_to_exam_item`](#proto_to_exam_item) | Function | L108–L130 | `ExamItem` | Executes core domain logic for `proto_to_exam_item`. |
-| [`teachers_dict_to_proto`](#teachers_dict_to_proto) | Function | L133–L149 | `TeachersResponse` | Executes core domain logic for `teachers_dict_to_proto`... |
+| [`lesson_to_proto`](#lesson_to_proto) | Function | L17–L39 | `LessonProto` | Конвертирует Pydantic-модель Lesson в Protobuf-сообщени... |
+| [`proto_to_lesson`](#proto_to_lesson) | Function | L42–L64 | `Lesson` | Конвертирует Protobuf-сообщение LessonProto в модель Le... |
+| [`week_days_to_proto`](#week_days_to_proto) | Function | L67–L81 | `list[WeekDayProto]` | Конвертирует список кортежей (дата, пары) в список сооб... |
+| [`exam_item_to_proto`](#exam_item_to_proto) | Function | L84–L105 | `ExamItemProto` | Конвертирует ExamItem в Protobuf-сообщение ExamItemProt... |
+| [`proto_to_exam_item`](#proto_to_exam_item) | Function | L108–L130 | `ExamItem` | Конвертирует ExamItemProto в доменную Pydantic-модель E... |
+| [`teachers_dict_to_proto`](#teachers_dict_to_proto) | Function | L133–L149 | `TeachersResponse` | Конвертирует словарь преподавателей в Protobuf-ответ Te... |
 
 ---
 
@@ -42,7 +31,7 @@ def lesson_to_proto(lesson: Lesson) -> LessonProto
 - **Return Contract**: `LessonProto`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `lesson_to_proto`.
+Конвертирует Pydantic-модель Lesson в Protobuf-сообщение LessonProto.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -75,7 +64,7 @@ def proto_to_lesson(proto: LessonProto) -> Lesson
 - **Return Contract**: `Lesson`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `proto_to_lesson`.
+Конвертирует Protobuf-сообщение LessonProto в модель Lesson.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -108,7 +97,7 @@ def week_days_to_proto(raw_days: list[tuple[date, list[Lesson]]]) -> list[WeekDa
 - **Return Contract**: `list[WeekDayProto]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `week_days_to_proto`.
+Конвертирует список кортежей (дата, пары) в список сообщений WeekDayProto.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -141,7 +130,7 @@ def exam_item_to_proto(exam: ExamItem) -> ExamItemProto
 - **Return Contract**: `ExamItemProto`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `exam_item_to_proto`.
+Конвертирует ExamItem в Protobuf-сообщение ExamItemProto.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -174,7 +163,7 @@ def proto_to_exam_item(proto: ExamItemProto) -> ExamItem
 - **Return Contract**: `ExamItem`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `proto_to_exam_item`.
+Конвертирует ExamItemProto в доменную Pydantic-модель ExamItem.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -207,7 +196,7 @@ def teachers_dict_to_proto(raw: dict[str, dict[str, Any]]) -> TeachersResponse
 - **Return Contract**: `TeachersResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `teachers_dict_to_proto`.
+Конвертирует словарь преподавателей в Protobuf-ответ TeachersResponse.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,54 +1,43 @@
 # Component Reference: `bot/handlers/user/schedule.py`
 > **File Path**: [`bot/handlers/user/schedule.py`](../../bot/handlers/user/schedule.py)
 > **Subsystem**: `User Schedule Flow`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/user/schedule.py` module implements core operational logic for the `User Schedule Flow` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры команд и Inline-кнопок пользователя.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_day_schedule_cached`](#get_day_schedule_cached) | Function | L51–L66 | `tuple[str, list[Lesson]]` | Retrieves and resolves domain data for `get_day_schedul... |
-| [`_ack_callback`](#_ack_callback) | Function | L69–L77 | `None` | Executes core domain logic for `_ack_callback`. |
-| [`edit_or_answer`](#edit_or_answer) | Function | L80–L97 | `None` | Executes core domain logic for `edit_or_answer`. |
-| [`_greet_new_student`](#_greet_new_student) | Function | L100–L118 | `None` | Executes core domain logic for `_greet_new_student`. |
-| [`_show_access_denied`](#_show_access_denied) | Function | L121–L138 | `None` | Executes core domain logic for `_show_access_denied`. |
-| [`_show_tester_cabinet`](#_show_tester_cabinet) | Function | L141–L165 | `None` | Executes core domain logic for `_show_tester_cabinet`. |
-| [`_send_today_schedule`](#_send_today_schedule) | Function | L168–L189 | `list[Lesson]` | Executes core domain logic for `_send_today_schedule`. |
-| [`_award_today_view`](#_award_today_view) | Function | L192–L199 | `None` | Executes core domain logic for `_award_today_view`. |
-| [`_handle_unauthorized_user`](#_handle_unauthorized_user) | Function | L202–L210 | `bool` | Executes core domain logic for `_handle_unauthorized_us... |
-| [`cmd_start`](#cmd_start) | Function | L215–L228 | `None` | Processes inbound Telegram slash command for `cmd_start... |
-| [`cmd_my_api_key`](#cmd_my_api_key) | Function | L233–L248 | `None` | Processes inbound Telegram slash command for `cmd_my_ap... |
-| [`cb_show_tester_key`](#cb_show_tester_key) | Function | L252–L265 | `None` | Handles Telegram inline callback query events for `cb_s... |
-| [`_trigger_notify_achievements`](#_trigger_notify_achievements) | Function | L268–L275 | `None` | Executes core domain logic for `_trigger_notify_achieve... |
-| [`_update_schedule_inline_markup`](#_update_schedule_inline_markup) | Function | L278–L293 | `None` | Executes core domain logic for `_update_schedule_inline... |
-| [`cb_toggle_notify`](#cb_toggle_notify) | Function | L297–L306 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cmd_notice`](#cmd_notice) | Function | L310–L328 | `None` | Processes inbound Telegram slash command for `cmd_notic... |
-| [`cb_notice_toggle`](#cb_notice_toggle) | Function | L332–L352 | `None` | Handles Telegram inline callback query events for `cb_n... |
-| [`cb_today`](#cb_today) | Function | L356–L372 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cb_tomorrow`](#cb_tomorrow) | Function | L376–L392 | `None` | Handles Telegram inline callback query events for `cb_t... |
-| [`cb_week`](#cb_week) | Function | L396–L421 | `None` | Handles Telegram inline callback query events for `cb_w... |
-| [`_get_next_week_monday`](#_get_next_week_monday) | Function | L424–L427 | `date` | Executes core domain logic for `_get_next_week_monday`. |
-| [`cb_week_next`](#cb_week_next) | Function | L431–L447 | `None` | Handles Telegram inline callback query events for `cb_w... |
-| [`_safe_fetch_lessons_for_refresh`](#_safe_fetch_lessons_for_refresh) | Function | L450–L456 | `list[Lesson]` | Executes core domain logic for `_safe_fetch_lessons_for... |
-| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L459–L469 | `tuple[str, list[Lesson], int]` | Executes core domain logic for `_refresh_and_format_sch... |
-| [`cb_refresh`](#cb_refresh) | Function | L473–L484 | `None` | Handles Telegram inline callback query events for `cb_r... |
-| [`format_help_text`](#format_help_text) | Function | L487–L510 | `str` | Formats message payload and presentation markup for `fo... |
-| [`cmd_help`](#cmd_help) | Function | L514–L535 | `None` | Processes inbound Telegram slash command for `cmd_help`... |
-| [`handle_user_text_message`](#handle_user_text_message) | Function | L539–L555 | `None` | Executes core domain logic for `handle_user_text_messag... |
+| [`get_day_schedule_cached`](#get_day_schedule_cached) | Function | L52–L67 | `tuple[str, list[Lesson]]` | Возвращает форматированный текст расписания и список па... |
+| [`_ack_callback`](#_ack_callback) | Function | L70–L78 | `None` | Мгновенно подтверждает callback-запрос от инлайн-кнопок... |
+| [`edit_or_answer`](#edit_or_answer) | Function | L81–L98 | `None` | Безопасно обновляет содержимое текущего сообщения распи... |
+| [`_greet_new_student`](#_greet_new_student) | Function | L101–L119 | `None` | Отправляет персональное приветственное сообщение новому... |
+| [`_show_access_denied`](#_show_access_denied) | Function | L122–L139 | `None` | Информирует неавторизованного пользователя об отказе в ... |
+| [`_show_tester_cabinet`](#_show_tester_cabinet) | Function | L142–L166 | `None` | Отправляет экран личного кабинета авторизованного тести... |
+| [`_send_today_schedule`](#_send_today_schedule) | Function | L169–L190 | `list[Lesson]` | Отправляет пользователю карточку расписания на сегодня ... |
+| [`_award_today_view`](#_award_today_view) | Function | L193–L199 | `None` | Запускает в фоне выдачу ачивок за /start и /today (прив... |
+| [`_handle_unauthorized_user`](#_handle_unauthorized_user) | Function | L202–L210 | `bool` | Обрабатывает отказ в доступе или показ кабинета тестера... |
+| [`cmd_start`](#cmd_start) | Function | L215–L228 | `None` | Авторизует пользователя, проверяет права тестера и отпр... |
+| [`cmd_my_api_key`](#cmd_my_api_key) | Function | L233–L248 | `None` | Показывает персональный API-ключ и кнопки запуска Swagg... |
+| [`cb_show_tester_key`](#cb_show_tester_key) | Function | L252–L265 | `None` | Отправляет всплывающее уведомление с персональным ключо... |
+| [`_trigger_notify_achievements`](#_trigger_notify_achievements) | Function | L268–L274 | `None` | Асинхронно разблокирует достижения при смене статуса на... |
+| [`_update_schedule_inline_markup`](#_update_schedule_inline_markup) | Function | L277–L292 | `None` | Обновляет инлайн-клавиатуру в сообщении расписания посл... |
+| [`cb_toggle_notify`](#cb_toggle_notify) | Function | L296–L305 | `None` | Переключает статус подписки на 10-минутные напоминания ... |
+| [`cmd_notice`](#cmd_notice) | Function | L309–L327 | `None` | Отображает экран настроек персональных уведомлений о па... |
+| [`cb_notice_toggle`](#cb_notice_toggle) | Function | L331–L351 | `None` | Переключает статус подписки в меню /notice с обновление... |
+| [`cb_today`](#cb_today) | Function | L355–L371 | `None` | Заменяет сообщение на расписание на сегодня с Redis-кэш... |
+| [`cb_tomorrow`](#cb_tomorrow) | Function | L375–L391 | `None` | Заменяет сообщение на расписание на завтра с Redis-кэши... |
+| [`cb_week`](#cb_week) | Function | L395–L420 | `None` | Заменяет сообщение на расписание на текущую неделю с Re... |
+| [`_get_next_week_monday`](#_get_next_week_monday) | Function | L423–L426 | `date` | Вычисляет дату понедельника следующей недели. |
+| [`cb_week_next`](#cb_week_next) | Function | L430–L446 | `None` | Заменяет сообщение на расписание на следующую неделю с ... |
+| [`_safe_fetch_lessons_for_refresh`](#_safe_fetch_lessons_for_refresh) | Function | L449–L455 | `list[Lesson]` | Запрашивает расписание из API с fallback на кэш при сбо... |
+| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L458–L468 | `tuple[str, list[Lesson], int]` | Сбрасывает UI-кэш представлений и загружает свежее расп... |
+| [`cb_refresh`](#cb_refresh) | Function | L472–L483 | `None` | Сразу показывает расписание из кэша и просит worker ска... |
+| [`format_help_text`](#format_help_text) | Function | L486–L509 | `str` | Формирует справочное сообщение со списком команд бота. |
+| [`cmd_help`](#cmd_help) | Function | L513–L531 | `None` | Выводит список доступных команд для авторизованного пол... |
+| [`handle_user_text_message`](#handle_user_text_message) | Function | L535–L551 | `None` | Отвечает на произвольный текст авторизованного пользова... |
 
 ---
 
@@ -59,12 +48,12 @@ graph LR
 async def get_day_schedule_cached(target_date: date) -> tuple[str, list[Lesson]]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L51-L66`](../../bot/handlers/user/schedule.py#L51-L66)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L52-L67`](../../bot/handlers/user/schedule.py#L52-L67)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[str, list[Lesson]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_day_schedule_cached`.
+Возвращает форматированный текст расписания и список пар с кэшированием в Redis на 180с.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -92,12 +81,12 @@ result = await get_day_schedule_cached(target_date=...)
 async def _ack_callback(callback: CallbackQuery, text: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L69-L77`](../../bot/handlers/user/schedule.py#L69-L77)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L70-L78`](../../bot/handlers/user/schedule.py#L70-L78)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_ack_callback`.
+Мгновенно подтверждает callback-запрос от инлайн-кнопок Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -126,12 +115,12 @@ result = await _ack_callback(callback=..., text=...)
 async def edit_or_answer( callback: CallbackQuery, text: str, lessons: list[Lesson] | None = None, week_offset: int = 0 ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L80-L97`](../../bot/handlers/user/schedule.py#L80-L97)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L81-L98`](../../bot/handlers/user/schedule.py#L81-L98)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `edit_or_answer`.
+Безопасно обновляет содержимое текущего сообщения расписания в чате.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -162,12 +151,12 @@ result = await edit_or_answer(callback=..., text=..., lessons=...)
 async def _greet_new_student(message: Message, student: dict) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L100-L118`](../../bot/handlers/user/schedule.py#L100-L118)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L101-L119`](../../bot/handlers/user/schedule.py#L101-L119)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_greet_new_student`.
+Отправляет персональное приветственное сообщение новому студенту группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -196,12 +185,12 @@ result = await _greet_new_student(message=..., student=...)
 async def _show_access_denied(message: Message, uid: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L121-L138`](../../bot/handlers/user/schedule.py#L121-L138)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L122-L139`](../../bot/handlers/user/schedule.py#L122-L139)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_show_access_denied`.
+Информирует неавторизованного пользователя об отказе в доступе к боту.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -230,12 +219,12 @@ result = await _show_access_denied(message=..., uid=...)
 async def _show_tester_cabinet(message: Message, uid: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L141-L165`](../../bot/handlers/user/schedule.py#L141-L165)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L142-L166`](../../bot/handlers/user/schedule.py#L142-L166)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_show_tester_cabinet`.
+Отправляет экран личного кабинета авторизованного тестировщика API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -264,12 +253,12 @@ result = await _show_tester_cabinet(message=..., uid=...)
 async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> list[Lesson]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L168-L189`](../../bot/handlers/user/schedule.py#L168-L189)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L169-L190`](../../bot/handlers/user/schedule.py#L169-L190)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_today_schedule`.
+Отправляет пользователю карточку расписания на сегодня с клавиатурой.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -299,12 +288,12 @@ result = await _send_today_schedule(message=..., uid=..., is_tester=...)
 def _award_today_view(message: Message, lessons: list[Lesson]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L192-L199`](../../bot/handlers/user/schedule.py#L192-L199)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L193-L199`](../../bot/handlers/user/schedule.py#L193-L199)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_award_today_view`.
+Запускает в фоне выдачу ачивок за /start и /today (приветствие + время просмотра).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -338,7 +327,7 @@ async def _handle_unauthorized_user(message: Message, is_auth: bool, is_tester: 
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_unauthorized_user`.
+Обрабатывает отказ в доступе или показ кабинета тестера для неавторизованных студентов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -374,7 +363,7 @@ async def cmd_start(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_start`.
+Авторизует пользователя, проверяет права тестера и отправляет меню расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -407,7 +396,7 @@ async def cmd_my_api_key(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_my_api_key`.
+Показывает персональный API-ключ и кнопки запуска Swagger UI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -440,7 +429,7 @@ async def cb_show_tester_key(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_show_tester_key`.
+Отправляет всплывающее уведомление с персональным ключом тестера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -468,12 +457,12 @@ result = await cb_show_tester_key(callback=...)
 def _trigger_notify_achievements(uid: int, bot: Any, new_sub: bool, full_name: str | None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L268-L275`](../../bot/handlers/user/schedule.py#L268-L275)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L268-L274`](../../bot/handlers/user/schedule.py#L268-L274)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_trigger_notify_achievements`.
+Асинхронно разблокирует достижения при смене статуса напоминаний о парах.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -504,12 +493,12 @@ result = _trigger_notify_achievements(uid=..., bot=..., new_sub=...)
 async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_sub: bool) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L278-L293`](../../bot/handlers/user/schedule.py#L278-L293)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L277-L292`](../../bot/handlers/user/schedule.py#L277-L292)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_update_schedule_inline_markup`.
+Обновляет инлайн-клавиатуру в сообщении расписания после переключения напоминаний.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -539,12 +528,12 @@ result = await _update_schedule_inline_markup(callback=..., uid=..., new_sub=...
 async def cb_toggle_notify(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L297-L306`](../../bot/handlers/user/schedule.py#L297-L306)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L296-L305`](../../bot/handlers/user/schedule.py#L296-L305)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_toggle_notify`.
+Переключает статус подписки на 10-минутные напоминания о парах в ЛС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -572,12 +561,12 @@ result = await cb_toggle_notify(callback=...)
 async def cmd_notice(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L310-L328`](../../bot/handlers/user/schedule.py#L310-L328)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L309-L327`](../../bot/handlers/user/schedule.py#L309-L327)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_notice`.
+Отображает экран настроек персональных уведомлений о парах /notice.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -605,12 +594,12 @@ result = await cmd_notice(message=...)
 async def cb_notice_toggle(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L332-L352`](../../bot/handlers/user/schedule.py#L332-L352)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L331-L351`](../../bot/handlers/user/schedule.py#L331-L351)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_notice_toggle`.
+Переключает статус подписки в меню /notice с обновлением экрана.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -638,12 +627,12 @@ result = await cb_notice_toggle(callback=...)
 async def cb_today(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L356-L372`](../../bot/handlers/user/schedule.py#L356-L372)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L355-L371`](../../bot/handlers/user/schedule.py#L355-L371)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_today`.
+Заменяет сообщение на расписание на сегодня с Redis-кэшированием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -671,12 +660,12 @@ result = await cb_today(callback=...)
 async def cb_tomorrow(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L376-L392`](../../bot/handlers/user/schedule.py#L376-L392)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L375-L391`](../../bot/handlers/user/schedule.py#L375-L391)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_tomorrow`.
+Заменяет сообщение на расписание на завтра с Redis-кэшированием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -704,12 +693,12 @@ result = await cb_tomorrow(callback=...)
 async def cb_week(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L396-L421`](../../bot/handlers/user/schedule.py#L396-L421)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L395-L420`](../../bot/handlers/user/schedule.py#L395-L420)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_week`.
+Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -737,12 +726,12 @@ result = await cb_week(callback=...)
 def _get_next_week_monday() -> date
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L424-L427`](../../bot/handlers/user/schedule.py#L424-L427)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L423-L426`](../../bot/handlers/user/schedule.py#L423-L426)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_next_week_monday`.
+Вычисляет дату понедельника следующей недели.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -768,12 +757,12 @@ result = _get_next_week_monday()
 async def cb_week_next(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L431-L447`](../../bot/handlers/user/schedule.py#L431-L447)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L430-L446`](../../bot/handlers/user/schedule.py#L430-L446)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_week_next`.
+Заменяет сообщение на расписание на следующую неделю с Redis-кэшированием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -801,12 +790,12 @@ result = await cb_week_next(callback=...)
 async def _safe_fetch_lessons_for_refresh(now: date) -> list[Lesson]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L450-L456`](../../bot/handlers/user/schedule.py#L450-L456)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L449-L455`](../../bot/handlers/user/schedule.py#L449-L455)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_safe_fetch_lessons_for_refresh`.
+Запрашивает расписание из API с fallback на кэш при сбое сети.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -834,12 +823,12 @@ result = await _safe_fetch_lessons_for_refresh(now=...)
 async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], int]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L459-L469`](../../bot/handlers/user/schedule.py#L459-L469)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L458-L468`](../../bot/handlers/user/schedule.py#L458-L468)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[str, list[Lesson], int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_refresh_and_format_schedule`.
+Сбрасывает UI-кэш представлений и загружает свежее расписание из API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -867,12 +856,12 @@ result = await _refresh_and_format_schedule(now=...)
 async def cb_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L473-L484`](../../bot/handlers/user/schedule.py#L473-L484)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L472-L483`](../../bot/handlers/user/schedule.py#L472-L483)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_refresh`.
+Сразу показывает расписание из кэша и просит worker скачать свежую версию КТМУ в фоне.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -900,12 +889,12 @@ result = await cb_refresh(callback=...)
 def format_help_text(is_admin: bool) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L487-L510`](../../bot/handlers/user/schedule.py#L487-L510)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L486-L509`](../../bot/handlers/user/schedule.py#L486-L509)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_help_text`.
+Формирует справочное сообщение со списком команд бота.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -933,12 +922,12 @@ result = format_help_text(is_admin=...)
 async def cmd_help(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L514-L535`](../../bot/handlers/user/schedule.py#L514-L535)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L513-L531`](../../bot/handlers/user/schedule.py#L513-L531)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_help`.
+Выводит список доступных команд для авторизованного пользователя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -966,12 +955,12 @@ result = await cmd_help(message=...)
 async def handle_user_text_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L539-L555`](../../bot/handlers/user/schedule.py#L539-L555)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L535-L551`](../../bot/handlers/user/schedule.py#L535-L551)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_user_text_message`.
+Отвечает на произвольный текст авторизованного пользователя расписанием.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

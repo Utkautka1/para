@@ -1,36 +1,25 @@
 # Component Reference: `api/router/attendance.py`
 > **File Path**: [`api/router/attendance.py`](../../api/router/attendance.py)
 > **Subsystem**: `Attendance API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/attendance.py` module implements core operational logic for the `Attendance API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер посещаемости — GET /attendance/stats, student, session, mark, commit.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_attendance_stats`](#get_attendance_stats) | Function | L38–L51 | `AttendanceStatsResponse` | Retrieves and resolves domain data for `get_attendance_... |
-| [`_calculate_attendance_rate`](#_calculate_attendance_rate) | Function | L54–L68 | `float` | Executes core domain logic for `_calculate_attendance_r... |
-| [`get_student_attendance`](#get_student_attendance) | Function | L72–L95 | `StudentPersonalStatsResponse` | Retrieves and resolves domain data for `get_student_att... |
-| [`_build_session_response`](#_build_session_response) | Function | L98–L122 | `ActiveSessionResponse` | Executes core domain logic for `_build_session_response... |
-| [`get_current_session`](#get_current_session) | Function | L126–L138 | `ActiveSessionResponse` | Retrieves and resolves domain data for `get_current_ses... |
-| [`start_session`](#start_session) | Function | L142–L157 | `ActiveSessionResponse` | Executes core domain logic for `start_session`. |
-| [`mark_student`](#mark_student) | Function | L161–L175 | `ActiveSessionResponse` | Executes core domain logic for `mark_student`. |
-| [`batch_present`](#batch_present) | Function | L181–L195 | `ActiveSessionResponse` | Executes core domain logic for `batch_present`. |
-| [`commit_session`](#commit_session) | Function | L199–L218 | `CommitAttendanceResponse` | Commits transactional modifications to external store f... |
-| [`cancel_session`](#cancel_session) | Function | L222–L234 | `dict` | Executes core domain logic for `cancel_session`. |
+| [`get_attendance_stats`](#get_attendance_stats) | Function | L39–L52 | `AttendanceStatsResponse` | Возвращает агрегированную годовую статистику посещаемос... |
+| [`_calculate_attendance_rate`](#_calculate_attendance_rate) | Function | L55–L69 | `float` | Вычисляет процент посещаемости студента по сумме меток ... |
+| [`get_student_attendance`](#get_student_attendance) | Function | L73–L96 | `StudentPersonalStatsResponse` | Возвращает детальную статистику посещаемости конкретног... |
+| [`_build_session_response`](#_build_session_response) | Function | L99–L123 | `ActiveSessionResponse` | Преобразует состояние доменной сессии старосты в Pydant... |
+| [`get_current_session`](#get_current_session) | Function | L127–L139 | `ActiveSessionResponse` | Возвращает текущее состояние интерактивной сессии отмет... |
+| [`start_session`](#start_session) | Function | L143–L158 | `ActiveSessionResponse` | Инициализирует новую сессию опроса посещаемости пары ст... |
+| [`mark_student`](#mark_student) | Function | L162–L176 | `ActiveSessionResponse` | Записывает статус посещаемости для текущего студента в ... |
+| [`batch_present`](#batch_present) | Function | L182–L196 | `ActiveSessionResponse` | Массово проставляет статус 'П' (присутствует) всем оста... |
+| [`commit_session`](#commit_session) | Function | L200–L219 | `CommitAttendanceResponse` | Фиксирует результаты сессии опроса в таблицу Яндекс Док... |
+| [`cancel_session`](#cancel_session) | Function | L223–L235 | `CancelSessionResponse` | Сбрасывает и отменяет текущую незавершённую сессию стар... |
 
 ---
 
@@ -41,12 +30,12 @@ graph LR
 async def get_attendance_stats(force_refresh: bool = Query(default=False)) -> AttendanceStatsResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L38-L51`](../../api/router/attendance.py#L38-L51)
+- **Source Reference**: [`api/router/attendance.py#L39-L52`](../../api/router/attendance.py#L39-L52)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceStatsResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_attendance_stats`.
+Возвращает агрегированную годовую статистику посещаемости всех студентов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -74,12 +63,12 @@ result = await get_attendance_stats(force_refresh=...)
 def _calculate_attendance_rate(total_marks: dict) -> float
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L54-L68`](../../api/router/attendance.py#L54-L68)
+- **Source Reference**: [`api/router/attendance.py#L55-L69`](../../api/router/attendance.py#L55-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_calculate_attendance_rate`.
+Вычисляет процент посещаемости студента по сумме меток 'П' и 'О'.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -107,12 +96,12 @@ result = _calculate_attendance_rate(total_marks=...)
 async def get_student_attendance(fio: str) -> StudentPersonalStatsResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L72-L95`](../../api/router/attendance.py#L72-L95)
+- **Source Reference**: [`api/router/attendance.py#L73-L96`](../../api/router/attendance.py#L73-L96)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `StudentPersonalStatsResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_student_attendance`.
+Возвращает детальную статистику посещаемости конкретного студента по ФИО.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -140,12 +129,12 @@ result = await get_student_attendance(fio=...)
 def _build_session_response(s) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L98-L122`](../../api/router/attendance.py#L98-L122)
+- **Source Reference**: [`api/router/attendance.py#L99-L123`](../../api/router/attendance.py#L99-L123)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ActiveSessionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_session_response`.
+Преобразует состояние доменной сессии старосты в Pydantic DTO ответа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -173,12 +162,12 @@ result = _build_session_response(s=...)
 async def get_current_session() -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L126-L138`](../../api/router/attendance.py#L126-L138)
+- **Source Reference**: [`api/router/attendance.py#L127-L139`](../../api/router/attendance.py#L127-L139)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_current_session`.
+Возвращает текущее состояние интерактивной сессии отметки старосты.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -204,12 +193,12 @@ result = await get_current_session()
 async def start_session(payload: StartSessionRequest) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L142-L157`](../../api/router/attendance.py#L142-L157)
+- **Source Reference**: [`api/router/attendance.py#L143-L158`](../../api/router/attendance.py#L143-L158)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `start_session`.
+Инициализирует новую сессию опроса посещаемости пары старостой (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -237,12 +226,12 @@ result = await start_session(payload=...)
 async def mark_student(payload: MarkStudentRequest) -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L161-L175`](../../api/router/attendance.py#L161-L175)
+- **Source Reference**: [`api/router/attendance.py#L162-L176`](../../api/router/attendance.py#L162-L176)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `mark_student`.
+Записывает статус посещаемости для текущего студента в очереди (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -270,12 +259,12 @@ result = await mark_student(payload=...)
 async def batch_present() -> ActiveSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L181-L195`](../../api/router/attendance.py#L181-L195)
+- **Source Reference**: [`api/router/attendance.py#L182-L196`](../../api/router/attendance.py#L182-L196)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ActiveSessionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `batch_present`.
+Массово проставляет статус 'П' (присутствует) всем оставшимся студентам (Admin only).
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -301,12 +290,12 @@ result = await batch_present()
 async def commit_session() -> CommitAttendanceResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L199-L218`](../../api/router/attendance.py#L199-L218)
+- **Source Reference**: [`api/router/attendance.py#L200-L219`](../../api/router/attendance.py#L200-L219)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CommitAttendanceResponse`
 
 #### Overview & Architectural Purpose
-Commits transactional modifications to external store for `commit_session`.
+Фиксирует результаты сессии опроса в таблицу Яндекс Документов (Admin only).
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -329,15 +318,15 @@ result = await commit_session()
 
 ### `cancel_session`
 ```python
-async def cancel_session() -> dict
+async def cancel_session() -> CancelSessionResponse
 ```
 
-- **Source Reference**: [`api/router/attendance.py#L222-L234`](../../api/router/attendance.py#L222-L234)
+- **Source Reference**: [`api/router/attendance.py#L223-L235`](../../api/router/attendance.py#L223-L235)
 - **Execution Mode**: `Asynchronous (non-blocking)`
-- **Return Contract**: `dict`
+- **Return Contract**: `CancelSessionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `cancel_session`.
+Сбрасывает и отменяет текущую незавершённую сессию старосты (Admin only).
 
 #### Parameters Contract
 *This method takes no input parameters.*

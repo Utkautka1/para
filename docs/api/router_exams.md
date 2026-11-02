@@ -1,30 +1,19 @@
 # Component Reference: `api/router/exams.py`
 > **File Path**: [`api/router/exams.py`](../../api/router/exams.py)
 > **Subsystem**: `Exams API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/exams.py` module implements core operational logic for the `Exams API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер экзаменов — GET /exams, GET /exams/upcoming, POST /exams/refresh.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_exams`](#list_exams) | Function | L23–L35 | `ExamsResponse` | Executes core domain logic for `list_exams`. |
-| [`_resolve_current_week`](#_resolve_current_week) | Function | L38–L52 | `int` | Executes core domain logic for `_resolve_current_week`. |
-| [`upcoming_exams`](#upcoming_exams) | Function | L56–L72 | `UpcomingExamsResponse` | Executes core domain logic for `upcoming_exams`. |
-| [`refresh_exams`](#refresh_exams) | Function | L76–L89 | `ExamsRefreshResponse` | Executes core domain logic for `refresh_exams`. |
+| [`list_exams`](#list_exams) | Function | L23–L35 | `ExamsResponse` | Возвращает полный реестр экзаменов и зачётов текущего с... |
+| [`_resolve_current_week`](#_resolve_current_week) | Function | L38–L52 | `int` | Вычисляет номер текущей учебной недели семестра. |
+| [`upcoming_exams`](#upcoming_exams) | Function | L56–L72 | `UpcomingExamsResponse` | Возвращает список ближайших контрольных мероприятий на ... |
+| [`refresh_exams`](#refresh_exams) | Function | L76–L89 | `ExamsRefreshResponse` | Выполняет принудительное обновление расписания экзамено... |
 
 ---
 
@@ -40,7 +29,7 @@ async def list_exams() -> ExamsResponse
 - **Return Contract**: `ExamsResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `list_exams`.
+Возвращает полный реестр экзаменов и зачётов текущего семестра.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -71,7 +60,7 @@ async def _resolve_current_week() -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_current_week`.
+Вычисляет номер текущей учебной недели семестра.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -102,7 +91,7 @@ async def upcoming_exams( weeks_ahead: int = Query(default=4, ge=1, le=20, descr
 - **Return Contract**: `UpcomingExamsResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `upcoming_exams`.
+Возвращает список ближайших контрольных мероприятий на N недель вперёд.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -135,7 +124,7 @@ async def refresh_exams() -> ExamsRefreshResponse
 - **Return Contract**: `ExamsRefreshResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `refresh_exams`.
+Выполняет принудительное обновление расписания экзаменов из API колледжа.
 
 #### Parameters Contract
 *This method takes no input parameters.*

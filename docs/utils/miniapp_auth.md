@@ -1,33 +1,22 @@
 # Component Reference: `utils/miniapp_auth.py`
 > **File Path**: [`utils/miniapp_auth.py`](../../utils/miniapp_auth.py)
 > **Subsystem**: `HMAC-SHA256 Auth`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `utils/miniapp_auth.py` module implements core operational logic for the `HMAC-SHA256 Auth` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль криптографической аутентификации Telegram Mini App и сессий тестеров.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_data_check_string`](#_build_data_check_string) | Function | L22–L32 | `str` | Executes core domain logic for `_build_data_check_strin... |
-| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L35–L45 | `str` | Executes core domain logic for `_compute_init_data_hash... |
-| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L48–L62 | `bool` | Executes core domain logic for `_is_auth_date_valid`. |
-| [`_extract_user_payload`](#_extract_user_payload) | Function | L65–L78 | `dict[str, Any] | None` | Executes core domain logic for `_extract_user_payload`. |
-| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L81–L100 | `dict[str, Any] | None` | Validates architectural invariants and constraints for ... |
-| [`generate_tester_session`](#generate_tester_session) | Function | L103–L115 | `str` | Executes core domain logic for `generate_tester_session... |
-| [`verify_tester_session`](#verify_tester_session) | Function | L118–L139 | `int | None` | Executes core domain logic for `verify_tester_session`. |
+| [`_build_data_check_string`](#_build_data_check_string) | Function | L22–L32 | `str` | Формирует каноническую строку для проверки цифровой под... |
+| [`_compute_init_data_hash`](#_compute_init_data_hash) | Function | L35–L45 | `str` | Вычисляет HMAC-SHA256 хеш данных initData с использован... |
+| [`_is_auth_date_valid`](#_is_auth_date_valid) | Function | L48–L62 | `bool` | Проверяет актуальность метки времени auth_date. |
+| [`_extract_user_payload`](#_extract_user_payload) | Function | L65–L78 | `dict[str, Any] \| None` | Безопасно парсит сериализованный профиль Telegram польз... |
+| [`validate_telegram_init_data`](#validate_telegram_init_data) | Function | L81–L100 | `dict[str, Any] \| None` | Валидирует строку initData от Telegram WebApp через кри... |
+| [`generate_tester_session`](#generate_tester_session) | Function | L103–L115 | `str` | Генерирует подписанный сессионный токен для авторизации... |
+| [`verify_tester_session`](#verify_tester_session) | Function | L118–L139 | `int \| None` | Проверяет валидность и срок жизни сессионного токена те... |
 
 ---
 
@@ -43,7 +32,7 @@ def _build_data_check_string(parsed_data: dict[str, str]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_data_check_string`.
+Формирует каноническую строку для проверки цифровой подписи initData.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -76,7 +65,7 @@ def _compute_init_data_hash(data_check_str: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_compute_init_data_hash`.
+Вычисляет HMAC-SHA256 хеш данных initData с использованием токена бота.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ def _is_auth_date_valid(auth_date_str: str, max_age: int = SESSION_MAX_AGE_SECON
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_auth_date_valid`.
+Проверяет актуальность метки времени auth_date.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ def _extract_user_payload(raw_json: str) -> dict[str, Any] | None
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_user_payload`.
+Безопасно парсит сериализованный профиль Telegram пользователя из JSON.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -176,7 +165,7 @@ def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Validates architectural invariants and constraints for `validate_telegram_init_data`.
+Валидирует строку initData от Telegram WebApp через криптографическую подпись.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -209,7 +198,7 @@ def generate_tester_session(user_id: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `generate_tester_session`.
+Генерирует подписанный сессионный токен для авторизации тестера в Swagger UI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -242,7 +231,7 @@ def verify_tester_session(token: str, max_age: int = SESSION_MAX_AGE_SECONDS) ->
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `verify_tester_session`.
+Проверяет валидность и срок жизни сессионного токена тестера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

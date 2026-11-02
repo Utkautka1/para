@@ -1,34 +1,23 @@
 # Component Reference: `services/alerting.py`
 > **File Path**: [`services/alerting.py`](../../services/alerting.py)
 > **Subsystem**: `Incident Alerting`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/alerting.py` module implements core operational logic for the `Incident Alerting` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис мониторинга инцидентов и доставки критических алертов администратору.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L51–L64 | `bool | None` | Executes core domain logic for `_check_redis_throttle`. |
-| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L67–L77 | `bool` | Executes core domain logic for `_should_throttle_alert`... |
-| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L80–L85 | `bool` | Executes core domain logic for `_is_alert_throttled`. |
-| [`_format_alert_text`](#_format_alert_text) | Function | L88–L100 | `str` | Executes core domain logic for `_format_alert_text`. |
-| [`_resolve_alert_destination`](#_resolve_alert_destination) | Function | L103–L111 | `tuple[int, int | None]` | Executes core domain logic for `_resolve_alert_destinat... |
-| [`_record_incident_safe`](#_record_incident_safe) | Function | L114–L131 | `None` | Executes core domain logic for `_record_incident_safe`. |
-| [`_deliver_alert_message`](#_deliver_alert_message) | Function | L134–L155 | `bool` | Executes core domain logic for `_deliver_alert_message`... |
-| [`send_admin_alert`](#send_admin_alert) | Function | L158–L172 | `bool` | Dispatches notification message via Telegram API for `s... |
+| [`_check_redis_throttle`](#_check_redis_throttle) | Function | L51–L64 | `bool \| None` | Проверяет и выставляет распределенный ключ кулдауна в R... |
+| [`_should_throttle_alert`](#_should_throttle_alert) | Function | L67–L77 | `bool` | Проверяет необходимость локального троттлинга уведомлен... |
+| [`_is_alert_throttled`](#_is_alert_throttled) | Function | L80–L85 | `bool` | Координирует распределенный (Redis) и локальный (память... |
+| [`_format_alert_text`](#_format_alert_text) | Function | L88–L100 | `str` | Форматирует HTML-текст алерта для Telegram. |
+| [`_resolve_alert_destination`](#_resolve_alert_destination) | Function | L103–L111 | `tuple[int, int \| None]` | Определяет целевой chat_id и message_thread_id по уровн... |
+| [`_record_incident_safe`](#_record_incident_safe) | Function | L114–L131 | `None` | Безопасно сохраняет событие инцидента в базу данных SQL... |
+| [`_deliver_alert_message`](#_deliver_alert_message) | Function | L134–L155 | `bool` | Форматирует и отправляет сообщение алерта в Telegram. |
+| [`send_admin_alert`](#send_admin_alert) | Function | L158–L172 | `bool` | Записывает инцидент в SQLite и отправляет Telegram-алер... |
 
 ---
 
@@ -36,7 +25,7 @@ graph LR
 
 ## Class Model: `IncidentType`
 
-Encapsulates domain entities and data transfer logic for `IncidentType`.
+Типы системных инцидентов и сетевых отказов.
 
 ### `_check_redis_throttle`
 ```python
@@ -48,7 +37,7 @@ async def _check_redis_throttle(incident_type: str, cooldown_seconds: float) -> 
 - **Return Contract**: `bool | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_check_redis_throttle`.
+Проверяет и выставляет распределенный ключ кулдауна в Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -83,7 +72,7 @@ def _should_throttle_alert(incident_type: str, cooldown_seconds: float = 300.0) 
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_should_throttle_alert`.
+Проверяет необходимость локального троттлинга уведомления в памяти процесса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -117,7 +106,7 @@ async def _is_alert_throttled(incident_type: str, cooldown_seconds: float) -> bo
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_alert_throttled`.
+Координирует распределенный (Redis) и локальный (память) троттлинг алертов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -151,7 +140,7 @@ def _format_alert_text( incident_type: str, severity: str, title: str, descripti
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_alert_text`.
+Форматирует HTML-текст алерта для Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -188,7 +177,7 @@ def _resolve_alert_destination(severity: str) -> tuple[int, int | None]
 - **Return Contract**: `tuple[int, int | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_alert_destination`.
+Определяет целевой chat_id и message_thread_id по уровню серьезности алерта.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -221,7 +210,7 @@ async def _record_incident_safe( incident_type: str, severity: str, title: str, 
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_record_incident_safe`.
+Безопасно сохраняет событие инцидента в базу данных SQLite.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -258,7 +247,7 @@ async def _deliver_alert_message( incident_type: str, severity: str, title: str,
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_deliver_alert_message`.
+Форматирует и отправляет сообщение алерта в Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -295,7 +284,7 @@ async def send_admin_alert( incident_type: str, title: str, description: str, se
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_admin_alert`.
+Записывает инцидент в SQLite и отправляет Telegram-алерт администратору.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

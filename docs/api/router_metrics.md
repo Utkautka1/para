@@ -1,27 +1,16 @@
 # Component Reference: `api/router/metrics.py`
 > **File Path**: [`api/router/metrics.py`](../../api/router/metrics.py)
 > **Subsystem**: `Prometheus Metrics API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/metrics.py` module implements core operational logic for the `Prometheus Metrics API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер телеметрии Prometheus — GET /metrics.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_prometheus_metrics`](#get_prometheus_metrics) | Function | L18–L28 | `Response` | Retrieves and resolves domain data for `get_prometheus_... |
+| [`get_prometheus_metrics`](#get_prometheus_metrics) | Function | L18–L28 | `Response` | Экспортирует системные метрики в формате текстового про... |
 
 ---
 
@@ -37,7 +26,7 @@ async def get_prometheus_metrics() -> Response
 - **Return Contract**: `Response`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_prometheus_metrics`.
+Экспортирует системные метрики в формате текстового протокола Prometheus.
 
 #### Parameters Contract
 *This method takes no input parameters.*

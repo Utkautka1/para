@@ -1,33 +1,22 @@
 # Component Reference: `services/achievement_sync.py`
 > **File Path**: [`services/achievement_sync.py`](../../services/achievement_sync.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Achievement Sync`
 
-## 1. Architectural Role & Responsibilities
-The `services/achievement_sync.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Фоновая выдача ачивок по журналу посещаемости и рейтингу (крутится в worker).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_is_birthday_today`](#_is_birthday_today) | Function | L55–L58 | `bool` | Executes core domain logic for `_is_birthday_today`. |
-| [`_delta_stats`](#_delta_stats) | Function | L61–L66 | `dict[str, StudentStat]` | Executes core domain logic for `_delta_stats`. |
-| [`_group_context`](#_group_context) | Function | L69–L81 | `tuple[dict[str, int], float]` | Executes core domain logic for `_group_context`. |
-| [`compute_new_achievements`](#compute_new_achievements) | Function | L84–L96 | `set[str]` | Executes core domain logic for `compute_new_achievement... |
-| [`_grant_to_student`](#_grant_to_student) | Function | L99–L118 | `int` | Executes core domain logic for `_grant_to_student`. |
-| [`sync_stat_achievements`](#sync_stat_achievements) | Function | L121–L142 | `int` | Executes core domain logic for `sync_stat_achievements`... |
-| [`achievement_sync_loop`](#achievement_sync_loop) | Function | L145–L159 | `None` | Executes core domain logic for `achievement_sync_loop`. |
+| [`_is_birthday_today`](#_is_birthday_today) | Function | L55–L58 | `bool` | Проверяет по календарю группы, что у студента сегодня (... |
+| [`_delta_stats`](#_delta_stats) | Function | L61–L66 | `dict[str, StudentStat]` | Строит срезы журнала после точки отсчёта для всех студе... |
+| [`_group_context`](#_group_context) | Function | L69–L81 | `tuple[dict[str, int], float]` | Считает места в рейтинге (без старосты) и пульс группы ... |
+| [`compute_new_achievements`](#compute_new_achievements) | Function | L84–L96 | `set[str]` | Определяет ачивки, которые студент заработал, но ещё не... |
+| [`_grant_to_student`](#_grant_to_student) | Function | L99–L118 | `int` | Сохраняет новые ачивки студента и отправляет сводку в Л... |
+| [`sync_stat_achievements`](#sync_stat_achievements) | Function | L121–L142 | `int` | Один проход выдачи журнальных и мета-ачивок всей группе... |
+| [`achievement_sync_loop`](#achievement_sync_loop) | Function | L145–L159 | `None` | Бесконечный цикл фоновой выдачи ачивок в worker. |
 
 ---
 
@@ -43,7 +32,7 @@ def _is_birthday_today(classmate: dict[str, Any] | None) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_birthday_today`.
+Проверяет по календарю группы, что у студента сегодня (МСК) день рождения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -76,7 +65,7 @@ def _delta_stats(stats: dict[str, dict[str, Any]], baselines: dict[str, dict[str
 - **Return Contract**: `dict[str, StudentStat]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_delta_stats`.
+Строит срезы журнала после точки отсчёта для всех студентов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,7 +99,7 @@ def _group_context(board: list[StudentProfile], deltas: dict[str, StudentStat]) 
 - **Return Contract**: `tuple[dict[str, int], float]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_group_context`.
+Считает места в рейтинге (без старосты) и пульс группы после точки отсчёта.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -144,7 +133,7 @@ def compute_new_achievements( profile: StudentProfile, stat: StudentStat, places
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `compute_new_achievements`.
+Определяет ачивки, которые студент заработал, но ещё не получил.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -180,7 +169,7 @@ async def _grant_to_student(bot: Any, fio: str, new_ids: set[str]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_grant_to_student`.
+Сохраняет новые ачивки студента и отправляет сводку в ЛС, если известен tg_id.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -215,7 +204,7 @@ async def sync_stat_achievements(bot: Any) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_stat_achievements`.
+Один проход выдачи журнальных и мета-ачивок всей группе.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -248,7 +237,7 @@ async def achievement_sync_loop(bot: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `achievement_sync_loop`.
+Бесконечный цикл фоновой выдачи ачивок в worker.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

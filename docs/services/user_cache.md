@@ -1,31 +1,20 @@
 # Component Reference: `services/user_cache.py`
 > **File Path**: [`services/user_cache.py`](../../services/user_cache.py)
 > **Subsystem**: `Student Identity Cache`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/user_cache.py` module implements core operational logic for the `Student Identity Cache` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис постоянного кэширования пользователей Telegram (username -> user_id).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L33 | `None` | Flushes and resets state for `clear_user_cache_memory`. |
-| [`load_user_cache`](#load_user_cache) | Function | L36–L55 | `dict[str, int]` | Executes core domain logic for `load_user_cache`. |
-| [`save_user_cache`](#save_user_cache) | Function | L58–L74 | `None` | Saves serialized entity data to storage for `save_user_... |
-| [`get_cached_user_id`](#get_cached_user_id) | Function | L77–L87 | `int | None` | Retrieves and resolves domain data for `get_cached_user... |
-| [`add_user_to_cache`](#add_user_to_cache) | Function | L90–L106 | `None` | Executes core domain logic for `add_user_to_cache`. |
+| [`clear_user_cache_memory`](#clear_user_cache_memory) | Function | L21–L33 | `None` | Сбрасывает оперативный in-memory буфер сопоставлений юз... |
+| [`load_user_cache`](#load_user_cache) | Function | L36–L55 | `dict[str, int]` | Загружает словарь сопоставлений username -> user_id с п... |
+| [`save_user_cache`](#save_user_cache) | Function | L58–L74 | `None` | Атомарно сохраняет словарь сопоставлений пользователей ... |
+| [`get_cached_user_id`](#get_cached_user_id) | Function | L77–L87 | `int \| None` | Возвращает цифровой Telegram user_id по текстовому юзер... |
+| [`add_user_to_cache`](#add_user_to_cache) | Function | L90–L106 | `None` | Добавляет связку юзернейма и ID пользователя в персисте... |
 
 ---
 
@@ -41,7 +30,7 @@ def clear_user_cache_memory() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Flushes and resets state for `clear_user_cache_memory`.
+Сбрасывает оперативный in-memory буфер сопоставлений юзернеймов и ID.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -72,7 +61,7 @@ def load_user_cache() -> dict[str, int]
 - **Return Contract**: `dict[str, int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_user_cache`.
+Загружает словарь сопоставлений username -> user_id с проверкой mtime файла.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -103,7 +92,7 @@ def save_user_cache(cache: dict[str, int]) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_user_cache`.
+Атомарно сохраняет словарь сопоставлений пользователей на диск и в память.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -136,7 +125,7 @@ def get_cached_user_id(username: str) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_cached_user_id`.
+Возвращает цифровой Telegram user_id по текстовому юзернейму.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -169,7 +158,7 @@ def add_user_to_cache(username: str, user_id: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_user_to_cache`.
+Добавляет связку юзернейма и ID пользователя в персистентный кэш.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

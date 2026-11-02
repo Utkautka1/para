@@ -1,55 +1,44 @@
 # Component Reference: `services/topic_updater.py`
 > **File Path**: [`services/topic_updater.py`](../../services/topic_updater.py)
 > **Subsystem**: `Live Schedule Topic`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/topic_updater.py` module implements core operational logic for the `Live Schedule Topic` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль синхронизации и авто-обновления расписания в Telegram-топике группы.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_topic_state`](#load_topic_state) | Function | L41–L51 | `int | None` | Executes core domain logic for `load_topic_state`. |
-| [`save_topic_state`](#save_topic_state) | Function | L54–L69 | `None` | Saves serialized entity data to storage for `save_topic... |
-| [`cleanup_expired_messages`](#cleanup_expired_messages) | Function | L72–L94 | `None` | Executes core domain logic for `cleanup_expired_message... |
-| [`send_temp_topic_reminder`](#send_temp_topic_reminder) | Function | L97–L119 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`check_and_trigger_reminder`](#check_and_trigger_reminder) | Function | L122–L147 | `None` | Executes core domain logic for `check_and_trigger_remin... |
-| [`get_next_working_day`](#get_next_working_day) | Function | L150–L162 | `date` | Retrieves and resolves domain data for `get_next_workin... |
-| [`_should_switch_to_next_day`](#_should_switch_to_next_day) | Function | L165–L180 | `bool` | Executes core domain logic for `_should_switch_to_next_... |
-| [`resolve_target_date`](#resolve_target_date) | Function | L183–L200 | `date | None` | Executes core domain logic for `resolve_target_date`. |
-| [`is_too_early_to_publish`](#is_too_early_to_publish) | Function | L203–L220 | `bool` | Executes core domain logic for `is_too_early_to_publish... |
-| [`_edit_topic_message`](#_edit_topic_message) | Function | L223–L237 | `bool` | Executes core domain logic for `_edit_topic_message`. |
-| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L240–L264 | `bool` | Synchronizes and updates domain state for `update_topic... |
-| [`_topic_fingerprint`](#_topic_fingerprint) | Function | L267–L270 | `str` | Executes core domain logic for `_topic_fingerprint`. |
-| [`_is_unchanged_since_last_send`](#_is_unchanged_since_last_send) | Function | L273–L283 | `bool` | Executes core domain logic for `_is_unchanged_since_las... |
-| [`_remember_sent`](#_remember_sent) | Function | L286–L290 | `None` | Executes core domain logic for `_remember_sent`. |
-| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L293–L314 | `bool` | Executes core domain logic for `_send_new_topic_message... |
-| [`_pin_silently`](#_pin_silently) | Function | L317–L332 | `None` | Executes core domain logic for `_pin_silently`. |
-| [`_try_delete_old_topic_msg`](#_try_delete_old_topic_msg) | Function | L335–L350 | `None` | Executes core domain logic for `_try_delete_old_topic_m... |
-| [`recreate_topic_message`](#recreate_topic_message) | Function | L353–L370 | `bool` | Executes core domain logic for `recreate_topic_message`... |
-| [`_recreate_after_edit_failure`](#_recreate_after_edit_failure) | Function | L373–L384 | `bool` | Executes core domain logic for `_recreate_after_edit_fa... |
-| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L387–L409 | `bool` | Executes core domain logic for `_handle_edit_failure`. |
-| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L412–L429 | `bool` | Executes core domain logic for `should_skip_topic_updat... |
-| [`process_today_reminders`](#process_today_reminders) | Function | L432–L442 | `None` | Executes core domain logic for `process_today_reminders... |
-| [`_prepare_target_schedule`](#_prepare_target_schedule) | Function | L445–L464 | `tuple[date | None, list[Lesson] | None]` | Executes core domain logic for `_prepare_target_schedul... |
-| [`_ensure_topic_main_msg_id`](#_ensure_topic_main_msg_id) | Function | L467–L476 | `None` | Executes core domain logic for `_ensure_topic_main_msg_... |
-| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L479–L501 | `bool` | Executes core domain logic for `sync_topic_main_message... |
-| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L508–L529 | `None` | Executes core domain logic for `notify_admin_about_api_... |
-| [`_track_api_failure`](#_track_api_failure) | Function | L532–L543 | `None` | Executes core domain logic for `_track_api_failure`. |
-| [`_reset_api_failure_tracker`](#_reset_api_failure_tracker) | Function | L546–L557 | `None` | Executes core domain logic for `_reset_api_failure_trac... |
-| [`topic_sync_loop`](#topic_sync_loop) | Function | L560–L578 | `None` | Executes core domain logic for `topic_sync_loop`. |
+| [`load_topic_state`](#load_topic_state) | Function | L42–L52 | `int \| None` | Загружает сохраненный ID главного сообщения расписания ... |
+| [`save_topic_state`](#save_topic_state) | Function | L55–L69 | `None` | Атомарно сохраняет ID главного сообщения в файл состоян... |
+| [`cleanup_expired_messages`](#cleanup_expired_messages) | Function | L72–L94 | `None` | Удаляет временные сервисные уведомления из топика с ист... |
+| [`send_temp_topic_reminder`](#send_temp_topic_reminder) | Function | L97–L119 | `None` | Отправляет всплывающее уведомление за 10 минут до начал... |
+| [`check_and_trigger_reminder`](#check_and_trigger_reminder) | Function | L122–L147 | `None` | Проверяет приближение времени начала пары и запускает о... |
+| [`get_next_working_day`](#get_next_working_day) | Function | L150–L162 | `date` | Определяет дату следующего учебного дня с автоматически... |
+| [`_should_switch_to_next_day`](#_should_switch_to_next_day) | Function | L165–L180 | `bool` | Проверяет, завершились ли все учебные пары сегодняшнего... |
+| [`resolve_target_date`](#resolve_target_date) | Function | L183–L200 | `date \| None` | Рассчитывает целевую дату отображения расписания для за... |
+| [`is_too_early_to_publish`](#is_too_early_to_publish) | Function | L203–L220 | `bool` | Проверяет, не наступило ли слишком раннее утреннее врем... |
+| [`_edit_topic_message`](#_edit_topic_message) | Function | L223–L237 | `bool` | Редактирует текст и клавиатуру активного сообщения в то... |
+| [`update_topic_message_payload`](#update_topic_message_payload) | Function | L240–L264 | `bool` | Атомарно отправляет новое или редактирует закрепленное ... |
+| [`_topic_fingerprint`](#_topic_fingerprint) | Function | L267–L270 | `str` | Склеивает текст и сериализованную клавиатуру — по ним с... |
+| [`_is_unchanged_since_last_send`](#_is_unchanged_since_last_send) | Function | L273–L283 | `bool` | Проверяет, что пост уже в этом состоянии и недавно подт... |
+| [`_remember_sent`](#_remember_sent) | Function | L286–L290 | `None` | Запоминает состояние поста, подтверждённое Telegram (от... |
+| [`_send_new_topic_message`](#_send_new_topic_message) | Function | L293–L314 | `bool` | Создает новое сообщение расписания в топике и закрепляе... |
+| [`_pin_silently`](#_pin_silently) | Function | L317–L332 | `None` | Закрепляет сообщение в супергруппе без отправки системн... |
+| [`_try_delete_old_topic_msg`](#_try_delete_old_topic_msg) | Function | L335–L350 | `None` | Пытается удалить старое призрачное сообщение из топика ... |
+| [`recreate_topic_message`](#recreate_topic_message) | Function | L353–L370 | `bool` | Сбрасывает сохраненный ID сообщения и принудительно пер... |
+| [`_recreate_after_edit_failure`](#_recreate_after_edit_failure) | Function | L373–L384 | `bool` | Сбрасывает ID закрепленного сообщения и пытается отправ... |
+| [`_handle_edit_failure`](#_handle_edit_failure) | Function | L387–L409 | `bool` | Обрабатывает исключения редактирования сообщения Telegr... |
+| [`should_skip_topic_update`](#should_skip_topic_update) | Function | L412–L429 | `bool` | Определяет необходимость отложить публикацию расписания... |
+| [`process_today_reminders`](#process_today_reminders) | Function | L432–L442 | `None` | Запускает проверку и отправку персональных напоминаний ... |
+| [`_prepare_target_schedule`](#_prepare_target_schedule) | Function | L445–L464 | `tuple[date \| None, list[Lesson] \| None]` | Вычисляет целевую дату и запрашивает список уроков для ... |
+| [`_ensure_topic_main_msg_id`](#_ensure_topic_main_msg_id) | Function | L467–L476 | `None` | Загружает сохраненный ID сообщения из файла состояния п... |
+| [`sync_topic_main_message`](#sync_topic_main_message) | Function | L479–L501 | `bool` | Атомарно синхронизирует главное закрепленное сообщение ... |
+| [`notify_admin_about_api_down`](#notify_admin_about_api_down) | Function | L508–L529 | `None` | Отправляет экстренное оповещение старосте в ЛС при паде... |
+| [`_track_api_failure`](#_track_api_failure) | Function | L532–L543 | `None` | Отслеживает длительность сбоя внешних API и отправляет ... |
+| [`_reset_api_failure_tracker`](#_reset_api_failure_tracker) | Function | L546–L557 | `None` | Сбрасывает таймер и флаг аварийного оповещения при успе... |
+| [`topic_sync_loop`](#topic_sync_loop) | Function | L560–L578 | `None` | Фоновый непрерывный рабочий цикл обновления расписания ... |
 
 ---
 
@@ -60,12 +49,12 @@ graph LR
 def load_topic_state() -> int | None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L41-L51`](../../services/topic_updater.py#L41-L51)
+- **Source Reference**: [`services/topic_updater.py#L42-L52`](../../services/topic_updater.py#L42-L52)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_topic_state`.
+Загружает сохраненный ID главного сообщения расписания из локального JSON.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -91,12 +80,12 @@ result = load_topic_state()
 def save_topic_state(msg_id: int | None) -> None
 ```
 
-- **Source Reference**: [`services/topic_updater.py#L54-L69`](../../services/topic_updater.py#L54-L69)
+- **Source Reference**: [`services/topic_updater.py#L55-L69`](../../services/topic_updater.py#L55-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_topic_state`.
+Атомарно сохраняет ID главного сообщения в файл состояния и Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -129,7 +118,7 @@ async def cleanup_expired_messages() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `cleanup_expired_messages`.
+Удаляет временные сервисные уведомления из топика с истекшим сроком жизни.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -160,7 +149,7 @@ async def send_temp_topic_reminder(lesson: Lesson) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_temp_topic_reminder`.
+Отправляет всплывающее уведомление за 10 минут до начала пары с кнопками.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -193,7 +182,7 @@ async def check_and_trigger_reminder(lesson: Lesson, now_dt: datetime, today: da
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_and_trigger_reminder`.
+Проверяет приближение времени начала пары и запускает отправку напоминания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -228,7 +217,7 @@ def get_next_working_day(target_date: date) -> date
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_next_working_day`.
+Определяет дату следующего учебного дня с автоматическим пропуском воскресенья.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -261,7 +250,7 @@ def _should_switch_to_next_day(today_lessons: list[Lesson], today: date, now_dt:
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_should_switch_to_next_day`.
+Проверяет, завершились ли все учебные пары сегодняшнего дня по времени звонков.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -296,7 +285,7 @@ async def resolve_target_date(now_dt: datetime, ignore_restriction: bool) -> dat
 - **Return Contract**: `date | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_target_date`.
+Рассчитывает целевую дату отображения расписания для закрепленного сообщения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -330,7 +319,7 @@ def is_too_early_to_publish(lessons: list[Lesson], now_dt: datetime, today: date
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_too_early_to_publish`.
+Проверяет, не наступило ли слишком раннее утреннее время до первой пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -366,7 +355,7 @@ async def _edit_topic_message(text: str, kb: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_edit_topic_message`.
+Редактирует текст и клавиатуру активного сообщения в топике Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -400,7 +389,7 @@ async def update_topic_message_payload(text: str, kb: Any, _retry: bool = False)
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Synchronizes and updates domain state for `update_topic_message_payload`.
+Атомарно отправляет новое или редактирует закрепленное сообщение в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -435,7 +424,7 @@ def _topic_fingerprint(text: str, kb: Any) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_topic_fingerprint`.
+Склеивает текст и сериализованную клавиатуру — по ним сравниваем, изменился ли пост.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -469,7 +458,7 @@ def _is_unchanged_since_last_send(fingerprint: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_unchanged_since_last_send`.
+Проверяет, что пост уже в этом состоянии и недавно подтверждён Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -502,7 +491,7 @@ def _remember_sent(fingerprint: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_remember_sent`.
+Запоминает состояние поста, подтверждённое Telegram (отправка, правка или 'not modified').
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -535,7 +524,7 @@ async def _send_new_topic_message(text: str, kb: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_new_topic_message`.
+Создает новое сообщение расписания в топике и закрепляет его без звука.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -569,7 +558,7 @@ async def _pin_silently(chat_id: int, message_id: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_pin_silently`.
+Закрепляет сообщение в супергруппе без отправки системного пуш-уведомления.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -603,7 +592,7 @@ async def _try_delete_old_topic_msg(old_id: int | None) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_try_delete_old_topic_msg`.
+Пытается удалить старое призрачное сообщение из топика Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -636,7 +625,7 @@ async def recreate_topic_message() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `recreate_topic_message`.
+Сбрасывает сохраненный ID сообщения и принудительно пересоздает пост с нуля.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -667,7 +656,7 @@ async def _recreate_after_edit_failure(text: str, kb: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_recreate_after_edit_failure`.
+Сбрасывает ID закрепленного сообщения и пытается отправить новое.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -701,7 +690,7 @@ async def _handle_edit_failure( e: TelegramBadRequest, text: str, kb: Any, is_re
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_edit_failure`.
+Обрабатывает исключения редактирования сообщения Telegram API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -737,7 +726,7 @@ def should_skip_topic_update( lessons: list[Lesson], now_dt: datetime, target_da
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `should_skip_topic_update`.
+Определяет необходимость отложить публикацию расписания до утреннего окна.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -773,7 +762,7 @@ async def process_today_reminders(lessons: list[Lesson], now_dt: datetime, targe
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `process_today_reminders`.
+Запускает проверку и отправку персональных напоминаний о парах текущего дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -808,7 +797,7 @@ async def _prepare_target_schedule( ignore_restriction: bool, ) -> tuple[date | 
 - **Return Contract**: `tuple[date | None, list[Lesson] | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_prepare_target_schedule`.
+Вычисляет целевую дату и запрашивает список уроков для обновления топика.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -841,7 +830,7 @@ def _ensure_topic_main_msg_id() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_ensure_topic_main_msg_id`.
+Загружает сохраненный ID сообщения из файла состояния при первом вызове.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -872,7 +861,7 @@ async def sync_topic_main_message(ignore_time_restriction: bool = False) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_topic_main_message`.
+Атомарно синхронизирует главное закрепленное сообщение расписания в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -905,7 +894,7 @@ async def notify_admin_about_api_down() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_admin_about_api_down`.
+Отправляет экстренное оповещение старосте в ЛС при падении внешних API > 30 минут.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -936,7 +925,7 @@ async def _track_api_failure(now: datetime) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_track_api_failure`.
+Отслеживает длительность сбоя внешних API и отправляет алерт при превышении порога.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -969,7 +958,7 @@ def _reset_api_failure_tracker() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_reset_api_failure_tracker`.
+Сбрасывает таймер и флаг аварийного оповещения при успешном ответе сервисов.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -1000,7 +989,7 @@ async def topic_sync_loop() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `topic_sync_loop`.
+Фоновый непрерывный рабочий цикл обновления расписания в топике группы.
 
 #### Parameters Contract
 *This method takes no input parameters.*

@@ -1,31 +1,20 @@
 # Component Reference: `api/router/subscribers.py`
 > **File Path**: [`api/router/subscribers.py`](../../api/router/subscribers.py)
 > **Subsystem**: `Subscribers API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/subscribers.py` module implements core operational logic for the `Subscribers API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер подписчиков — GET /subscribers, count, {chat_id}, POST/DELETE {chat_id}.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_subscribers`](#list_subscribers) | Function | L27–L39 | `SubscribersListResponse` | Executes core domain logic for `list_subscribers`. |
-| [`count_subscribers`](#count_subscribers) | Function | L43–L55 | `SubscriberCountResponse` | Executes core domain logic for `count_subscribers`. |
-| [`check_subscription`](#check_subscription) | Function | L59–L71 | `SubscriberStatusResponse` | Executes core domain logic for `check_subscription`. |
-| [`subscribe_user`](#subscribe_user) | Function | L75–L88 | `SubscriberActionResponse` | Executes core domain logic for `subscribe_user`. |
-| [`unsubscribe_user`](#unsubscribe_user) | Function | L92–L105 | `SubscriberActionResponse` | Executes core domain logic for `unsubscribe_user`. |
+| [`list_subscribers`](#list_subscribers) | Function | L27–L39 | `SubscribersListResponse` | Возвращает список всех активных подписчиков утренних да... |
+| [`count_subscribers`](#count_subscribers) | Function | L43–L55 | `SubscriberCountResponse` | Возвращает суммарное число активных подписчиков расписа... |
+| [`check_subscription`](#check_subscription) | Function | L59–L71 | `SubscriberStatusResponse` | Проверяет активность подписки для указанного Telegram C... |
+| [`subscribe_user`](#subscribe_user) | Function | L75–L88 | `SubscriberActionResponse` | Принудительно подписывает чат или пользователя на распи... |
+| [`unsubscribe_user`](#unsubscribe_user) | Function | L92–L105 | `SubscriberActionResponse` | Отключает автоматическую рассылку уведомлений для чата ... |
 
 ---
 
@@ -41,7 +30,7 @@ async def list_subscribers() -> SubscribersListResponse
 - **Return Contract**: `SubscribersListResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `list_subscribers`.
+Возвращает список всех активных подписчиков утренних дайджестов расписания.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -72,7 +61,7 @@ async def count_subscribers() -> SubscriberCountResponse
 - **Return Contract**: `SubscriberCountResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `count_subscribers`.
+Возвращает суммарное число активных подписчиков расписания.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -103,7 +92,7 @@ async def check_subscription(chat_id: int) -> SubscriberStatusResponse
 - **Return Contract**: `SubscriberStatusResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_subscription`.
+Проверяет активность подписки для указанного Telegram Chat ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -136,7 +125,7 @@ async def subscribe_user(chat_id: int) -> SubscriberActionResponse
 - **Return Contract**: `SubscriberActionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `subscribe_user`.
+Принудительно подписывает чат или пользователя на расписание (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -169,7 +158,7 @@ async def unsubscribe_user(chat_id: int) -> SubscriberActionResponse
 - **Return Contract**: `SubscriberActionResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `unsubscribe_user`.
+Отключает автоматическую рассылку уведомлений для чата (Admin only).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

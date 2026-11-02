@@ -1,35 +1,24 @@
 # Component Reference: `api/router/schedule.py`
 > **File Path**: [`api/router/schedule.py`](../../api/router/schedule.py)
 > **Subsystem**: `Schedule API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/schedule.py` module implements core operational logic for the `Schedule API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер расписания — GET /schedule (day, today, tomorrow, week, current, refresh).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_current_monday`](#_current_monday) | Function | L28–L40 | `date` | Executes core domain logic for `_current_monday`. |
-| [`schedule_day`](#schedule_day) | Function | L44–L60 | `DayScheduleResponse` | Executes core domain logic for `schedule_day`. |
-| [`schedule_today`](#schedule_today) | Function | L64–L77 | `DayScheduleResponse` | Executes core domain logic for `schedule_today`. |
-| [`schedule_tomorrow`](#schedule_tomorrow) | Function | L81–L94 | `DayScheduleResponse` | Executes core domain logic for `schedule_tomorrow`. |
-| [`schedule_week`](#schedule_week) | Function | L98–L115 | `WeekScheduleResponse` | Executes core domain logic for `schedule_week`. |
-| [`_match_lesson_interval`](#_match_lesson_interval) | Function | L118–L134 | `tuple[bool, bool]` | Executes core domain logic for `_match_lesson_interval`... |
-| [`_find_current_and_next`](#_find_current_and_next) | Function | L137–L155 | `tuple[Lesson | None, Lesson | None]` | Executes core domain logic for `_find_current_and_next`... |
-| [`schedule_current`](#schedule_current) | Function | L159–L177 | `CurrentLessonResponse` | Executes core domain logic for `schedule_current`. |
-| [`schedule_refresh`](#schedule_refresh) | Function | L181–L194 | `ScheduleRefreshResponse` | Executes core domain logic for `schedule_refresh`. |
+| [`_current_monday`](#_current_monday) | Function | L28–L40 | `date` | Вычисляет календарную дату понедельника текущей недели. |
+| [`schedule_day`](#schedule_day) | Function | L44–L60 | `DayScheduleResponse` | Возвращает расписание занятий на конкретную указанную д... |
+| [`schedule_today`](#schedule_today) | Function | L64–L77 | `DayScheduleResponse` | Возвращает расписание занятий группы на сегодняшний ден... |
+| [`schedule_tomorrow`](#schedule_tomorrow) | Function | L81–L94 | `DayScheduleResponse` | Возвращает расписание занятий группы на завтрашний день... |
+| [`schedule_week`](#schedule_week) | Function | L98–L115 | `WeekScheduleResponse` | Возвращает полное расписание занятий на 6 учебных дней ... |
+| [`_match_lesson_interval`](#_match_lesson_interval) | Function | L118–L134 | `tuple[bool, bool]` | Проверяет, идёт ли пара прямо сейчас или начнётся в буд... |
+| [`_find_current_and_next`](#_find_current_and_next) | Function | L137–L155 | `tuple[Lesson \| None, Lesson \| None]` | Находит текущую активную пару и ближайшую следующую по ... |
+| [`schedule_current`](#schedule_current) | Function | L159–L177 | `CurrentLessonResponse` | Определяет текущую активную пару и следующую пару в реа... |
+| [`schedule_refresh`](#schedule_refresh) | Function | L181–L194 | `ScheduleRefreshResponse` | Принудительно сбрасывает кэш расписания в Redis и опера... |
 
 ---
 
@@ -45,7 +34,7 @@ def _current_monday() -> date
 - **Return Contract**: `date`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_current_monday`.
+Вычисляет календарную дату понедельника текущей недели.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -76,7 +65,7 @@ async def schedule_day( target_date: date | None = Query(default=None, descripti
 - **Return Contract**: `DayScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_day`.
+Возвращает расписание занятий на конкретную указанную дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,7 +99,7 @@ async def schedule_today(force_refresh: bool = Query(default=False)) -> DaySched
 - **Return Contract**: `DayScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_today`.
+Возвращает расписание занятий группы на сегодняшний день.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ async def schedule_tomorrow(force_refresh: bool = Query(default=False)) -> DaySc
 - **Return Contract**: `DayScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_tomorrow`.
+Возвращает расписание занятий группы на завтрашний день.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -176,7 +165,7 @@ async def schedule_week( monday: date | None = Query(default=None, description="
 - **Return Contract**: `WeekScheduleResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_week`.
+Возвращает полное расписание занятий на 6 учебных дней недели (пн-сб).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -210,7 +199,7 @@ def _match_lesson_interval(lesson: Lesson, now_time: str) -> tuple[bool, bool]
 - **Return Contract**: `tuple[bool, bool]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_match_lesson_interval`.
+Проверяет, идёт ли пара прямо сейчас или начнётся в будущем.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -244,7 +233,7 @@ def _find_current_and_next(lessons: list[Lesson], now_time: str) -> tuple[Lesson
 - **Return Contract**: `tuple[Lesson | None, Lesson | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_current_and_next`.
+Находит текущую активную пару и ближайшую следующую по времени.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -278,7 +267,7 @@ async def schedule_current() -> CurrentLessonResponse
 - **Return Contract**: `CurrentLessonResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_current`.
+Определяет текущую активную пару и следующую пару в реальном времени.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -309,7 +298,7 @@ async def schedule_refresh() -> ScheduleRefreshResponse
 - **Return Contract**: `ScheduleRefreshResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_refresh`.
+Принудительно сбрасывает кэш расписания в Redis и оперативной памяти.
 
 #### Parameters Contract
 *This method takes no input parameters.*

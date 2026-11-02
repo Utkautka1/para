@@ -6,8 +6,8 @@
 > **Persistence Backend**: `RAM-Disk (/dev/shm) Ephemeral Audio Buffer + Local Model Weights`
 > **Service Level Objective**: `Sub-0.5s Large-v3-Turbo Inference / Zero-Disk Wear`
 
-## 1. Architectural Role & Responsibilities
-The `services/transcriber.py` module implements core operational logic for the `Speech-to-Text Whisper Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис транскрибации речи на базе faster-whisper.
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -28,20 +28,20 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
 | [`AudioTranscriber.__init__`](#audiotranscriber__init__) | Method | L30–L54 | `Any` | Executes core domain logic for `__init__`. |
-| [`AudioTranscriber.queue_size`](#audiotranscriberqueue_size) | Method | L57–L66 | `int` | Executes core domain logic for `queue_size`. |
-| [`AudioTranscriber._init_whisper_engine`](#audiotranscriber_init_whisper_engine) | Method | L68–L98 | `Any` | Instantiates WhisperModel on GPU with automatic CPU fal... |
-| [`AudioTranscriber.get_model`](#audiotranscriberget_model) | Method | L100–L116 | `Any` | Lazily instantiates and caches the primary WhisperModel... |
-| [`AudioTranscriber._get_cpu_model`](#audiotranscriber_get_cpu_model) | Method | L118–L130 | `Any` | Executes core domain logic for `_get_cpu_model`. |
-| [`AudioTranscriber.warmup`](#audiotranscriberwarmup) | Method | L132–L141 | `None` | Pre-loads model weights into GPU VRAM to eliminate cold... |
-| [`AudioTranscriber._clean_hallucinations`](#audiotranscriber_clean_hallucinations) | Method | L144–L164 | `str` | Sanitizes silent and repetitive Whisper hallucination a... |
-| [`AudioTranscriber._sync_transcribe`](#audiotranscriber_sync_transcribe) | Method | L166–L185 | `str` | Executes synchronous whisper inference in non-blocking ... |
-| [`AudioTranscriber._infer_with_fallback`](#audiotranscriber_infer_with_fallback) | Method | L187–L204 | `str` | Executes speech recognition on GPU with automatic CPU i... |
-| [`AudioTranscriber._log_transcribe_stats`](#audiotranscriber_log_transcribe_stats) | Method | L206–L217 | `None` | Executes core domain logic for `_log_transcribe_stats`. |
-| [`AudioTranscriber.transcribe_file`](#audiotranscribertranscribe_file) | Method | L219–L243 | `str` | Transcribes audio file to text using faster-whisper und... |
-| [`split_text_to_chunks`](#split_text_to_chunks) | Function | L246–L270 | `list[str]` | Decomposes lengthy transcription text across paragraph ... |
+| [`AudioTranscriber.queue_size`](#audiotranscriberqueue_size) | Method | L57–L66 | `int` | Возвращает количество запросов, ожидающих выделения сем... |
+| [`AudioTranscriber._init_whisper_engine`](#audiotranscriber_init_whisper_engine) | Method | L68–L98 | `Any` | Инициализирует экземпляр WhisperModel с автоматическим ... |
+| [`AudioTranscriber.get_model`](#audiotranscriberget_model) | Method | L100–L116 | `Any` | Обеспечивает потокобезопасную ленивую загрузку основной... |
+| [`AudioTranscriber._get_cpu_model`](#audiotranscriber_get_cpu_model) | Method | L118–L130 | `Any` | Предоставляет синглтон резервной CPU-модели Whisper. |
+| [`AudioTranscriber.warmup`](#audiotranscriberwarmup) | Method | L132–L141 | `None` | Выполняет фоновый прогрев нейросети при старте приложен... |
+| [`AudioTranscriber._clean_hallucinations`](#audiotranscriber_clean_hallucinations) | Method | L144–L164 | `str` | Удаляет стандартные галлюцинации Whisper при распознава... |
+| [`AudioTranscriber._sync_transcribe`](#audiotranscriber_sync_transcribe) | Method | L166–L185 | `str` | Синхронно запускает инференс faster-whisper в отдельном... |
+| [`AudioTranscriber._infer_with_fallback`](#audiotranscriber_infer_with_fallback) | Method | L187–L204 | `str` | Оркестрирует транскрибацию на GPU с автоматическим отка... |
+| [`AudioTranscriber._log_transcribe_stats`](#audiotranscriber_log_transcribe_stats) | Method | L206–L217 | `None` | Логирует метрики производительности выполненного инфере... |
+| [`AudioTranscriber.transcribe_file`](#audiotranscribertranscribe_file) | Method | L219–L243 | `str` | Асинхронно транскрибирует аудиофайл через аппаратный се... |
+| [`split_text_to_chunks`](#split_text_to_chunks) | Function | L246–L270 | `list[str]` | Разбивает длинный распознанный текст на части по границ... |
 
 ---
 
@@ -49,7 +49,7 @@ graph TD
 
 ## Class Model: `AudioTranscriber`
 
-Encapsulates domain entities and data transfer logic for `AudioTranscriber`.
+Сервис распознавания аудиофайлов с использованием faster-whisper.
 
 ### `AudioTranscriber.__init__`
 ```python
@@ -99,7 +99,7 @@ def queue_size(self) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `queue_size`.
+Возвращает количество запросов, ожидающих выделения семафора инференса.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -130,7 +130,7 @@ def _init_whisper_engine(self, device: str | None = None, compute_type: str | No
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Instantiates WhisperModel on GPU with automatic CPU fallback.
+Инициализирует экземпляр WhisperModel с автоматическим fallback на CPU.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -164,7 +164,7 @@ async def get_model(self)
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Lazily instantiates and caches the primary WhisperModel instance.
+Обеспечивает потокобезопасную ленивую загрузку основной модели Whisper.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -195,7 +195,7 @@ async def _get_cpu_model(self)
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_cpu_model`.
+Предоставляет синглтон резервной CPU-модели Whisper.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -226,7 +226,7 @@ async def warmup(self) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Pre-loads model weights into GPU VRAM to eliminate cold-start latency.
+Выполняет фоновый прогрев нейросети при старте приложения.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -257,7 +257,7 @@ def _clean_hallucinations(text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Sanitizes silent and repetitive Whisper hallucination artifacts.
+Удаляет стандартные галлюцинации Whisper при распознавании тишины или шума.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -290,7 +290,7 @@ def _sync_transcribe(self, model, audio_path: str, language: str | None = None) 
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes synchronous whisper inference in non-blocking thread pool.
+Синхронно запускает инференс faster-whisper в отдельном потоке ОС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -325,7 +325,7 @@ async def _infer_with_fallback(self, audio_path: str, language: str | None) -> s
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes speech recognition on GPU with automatic CPU int8 fallback.
+Оркестрирует транскрибацию на GPU с автоматическим откатом на CPU при ошибке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -359,7 +359,7 @@ def _log_transcribe_stats(self, fname: str, infer_start: float, start_time: floa
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_log_transcribe_stats`.
+Логирует метрики производительности выполненного инференса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -395,7 +395,7 @@ async def transcribe_file(self, audio_path: str, language: str | None = None) ->
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Transcribes audio file to text using faster-whisper under concurrency semaphore.
+Асинхронно транскрибирует аудиофайл через аппаратный семафор GPU.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -429,7 +429,7 @@ def split_text_to_chunks(text: str, max_chunk_len: int = 4000) -> list[str]
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Decomposes lengthy transcription text across paragraph boundaries.
+Разбивает длинный распознанный текст на части по границам абзацев.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

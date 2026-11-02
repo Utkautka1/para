@@ -1,25 +1,14 @@
 # Component Reference: `services/gamification_models.py`
 > **File Path**: [`services/gamification_models.py`](../../services/gamification_models.py)
 > **Subsystem**: `Gamification Domain Models`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/gamification_models.py` module implements core operational logic for the `Gamification Domain Models` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Доменные модели и структуры данных подсистемы геймификации.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
 
 ---
@@ -28,20 +17,20 @@ graph LR
 
 ## Class Model: `AchievementCategory`
 
-Encapsulates domain entities and data transfer logic for `AchievementCategory`.
+Категория студенческого достижения.
 
 ## Class Model: `AchievementRarity`
 
-Encapsulates domain entities and data transfer logic for `AchievementRarity`.
+Степень редкости достижения.
 
 ## Class Model: `RankDefinition`
 
-Encapsulates domain entities and data transfer logic for `RankDefinition`.
+Определение ранга студента в академическом рейтинге.
 
 ## Class Model: `AchievementDefinition`
 
-Encapsulates domain entities and data transfer logic for `AchievementDefinition`.
+Паспорт достижения в реестре геймификации.
 
 ## Class Model: `StudentProfile`
 
-Encapsulates domain entities and data transfer logic for `StudentProfile`.
+Агрегированный профиль студента с очками опыта и рангом.

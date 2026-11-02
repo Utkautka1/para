@@ -1,27 +1,16 @@
 # Component Reference: `bot/middlewares/retry.py`
 > **File Path**: [`bot/middlewares/retry.py`](../../bot/middlewares/retry.py)
 > **Subsystem**: `Network Retry Middleware`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/middlewares/retry.py` module implements core operational logic for the `Network Retry Middleware` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Middleware для прозрачной обработки Telegram flood control (429 RetryAfter).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`RetryAfterMiddleware.__call__`](#retryaftermiddleware__call__) | Method | L24–L48 | `Any` | Executes core domain logic for `__call__`. |
+| [`RetryAfterMiddleware.__call__`](#retryaftermiddleware__call__) | Method | L24–L48 | `Any` | Исполняет хэндлер с автоматическим повтором при Telegra... |
 
 ---
 
@@ -29,7 +18,7 @@ graph LR
 
 ## Class Model: `RetryAfterMiddleware`
 
-Encapsulates domain entities and data transfer logic for `RetryAfterMiddleware`.
+Перехватывает TelegramRetryAfter и повторяет запрос после паузы.
 
 ### `RetryAfterMiddleware.__call__`
 ```python
@@ -41,7 +30,7 @@ async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Aw
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Исполняет хэндлер с автоматическим повтором при TelegramRetryAfter.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

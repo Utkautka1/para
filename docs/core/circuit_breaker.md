@@ -1,34 +1,23 @@
 # Component Reference: `core/circuit_breaker.py`
 > **File Path**: [`core/circuit_breaker.py`](../../core/circuit_breaker.py)
 > **Subsystem**: `Resilience & Circuit Breaker`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/circuit_breaker.py` module implements core operational logic for the `Resilience & Circuit Breaker` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль асинхронного Circuit Breaker и повторных попыток с экспоненциальным backoff.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`CircuitOpenError.__init__`](#circuitopenerror__init__) | Method | L33–L36 | `Any` | Executes core domain logic for `__init__`. |
-| [`CircuitBreaker.__init__`](#circuitbreaker__init__) | Method | L42–L49 | `Any` | Executes core domain logic for `__init__`. |
-| [`CircuitBreaker.state`](#circuitbreakerstate) | Method | L52–L58 | `CircuitState` | Executes core domain logic for `state`. |
-| [`CircuitBreaker.check_permission`](#circuitbreakercheck_permission) | Method | L60–L69 | `None` | Executes core domain logic for `check_permission`. |
-| [`CircuitBreaker.record_success`](#circuitbreakerrecord_success) | Method | L71–L78 | `None` | Executes core domain logic for `record_success`. |
-| [`CircuitBreaker._dispatch_open_alert`](#circuitbreaker_dispatch_open_alert) | Method | L80–L94 | `None` | Executes core domain logic for `_dispatch_open_alert`. |
-| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L96–L105 | `None` | Executes core domain logic for `record_failure`. |
-| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L108–L129 | `T` | Executes core domain logic for `async_retry_with_backof... |
+| [`CircuitOpenError.__init__`](#circuitopenerror__init__) | Method | L34–L37 | `Any` | Executes core domain logic for `__init__`. |
+| [`CircuitBreaker.__init__`](#circuitbreaker__init__) | Method | L43–L50 | `Any` | Executes core domain logic for `__init__`. |
+| [`CircuitBreaker.state`](#circuitbreakerstate) | Method | L53–L59 | `CircuitState` | Возвращает актуальное состояние с учетом истечения reco... |
+| [`CircuitBreaker.check_permission`](#circuitbreakercheck_permission) | Method | L61–L70 | `None` | Проверяет право на выполнение запроса или выбрасывает C... |
+| [`CircuitBreaker.record_success`](#circuitbreakerrecord_success) | Method | L72–L79 | `None` | Сбрасывает счетчик ошибок при успешном завершении запро... |
+| [`CircuitBreaker._dispatch_open_alert`](#circuitbreaker_dispatch_open_alert) | Method | L81–L95 | `None` | Асинхронно инициирует отправку алерта администратору пр... |
+| [`CircuitBreaker.record_failure`](#circuitbreakerrecord_failure) | Method | L97–L106 | `None` | Фиксирует сбой и переводит в OPEN при превышении порога... |
+| [`async_retry_with_backoff`](#async_retry_with_backoff) | Function | L109–L130 | `T` | Выполняет асинхронную операцию с экспоненциальным backo... |
 
 ---
 
@@ -36,18 +25,18 @@ graph LR
 
 ## Class Model: `CircuitState`
 
-Encapsulates domain entities and data transfer logic for `CircuitState`.
+Состояния конечного автомата Circuit Breaker.
 
 ## Class Model: `CircuitOpenError`
 
-Encapsulates domain entities and data transfer logic for `CircuitOpenError`.
+Исключение, выбрасываемое при блокировке запроса открытым Circuit Breaker.
 
 ### `CircuitOpenError.__init__`
 ```python
 def __init__(self, name: str, retry_after: float)
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L33-L36`](../../core/circuit_breaker.py#L33-L36)
+- **Source Reference**: [`core/circuit_breaker.py#L34-L37`](../../core/circuit_breaker.py#L34-L37)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -78,14 +67,14 @@ result = __init__(name=..., retry_after=...)
 
 ## Class Model: `CircuitBreaker`
 
-Encapsulates domain entities and data transfer logic for `CircuitBreaker`.
+Управляет защитой внешних вызовов от каскадных сбоев.
 
 ### `CircuitBreaker.__init__`
 ```python
 def __init__(self, name: str, failure_threshold: int = 3, recovery_timeout: float = 30.0)
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L42-L49`](../../core/circuit_breaker.py#L42-L49)
+- **Source Reference**: [`core/circuit_breaker.py#L43-L50`](../../core/circuit_breaker.py#L43-L50)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -120,12 +109,12 @@ result = __init__(name=..., failure_threshold=..., recovery_timeout=...)
 def state(self) -> CircuitState
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L52-L58`](../../core/circuit_breaker.py#L52-L58)
+- **Source Reference**: [`core/circuit_breaker.py#L53-L59`](../../core/circuit_breaker.py#L53-L59)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `CircuitState`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `state`.
+Возвращает актуальное состояние с учетом истечения recovery timeout.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -151,12 +140,12 @@ result = state()
 async def check_permission(self) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L60-L69`](../../core/circuit_breaker.py#L60-L69)
+- **Source Reference**: [`core/circuit_breaker.py#L61-L70`](../../core/circuit_breaker.py#L61-L70)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_permission`.
+Проверяет право на выполнение запроса или выбрасывает CircuitOpenError.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -182,12 +171,12 @@ result = await check_permission()
 async def record_success(self) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L71-L78`](../../core/circuit_breaker.py#L71-L78)
+- **Source Reference**: [`core/circuit_breaker.py#L72-L79`](../../core/circuit_breaker.py#L72-L79)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `record_success`.
+Сбрасывает счетчик ошибок при успешном завершении запроса.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -213,12 +202,12 @@ result = await record_success()
 def _dispatch_open_alert(self, error: Exception) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L80-L94`](../../core/circuit_breaker.py#L80-L94)
+- **Source Reference**: [`core/circuit_breaker.py#L81-L95`](../../core/circuit_breaker.py#L81-L95)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_dispatch_open_alert`.
+Асинхронно инициирует отправку алерта администратору при переходе в OPEN.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -246,12 +235,12 @@ result = _dispatch_open_alert(error=...)
 async def record_failure(self, error: Exception) -> None
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L96-L105`](../../core/circuit_breaker.py#L96-L105)
+- **Source Reference**: [`core/circuit_breaker.py#L97-L106`](../../core/circuit_breaker.py#L97-L106)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `record_failure`.
+Фиксирует сбой и переводит в OPEN при превышении порога.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -279,12 +268,12 @@ result = await record_failure(error=...)
 async def async_retry_with_backoff( coro_fn: Callable[[], Awaitable[T]], max_retries: int = 3, base_delay: float = 0.5, max_delay: float = 5.0, retryable_exceptions: tuple[type[Exception], ...] = (Exception,), ) -> T
 ```
 
-- **Source Reference**: [`core/circuit_breaker.py#L108-L129`](../../core/circuit_breaker.py#L108-L129)
+- **Source Reference**: [`core/circuit_breaker.py#L109-L130`](../../core/circuit_breaker.py#L109-L130)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `T`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `async_retry_with_backoff`.
+Выполняет асинхронную операцию с экспоненциальным backoff и jitter.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

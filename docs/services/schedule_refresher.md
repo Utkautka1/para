@@ -6,8 +6,8 @@
 > **Persistence Backend**: `L1 RAM In-Memory (<10µs) + L2 Redis Snapshots`
 > **Service Level Objective**: `< 5ms Cached Response / 500ms Upstream Harvest`
 
-## 1. Architectural Role & Responsibilities
-The `services/schedule_refresher.py` module implements core operational logic for the `KTMU Timetable Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Фоновый загрузчик расписания КТМУ — единственный процесс, который качает API.
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -20,10 +20,10 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_refresh_if_due`](#_refresh_if_due) | Function | L23–L38 | `float` | Executes core domain logic for `_refresh_if_due`. |
-| [`schedule_refresh_loop`](#schedule_refresh_loop) | Function | L41–L62 | `None` | Executes core domain logic for `schedule_refresh_loop`. |
+| [`_refresh_if_due`](#_refresh_if_due) | Function | L23–L38 | `float` | Запускает загрузку, если подошёл срок по таймеру или её... |
+| [`schedule_refresh_loop`](#schedule_refresh_loop) | Function | L41–L62 | `None` | Бесконечный цикл фонового обновления снапшота расписани... |
 
 ---
 
@@ -39,7 +39,7 @@ async def _refresh_if_due(next_due: float) -> float
 - **Return Contract**: `float`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_refresh_if_due`.
+Запускает загрузку, если подошёл срок по таймеру или её запросили вручную.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -72,7 +72,7 @@ async def schedule_refresh_loop() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_refresh_loop`.
+Бесконечный цикл фонового обновления снапшота расписания в Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*

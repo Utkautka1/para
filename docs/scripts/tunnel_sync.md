@@ -1,32 +1,21 @@
 # Component Reference: `scripts/tunnel_sync.py`
 > **File Path**: [`scripts/tunnel_sync.py`](../../scripts/tunnel_sync.py)
 > **Subsystem**: `Cloudflare Tunnel Syncer`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `scripts/tunnel_sync.py` module implements core operational logic for the `Cloudflare Tunnel Syncer` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Синхронизатор Cloudflare Tunnel (trycloudflare.com) для Telegram Mini App Swagger UI.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_tunnel_url`](#parse_tunnel_url) | Function | L30–L40 | `str | None` | Parses and extracts structured entities from `parse_tun... |
-| [`update_env_urls`](#update_env_urls) | Function | L43–L60 | `bool` | Synchronizes and updates domain state for `update_env_u... |
-| [`restart_bot_service`](#restart_bot_service) | Function | L66–L76 | `None` | Executes core domain logic for `restart_bot_service`. |
-| [`monitor_tunnel_stream`](#monitor_tunnel_stream) | Function | L79–L101 | `None` | Executes core domain logic for `monitor_tunnel_stream`. |
-| [`run_tunnel_process`](#run_tunnel_process) | Function | L104–L121 | `None` | Executes core domain logic for `run_tunnel_process`. |
-| [`main`](#main) | Function | L124–L140 | `None` | Executes core domain logic for `main`. |
+| [`parse_tunnel_url`](#parse_tunnel_url) | Function | L30–L40 | `str \| None` | Извлекает публичный HTTPS-адрес туннеля из строкового п... |
+| [`update_env_urls`](#update_env_urls) | Function | L43–L60 | `bool` | Атомарно обновляет параметры MINIAPP_URL и SWAGGER_URL ... |
+| [`restart_bot_service`](#restart_bot_service) | Function | L66–L76 | `None` | Перезапускает docker-контейнер бота para-bot для примен... |
+| [`monitor_tunnel_stream`](#monitor_tunnel_stream) | Function | L79–L101 | `None` | Асинхронно считывает поток stderr процесса cloudflared ... |
+| [`run_tunnel_process`](#run_tunnel_process) | Function | L104–L121 | `None` | Запускает бинарник cloudflared в режиме быстрого времен... |
+| [`main`](#main) | Function | L124–L140 | `None` | Основной бесконечный цикл супервизора туннеля Cloudflar... |
 
 ---
 
@@ -42,7 +31,7 @@ def parse_tunnel_url(line: str) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_tunnel_url`.
+Извлекает публичный HTTPS-адрес туннеля из строкового потока вывода cloudflared.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -75,7 +64,7 @@ def update_env_urls(new_url: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Synchronizes and updates domain state for `update_env_urls`.
+Атомарно обновляет параметры MINIAPP_URL и SWAGGER_URL в локальном файле .env.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -108,7 +97,7 @@ def restart_bot_service() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `restart_bot_service`.
+Перезапускает docker-контейнер бота para-bot для применения новых переменных окружения.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -139,7 +128,7 @@ async def monitor_tunnel_stream(proc: asyncio.subprocess.Process) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `monitor_tunnel_stream`.
+Асинхронно считывает поток stderr процесса cloudflared и применяет новые URL.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -172,7 +161,7 @@ async def run_tunnel_process() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `run_tunnel_process`.
+Запускает бинарник cloudflared в режиме быстрого временного туннеля (Quick Tunnel).
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -203,7 +192,7 @@ async def main() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `main`.
+Основной бесконечный цикл супервизора туннеля Cloudflare с авто-восстановлением.
 
 #### Parameters Contract
 *This method takes no input parameters.*

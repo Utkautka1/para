@@ -1,29 +1,18 @@
 # Component Reference: `services/deploy_notifier.py`
 > **File Path**: [`services/deploy_notifier.py`](../../services/deploy_notifier.py)
 > **Subsystem**: `Deployment Alerts`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/deploy_notifier.py` module implements core operational logic for the `Deployment Alerts` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+CLI-уведомление администратора о результате деплоя.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`notify_deploy`](#notify_deploy) | Function | L20–L32 | `bool` | Executes core domain logic for `notify_deploy`. |
-| [`_notify_and_close`](#_notify_and_close) | Function | L35–L42 | `bool` | Executes core domain logic for `_notify_and_close`. |
-| [`main`](#main) | Function | L45–L55 | `int` | Executes core domain logic for `main`. |
+| [`notify_deploy`](#notify_deploy) | Function | L20–L32 | `bool` | Отправляет администратору алерт об успешном или упавшем... |
+| [`_notify_and_close`](#_notify_and_close) | Function | L35–L42 | `bool` | Отправляет алерт и закрывает HTTP-сессию бота, чтобы ко... |
+| [`main`](#main) | Function | L45–L55 | `int` | Разбирает аргументы `success\|failure <sha> <детали>` и ... |
 
 ---
 
@@ -39,7 +28,7 @@ async def notify_deploy(succeeded: bool, revision: str, details: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `notify_deploy`.
+Отправляет администратору алерт об успешном или упавшем автодеплое.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -74,7 +63,7 @@ async def _notify_and_close(succeeded: bool, revision: str, details: str) -> boo
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_notify_and_close`.
+Отправляет алерт и закрывает HTTP-сессию бота, чтобы короткий процесс завершился чисто.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ def main(argv: list[str]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `main`.
+Разбирает аргументы `success|failure <sha> <детали>` и отправляет алерт.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

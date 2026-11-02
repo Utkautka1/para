@@ -1,39 +1,28 @@
 # Component Reference: `bot/handlers/admin/ping_all.py`
 > **File Path**: [`bot/handlers/admin/ping_all.py`](../../bot/handlers/admin/ping_all.py)
 > **Subsystem**: `Supergroup Alert Dispatch`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/ping_all.py` module implements core operational logic for the `Supergroup Alert Dispatch` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль хэндлера общего пинга одногруппников (/all).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_classmates_list`](#load_classmates_list) | Function | L40–L50 | `list[dict[str, Any]]` | Executes core domain logic for `load_classmates_list`. |
-| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L53–L68 | `int | None` | Executes core domain logic for `resolve_person_tg_id`. |
-| [`format_mention_tag`](#format_mention_tag) | Function | L71–L92 | `str | None` | Formats message payload and presentation markup for `fo... |
-| [`is_sender`](#is_sender) | Function | L95–L108 | `bool` | Executes core domain logic for `is_sender`. |
-| [`build_mentions_block`](#build_mentions_block) | Function | L111–L126 | `str` | Executes core domain logic for `build_mentions_block`. |
-| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L129–L145 | `str` | Executes core domain logic for `extract_broadcast_text`... |
-| [`build_broadcast_message`](#build_broadcast_message) | Function | L148–L164 | `str` | Executes core domain logic for `build_broadcast_message... |
-| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L167–L185 | `None` | Executes core domain logic for `safe_delete_command_mes... |
-| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L188–L214 | `Message` | Dispatches notification message via Telegram API for `s... |
-| [`validate_group_chat`](#validate_group_chat) | Function | L217–L231 | `bool` | Validates architectural invariants and constraints for ... |
-| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L234–L249 | `tuple[str, int | None]` | Executes core domain logic for `compose_broadcast_conte... |
-| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L252–L270 | `None` | Executes core domain logic for `dispatch_broadcast`. |
-| [`cmd_ping_all`](#cmd_ping_all) | Function | L274–L289 | `None` | Processes inbound Telegram slash command for `cmd_ping_... |
+| [`load_classmates_list`](#load_classmates_list) | Function | L40–L50 | `list[dict[str, Any]]` | Загружает актуальный список одногруппников из файла bir... |
+| [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L53–L68 | `int \| None` | Извлекает Telegram ID из записи студента либо из кэша ю... |
+| [`format_mention_tag`](#format_mention_tag) | Function | L71–L92 | `str \| None` | Формирует активный HTML-тег кликабельного упоминания ст... |
+| [`is_sender`](#is_sender) | Function | L95–L108 | `bool` | Проверяет, является ли запись студента автором вызванно... |
+| [`build_mentions_block`](#build_mentions_block) | Function | L111–L126 | `str` | Формирует единую строку кликабельных упоминаний одногру... |
+| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L129–L145 | `str` | Извлекает пользовательский текст сообщения после команд... |
+| [`build_broadcast_message`](#build_broadcast_message) | Function | L148–L164 | `str` | Компонует итоговый HTML-текст поста с текстом автора и ... |
+| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L167–L185 | `None` | Безопасно удаляет исходное командное сообщение админист... |
+| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L188–L214 | `Message` | Отправляет пост от лица бота в целевой топик чата с сох... |
+| [`validate_group_chat`](#validate_group_chat) | Function | L217–L231 | `bool` | Проверяет, что команда /all вызвана в группе или суперг... |
+| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L234–L249 | `tuple[str, int \| None]` | Формирует итоговый HTML-текст рассылки и извлекает ID с... |
+| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L252–L270 | `None` | Отправляет широковещательный пост в чат и удаляет тригг... |
+| [`cmd_ping_all`](#cmd_ping_all) | Function | L274–L289 | `None` | Оркестрирует полный сценарий общего пинга группы 1-КПД-... |
 
 ---
 
@@ -49,7 +38,7 @@ async def load_classmates_list() -> list[dict[str, Any]]
 - **Return Contract**: `list[dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_classmates_list`.
+Загружает актуальный список одногруппников из файла birthdays.json.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -80,7 +69,7 @@ def resolve_person_tg_id(person: dict[str, Any]) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_person_tg_id`.
+Извлекает Telegram ID из записи студента либо из кэша юзернеймов Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -113,7 +102,7 @@ def format_mention_tag(person: dict[str, Any]) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_mention_tag`.
+Формирует активный HTML-тег кликабельного упоминания студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -146,7 +135,7 @@ def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: st
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_sender`.
+Проверяет, является ли запись студента автором вызванной команды.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -181,7 +170,7 @@ def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) 
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_mentions_block`.
+Формирует единую строку кликабельных упоминаний одногруппников без автора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -215,7 +204,7 @@ def extract_broadcast_text(html_text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_broadcast_text`.
+Извлекает пользовательский текст сообщения после команды /all или .all.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -248,7 +237,7 @@ def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = Fal
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_broadcast_message`.
+Компонует итоговый HTML-текст поста с текстом автора и пингами внизу.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -283,7 +272,7 @@ async def safe_delete_command_message(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `safe_delete_command_message`.
+Безопасно удаляет исходное командное сообщение администратора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -316,7 +305,7 @@ async def send_broadcast_payload(message: Message, final_html: str, reply_to_id:
 - **Return Contract**: `Message`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_broadcast_payload`.
+Отправляет пост от лица бота в целевой топик чата с сохранением вложений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -351,7 +340,7 @@ async def validate_group_chat(message: Message) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Validates architectural invariants and constraints for `validate_group_chat`.
+Проверяет, что команда /all вызвана в группе или супергруппе колледжа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -384,7 +373,7 @@ def compose_broadcast_content(classmates: list[dict[str, Any]], message: Message
 - **Return Contract**: `tuple[str, int | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `compose_broadcast_content`.
+Формирует итоговый HTML-текст рассылки и извлекает ID сообщения для реплая.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -418,7 +407,7 @@ async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | 
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `dispatch_broadcast`.
+Отправляет широковещательный пост в чат и удаляет триггер-сообщение.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -453,7 +442,7 @@ async def cmd_ping_all(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_ping_all`.
+Оркестрирует полный сценарий общего пинга группы 1-КПД-3 по команде /all.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

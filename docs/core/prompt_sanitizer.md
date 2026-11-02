@@ -1,30 +1,19 @@
 # Component Reference: `core/prompt_sanitizer.py`
 > **File Path**: [`core/prompt_sanitizer.py`](../../core/prompt_sanitizer.py)
 > **Subsystem**: `AI Prompt Sanitization`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/prompt_sanitizer.py` module implements core operational logic for the `AI Prompt Sanitization` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Санитайзер и валидатор входных пользовательских промптов для нейросетевых моделей.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`remove_invisible_control_chars`](#remove_invisible_control_chars) | Function | L40–L43 | `str` | Executes core domain logic for `remove_invisible_contro... |
-| [`escape_context_delimiters`](#escape_context_delimiters) | Function | L46–L53 | `str` | Executes core domain logic for `escape_context_delimite... |
-| [`detect_injection_indicators`](#detect_injection_indicators) | Function | L56–L62 | `list[str]` | Executes core domain logic for `detect_injection_indica... |
-| [`sanitize_prompt`](#sanitize_prompt) | Function | L65–L83 | `SanitizeResult` | Executes core domain logic for `sanitize_prompt`. |
+| [`remove_invisible_control_chars`](#remove_invisible_control_chars) | Function | L40–L43 | `str` | Удаляет нулевые байты и невидимые управляющие символы. |
+| [`escape_context_delimiters`](#escape_context_delimiters) | Function | L46–L53 | `str` | Экранирует теги XML и угловые скобки для изоляции конте... |
+| [`detect_injection_indicators`](#detect_injection_indicators) | Function | L56–L62 | `list[str]` | Сканирует текст на наличие сигнатур prompt injection и ... |
+| [`sanitize_prompt`](#sanitize_prompt) | Function | L65–L83 | `SanitizeResult` | Санирует пользовательский запрос перед встраиванием в ш... |
 
 ---
 
@@ -32,7 +21,7 @@ graph LR
 
 ## Class Model: `SanitizeResult`
 
-Encapsulates domain entities and data transfer logic for `SanitizeResult`.
+Результат санитарной обработки пользовательского промпта.
 
 ### `remove_invisible_control_chars`
 ```python
@@ -44,7 +33,7 @@ def remove_invisible_control_chars(text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `remove_invisible_control_chars`.
+Удаляет нулевые байты и невидимые управляющие символы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -77,7 +66,7 @@ def escape_context_delimiters(text: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `escape_context_delimiters`.
+Экранирует теги XML и угловые скобки для изоляции контекста.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,7 +99,7 @@ def detect_injection_indicators(text: str) -> list[str]
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `detect_injection_indicators`.
+Сканирует текст на наличие сигнатур prompt injection и jailbreak.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ def sanitize_prompt(raw_text: str | None, max_length: int = 15000) -> SanitizeRe
 - **Return Contract**: `SanitizeResult`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sanitize_prompt`.
+Санирует пользовательский запрос перед встраиванием в шаблон LLM.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

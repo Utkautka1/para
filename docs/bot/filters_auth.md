@@ -1,29 +1,18 @@
 # Component Reference: `bot/filters/auth.py`
 > **File Path**: [`bot/filters/auth.py`](../../bot/filters/auth.py)
 > **Subsystem**: `Bot Auth Filters`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/filters/auth.py` module implements core operational logic for the `Bot Auth Filters` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Фильтр авторизации пользователей.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AuthFilter.__call__`](#authfilter__call__) | Method | L17–L31 | `bool` | Executes core domain logic for `__call__`. |
-| [`ClassmateAuthFilter.__call__`](#classmateauthfilter__call__) | Method | L37–L51 | `bool` | Executes core domain logic for `__call__`. |
-| [`AttendanceAuthFilter.__call__`](#attendanceauthfilter__call__) | Method | L57–L73 | `bool` | Executes core domain logic for `__call__`. |
+| [`AuthFilter.__call__`](#authfilter__call__) | Method | L18–L32 | `bool` | Проверяет ID пользователя на соответствие главному адми... |
+| [`ClassmateAuthFilter.__call__`](#classmateauthfilter__call__) | Method | L38–L51 | `bool` | Проверяет, авторизован ли пользователь как студент груп... |
+| [`AttendanceAuthFilter.__call__`](#attendanceauthfilter__call__) | Method | L57–L71 | `bool` | Проверяет права пользователя на управление журналом пос... |
 
 ---
 
@@ -31,19 +20,19 @@ graph LR
 
 ## Class Model: `AuthFilter`
 
-Encapsulates domain entities and data transfer logic for `AuthFilter`.
+Фильтр доступа по Telegram ID исключительно для Главного Администратора.
 
 ### `AuthFilter.__call__`
 ```python
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L17-L31`](../../bot/filters/auth.py#L17-L31)
+- **Source Reference**: [`bot/filters/auth.py#L18-L32`](../../bot/filters/auth.py#L18-L32)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Проверяет ID пользователя на соответствие главному администратору проекта.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -68,19 +57,19 @@ result = await __call__(event=...)
 
 ## Class Model: `ClassmateAuthFilter`
 
-Encapsulates domain entities and data transfer logic for `ClassmateAuthFilter`.
+Фильтр доступа для администратора и авторизованных студентов группы.
 
 ### `ClassmateAuthFilter.__call__`
 ```python
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L37-L51`](../../bot/filters/auth.py#L37-L51)
+- **Source Reference**: [`bot/filters/auth.py#L38-L51`](../../bot/filters/auth.py#L38-L51)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Проверяет, авторизован ли пользователь как студент группы 1-КПД-3.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -105,19 +94,19 @@ result = await __call__(event=...)
 
 ## Class Model: `AttendanceAuthFilter`
 
-Encapsulates domain entities and data transfer logic for `AttendanceAuthFilter`.
+Фильтр доступа для старосты и замстаросты к отметке посещаемости.
 
 ### `AttendanceAuthFilter.__call__`
 ```python
 async def __call__(self, event: Message | CallbackQuery) -> bool
 ```
 
-- **Source Reference**: [`bot/filters/auth.py#L57-L73`](../../bot/filters/auth.py#L57-L73)
+- **Source Reference**: [`bot/filters/auth.py#L57-L71`](../../bot/filters/auth.py#L57-L71)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Проверяет права пользователя на управление журналом посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

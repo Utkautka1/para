@@ -1,78 +1,33 @@
 # Component Reference: `bot/middlewares/achievements.py`
 > **File Path**: [`bot/middlewares/achievements.py`](../../bot/middlewares/achievements.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Achievement Activity Middleware`
 
-## 1. Architectural Role & Responsibilities
-The `bot/middlewares/achievements.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Middleware учёта активности для накопительных ачивок.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_spawn`](#_spawn) | Function | L29–L33 | `None` | Executes core domain logic for `_spawn`. |
-| [`_activity_for`](#_activity_for) | Function | L36–L50 | `Coroutine[Any, Any, None] | None` | Executes core domain logic for `_activity_for`. |
-| [`AchievementActivityMiddleware.__call__`](#achievementactivitymiddleware__call__) | Method | L56–L66 | `Any` | Executes core domain logic for `__call__`. |
+| [`_activity_for`](#_activity_for) | Function | L26–L40 | `Coroutine[Any, Any, None] \| None` | Выбирает, как учесть апдейт: действие в ЛС/кнопка или с... |
+| [`AchievementActivityMiddleware.__call__`](#achievementactivitymiddleware__call__) | Method | L46–L56 | `Any` | Ставит учёт активности в фон и передаёт апдейт дальше б... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
-
-### `_spawn`
-```python
-def _spawn(coro: Coroutine[Any, Any, None]) -> None
-```
-
-- **Source Reference**: [`bot/middlewares/achievements.py#L29-L33`](../../bot/middlewares/achievements.py#L29-L33)
-- **Execution Mode**: `Synchronous`
-- **Return Contract**: `None`
-
-#### Overview & Architectural Purpose
-Executes core domain logic for `_spawn`.
-
-#### Parameters Contract
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `coro` | `Coroutine[Any, Any, None]` | Yes | Parameter `coro` of type `Coroutine[Any, Any, None]`. |
-
-#### Concurrency & Side Effects
-- Stateless pure functional computation without external mutations.
-
-#### Fault Tolerance & Error Modes
-Propagates unexpected runtime errors up the call stack to global exception handlers.
-
-#### Production Usage Example
-```python
-from bot.middlewares.achievements import _spawn
-
-# Execute call
-result = _spawn(coro=...)
-```
-
----
 
 ### `_activity_for`
 ```python
 def _activity_for(event: TelegramObject) -> Coroutine[Any, Any, None] | None
 ```
 
-- **Source Reference**: [`bot/middlewares/achievements.py#L36-L50`](../../bot/middlewares/achievements.py#L36-L50)
+- **Source Reference**: [`bot/middlewares/achievements.py#L26-L40`](../../bot/middlewares/achievements.py#L26-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Coroutine[Any, Any, None] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_activity_for`.
+Выбирает, как учесть апдейт: действие в ЛС/кнопка или сообщение в чате группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -97,19 +52,19 @@ result = _activity_for(event=...)
 
 ## Class Model: `AchievementActivityMiddleware`
 
-Encapsulates domain entities and data transfer logic for `AchievementActivityMiddleware`.
+Считает действия одногруппников в боте и чате группы для ачивок.
 
 ### `AchievementActivityMiddleware.__call__`
 ```python
 async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any], ) -> Any
 ```
 
-- **Source Reference**: [`bot/middlewares/achievements.py#L56-L66`](../../bot/middlewares/achievements.py#L56-L66)
+- **Source Reference**: [`bot/middlewares/achievements.py#L46-L56`](../../bot/middlewares/achievements.py#L46-L56)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Ставит учёт активности в фон и передаёт апдейт дальше без задержки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

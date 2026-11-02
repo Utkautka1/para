@@ -6,8 +6,8 @@
 > **Persistence Backend**: `RAM-Disk (/dev/shm) Ephemeral Audio Buffer + Local Model Weights`
 > **Service Level Objective**: `Sub-0.5s Large-v3-Turbo Inference / Zero-Disk Wear`
 
-## 1. Architectural Role & Responsibilities
-The `services/stt_queue.py` module implements core operational logic for the `Speech-to-Text Whisper Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Очередь распознавания речи между ботом и сервисом stt.
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -28,13 +28,13 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`resolve_audio_dir`](#resolve_audio_dir) | Function | L36–L44 | `str` | Executes core domain logic for `resolve_audio_dir`. |
-| [`_wait_result`](#_wait_result) | Function | L47–L57 | `dict` | Executes core domain logic for `_wait_result`. |
-| [`transcribe_via_stt`](#transcribe_via_stt) | Function | L60–L75 | `str` | Executes core domain logic for `transcribe_via_stt`. |
-| [`_process_job`](#_process_job) | Function | L78–L94 | `None` | Executes core domain logic for `_process_job`. |
-| [`stt_worker_loop`](#stt_worker_loop) | Function | L97–L117 | `None` | Executes core domain logic for `stt_worker_loop`. |
+| [`resolve_audio_dir`](#resolve_audio_dir) | Function | L36–L44 | `str` | Возвращает общий с сервисом stt каталог для аудио, созд... |
+| [`_wait_result`](#_wait_result) | Function | L47–L57 | `dict` | Ждёт ответ stt короткими BLPOP до дедлайна. |
+| [`transcribe_via_stt`](#transcribe_via_stt) | Function | L60–L75 | `str` | Отправляет файл на распознавание в сервис stt и ждёт те... |
+| [`_process_job`](#_process_job) | Function | L78–L94 | `None` | Распознаёт одно задание и публикует результат (текст ил... |
+| [`stt_worker_loop`](#stt_worker_loop) | Function | L97–L117 | `None` | Бесконечный цикл сервиса stt: забирает задания из очере... |
 
 ---
 
@@ -42,7 +42,7 @@ graph TD
 
 ## Class Model: `SttUnavailableError`
 
-Encapsulates domain entities and data transfer logic for `SttUnavailableError`.
+Сервис stt не ответил вовремя или вернул ошибку распознавания.
 
 ### `resolve_audio_dir`
 ```python
@@ -54,7 +54,7 @@ def resolve_audio_dir() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_audio_dir`.
+Возвращает общий с сервисом stt каталог для аудио, создавая его при необходимости.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -85,7 +85,7 @@ async def _wait_result(redis, result_key: str, deadline: float) -> dict
 - **Return Contract**: `dict`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_wait_result`.
+Ждёт ответ stt короткими BLPOP до дедлайна.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -120,7 +120,7 @@ async def transcribe_via_stt(audio_path: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `transcribe_via_stt`.
+Отправляет файл на распознавание в сервис stt и ждёт текст.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -154,7 +154,7 @@ async def _process_job(redis, raw_job: str, transcribe) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_process_job`.
+Распознаёт одно задание и публикует результат (текст или ошибку) в ключ бота.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -189,7 +189,7 @@ async def stt_worker_loop(transcribe) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `stt_worker_loop`.
+Бесконечный цикл сервиса stt: забирает задания из очереди и распознаёт по одному.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

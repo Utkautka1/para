@@ -1,31 +1,20 @@
 # Component Reference: `core/metrics.py`
 > **File Path**: [`core/metrics.py`](../../core/metrics.py)
 > **Subsystem**: `Prometheus Metrics Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/metrics.py` module implements core operational logic for the `Prometheus Metrics Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Единый реестр метрик Prometheus для сервисов платформы para.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`normalize_http_method`](#normalize_http_method) | Function | L44–L51 | `str` | Executes core domain logic for `normalize_http_method`. |
-| [`record_http_request`](#record_http_request) | Function | L54–L63 | `None` | Executes core domain logic for `record_http_request`. |
-| [`record_ai_inference`](#record_ai_inference) | Function | L66–L74 | `None` | Executes core domain logic for `record_ai_inference`. |
-| [`set_redis_queue_length`](#set_redis_queue_length) | Function | L77–L85 | `None` | Persists state updates for `set_redis_queue_length`. |
-| [`generate_metrics_payload`](#generate_metrics_payload) | Function | L88–L96 | `tuple[bytes, str]` | Executes core domain logic for `generate_metrics_payloa... |
+| [`normalize_http_method`](#normalize_http_method) | Function | L44–L51 | `str` | Сводит HTTP-метод к ограниченному набору значений лейбл... |
+| [`record_http_request`](#record_http_request) | Function | L54–L63 | `None` | Фиксирует завершенный HTTP-запрос в счетчиках и гистогр... |
+| [`record_ai_inference`](#record_ai_inference) | Function | L66–L74 | `None` | Регистрирует длительность инференса нейросетевой модели... |
+| [`set_redis_queue_length`](#set_redis_queue_length) | Function | L77–L85 | `None` | Обновляет текущий размер очереди в Redis для мониторинг... |
+| [`generate_metrics_payload`](#generate_metrics_payload) | Function | L88–L96 | `tuple[bytes, str]` | Экспортирует все накопленные метрики в стандартном текс... |
 
 ---
 
@@ -41,7 +30,7 @@ def normalize_http_method(method: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `normalize_http_method`.
+Сводит HTTP-метод к ограниченному набору значений лейбла.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -74,7 +63,7 @@ def record_http_request(method: str, endpoint: str, status: int, duration: float
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `record_http_request`.
+Фиксирует завершенный HTTP-запрос в счетчиках и гистограмме Prometheus.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,7 +99,7 @@ def record_ai_inference(subsystem: str, model: str, duration: float) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `record_ai_inference`.
+Регистрирует длительность инференса нейросетевой модели.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -145,7 +134,7 @@ def set_redis_queue_length(queue_name: str, length: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Persists state updates for `set_redis_queue_length`.
+Обновляет текущий размер очереди в Redis для мониторинга лага обработки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -179,7 +168,7 @@ def generate_metrics_payload() -> tuple[bytes, str]
 - **Return Contract**: `tuple[bytes, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `generate_metrics_payload`.
+Экспортирует все накопленные метрики в стандартном текстовом формате Prometheus.
 
 #### Parameters Contract
 *This method takes no input parameters.*

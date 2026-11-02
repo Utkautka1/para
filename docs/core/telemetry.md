@@ -1,40 +1,29 @@
 # Component Reference: `core/telemetry.py`
 > **File Path**: [`core/telemetry.py`](../../core/telemetry.py)
 > **Subsystem**: `OpenTelemetry Tracing`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/telemetry.py` module implements core operational logic for the `OpenTelemetry Tracing` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль распределенного трейсинга OpenTelemetry и экспорта в Jaeger (OTLP).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_telemetry_sampler`](#get_telemetry_sampler) | Function | L45–L56 | `Sampler` | Retrieves and resolves domain data for `get_telemetry_s... |
-| [`setup_telemetry`](#setup_telemetry) | Function | L59–L82 | `None` | Executes core domain logic for `setup_telemetry`. |
-| [`get_tracer`](#get_tracer) | Function | L85–L91 | `trace.Tracer` | Retrieves and resolves domain data for `get_tracer`. |
-| [`format_trace_id`](#format_trace_id) | Function | L94–L104 | `str` | Formats message payload and presentation markup for `fo... |
-| [`inject_trace_carrier`](#inject_trace_carrier) | Function | L107–L115 | `dict[str, str]` | Executes core domain logic for `inject_trace_carrier`. |
-| [`extract_trace_context`](#extract_trace_context) | Function | L118–L126 | `context.Context` | Executes core domain logic for `extract_trace_context`. |
-| [`carrier_from_grpc_metadata`](#carrier_from_grpc_metadata) | Function | L129–L141 | `dict[str, str]` | Executes core domain logic for `carrier_from_grpc_metad... |
-| [`carrier_to_grpc_metadata`](#carrier_to_grpc_metadata) | Function | L144–L150 | `tuple[tuple[str, str], ...]` | Executes core domain logic for `carrier_to_grpc_metadat... |
+| [`get_telemetry_sampler`](#get_telemetry_sampler) | Function | L45–L56 | `Sampler` | Формирует иерархический семплер для ограничения объема ... |
+| [`setup_telemetry`](#setup_telemetry) | Function | L59–L82 | `None` | Инициализирует глобальный TracerProvider с экспортером ... |
+| [`get_tracer`](#get_tracer) | Function | L85–L91 | `trace.Tracer` | Возвращает именованный экземпляр Tracer для создания sp... |
+| [`format_trace_id`](#format_trace_id) | Function | L94–L104 | `str` | Форматирует 32-значный hex идентификатор трейса для пер... |
+| [`inject_trace_carrier`](#inject_trace_carrier) | Function | L107–L115 | `dict[str, str]` | Инжектирует активный W3C TraceContext в переданный или ... |
+| [`extract_trace_context`](#extract_trace_context) | Function | L118–L126 | `context.Context` | Извлекает контекст трейсинга из словаря заголовков W3C ... |
+| [`carrier_from_grpc_metadata`](#carrier_from_grpc_metadata) | Function | L129–L141 | `dict[str, str]` | Преобразует метаданные gRPC вызова в словарь строковых ... |
+| [`carrier_to_grpc_metadata`](#carrier_to_grpc_metadata) | Function | L144–L150 | `tuple[tuple[str, str], ...]` | Преобразует словарь трейсинга в формат метаданных gRPC ... |
 | [`SpanContextManager.__init__`](#spancontextmanager__init__) | Method | L156–L168 | `None` | Executes core domain logic for `__init__`. |
 | [`SpanContextManager.__enter__`](#spancontextmanager__enter__) | Method | L170–L180 | `trace.Span` | Executes core domain logic for `__enter__`. |
-| [`SpanContextManager.__exit__`](#spancontextmanager__exit__) | Method | L182–L188 | `bool | None` | Executes core domain logic for `__exit__`. |
+| [`SpanContextManager.__exit__`](#spancontextmanager__exit__) | Method | L182–L188 | `bool \| None` | Executes core domain logic for `__exit__`. |
 | [`SpanContextManager.__aenter__`](#spancontextmanager__aenter__) | Method | L190–L191 | `trace.Span` | Executes core domain logic for `__aenter__`. |
-| [`SpanContextManager.__aexit__`](#spancontextmanager__aexit__) | Method | L193–L194 | `bool | None` | Executes core domain logic for `__aexit__`. |
-| [`trace_span`](#trace_span) | Function | L197–L213 | `SpanContextManager` | Executes core domain logic for `trace_span`. |
+| [`SpanContextManager.__aexit__`](#spancontextmanager__aexit__) | Method | L193–L194 | `bool \| None` | Executes core domain logic for `__aexit__`. |
+| [`trace_span`](#trace_span) | Function | L197–L213 | `SpanContextManager` | Создает контекстный менеджер трейс-спана с автоматическ... |
 
 ---
 
@@ -50,7 +39,7 @@ def get_telemetry_sampler(ratio: float = 1.0) -> Sampler
 - **Return Contract**: `Sampler`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_telemetry_sampler`.
+Формирует иерархический семплер для ограничения объема собираемых трейсов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -83,7 +72,7 @@ def setup_telemetry( service_name: str | None = None, sampling_ratio: float | No
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_telemetry`.
+Инициализирует глобальный TracerProvider с экспортером OTLP gRPC.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -117,7 +106,7 @@ def get_tracer(name: str = "para") -> trace.Tracer
 - **Return Contract**: `trace.Tracer`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_tracer`.
+Возвращает именованный экземпляр Tracer для создания spans.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -150,7 +139,7 @@ def format_trace_id(span: trace.Span | None = None) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_trace_id`.
+Форматирует 32-значный hex идентификатор трейса для передачи в логи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -183,7 +172,7 @@ def inject_trace_carrier(carrier: dict[str, str] | None = None) -> dict[str, str
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `inject_trace_carrier`.
+Инжектирует активный W3C TraceContext в переданный или новый словарь.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -216,7 +205,7 @@ def extract_trace_context(carrier: dict[str, str] | None) -> context.Context
 - **Return Contract**: `context.Context`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_trace_context`.
+Извлекает контекст трейсинга из словаря заголовков W3C TraceContext.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -249,7 +238,7 @@ def carrier_from_grpc_metadata(metadata: Any) -> dict[str, str]
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `carrier_from_grpc_metadata`.
+Преобразует метаданные gRPC вызова в словарь строковых заголовков.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -282,7 +271,7 @@ def carrier_to_grpc_metadata(carrier: dict[str, str]) -> tuple[tuple[str, str], 
 - **Return Contract**: `tuple[tuple[str, str], ...]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `carrier_to_grpc_metadata`.
+Преобразует словарь трейсинга в формат метаданных gRPC (tuple of tuples).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -307,7 +296,7 @@ result = carrier_to_grpc_metadata(carrier=...)
 
 ## Class Model: `SpanContextManager`
 
-Encapsulates domain entities and data transfer logic for `SpanContextManager`.
+Универсальный менеджер контекста спана (поддерживает sync и async with).
 
 ### `SpanContextManager.__init__`
 ```python
@@ -487,7 +476,7 @@ def trace_span( name: str, attributes: dict[str, Any] | None = None, parent_cont
 - **Return Contract**: `SpanContextManager`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `trace_span`.
+Создает контекстный менеджер трейс-спана с автоматической фиксацией ошибок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,39 +1,28 @@
 # Component Reference: `bot/templates/user/messages.py`
 > **File Path**: [`bot/templates/user/messages.py`](../../bot/templates/user/messages.py)
 > **Subsystem**: `User Message Formatter`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/templates/user/messages.py` module implements core operational logic for the `User Message Formatter` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль стильного и информативного форматирования сообщений бота.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_format_remote_credentials`](#_format_remote_credentials) | Function | L17–L39 | `str` | Executes core domain logic for `_format_remote_credenti... |
-| [`format_lesson_card`](#format_lesson_card) | Function | L42–L71 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_minutes`](#format_minutes) | Function | L74–L92 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_parse_time_interval_minutes`](#_parse_time_interval_minutes) | Function | L95–L114 | `tuple[int, int] | None` | Executes core domain logic for `_parse_time_interval_mi... |
-| [`_check_single_lesson_status`](#_check_single_lesson_status) | Function | L117–L140 | `tuple[bool, str]` | Executes core domain logic for `_check_single_lesson_st... |
-| [`get_lesson_status_banner`](#get_lesson_status_banner) | Function | L143–L167 | `str` | Retrieves and resolves domain data for `get_lesson_stat... |
-| [`format_day_schedule`](#format_day_schedule) | Function | L170–L190 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_lesson_loc`](#format_week_lesson_loc) | Function | L193–L208 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_lesson_card`](#format_week_lesson_card) | Function | L211–L232 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_day_block`](#format_week_day_block) | Function | L235–L254 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_week_schedule`](#format_week_schedule) | Function | L257–L270 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_reminder_text`](#format_reminder_text) | Function | L273–L285 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_notice_settings_text`](#format_notice_settings_text) | Function | L288–L312 | `str` | Formats message payload and presentation markup for `fo... |
+| [`_format_remote_credentials`](#_format_remote_credentials) | Function | L18–L40 | `str` | Форматирует идентификатор конференции и пароль Zoom/Тел... |
+| [`format_lesson_card`](#format_lesson_card) | Function | L43–L72 | `str` | Формирует подробную информационную карточку пары для Te... |
+| [`format_minutes`](#format_minutes) | Function | L75–L93 | `str` | Преобразует общее количество минут в человекочитаемую с... |
+| [`_parse_time_interval_minutes`](#_parse_time_interval_minutes) | Function | L96–L113 | `tuple[int, int] \| None` | Извлекает границы времени начала и конца пары в минутах... |
+| [`_check_single_lesson_status`](#_check_single_lesson_status) | Function | L116–L139 | `tuple[bool, str]` | Проверяет статус конкретной пары относительно текущей м... |
+| [`get_lesson_status_banner`](#get_lesson_status_banner) | Function | L142–L162 | `str` | Рассчитывает динамический баннер статуса пар для сегодн... |
+| [`format_day_schedule`](#format_day_schedule) | Function | L165–L185 | `str` | Форматирует расписание на конкретный учебный день в ито... |
+| [`format_week_lesson_loc`](#format_week_lesson_loc) | Function | L188–L203 | `str` | Формирует лаконичную строку локации для недельного дайд... |
+| [`format_week_lesson_card`](#format_week_lesson_card) | Function | L206–L227 | `str` | Формирует компактную цитатную карточку пары для недельн... |
+| [`format_week_day_block`](#format_week_day_block) | Function | L230–L249 | `str` | Формирует визуальный блок одного учебного дня для недел... |
+| [`format_week_schedule`](#format_week_schedule) | Function | L252–L265 | `str` | Формирует полное недельное расписание с пн по сб единым... |
+| [`format_reminder_text`](#format_reminder_text) | Function | L268–L280 | `str` | Формирует текст персонального напоминания за 10 минут д... |
+| [`format_notice_settings_text`](#format_notice_settings_text) | Function | L283–L307 | `str` | Формирует информационный текст экрана управления личным... |
 
 ---
 
@@ -44,12 +33,12 @@ graph LR
 def _format_remote_credentials(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L17-L39`](../../bot/templates/user/messages.py#L17-L39)
+- **Source Reference**: [`bot/templates/user/messages.py#L18-L40`](../../bot/templates/user/messages.py#L18-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_remote_credentials`.
+Форматирует идентификатор конференции и пароль Zoom/Телемост в HTML.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -77,12 +66,12 @@ result = _format_remote_credentials(lesson=...)
 def format_lesson_card(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L42-L71`](../../bot/templates/user/messages.py#L42-L71)
+- **Source Reference**: [`bot/templates/user/messages.py#L43-L72`](../../bot/templates/user/messages.py#L43-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_lesson_card`.
+Формирует подробную информационную карточку пары для Telegram-сообщения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,12 +99,12 @@ result = format_lesson_card(lesson=...)
 def format_minutes(total_minutes: int) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L74-L92`](../../bot/templates/user/messages.py#L74-L92)
+- **Source Reference**: [`bot/templates/user/messages.py#L75-L93`](../../bot/templates/user/messages.py#L75-L93)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_minutes`.
+Преобразует общее количество минут в человекочитаемую строку часов и минут.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,12 +132,12 @@ result = format_minutes(total_minutes=...)
 def _parse_time_interval_minutes(time_str: str) -> tuple[int, int] | None
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L95-L114`](../../bot/templates/user/messages.py#L95-L114)
+- **Source Reference**: [`bot/templates/user/messages.py#L96-L113`](../../bot/templates/user/messages.py#L96-L113)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, int] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_parse_time_interval_minutes`.
+Извлекает границы времени начала и конца пары в минутах от начала суток.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -176,12 +165,12 @@ result = _parse_time_interval_minutes(time_str=...)
 def _check_single_lesson_status(lesson: Lesson, n_min: int) -> tuple[bool, str]
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L117-L140`](../../bot/templates/user/messages.py#L117-L140)
+- **Source Reference**: [`bot/templates/user/messages.py#L116-L139`](../../bot/templates/user/messages.py#L116-L139)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[bool, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_check_single_lesson_status`.
+Проверяет статус конкретной пары относительно текущей минуты суток.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -210,12 +199,12 @@ result = _check_single_lesson_status(lesson=..., n_min=...)
 def get_lesson_status_banner(lessons: list[Lesson], target_date: date) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L143-L167`](../../bot/templates/user/messages.py#L143-L167)
+- **Source Reference**: [`bot/templates/user/messages.py#L142-L162`](../../bot/templates/user/messages.py#L142-L162)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_lesson_status_banner`.
+Рассчитывает динамический баннер статуса пар для сегодняшнего дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -244,12 +233,12 @@ result = get_lesson_status_banner(lessons=..., target_date=...)
 def format_day_schedule(target_date: date, lessons: list[Lesson]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L170-L190`](../../bot/templates/user/messages.py#L170-L190)
+- **Source Reference**: [`bot/templates/user/messages.py#L165-L185`](../../bot/templates/user/messages.py#L165-L185)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_day_schedule`.
+Форматирует расписание на конкретный учебный день в итоговый HTML-блок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -278,12 +267,12 @@ result = format_day_schedule(target_date=..., lessons=...)
 def format_week_lesson_loc(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L193-L208`](../../bot/templates/user/messages.py#L193-L208)
+- **Source Reference**: [`bot/templates/user/messages.py#L188-L203`](../../bot/templates/user/messages.py#L188-L203)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_week_lesson_loc`.
+Формирует лаконичную строку локации для недельного дайджеста расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -311,12 +300,12 @@ result = format_week_lesson_loc(lesson=...)
 def format_week_lesson_card(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L211-L232`](../../bot/templates/user/messages.py#L211-L232)
+- **Source Reference**: [`bot/templates/user/messages.py#L206-L227`](../../bot/templates/user/messages.py#L206-L227)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_week_lesson_card`.
+Формирует компактную цитатную карточку пары для недельного обзора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -344,12 +333,12 @@ result = format_week_lesson_card(lesson=...)
 def format_week_day_block(day_date: date, lessons: list[Lesson]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L235-L254`](../../bot/templates/user/messages.py#L235-L254)
+- **Source Reference**: [`bot/templates/user/messages.py#L230-L249`](../../bot/templates/user/messages.py#L230-L249)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_week_day_block`.
+Формирует визуальный блок одного учебного дня для недельного дайджеста.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -378,12 +367,12 @@ result = format_week_day_block(day_date=..., lessons=...)
 def format_week_schedule(days_data: list[tuple[date, list[Lesson]]]) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L257-L270`](../../bot/templates/user/messages.py#L257-L270)
+- **Source Reference**: [`bot/templates/user/messages.py#L252-L265`](../../bot/templates/user/messages.py#L252-L265)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_week_schedule`.
+Формирует полное недельное расписание с пн по сб единым сообщением.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -411,12 +400,12 @@ result = format_week_schedule(days_data=...)
 def format_reminder_text(lesson: Lesson) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L273-L285`](../../bot/templates/user/messages.py#L273-L285)
+- **Source Reference**: [`bot/templates/user/messages.py#L268-L280`](../../bot/templates/user/messages.py#L268-L280)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_reminder_text`.
+Формирует текст персонального напоминания за 10 минут до начала пары.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -444,12 +433,12 @@ result = format_reminder_text(lesson=...)
 def format_notice_settings_text(is_subscribed: bool) -> str
 ```
 
-- **Source Reference**: [`bot/templates/user/messages.py#L288-L312`](../../bot/templates/user/messages.py#L288-L312)
+- **Source Reference**: [`bot/templates/user/messages.py#L283-L307`](../../bot/templates/user/messages.py#L283-L307)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_notice_settings_text`.
+Формирует информационный текст экрана управления личными уведомлениями.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,27 +1,16 @@
 # Component Reference: `services/models.py`
 > **File Path**: [`services/models.py`](../../services/models.py)
 > **Subsystem**: `Domain Models`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/models.py` module implements core operational logic for the `Domain Models` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Общие Pydantic-модели данных, используемые всеми сервисами.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`Lesson.number`](#lessonnumber) | Method | L44–L53 | `int` | Executes core domain logic for `number`. |
+| [`Lesson.number`](#lessonnumber) | Method | L44–L53 | `int` | Преобразует нулевой индекс периода в академический номе... |
 
 ---
 
@@ -29,7 +18,7 @@ graph LR
 
 ## Class Model: `Lesson`
 
-Encapsulates domain entities and data transfer logic for `Lesson`.
+Модель данных одного учебного занятия в расписании.
 
 ### `Lesson.number`
 ```python
@@ -41,7 +30,7 @@ def number(self) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `number`.
+Преобразует нулевой индекс периода в академический номер пары.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -64,4 +53,4 @@ result = number()
 
 ## Class Model: `ExamItem`
 
-Encapsulates domain entities and data transfer logic for `ExamItem`.
+Модель контрольного мероприятия, зачета или экзаменационной сессии.

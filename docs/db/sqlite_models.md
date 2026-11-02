@@ -1,25 +1,14 @@
 # Component Reference: `db/sqlite/models.py`
 > **File Path**: [`db/sqlite/models.py`](../../db/sqlite/models.py)
 > **Subsystem**: `SQLite Domain Models`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `db/sqlite/models.py` module implements core operational logic for the `SQLite Domain Models` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модели реляционной базы данных SQLite (SQLAlchemy 2.0).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
 
 ---
@@ -28,32 +17,32 @@ graph LR
 
 ## Class Model: `Base`
 
-Encapsulates domain entities and data transfer logic for `Base`.
+Базовый класс для всех реляционных моделей проекта.
 
 ## Class Model: `IncidentSeverity`
 
-Encapsulates domain entities and data transfer logic for `IncidentSeverity`.
+Уровни критичности инцидентов системы.
 
 ## Class Model: `Subscriber`
 
-Encapsulates domain entities and data transfer logic for `Subscriber`.
+Таблица активных подписчиков утренней рассылки и уведомлений.
 
 ## Class Model: `AttendanceSnapshot`
 
-Encapsulates domain entities and data transfer logic for `AttendanceSnapshot`.
+Таблица исторических снимков посещаемости студентов из Яндекс Документов.
 
 ## Class Model: `SystemIncident`
 
-Encapsulates domain entities and data transfer logic for `SystemIncident`.
+Таблица журнала системных сбоев, сетевых аномалий и срабатываний защиты.
 
 ## Class Model: `StudentAchievement`
 
-Encapsulates domain entities and data transfer logic for `StudentAchievement`.
+Таблица открытых студентами достижений с фиксацией времени получения.
 
 ## Class Model: `StudentCounter`
 
-Encapsulates domain entities and data transfer logic for `StudentCounter`.
+Таблица счётчиков действий студента (сообщения, задания ДЗ, активные дни).
 
 ## Class Model: `AchievementBaseline`
 
-Encapsulates domain entities and data transfer logic for `AchievementBaseline`.
+Снимок журнала студента на момент сброса ачивок — журнальные ачивки считаются от него.

@@ -1,28 +1,17 @@
 # Component Reference: `stt.py`
 > **File Path**: [`stt.py`](../../stt.py)
 > **Subsystem**: `Speech-to-Text Queue Consumer`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `stt.py` module implements core operational logic for the `Speech-to-Text Queue Consumer` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Точка входа микросервиса распознавания речи (para-stt).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_warmup_model`](#_warmup_model) | Function | L21–L33 | `None` | Executes core domain logic for `_warmup_model`. |
-| [`main`](#main) | Function | L36–L53 | `None` | Executes core domain logic for `main`. |
+| [`_warmup_model`](#_warmup_model) | Function | L21–L33 | `None` | Загружает модель в память GPU до первого задания. |
+| [`main`](#main) | Function | L36–L53 | `None` | Инициализирует Redis и модель, затем бесконечно обрабат... |
 
 ---
 
@@ -38,7 +27,7 @@ async def _warmup_model() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_warmup_model`.
+Загружает модель в память GPU до первого задания.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -69,7 +58,7 @@ async def main() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `main`.
+Инициализирует Redis и модель, затем бесконечно обрабатывает очередь распознавания.
 
 #### Parameters Contract
 *This method takes no input parameters.*

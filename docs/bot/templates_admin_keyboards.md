@@ -1,31 +1,20 @@
 # Component Reference: `bot/templates/admin/keyboards.py`
 > **File Path**: [`bot/templates/admin/keyboards.py`](../../bot/templates/admin/keyboards.py)
 > **Subsystem**: `Admin Panel Keyboards`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/templates/admin/keyboards.py` module implements core operational logic for the `Admin Panel Keyboards` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль аккуратных Inline-клавиатур личной Панели Администратора.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_topic_action_rows`](#_build_topic_action_rows) | Function | L14–L38 | `list` | Executes core domain logic for `_build_topic_action_row... |
-| [`_build_action_rows`](#_build_action_rows) | Function | L41–L68 | `list` | Executes core domain logic for `_build_action_rows`. |
-| [`get_admin_main_kb`](#get_admin_main_kb) | Function | L71–L81 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_admin_main_... |
-| [`get_swagger_launch_btn`](#get_swagger_launch_btn) | Function | L84–L97 | `InlineKeyboardButton` | Retrieves and resolves domain data for `get_swagger_lau... |
-| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L100–L126 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_testers_man... |
+| [`_build_topic_action_rows`](#_build_topic_action_rows) | Function | L14–L38 | `list` | Формирует ряды кнопок принудительного обновления и пере... |
+| [`_build_action_rows`](#_build_action_rows) | Function | L41–L68 | `list` | Формирует основную матрицу кнопок панели управления адм... |
+| [`get_admin_main_kb`](#get_admin_main_kb) | Function | L71–L81 | `InlineKeyboardMarkup` | Генерирует главную инлайн-клавиатуру панели управления ... |
+| [`get_swagger_launch_btn`](#get_swagger_launch_btn) | Function | L84–L97 | `InlineKeyboardButton` | Формирует кнопку запуска Telegram Mini App с порталом S... |
+| [`get_testers_management_kb`](#get_testers_management_kb) | Function | L100–L126 | `InlineKeyboardMarkup` | Генерирует клавиатуру управления списком разрешенных те... |
 
 ---
 
@@ -41,7 +30,7 @@ def _build_topic_action_rows() -> list
 - **Return Contract**: `list`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_topic_action_rows`.
+Формирует ряды кнопок принудительного обновления и пересоздания топиков супергруппы.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -72,7 +61,7 @@ def _build_action_rows() -> list
 - **Return Contract**: `list`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_action_rows`.
+Формирует основную матрицу кнопок панели управления администратора.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -103,7 +92,7 @@ def get_admin_main_kb() -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_admin_main_kb`.
+Генерирует главную инлайн-клавиатуру панели управления старосты.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -134,7 +123,7 @@ def get_swagger_launch_btn() -> InlineKeyboardButton
 - **Return Contract**: `InlineKeyboardButton`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_swagger_launch_btn`.
+Формирует кнопку запуска Telegram Mini App с порталом Swagger UI.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -165,7 +154,7 @@ def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_testers_management_kb`.
+Генерирует клавиатуру управления списком разрешенных тестеров API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

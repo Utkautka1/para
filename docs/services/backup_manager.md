@@ -1,32 +1,21 @@
 # Component Reference: `services/backup_manager.py`
 > **File Path**: [`services/backup_manager.py`](../../services/backup_manager.py)
 > **Subsystem**: `Automated Backup Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/backup_manager.py` module implements core operational logic for the `Automated Backup Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Менеджер автоматизированного резервного копирования базы данных SQLite и снимков Redis.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`backup_sqlite_online`](#backup_sqlite_online) | Function | L29–L40 | `bool` | Executes core domain logic for `backup_sqlite_online`. |
-| [`_trigger_redis_save`](#_trigger_redis_save) | Function | L43–L51 | `None` | Executes core domain logic for `_trigger_redis_save`. |
-| [`_create_tar_archive`](#_create_tar_archive) | Function | L54–L63 | `bool` | Executes core domain logic for `_create_tar_archive`. |
-| [`_rotate_old_backups`](#_rotate_old_backups) | Function | L66–L80 | `int` | Executes core domain logic for `_rotate_old_backups`. |
-| [`_send_backup_to_telegram`](#_send_backup_to_telegram) | Function | L83–L95 | `bool` | Executes core domain logic for `_send_backup_to_telegra... |
-| [`run_backup_pipeline`](#run_backup_pipeline) | Function | L98–L118 | `bool` | Executes core domain logic for `run_backup_pipeline`. |
+| [`backup_sqlite_online`](#backup_sqlite_online) | Function | L29–L40 | `bool` | Создает консистентный снимок SQLite без блокировки чита... |
+| [`_trigger_redis_save`](#_trigger_redis_save) | Function | L43–L51 | `None` | Инициирует фоновый снимок Redis в RDB файл при наличии ... |
+| [`_create_tar_archive`](#_create_tar_archive) | Function | L54–L63 | `bool` | Упаковывает файлы промежуточной директории в .tar.gz ар... |
+| [`_rotate_old_backups`](#_rotate_old_backups) | Function | L66–L80 | `int` | Удаляет архивы бэкапов старше заданного количества дней... |
+| [`_send_backup_to_telegram`](#_send_backup_to_telegram) | Function | L83–L95 | `bool` | Отправляет сжатый архив бэкапа администратору в Telegra... |
+| [`run_backup_pipeline`](#run_backup_pipeline) | Function | L98–L118 | `bool` | Оркестрирует полный процесс создания бэкапа SQLite и Re... |
 
 ---
 
@@ -42,7 +31,7 @@ def backup_sqlite_online(dest_path: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `backup_sqlite_online`.
+Создает консистентный снимок SQLite без блокировки читателей и писателей.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -75,7 +64,7 @@ async def _trigger_redis_save() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_trigger_redis_save`.
+Инициирует фоновый снимок Redis в RDB файл при наличии подключения.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -106,7 +95,7 @@ def _create_tar_archive(staging_dir: str, archive_path: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_create_tar_archive`.
+Упаковывает файлы промежуточной директории в .tar.gz архив.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -140,7 +129,7 @@ def _rotate_old_backups(backup_dir: str, retention_days: int) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_rotate_old_backups`.
+Удаляет архивы бэкапов старше заданного количества дней.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -174,7 +163,7 @@ async def _send_backup_to_telegram(archive_path: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_backup_to_telegram`.
+Отправляет сжатый архив бэкапа администратору в Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -207,7 +196,7 @@ async def run_backup_pipeline() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `run_backup_pipeline`.
+Оркестрирует полный процесс создания бэкапа SQLite и Redis, ротацию и отправку.
 
 #### Parameters Contract
 *This method takes no input parameters.*

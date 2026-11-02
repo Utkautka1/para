@@ -1,41 +1,30 @@
 # Component Reference: `services/achievement_events.py`
 > **File Path**: [`services/achievement_events.py`](../../services/achievement_events.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Achievement Events`
 
-## 1. Architectural Role & Responsibilities
-The `services/achievement_events.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Выдача событийных ачивок: связывает действия в боте, чате и Mini App со счётчиками.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_now`](#_now) | Function | L62–L64 | `datetime` | Executes core domain logic for `_now`. |
-| [`is_group_member`](#is_group_member) | Function | L67–L69 | `bool` | Executes core domain logic for `is_group_member`. |
-| [`_award_all`](#_award_all) | Function | L72–L75 | `None` | Executes core domain logic for `_award_all`. |
-| [`bump_counter`](#bump_counter) | Function | L78–L91 | `int` | Executes core domain logic for `bump_counter`. |
-| [`on_interaction`](#on_interaction) | Function | L94–L99 | `None` | Executes core domain logic for `on_interaction`. |
-| [`on_schedule_view`](#on_schedule_view) | Function | L102–L106 | `None` | Executes core domain logic for `on_schedule_view`. |
-| [`on_refresh_click`](#on_refresh_click) | Function | L109–L116 | `None` | Executes core domain logic for `on_refresh_click`. |
-| [`on_attendance_view`](#on_attendance_view) | Function | L119–L124 | `None` | Executes core domain logic for `on_attendance_view`. |
-| [`on_homework_task`](#on_homework_task) | Function | L127–L144 | `None` | Executes core domain logic for `on_homework_task`. |
-| [`mark_ping_all`](#mark_ping_all) | Function | L147–L149 | `None` | Executes core domain logic for `mark_ping_all`. |
-| [`_has_birthday_today`](#_has_birthday_today) | Function | L152–L157 | `bool` | Executes core domain logic for `_has_birthday_today`. |
-| [`_chat_reply_achievement`](#_chat_reply_achievement) | Function | L160–L171 | `str | None` | Executes core domain logic for `_chat_reply_achievement... |
-| [`_award_chat_specials`](#_award_chat_specials) | Function | L174–L180 | `None` | Executes core domain logic for `_award_chat_specials`. |
-| [`on_group_message`](#on_group_message) | Function | L183–L201 | `None` | Executes core domain logic for `on_group_message`. |
-| [`on_profile_view`](#on_profile_view) | Function | L204–L220 | `bool` | Executes core domain logic for `on_profile_view`. |
+| [`_now`](#_now) | Function | L62–L64 | `datetime` | Текущее московское время — во всех описаниях ачивок вре... |
+| [`is_group_member`](#is_group_member) | Function | L67–L69 | `bool` | Проверяет, что пользователь — одногруппник (или старост... |
+| [`_award_all`](#_award_all) | Function | L72–L75 | `None` | Выдаёт набор ачивок по одной (каждая сама проверяет, не... |
+| [`bump_counter`](#bump_counter) | Function | L78–L91 | `int` | Увеличивает счётчик студента и выдаёт ачивки за пройден... |
+| [`on_interaction`](#on_interaction) | Function | L94–L99 | `None` | Любое действие одногруппника в ЛС бота: «Тапер», «Юбиля... |
+| [`on_schedule_view`](#on_schedule_view) | Function | L102–L106 | `None` | Просмотр расписания: время суток, кнопка и пары показан... |
+| [`on_refresh_click`](#on_refresh_click) | Function | L109–L116 | `None` | Кнопка «Обновить»: «F5 Мастер» и «Нетерпеливый» (3 нажа... |
+| [`on_attendance_view`](#on_attendance_view) | Function | L119–L124 | `None` | Личная посещаемость: «Самоконтроль» и «Аналитик» (5 раз... |
+| [`on_homework_task`](#on_homework_task) | Function | L127–L144 | `None` | Задание в топике ДЗ: разовые ачивки, счётчики заданий, ... |
+| [`mark_ping_all`](#mark_ping_all) | Function | L147–L149 | `None` | Открывает 15-минутное окно «Общего сбора» после /all ст... |
+| [`_has_birthday_today`](#_has_birthday_today) | Function | L152–L157 | `bool` | Проверяет, есть ли сегодня именинник среди одногруппник... |
+| [`_chat_reply_achievement`](#_chat_reply_achievement) | Function | L160–L171 | `str \| None` | Классифицирует реплай в чате: старосте → «Связь со стар... |
+| [`_award_chat_specials`](#_award_chat_specials) | Function | L174–L180 | `None` | Разовые ачивки чата: поздравление именинника и реакция ... |
+| [`on_group_message`](#on_group_message) | Function | L183–L201 | `None` | Сообщение в чате группы: счётчики сообщений, стикеров и... |
+| [`on_profile_view`](#on_profile_view) | Function | L204–L220 | `bool` | Просмотр чужого профиля в Mini App: «Солидарность» за 5... |
 
 ---
 
@@ -51,7 +40,7 @@ def _now() -> datetime
 - **Return Contract**: `datetime`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_now`.
+Текущее московское время — во всех описаниях ачивок время московское.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -82,7 +71,7 @@ def is_group_member(user_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_group_member`.
+Проверяет, что пользователь — одногруппник (или староста).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -115,7 +104,7 @@ async def _award_all(uid: int, ids: set[str], bot: Any, name: str | None) -> Non
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_award_all`.
+Выдаёт набор ачивок по одной (каждая сама проверяет, не открыта ли уже).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -151,7 +140,7 @@ async def bump_counter(uid: int, key: str, bot: Any, name: str | None) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `bump_counter`.
+Увеличивает счётчик студента и выдаёт ачивки за пройденные пороги.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -187,7 +176,7 @@ async def on_interaction(user: User, bot: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_interaction`.
+Любое действие одногруппника в ЛС бота: «Тапер», «Юбиляр», «На связи».
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -221,7 +210,7 @@ async def on_schedule_view(user: User | None, bot: Any, view: ScheduleView, less
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_schedule_view`.
+Просмотр расписания: время суток, кнопка и пары показанного дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -257,7 +246,7 @@ async def on_refresh_click(user: User | None, bot: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_refresh_click`.
+Кнопка «Обновить»: «F5 Мастер» и «Нетерпеливый» (3 нажатия за минуту).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -291,7 +280,7 @@ async def on_attendance_view(user: User | None, bot: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_attendance_view`.
+Личная посещаемость: «Самоконтроль» и «Аналитик» (5 разных дней).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -325,7 +314,7 @@ async def on_homework_task(uid: int, name: str | None, bot: Any, task: HomeworkT
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_homework_task`.
+Задание в топике ДЗ: разовые ачивки, счётчики заданий, дней и форматов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -361,7 +350,7 @@ async def mark_ping_all() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `mark_ping_all`.
+Открывает 15-минутное окно «Общего сбора» после /all старосты.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -392,7 +381,7 @@ def _has_birthday_today(exclude_uid: int, today: date) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_has_birthday_today`.
+Проверяет, есть ли сегодня именинник среди одногруппников, кроме автора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -426,7 +415,7 @@ def _chat_reply_achievement(message: Message, uid: int) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_chat_reply_achievement`.
+Классифицирует реплай в чате: старосте → «Связь со старостой», одногруппнику → «Коллоквиум».
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -460,7 +449,7 @@ async def _award_chat_specials(message: Message, uid: int, bot: Any, name: str |
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_award_chat_specials`.
+Разовые ачивки чата: поздравление именинника и реакция на /all.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -496,7 +485,7 @@ async def on_group_message(message: Message, bot: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_group_message`.
+Сообщение в чате группы: счётчики сообщений, стикеров и реплаев.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -530,7 +519,7 @@ async def on_profile_view(uid: int, viewed_fio: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `on_profile_view`.
+Просмотр чужого профиля в Mini App: «Солидарность» за 5 разных одногруппников.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

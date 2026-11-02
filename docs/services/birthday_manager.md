@@ -1,49 +1,38 @@
 # Component Reference: `services/birthday_manager.py`
 > **File Path**: [`services/birthday_manager.py`](../../services/birthday_manager.py)
 > **Subsystem**: `Student Lifecycle`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/birthday_manager.py` module implements core operational logic for the `Student Lifecycle` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Менеджер дней рождения группы 1-КПД-3.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_compute_next_birthday`](#_compute_next_birthday) | Function | L47–L68 | `tuple[int, bool, int]` | Executes core domain logic for `_compute_next_birthday`... |
-| [`calculate_days_and_age`](#calculate_days_and_age) | Function | L71–L82 | `dict[str, Any]` | Executes core domain logic for `calculate_days_and_age`... |
-| [`format_person_tag`](#format_person_tag) | Function | L85–L101 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_days_left_badge`](#format_days_left_badge) | Function | L104–L124 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_today_block`](#format_today_block) | Function | L127–L142 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`format_age_badge`](#format_age_badge) | Function | L145–L160 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_upcoming_block`](#format_upcoming_block) | Function | L163–L186 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`season_sort_key`](#season_sort_key) | Function | L189–L198 | `int` | Executes core domain logic for `season_sort_key`. |
-| [`format_season_block`](#format_season_block) | Function | L201–L220 | `list[str]` | Formats message payload and presentation markup for `fo... |
-| [`format_birthday_registry_text`](#format_birthday_registry_text) | Function | L223–L239 | `str` | Formats message payload and presentation markup for `fo... |
-| [`pick_unique_wish`](#pick_unique_wish) | Function | L242–L263 | `str` | Executes core domain logic for `pick_unique_wish`. |
-| [`get_person_mention`](#get_person_mention) | Function | L266–L281 | `str` | Retrieves and resolves domain data for `get_person_ment... |
-| [`format_starosta_block`](#format_starosta_block) | Function | L284–L295 | `str` | Formats message payload and presentation markup for `fo... |
-| [`format_congrats_message`](#format_congrats_message) | Function | L298–L320 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_send_congrats_telegram`](#_send_congrats_telegram) | Function | L323–L338 | `None` | Executes core domain logic for `_send_congrats_telegram... |
-| [`send_congrats_for_item`](#send_congrats_for_item) | Function | L341–L360 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`is_morning_congrats_time`](#is_morning_congrats_time) | Function | L363–L371 | `bool` | Executes core domain logic for `is_morning_congrats_tim... |
-| [`check_and_send_birthday_congratulations`](#check_and_send_birthday_congratulations) | Function | L374–L390 | `None` | Executes core domain logic for `check_and_send_birthday... |
-| [`_edit_existing_birthday_message`](#_edit_existing_birthday_message) | Function | L393–L410 | `bool` | Executes core domain logic for `_edit_existing_birthday... |
-| [`_create_new_birthday_message`](#_create_new_birthday_message) | Function | L413–L433 | `bool` | Executes core domain logic for `_create_new_birthday_me... |
-| [`update_birthday_pinned_message`](#update_birthday_pinned_message) | Function | L436–L449 | `bool` | Synchronizes and updates domain state for `update_birth... |
-| [`sync_birthdays_topic`](#sync_birthdays_topic) | Function | L452–L471 | `bool` | Executes core domain logic for `sync_birthdays_topic`. |
-| [`birthday_sync_loop`](#birthday_sync_loop) | Function | L474–L490 | `None` | Executes core domain logic for `birthday_sync_loop`. |
+| [`_compute_next_birthday`](#_compute_next_birthday) | Function | L47–L68 | `tuple[int, bool, int]` | Рассчитывает количество дней до ближайшего дня рождения... |
+| [`calculate_days_and_age`](#calculate_days_and_age) | Function | L71–L82 | `dict[str, Any]` | Вычисляет оставшиеся дни до дня рождения и возраст, исп... |
+| [`format_person_tag`](#format_person_tag) | Function | L85–L101 | `str` | Формирует кликабельное имя человека для реестра Telegra... |
+| [`format_days_left_badge`](#format_days_left_badge) | Function | L104–L124 | `str` | Формирует понятный бейдж оставшихся дней с правильным р... |
+| [`format_today_block`](#format_today_block) | Function | L127–L142 | `list[str]` | Формирует праздничный блок в HTML-цитате для имениннико... |
+| [`format_age_badge`](#format_age_badge) | Function | L145–L160 | `str` | Склоняет возраст человека по правилам русского языка (г... |
+| [`format_upcoming_block`](#format_upcoming_block) | Function | L163–L186 | `list[str]` | Формирует блок ближайших именинников в цитате Telegram. |
+| [`season_sort_key`](#season_sort_key) | Function | L189–L198 | `int` | Вычисляет целочисленный индекс сортировки даты внутри з... |
+| [`format_season_block`](#format_season_block) | Function | L201–L220 | `list[str]` | Форматирует сезонный блок именинников (осень, зима, вес... |
+| [`format_birthday_registry_text`](#format_birthday_registry_text) | Function | L223–L239 | `str` | Собирает полный итоговый текст закрепленного сообщения ... |
+| [`pick_unique_wish`](#pick_unique_wish) | Function | L242–L263 | `str` | Выбирает случайное неповторяющееся поздравление для уча... |
+| [`get_person_mention`](#get_person_mention) | Function | L266–L281 | `str` | Формирует кликабельное упоминание именинника для персон... |
+| [`format_starosta_block`](#format_starosta_block) | Function | L284–L295 | `str` | Формирует цитату с напутственным словом старосты группы... |
+| [`format_congrats_message`](#format_congrats_message) | Function | L298–L320 | `str` | Формирует праздничное персональное поздравление от имен... |
+| [`_send_congrats_telegram`](#_send_congrats_telegram) | Function | L323–L338 | `None` | Отправляет поздравление в топик 'Важное' и сохраняет фл... |
+| [`send_congrats_for_item`](#send_congrats_for_item) | Function | L341–L360 | `None` | Оркестрирует отправку персонального поздравления для им... |
+| [`is_morning_congrats_time`](#is_morning_congrats_time) | Function | L363–L371 | `bool` | Проверяет наступление утреннего времени отправки поздра... |
+| [`check_and_send_birthday_congratulations`](#check_and_send_birthday_congratulations) | Function | L374–L390 | `None` | Проверяет сегодняшних именинников и отправляет поздравл... |
+| [`_edit_existing_birthday_message`](#_edit_existing_birthday_message) | Function | L393–L410 | `bool` | Редактирует существующее закрепленное сообщение реестра... |
+| [`_create_new_birthday_message`](#_create_new_birthday_message) | Function | L413–L433 | `bool` | Публикует и закрепляет новое сообщение реестра дней рож... |
+| [`update_birthday_pinned_message`](#update_birthday_pinned_message) | Function | L436–L449 | `bool` | Оркестрирует обновление или повторное создание закрепле... |
+| [`sync_birthdays_topic`](#sync_birthdays_topic) | Function | L452–L471 | `bool` | Выполняет полный цикл синхронизации реестра дней рожден... |
+| [`birthday_sync_loop`](#birthday_sync_loop) | Function | L474–L490 | `None` | Запускает бесконечный цикл фоновой синхронизации дней р... |
 
 ---
 
@@ -59,7 +48,7 @@ def _compute_next_birthday(today: date, b_day: int, b_month: int) -> tuple[int, 
 - **Return Contract**: `tuple[int, bool, int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_compute_next_birthday`.
+Рассчитывает количество дней до ближайшего дня рождения с учетом високосных лет.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -94,7 +83,7 @@ def calculate_days_and_age(item: dict[str, Any], today: date) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `calculate_days_and_age`.
+Вычисляет оставшиеся дни до дня рождения и возраст, исполняющийся в праздник.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -128,7 +117,7 @@ def format_person_tag(item: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_person_tag`.
+Формирует кликабельное имя человека для реестра Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -161,7 +150,7 @@ def format_days_left_badge(days: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_days_left_badge`.
+Формирует понятный бейдж оставшихся дней с правильным русским склонением.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -194,7 +183,7 @@ def format_today_block(today_items: list[dict[str, Any]]) -> list[str]
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_today_block`.
+Формирует праздничный блок в HTML-цитате для именинников сегодняшнего дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -227,7 +216,7 @@ def format_age_badge(age: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_age_badge`.
+Склоняет возраст человека по правилам русского языка (год / года / лет).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -260,7 +249,7 @@ def format_upcoming_block(items: list[dict[str, Any]]) -> list[str]
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_upcoming_block`.
+Формирует блок ближайших именинников в цитате Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -293,7 +282,7 @@ def season_sort_key(item: dict[str, Any], months: list[int]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `season_sort_key`.
+Вычисляет целочисленный индекс сортировки даты внутри заданного сезона.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -327,7 +316,7 @@ def format_season_block(title: str, months: list[int], all_items: list[dict[str,
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_season_block`.
+Форматирует сезонный блок именинников (осень, зима, весна, лето).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -362,7 +351,7 @@ def format_birthday_registry_text(items: list[dict[str, Any]]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_birthday_registry_text`.
+Собирает полный итоговый текст закрепленного сообщения реестра дней рождения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -395,7 +384,7 @@ def pick_unique_wish(person_key: str, wishes: list[str], history_file: str = HIS
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `pick_unique_wish`.
+Выбирает случайное неповторяющееся поздравление для участника.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -430,7 +419,7 @@ def get_person_mention(item: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_person_mention`.
+Формирует кликабельное упоминание именинника для персонального поздравления.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -463,7 +452,7 @@ def format_starosta_block(starosta_text: str | None) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_starosta_block`.
+Формирует цитату с напутственным словом старосты группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -496,7 +485,7 @@ def format_congrats_message(item: dict[str, Any], wish_text: str, starosta_text:
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_congrats_message`.
+Формирует праздничное персональное поздравление от имени группы и старосты.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -531,7 +520,7 @@ async def _send_congrats_telegram(text: str, person_key: str, key: str, state: d
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_send_congrats_telegram`.
+Отправляет поздравление в топик 'Важное' и сохраняет флаг доставки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -567,7 +556,7 @@ async def send_congrats_for_item(item: dict[str, Any], today_str: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_congrats_for_item`.
+Оркестрирует отправку персонального поздравления для именинника.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -601,7 +590,7 @@ def is_morning_congrats_time(now_dt: datetime) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_morning_congrats_time`.
+Проверяет наступление утреннего времени отправки поздравлений (07:00 МСК).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -634,7 +623,7 @@ async def check_and_send_birthday_congratulations(items: list[dict[str, Any]], t
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_and_send_birthday_congratulations`.
+Проверяет сегодняшних именинников и отправляет поздравления строго с 07:00.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -668,7 +657,7 @@ async def _edit_existing_birthday_message(msg_id: int, text: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_edit_existing_birthday_message`.
+Редактирует существующее закрепленное сообщение реестра дней рождения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -702,7 +691,7 @@ async def _create_new_birthday_message(text: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_create_new_birthday_message`.
+Публикует и закрепляет новое сообщение реестра дней рождения в топике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -735,7 +724,7 @@ async def update_birthday_pinned_message(text: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Synchronizes and updates domain state for `update_birthday_pinned_message`.
+Оркестрирует обновление или повторное создание закрепленного сообщения реестра.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -768,7 +757,7 @@ async def sync_birthdays_topic() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_birthdays_topic`.
+Выполняет полный цикл синхронизации реестра дней рождения и отправки поздравлений.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -799,7 +788,7 @@ async def birthday_sync_loop() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `birthday_sync_loop`.
+Запускает бесконечный цикл фоновой синхронизации дней рождения (каждые 30 минут).
 
 #### Parameters Contract
 *This method takes no input parameters.*

@@ -1,35 +1,24 @@
 # Component Reference: `services/achievement_triggers.py`
 > **File Path**: [`services/achievement_triggers.py`](../../services/achievement_triggers.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Achievement Triggers`
 
-## 1. Architectural Role & Responsibilities
-The `services/achievement_triggers.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Чистые правила событийных ачивок: какое действие в какое время что открывает.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_lesson_slot`](#parse_lesson_slot) | Function | L56–L68 | `tuple[time, time] | None` | Parses and extracts structured entities from `parse_les... |
-| [`_day_slots`](#_day_slots) | Function | L71–L74 | `list[tuple[time, time]]` | Executes core domain logic for `_day_slots`. |
-| [`_minutes`](#_minutes) | Function | L77–L79 | `int` | Executes core domain logic for `_minutes`. |
-| [`lesson_moment_achievements`](#lesson_moment_achievements) | Function | L82–L95 | `set[str]` | Executes core domain logic for `lesson_moment_achieveme... |
-| [`time_of_day_achievements`](#time_of_day_achievements) | Function | L98–L107 | `set[str]` | Executes core domain logic for `time_of_day_achievement... |
-| [`_view_specific`](#_view_specific) | Function | L110–L127 | `set[str]` | Executes core domain logic for `_view_specific`. |
-| [`schedule_view_achievements`](#schedule_view_achievements) | Function | L130–L143 | `set[str]` | Executes core domain logic for `schedule_view_achieveme... |
-| [`homework_kind`](#homework_kind) | Function | L158–L162 | `str` | Executes core domain logic for `homework_kind`. |
-| [`homework_achievements`](#homework_achievements) | Function | L165–L181 | `set[str]` | Executes core domain logic for `homework_achievements`. |
+| [`parse_lesson_slot`](#parse_lesson_slot) | Function | L56–L68 | `tuple[time, time] \| None` | Разбирает строку времени пары в (начало, конец). |
+| [`_day_slots`](#_day_slots) | Function | L71–L74 | `list[tuple[time, time]]` | Возвращает уникальные слоты пар дня по возрастанию (под... |
+| [`_minutes`](#_minutes) | Function | L77–L79 | `int` | Переводит время суток в минуты от полуночи. |
+| [`lesson_moment_achievements`](#lesson_moment_achievements) | Function | L82–L95 | `set[str]` | Проверяет, попал ли момент на пару, перемену или «форто... |
+| [`time_of_day_achievements`](#time_of_day_achievements) | Function | L98–L107 | `set[str]` | Ачивки «открыл расписание в такое-то время», общие для ... |
+| [`_view_specific`](#_view_specific) | Function | L110–L127 | `set[str]` | Ачивки, которые зависят от конкретной кнопки расписания... |
+| [`schedule_view_achievements`](#schedule_view_achievements) | Function | L130–L143 | `set[str]` | Собирает все ачивки за просмотр расписания. |
+| [`homework_kind`](#homework_kind) | Function | L158–L162 | `str` | Определяет формат задания по MIME-типу вложения. |
+| [`homework_achievements`](#homework_achievements) | Function | L165–L181 | `set[str]` | Ачивки, которые даёт одно задание ДЗ независимо от исто... |
 
 ---
 
@@ -37,7 +26,7 @@ graph LR
 
 ## Class Model: `ScheduleView`
 
-Encapsulates domain entities and data transfer logic for `ScheduleView`.
+Какой вид расписания открыл пользователь.
 
 ### `parse_lesson_slot`
 ```python
@@ -49,7 +38,7 @@ def parse_lesson_slot(time_str: str) -> tuple[time, time] | None
 - **Return Contract**: `tuple[time, time] | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_lesson_slot`.
+Разбирает строку времени пары в (начало, конец).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -82,7 +71,7 @@ def _day_slots(lessons: list[Lesson]) -> list[tuple[time, time]]
 - **Return Contract**: `list[tuple[time, time]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_day_slots`.
+Возвращает уникальные слоты пар дня по возрастанию (подгруппы дают дубли).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -115,7 +104,7 @@ def _minutes(t: time) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_minutes`.
+Переводит время суток в минуты от полуночи.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -148,7 +137,7 @@ def lesson_moment_achievements(now: time, lessons: list[Lesson]) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `lesson_moment_achievements`.
+Проверяет, попал ли момент на пару, перемену или «форточку» сегодняшнего дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -182,7 +171,7 @@ def time_of_day_achievements(now: datetime) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `time_of_day_achievements`.
+Ачивки «открыл расписание в такое-то время», общие для всех видов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -215,7 +204,7 @@ def _view_specific(view: ScheduleView, now: datetime) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_view_specific`.
+Ачивки, которые зависят от конкретной кнопки расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -249,7 +238,7 @@ def schedule_view_achievements(view: ScheduleView, now: datetime, lessons: list[
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `schedule_view_achievements`.
+Собирает все ачивки за просмотр расписания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -276,7 +265,7 @@ result = schedule_view_achievements(view=..., now=..., lessons=...)
 
 ## Class Model: `HomeworkTask`
 
-Encapsulates domain entities and data transfer logic for `HomeworkTask`.
+Что студент отправил в топик ДЗ — ровно то, что нужно ачивкам.
 
 ### `homework_kind`
 ```python
@@ -288,7 +277,7 @@ def homework_kind(mime_type: str | None, has_file: bool) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `homework_kind`.
+Определяет формат задания по MIME-типу вложения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -322,7 +311,7 @@ def homework_achievements(task: HomeworkTask, now: datetime) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `homework_achievements`.
+Ачивки, которые даёт одно задание ДЗ независимо от истории студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

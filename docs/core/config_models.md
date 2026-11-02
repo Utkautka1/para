@@ -1,28 +1,17 @@
 # Component Reference: `core/config_models.py`
 > **File Path**: [`core/config_models.py`](../../core/config_models.py)
 > **Subsystem**: `Domain Configuration Models`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/config_models.py` module implements core operational logic for the `Domain Configuration Models` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Доменные модели конфигурации распределенной системы Para.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L37–L39 | `set[int]` | Executes core domain logic for `allowed_attendance_user... |
-| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L58–L60 | `ZoneInfo` | Executes core domain logic for `timezone`. |
+| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L37–L39 | `set[int]` | Множество доверенных администраторов для фиксации посещ... |
+| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L58–L60 | `ZoneInfo` | Объект таймзоны для синхронизации расписания занятий. |
 
 ---
 
@@ -30,7 +19,7 @@ graph LR
 
 ## Class Model: `TelegramConfig`
 
-Encapsulates domain entities and data transfer logic for `TelegramConfig`.
+Конфигурация Telegram-бота, ролевого доступа и идентификаторов топиков форума.
 
 ### `TelegramConfig.allowed_attendance_user_ids`
 ```python
@@ -42,7 +31,7 @@ def allowed_attendance_user_ids(self) -> set[int]
 - **Return Contract**: `set[int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `allowed_attendance_user_ids`.
+Множество доверенных администраторов для фиксации посещаемости.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -65,7 +54,7 @@ result = allowed_attendance_user_ids()
 
 ## Class Model: `ScheduleConfig`
 
-Encapsulates domain entities and data transfer logic for `ScheduleConfig`.
+Конфигурация внешних эндпоинтов расписания КТМУ, таймзоны и параметров кэширования.
 
 ### `ScheduleConfig.timezone`
 ```python
@@ -77,7 +66,7 @@ def timezone(self) -> ZoneInfo
 - **Return Contract**: `ZoneInfo`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `timezone`.
+Объект таймзоны для синхронизации расписания занятий.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -100,36 +89,36 @@ result = timezone()
 
 ## Class Model: `CampusConfig`
 
-Encapsulates domain entities and data transfer logic for `CampusConfig`.
+Конфигурация физических корпусов и удаленных локаций колледжа.
 
 ## Class Model: `RedisConfig`
 
-Encapsulates domain entities and data transfer logic for `RedisConfig`.
+Конфигурация подключения к серверу Redis и глобального L2 кэширования.
 
 ## Class Model: `YandexConfig`
 
-Encapsulates domain entities and data transfer logic for `YandexConfig`.
+Конфигурация интеграции с Яндекс Документами и журналами посещаемости WOPI.
 
 ## Class Model: `ApiConfig`
 
-Encapsulates domain entities and data transfer logic for `ApiConfig`.
+Конфигурация двухпротокольного API-шлюза (HTTP/REST и gRPC HTTP/2).
 
 ## Class Model: `AiSolverConfig`
 
-Encapsulates domain entities and data transfer logic for `AiSolverConfig`.
+Конфигурация очередей и клиента модели DeepSeek для решения домашних заданий.
 
 ## Class Model: `WhisperConfig`
 
-Encapsulates domain entities and data transfer logic for `WhisperConfig`.
+Конфигурация модели распознавания речи faster-whisper и лимитов аудио.
 
 ## Class Model: `NotificationConfig`
 
-Encapsulates domain entities and data transfer logic for `NotificationConfig`.
+Конфигурация расписания уведомлений и параметров троттлинга инлайн-кнопок.
 
 ## Class Model: `DatabaseConfig`
 
-Encapsulates domain entities and data transfer logic for `DatabaseConfig`.
+Конфигурация реляционной базы данных SQLite и параметров резервного копирования.
 
 ## Class Model: `TracingConfig`
 
-Encapsulates domain entities and data transfer logic for `TracingConfig`.
+Конфигурация распределенного трейсинга OpenTelemetry и Jaeger OTLP.

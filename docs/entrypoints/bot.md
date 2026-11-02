@@ -6,28 +6,21 @@
 > **Persistence Backend**: `RedisStorage FSM State Engine`
 > **Service Level Objective**: `Sub-100ms Telegram Message Ingress`
 
-## 1. Architectural Role & Responsibilities
-The `bot.py` module implements core operational logic for the `Telegram Gateway` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Главный модуль запуска Telegram-бота расписания КТМУ.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_register_admin_routers`](#_register_admin_routers) | Function | L20–L42 | `None` | Executes core domain logic for `_register_admin_routers... |
-| [`_register_user_routers`](#_register_user_routers) | Function | L45–L69 | `None` | Executes core domain logic for `_register_user_routers`... |
-| [`register_all_routers`](#register_all_routers) | Function | L72–L86 | `None` | Executes core domain logic for `register_all_routers`. |
-| [`shutdown_bot`](#shutdown_bot) | Function | L89–L106 | `None` | Executes core domain logic for `shutdown_bot`. |
-| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L109–L132 | `None` | Executes core domain logic for `setup_all_middlewares`. |
-| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L135–L154 | `None` | Executes core domain logic for `_init_bot_subsystems`. |
-| [`main`](#main) | Function | L157–L177 | `None` | Executes core domain logic for `main`. |
+| [`_register_admin_routers`](#_register_admin_routers) | Function | L21–L43 | `None` | Регистрирует административные роутеры в диспетчере aiog... |
+| [`_register_user_routers`](#_register_user_routers) | Function | L46–L70 | `None` | Регистрирует пользовательские роутеры в диспетчере aiog... |
+| [`register_all_routers`](#register_all_routers) | Function | L73–L87 | `None` | Регистрирует все группы роутеров и обработчик ошибок в ... |
+| [`shutdown_bot`](#shutdown_bot) | Function | L90–L109 | `None` | Корректно закрывает сессию бота, HTTP-клиент API и подк... |
+| [`setup_all_middlewares`](#setup_all_middlewares) | Function | L112–L135 | `None` | Регистрирует глобальные middleware для отказоустойчивос... |
+| [`_init_bot_subsystems`](#_init_bot_subsystems) | Function | L138–L157 | `None` | Инициализирует роутеры, middleware и соединения (модель... |
+| [`main`](#main) | Function | L160–L180 | `None` | Основная асинхронная функция запуска long polling Teleg... |
 
 ---
 
@@ -38,12 +31,12 @@ graph LR
 def _register_admin_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L20-L42`](../../bot.py#L20-L42)
+- **Source Reference**: [`bot.py#L21-L43`](../../bot.py#L21-L43)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_register_admin_routers`.
+Регистрирует административные роутеры в диспетчере aiogram.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -69,12 +62,12 @@ result = _register_admin_routers()
 def _register_user_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L45-L69`](../../bot.py#L45-L69)
+- **Source Reference**: [`bot.py#L46-L70`](../../bot.py#L46-L70)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_register_user_routers`.
+Регистрирует пользовательские роутеры в диспетчере aiogram.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -100,12 +93,12 @@ result = _register_user_routers()
 def register_all_routers() -> None
 ```
 
-- **Source Reference**: [`bot.py#L72-L86`](../../bot.py#L72-L86)
+- **Source Reference**: [`bot.py#L73-L87`](../../bot.py#L73-L87)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `register_all_routers`.
+Регистрирует все группы роутеров и обработчик ошибок в диспетчере.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -131,12 +124,12 @@ result = register_all_routers()
 async def shutdown_bot() -> None
 ```
 
-- **Source Reference**: [`bot.py#L89-L106`](../../bot.py#L89-L106)
+- **Source Reference**: [`bot.py#L90-L109`](../../bot.py#L90-L109)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `shutdown_bot`.
+Корректно закрывает сессию бота, HTTP-клиент API и подключение к Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -162,12 +155,12 @@ result = await shutdown_bot()
 def setup_all_middlewares() -> None
 ```
 
-- **Source Reference**: [`bot.py#L109-L132`](../../bot.py#L109-L132)
+- **Source Reference**: [`bot.py#L112-L135`](../../bot.py#L112-L135)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `setup_all_middlewares`.
+Регистрирует глобальные middleware для отказоустойчивости бота.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -193,12 +186,12 @@ result = setup_all_middlewares()
 async def _init_bot_subsystems() -> None
 ```
 
-- **Source Reference**: [`bot.py#L135-L154`](../../bot.py#L135-L154)
+- **Source Reference**: [`bot.py#L138-L157`](../../bot.py#L138-L157)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_init_bot_subsystems`.
+Инициализирует роутеры, middleware и соединения (модель STT живёт в сервисе stt).
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -224,12 +217,12 @@ result = await _init_bot_subsystems()
 async def main() -> None
 ```
 
-- **Source Reference**: [`bot.py#L157-L177`](../../bot.py#L157-L177)
+- **Source Reference**: [`bot.py#L160-L180`](../../bot.py#L160-L180)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `main`.
+Основная асинхронная функция запуска long polling Telegram-бота.
 
 #### Parameters Contract
 *This method takes no input parameters.*

@@ -1,8 +1,12 @@
 """
-Enterprise Documentation Suite Generator for Para Distributed System.
+Генератор справочника модулей para: docs/**/*.md и оглавление docs/index.md.
 
-Generates Google Developer Style Guide / AWS / Stripe compliant API reference
-documentation in pure Technical English. Strictly <= 25 lines per method.
+Описания берутся из docstring модулей и функций — источник правды один, код.
+Шаблонные фразы (PARAMETER_DESCRIPTIONS, FUNCTION_INTENT_PATTERNS) — только
+запасной вариант для функций без docstring. Подсистема каждого файла задаётся
+вручную в TARGET_MANIFEST: при добавлении модуля его нужно вписать туда.
+
+CI проверяет синхронность через `make docs-check`.
 """
 
 import ast
@@ -305,6 +309,31 @@ def describe_parameter(name: str, type_hint: str) -> str:
     return PARAMETER_DESCRIPTIONS.get(name, f"Parameter `{name}` of type `{type_hint}`.")
 
 
+def first_paragraph(node: ast.AST) -> str | None:
+    """
+    Достаёт первый абзац docstring модуля, класса или функции одной строкой.
+
+    Возвращает текст абзаца или None, если docstring нет.
+    """
+    doc = (
+        ast.get_docstring(node)
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+        else None
+    )
+    if not doc:
+        return None
+    return " ".join(doc.strip().split("\n\n")[0].split())
+
+
+def describe_node(node: ast.AST, name: str, is_async: bool) -> str:
+    """
+    Описывает функцию её собственным docstring, а без него — шаблоном по имени.
+
+    Возвращает строку описания назначения функции.
+    """
+    return first_paragraph(node) or describe_function_intent(name, is_async)
+
+
 def describe_function_intent(name: str, is_async: bool) -> str:
     """
     Формирует лаконичное описание архитектурного намерения функции.
@@ -466,7 +495,7 @@ def format_function_spec(
     ret_type = ast.unparse(node.returns) if getattr(node, "returns", None) else "Any"
     rel_path = f"{os.path.relpath(filepath, doc_dir)}#L{node.lineno}-L{node.end_lineno}"
     link = f"[`{filepath}#L{node.lineno}-L{node.end_lineno}`]({rel_path})"
-    intent = describe_function_intent(name, is_async)
+    intent = describe_node(node, name, is_async)
 
     block = _format_spec_header(qual, sig, link, is_async, ret_type)
     block.extend(["#### Overview & Architectural Purpose", f"{intent}\n"])
@@ -481,67 +510,65 @@ def get_module_metadata(category: str) -> dict[str, str]:
     Предоставляет сведения об архитектурном слое, модели параллелизма,
     хранилище и целевом SLA подсистемы.
 
-    Возвращает словарь метаданных подсистемы с дефолтным fallback.
+    Для подсистем без описания возвращает пустой словарь: выдуманные слой,
+    хранилище и SLA вводили бы читателя в заблуждение.
+
+    Возвращает словарь метаданных подсистемы (возможно, пустой).
     """
-    fallback = {
-        "layer": "Enterprise Microservice Subsystem",
-        "concurrency": "AsyncIO Non-blocking Concurrency",
-        "persistence": "Redis 7 Persistent Store",
-        "sla": "High-Availability Academic Telemetry",
-    }
-    return SUBSYSTEM_METADATA.get(category, fallback)
+    return SUBSYSTEM_METADATA.get(category, {})
 
 
-def build_mermaid_diagram(category: str) -> str:
+def build_mermaid_diagram(category: str) -> str | None:
     """
     Предоставляет диаграмму архитектуры потока данных Mermaid для подсистемы.
 
     Использует кэшированные схемы из словаря MERMAID_DIAGRAMS для визуализации
     потока взаимодействия компонентов.
 
-    Возвращает строку с Mermaid диаграммой для включения в спецификацию.
+    Общую «заглушку» не подставляем: одна и та же схема с Redis для любого
+    модуля ничего не объясняет.
+
+    Возвращает строку с Mermaid-диаграммой или None, если для подсистемы её нет.
     """
-    fallback = (
-        "```mermaid\n"
-        "graph LR\n"
-        "    Inbound[Inbound Request] --> Logic[Domain Service Logic]\n"
-        "    Logic --> Redis[(Redis 7 State Store)]\n"
-        "    Logic --> Outbound[Outbound Event Dispatch]\n"
-        "```"
-    )
-    return MERMAID_DIAGRAMS.get(category, fallback)
+    return MERMAID_DIAGRAMS.get(category)
 
 
-def format_module_header(title: str, filepath: str, category: str, doc_dir: str) -> list[str]:
+_METADATA_LABELS = (
+    ("layer", "Architecture Layer"),
+    ("concurrency", "Concurrency Model"),
+    ("persistence", "Persistence Backend"),
+    ("sla", "Service Level Objective"),
+)
+
+
+def format_module_header(title: str, filepath: str, category: str, doc_dir: str, summary: str | None) -> list[str]:
     """
-    Генерирует заголовок корпоративной спецификации с таблицей метаданных.
+    Генерирует шапку справки модуля: путь, подсистема, назначение и схема.
 
-    Оформляет путь к файлу, категорию, архитектурный слой и диаграмму потоков
-    в соответствии со стандартами Enterprise Engineering.
+    summary — первый абзац docstring модуля; метаданные и диаграмма выводятся,
+    только если для подсистемы они действительно описаны.
 
     Возвращает список строк Markdown для открывающей секции документа.
     """
     rel_mod_link = os.path.relpath(filepath, doc_dir)
     meta = get_module_metadata(category)
-    return [
-        f"# Component Reference: `{title}`",
-        f"> **File Path**: [`{filepath}`]({rel_mod_link})",
-        f"> **Subsystem**: `{category}`",
-        f"> **Architecture Layer**: `{meta['layer']}`",
-        f"> **Concurrency Model**: `{meta['concurrency']}`",
-        f"> **Persistence Backend**: `{meta['persistence']}`",
-        f"> **Service Level Objective**: `{meta['sla']}`\n",
-        "## 1. Architectural Role & Responsibilities",
-        f"The `{title}` module implements core operational logic for the `{category}` domain. "
-        "It operates within an asynchronous microservices topology designed for ultra-low latency, "
-        "zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).\n",
-        "### Component Architecture & Data Flow",
-        build_mermaid_diagram(category),
-        "\n---",
-        "## 2. Public API & Symbol Inventory",
-        "| Symbol | Nature | Line Range | Return Contract | Core Invariant |",
-        "| :--- | :--- | :--- | :--- | :--- |",
-    ]
+    head = [f"# Component Reference: `{title}`", f"> **File Path**: [`{filepath}`]({rel_mod_link})"]
+    head.append(f"> **Subsystem**: `{category}`")
+    head.extend(f"> **{label}**: `{meta[key]}`" for key, label in _METADATA_LABELS if key in meta)
+    head.extend(["", "## 1. Purpose", f"{summary or 'Модуль без docstring — назначение не описано.'}\n"])
+    diagram = build_mermaid_diagram(category)
+    if diagram:
+        head.extend(["### Component Architecture & Data Flow", diagram])
+    head.extend(["\n---", "## 2. Public API & Symbol Inventory"])
+    head.extend(
+        ["| Symbol | Nature | Line Range | Return Contract | Summary |", "| :--- | :--- | :--- | :--- | :--- |"]
+    )
+    return head
+
+
+def _cell(text: str) -> str:
+    """Экранирует | внутри ячейки таблицы Markdown — иначе `dict | None` рвёт строку."""
+    return text.replace("|", "\\|")
 
 
 def build_inventory_table(tree: ast.Module) -> list[str]:
@@ -556,18 +583,18 @@ def build_inventory_table(tree: ast.Module) -> list[str]:
     rows = []
     for item in tree.body:
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            ret = ast.unparse(item.returns) if item.returns else "Any"
-            intent = describe_function_intent(item.name, isinstance(item, ast.AsyncFunctionDef))
-            short_desc = intent[:55] + "..." if len(intent) > 55 else intent
+            ret = _cell(ast.unparse(item.returns)) if item.returns else "Any"
+            intent = describe_node(item, item.name, isinstance(item, ast.AsyncFunctionDef))
+            short_desc = _cell(intent[:55] + "..." if len(intent) > 55 else intent)
             rows.append(
                 f"| [`{item.name}`](#{item.name.lower()}) | Function | L{item.lineno}–L{item.end_lineno} | `{ret}` | {short_desc} |"
             )
         elif isinstance(item, ast.ClassDef):
             for method in item.body:
                 if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    ret = ast.unparse(method.returns) if method.returns else "Any"
-                    intent = describe_function_intent(method.name, isinstance(method, ast.AsyncFunctionDef))
-                    short_desc = intent[:55] + "..." if len(intent) > 55 else intent
+                    ret = _cell(ast.unparse(method.returns)) if method.returns else "Any"
+                    intent = describe_node(method, method.name, isinstance(method, ast.AsyncFunctionDef))
+                    short_desc = _cell(intent[:55] + "..." if len(intent) > 55 else intent)
                     qual = f"{item.name}.{method.name}"
                     anchor = f"{item.name.lower()}{method.name.lower()}"
                     rows.append(
@@ -590,7 +617,7 @@ def build_spec_sections(tree: ast.Module, filepath: str, lines: list[str], doc_d
             sections.append(format_function_spec(item, filepath, lines, doc_dir))
         elif isinstance(item, ast.ClassDef):
             sections.append(f"## Class Model: `{item.name}`\n")
-            sections.append(f"Encapsulates domain entities and data transfer logic for `{item.name}`.\n")
+            sections.append(f"{first_paragraph(item) or f'Класс `{item.name}`.'}\n")
             for method in item.body:
                 if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     sections.append(format_function_spec(method, filepath, lines, doc_dir, item.name))
@@ -608,7 +635,7 @@ def format_module_document(filepath: str, title: str, category: str, doc_dir: st
     """
     lines = get_source_lines(filepath)
     tree = parse_module_ast(filepath)
-    doc = format_module_header(title, filepath, category, doc_dir)
+    doc = format_module_header(title, filepath, category, doc_dir, first_paragraph(tree))
     doc.extend(build_inventory_table(tree))
     doc.extend(build_spec_sections(tree, filepath, lines, doc_dir))
     return "\n".join(doc)
@@ -655,10 +682,6 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
         "out": "docs/services/solver_task_processor.md",
         "cat": "Solver Queue Processing",
     },
-    "services/solver/prompt_sanitizer.py": {
-        "out": "docs/services/solver_prompt_sanitizer.md",
-        "cat": "Solver Security Facade",
-    },
     "core/api_client.py": {"out": "docs/core/api_client.md", "cat": "Internal RPC Client"},
     "core/bot.py": {"out": "docs/core/bot.md", "cat": "Bot Instance Singleton"},
     "core/circuit_breaker.py": {"out": "docs/core/circuit_breaker.md", "cat": "Resilience & Circuit Breaker"},
@@ -669,6 +692,8 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "core/prompt_sanitizer.py": {"out": "docs/core/prompt_sanitizer.md", "cat": "AI Prompt Sanitization"},
     "core/redis.py": {"out": "docs/core/redis.md", "cat": "Redis Engine"},
     "core/redis_cache.py": {"out": "docs/core/redis_cache.md", "cat": "Distributed L2 Cache"},
+    "core/hw_queue.py": {"out": "docs/core/hw_queue.md", "cat": "Solver Queue Processing"},
+    "core/background.py": {"out": "docs/core/background.md", "cat": "Background Tasks"},
     "core/telemetry.py": {"out": "docs/core/telemetry.md", "cat": "OpenTelemetry Tracing"},
     "db/sqlite/models.py": {"out": "docs/db/sqlite_models.md", "cat": "SQLite Domain Models"},
     "db/sqlite/repositories.py": {"out": "docs/db/sqlite_repositories.md", "cat": "SQLite Repositories"},
@@ -757,21 +782,33 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
         "cat": "Gamification Registry",
     },
     "services/achievement_rules.py": {"out": "docs/services/achievement_rules.md", "cat": "Achievement Rules"},
-    "services/achievement_triggers.py": {"out": "docs/services/achievement_triggers.md", "cat": "Achievement Rules"},
-    "services/achievement_events.py": {"out": "docs/services/achievement_events.md", "cat": "Achievement Rules"},
-    "services/achievement_sync.py": {"out": "docs/services/achievement_sync.md", "cat": "Achievement Rules"},
-    "services/gamification_admin.py": {"out": "docs/services/gamification_admin.md", "cat": "Achievement Rules"},
+    "services/achievement_triggers.py": {"out": "docs/services/achievement_triggers.md", "cat": "Achievement Triggers"},
+    "services/achievement_events.py": {"out": "docs/services/achievement_events.md", "cat": "Achievement Events"},
+    "services/achievement_sync.py": {"out": "docs/services/achievement_sync.md", "cat": "Achievement Sync"},
+    "services/gamification_admin.py": {
+        "out": "docs/services/gamification_admin.md",
+        "cat": "Gamification Admin Operations",
+    },
     "bot/handlers/admin/gamification.py": {
         "out": "docs/bot/handlers_admin_gamification.md",
-        "cat": "Achievement Rules",
+        "cat": "Admin Gamification Panel",
     },
     "bot/templates/admin/gamification.py": {
         "out": "docs/bot/templates_admin_gamification.md",
-        "cat": "Achievement Rules",
+        "cat": "Admin Gamification Keyboards",
     },
-    "services/achievement_reset.py": {"out": "docs/services/achievement_reset.md", "cat": "Achievement Rules"},
-    "bot/middlewares/achievements.py": {"out": "docs/bot/middlewares_achievements.md", "cat": "Achievement Rules"},
+    "services/achievement_reset.py": {"out": "docs/services/achievement_reset.md", "cat": "Achievement Reset"},
+    "bot/middlewares/achievements.py": {
+        "out": "docs/bot/middlewares_achievements.md",
+        "cat": "Achievement Activity Middleware",
+    },
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
+    "scripts/sync_yandex_cookie.py": {"out": "docs/scripts/sync_yandex_cookie.md", "cat": "Yandex Cookie Sync"},
+    "services/achievement_service.py": {"out": "docs/services/achievement_service.md", "cat": "Achievement Service"},
+    "services/schedule_substitutions.py": {
+        "out": "docs/services/schedule_substitutions.md",
+        "cat": "KTMU Timetable Engine",
+    },
 }
 
 
@@ -811,31 +848,29 @@ def generate_all_docs() -> int:
     return count
 
 
+def layer_of(src: str) -> str:
+    """Слой модуля по верхнему каталогу: api, bot, core, services и т.д."""
+    return src.split("/", 1)[0] if "/" in src else "entrypoint"
+
+
 def build_master_portal(manifest: dict[str, dict[str, str]]) -> str:
     """
-    Формирует главный индексный файл инженерного портала docs/index.md.
+    Формирует оглавление docs/index.md: подсистема, модуль, справка и слой.
 
-    Создает структурированное оглавление со ссылками на спецификации всех
-    подсистем и модулей распределенного комплекса.
-
-    Возвращает строку с Markdown-разметкой главной страницы портала.
+    Возвращает строку с Markdown-разметкой главной страницы справочника.
     """
     lines = [
-        "# 🏛️ Enterprise Engineering Portal: API & Subsystems Reference",
-        "\n> Comprehensive, unabridged API and architectural specification for all 900+ system symbols.\n",
-        "## Subsystem Catalogs & Architectural Boundaries\n",
-        "| Subsystem | Source Module | Specification Reference | Architectural Layer |",
+        "# para: справочник модулей",
+        f"\n> Сгенерировано `scripts/generate_docs_suite.py` из docstring кода. Модулей: {len(manifest)}.\n",
+        "| Subsystem | Source Module | Specification Reference | Layer |",
         "| :--- | :--- | :--- | :--- |",
     ]
     for src, meta in sorted(manifest.items(), key=lambda x: (x[1]["cat"], x[0])):
         out_rel = meta["out"].replace("docs/", "")
         rel_src = os.path.relpath(src, "docs")
         lines.append(
-            f"| `{meta['cat']}` | [`{src}`]({rel_src}) | [📖 View Specification]({out_rel}) | Enterprise Service Component |"
+            f"| `{meta['cat']}` | [`{src}`]({rel_src}) | [📖 View Specification]({out_rel}) | `{layer_of(src)}` |"
         )
-    lines.append(
-        "\n---\n*Authored under Google Developer Documentation Style Guide standards. 100% Technical English.*"
-    )
     return "\n".join(lines)
 
 
@@ -845,4 +880,4 @@ if __name__ == "__main__":
     index_content = build_master_portal(manifest_data)
     with open("docs/index.md", "w", encoding="utf-8") as f:
         f.write(index_content if index_content.endswith("\n") else index_content + "\n")
-    print(f"Successfully generated {generated} enterprise documentation files and docs/index.md!")
+    print(f"Сгенерировано {generated} файлов справки и docs/index.md")

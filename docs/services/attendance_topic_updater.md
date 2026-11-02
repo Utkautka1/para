@@ -1,50 +1,39 @@
 # Component Reference: `services/attendance_topic_updater.py`
 > **File Path**: [`services/attendance_topic_updater.py`](../../services/attendance_topic_updater.py)
 > **Subsystem**: `Telemetry Topic`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/attendance_topic_updater.py` module implements core operational logic for the `Telemetry Topic` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль синхронизации и авто-обновления сообщения в топике 'Посещаемость'.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`load_attendance_topic_state`](#load_attendance_topic_state) | Function | L37–L47 | `int | None` | Executes core domain logic for `load_attendance_topic_s... |
-| [`save_attendance_topic_state`](#save_attendance_topic_state) | Function | L50–L58 | `None` | Saves serialized entity data to storage for `save_atten... |
-| [`make_progress_bar`](#make_progress_bar) | Function | L61–L71 | `str` | Executes core domain logic for `make_progress_bar`. |
-| [`extract_short_fio`](#extract_short_fio) | Function | L74–L87 | `str` | Executes core domain logic for `extract_short_fio`. |
-| [`_build_student_item`](#_build_student_item) | Function | L90–L113 | `dict[str, Any]` | Executes core domain logic for `_build_student_item`. |
-| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L116–L130 | `str` | Executes core domain logic for `_build_compact_topic_he... |
-| [`_decline_absence`](#_decline_absence) | Function | L133–L150 | `str` | Executes core domain logic for `_decline_absence`. |
-| [`_format_debt_details`](#_format_debt_details) | Function | L153–L168 | `str` | Executes core domain logic for `_format_debt_details`. |
-| [`_format_debt_student`](#_format_debt_student) | Function | L171–L189 | `str` | Executes core domain logic for `_format_debt_student`. |
-| [`_format_perfect_student`](#_format_perfect_student) | Function | L192–L205 | `str` | Executes core domain logic for `_format_perfect_student... |
-| [`_build_topic_footer`](#_build_topic_footer) | Function | L208–L220 | `str` | Executes core domain logic for `_build_topic_footer`. |
-| [`_group_students_by_debts`](#_group_students_by_debts) | Function | L223–L235 | `tuple[list[dict], list[dict]]` | Executes core domain logic for `_group_students_by_debt... |
-| [`_build_topic_body_lines`](#_build_topic_body_lines) | Function | L238–L251 | `list[str]` | Executes core domain logic for `_build_topic_body_lines... |
-| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L254–L274 | `str` | Formats message payload and presentation markup for `fo... |
-| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L277–L292 | `None` | Executes core domain logic for `_pin_attendance_silentl... |
-| [`create_attendance_message`](#create_attendance_message) | Function | L295–L312 | `int` | Initializes and constructs a new instance of `create_at... |
-| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L315–L337 | `bool` | Executes core domain logic for `handle_attendance_edit_... |
-| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L340–L353 | `bool` | Executes core domain logic for `_edit_attendance_msg`. |
-| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L356–L376 | `bool` | Dispatches notification message via Telegram API for `s... |
-| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L379–L392 | `None` | Executes core domain logic for `_delete_old_attendance_... |
-| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L395–L411 | `bool` | Executes core domain logic for `recreate_attendance_top... |
-| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L414–L438 | `bool` | Executes core domain logic for `sync_attendance_topic_m... |
-| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L441–L454 | `int` | Executes core domain logic for `_get_attendance_sync_sl... |
-| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L457–L474 | `None` | Executes core domain logic for `attendance_topic_sync_l... |
+| [`load_attendance_topic_state`](#load_attendance_topic_state) | Function | L37–L47 | `int \| None` | Загружает сохраненный ID главного сообщения топика посе... |
+| [`save_attendance_topic_state`](#save_attendance_topic_state) | Function | L50–L58 | `None` | Атомарно сохраняет ID главного сообщения топика посещае... |
+| [`make_progress_bar`](#make_progress_bar) | Function | L61–L71 | `str` | Формирует аккуратную 4-символьную шкалу прогресса посещ... |
+| [`extract_short_fio`](#extract_short_fio) | Function | L74–L87 | `str` | Извлекает Фамилию и Имя без отчества для исключения пер... |
+| [`_build_student_item`](#_build_student_item) | Function | L90–L113 | `dict[str, Any]` | Преобразует сырые данные студента в структурированный э... |
+| [`_build_compact_topic_header`](#_build_compact_topic_header) | Function | L116–L130 | `str` | Формирует презентабельную компактную шапку дашборда гру... |
+| [`_decline_absence`](#_decline_absence) | Function | L133–L150 | `str` | Склоняет слово 'прогул' по грамматическим правилам русс... |
+| [`_format_debt_details`](#_format_debt_details) | Function | L153–L168 | `str` | Формирует понятный список причин пропусков (прогулы, оп... |
+| [`_format_debt_student`](#_format_debt_student) | Function | L171–L189 | `str` | Формирует строку студента, имеющего пропуски или опозда... |
+| [`_format_perfect_student`](#_format_perfect_student) | Function | L192–L205 | `str` | Формирует аккуратную строку отличника без лишнего визуа... |
+| [`_build_topic_footer`](#_build_topic_footer) | Function | L208–L220 | `str` | Формирует подвал сообщения со ссылкой на ЛС и временем ... |
+| [`_group_students_by_debts`](#_group_students_by_debts) | Function | L223–L235 | `tuple[list[dict], list[dict]]` | Разделяет общий список студентов на отличников и имеющи... |
+| [`_build_topic_body_lines`](#_build_topic_body_lines) | Function | L238–L251 | `list[str]` | Формирует текстовые секции отличников и должников реест... |
+| [`format_attendance_topic_message`](#format_attendance_topic_message) | Function | L254–L274 | `str` | Формирует дашборд с компактным блоком отличников и журн... |
+| [`_pin_attendance_silently`](#_pin_attendance_silently) | Function | L277–L292 | `None` | Закрепляет главное сообщение реестра в топике без звуко... |
+| [`create_attendance_message`](#create_attendance_message) | Function | L295–L312 | `int` | Создает и закрепляет главное сообщение в топике посещае... |
+| [`handle_attendance_edit_error`](#handle_attendance_edit_error) | Function | L315–L337 | `bool` | Обрабатывает ошибки обновления сообщения в топике (not ... |
+| [`_edit_attendance_msg`](#_edit_attendance_msg) | Function | L340–L353 | `bool` | Редактирует текст активного сообщения посещаемости в то... |
+| [`send_or_edit_attendance_msg`](#send_or_edit_attendance_msg) | Function | L356–L376 | `bool` | Отправляет или обновляет главное сообщение в топике пос... |
+| [`_delete_old_attendance_msg`](#_delete_old_attendance_msg) | Function | L379–L392 | `None` | Пытается удалить старое сообщение посещаемости из топик... |
+| [`recreate_attendance_topic_message`](#recreate_attendance_topic_message) | Function | L395–L411 | `bool` | Удаляет старое сообщение топика посещаемости и создаёт ... |
+| [`sync_attendance_topic_message`](#sync_attendance_topic_message) | Function | L414–L438 | `bool` | Синхронизирует данные из таблицы и обновляет сообщение ... |
+| [`_get_attendance_sync_sleep_seconds`](#_get_attendance_sync_sleep_seconds) | Function | L441–L454 | `int` | Определяет интервал: 3 мин в учебные часы (08-19), инач... |
+| [`attendance_topic_sync_loop`](#attendance_topic_sync_loop) | Function | L457–L474 | `None` | Фоновый рабочий цикл авто-обновления топика с адаптивны... |
 
 ---
 
@@ -60,7 +49,7 @@ def load_attendance_topic_state() -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_attendance_topic_state`.
+Загружает сохраненный ID главного сообщения топика посещаемости.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -91,7 +80,7 @@ def save_attendance_topic_state(msg_id: int | None) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_attendance_topic_state`.
+Атомарно сохраняет ID главного сообщения топика посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -124,7 +113,7 @@ def make_progress_bar(pct: float) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `make_progress_bar`.
+Формирует аккуратную 4-символьную шкалу прогресса посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -157,7 +146,7 @@ def extract_short_fio(fio: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_short_fio`.
+Извлекает Фамилию и Имя без отчества для исключения переносов строк.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -190,7 +179,7 @@ def _build_student_item(fio: str, data: dict[str, Any]) -> dict[str, Any]
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_student_item`.
+Преобразует сырые данные студента в структурированный элемент рейтинга.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -224,7 +213,7 @@ def _build_compact_topic_header(pulse: float, total: int, p_cnt: int, d_cnt: int
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_compact_topic_header`.
+Формирует презентабельную компактную шапку дашборда группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -260,7 +249,7 @@ def _decline_absence(n: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_decline_absence`.
+Склоняет слово 'прогул' по грамматическим правилам русского языка.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -293,7 +282,7 @@ def _format_debt_details(s: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_debt_details`.
+Формирует понятный список причин пропусков (прогулы, опоздания, справки).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -326,7 +315,7 @@ def _format_debt_student(s: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_debt_student`.
+Формирует строку студента, имеющего пропуски или опоздания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -359,7 +348,7 @@ def _format_perfect_student(s: dict[str, Any]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_perfect_student`.
+Формирует аккуратную строку отличника без лишнего визуального шума.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -392,7 +381,7 @@ def _build_topic_footer() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_topic_footer`.
+Формирует подвал сообщения со ссылкой на ЛС и временем обновления.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -423,7 +412,7 @@ def _group_students_by_debts(items: list[dict[str, Any]]) -> tuple[list[dict], l
 - **Return Contract**: `tuple[list[dict], list[dict]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_group_students_by_debts`.
+Разделяет общий список студентов на отличников и имеющих пропуски/долги.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -456,7 +445,7 @@ def _build_topic_body_lines(perfect: list[dict[str, Any]], debts: list[dict[str,
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_topic_body_lines`.
+Формирует текстовые секции отличников и должников реестра посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -490,7 +479,7 @@ def format_attendance_topic_message(stats: dict[str, dict[str, Any]]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_attendance_topic_message`.
+Формирует дашборд с компактным блоком отличников и журналом долгов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -523,7 +512,7 @@ async def _pin_attendance_silently(message_id: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_pin_attendance_silently`.
+Закрепляет главное сообщение реестра в топике без звукового уведомления.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -556,7 +545,7 @@ async def create_attendance_message(text: str) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Initializes and constructs a new instance of `create_attendance_message`.
+Создает и закрепляет главное сообщение в топике посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -589,7 +578,7 @@ async def handle_attendance_edit_error(text: str, err_str: str, retry: bool) -> 
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_attendance_edit_error`.
+Обрабатывает ошибки обновления сообщения в топике (not modified / удалено).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -624,7 +613,7 @@ async def _edit_attendance_msg(text: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_edit_attendance_msg`.
+Редактирует текст активного сообщения посещаемости в топике Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -657,7 +646,7 @@ async def send_or_edit_attendance_msg(text: str, _retry: bool = False) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_or_edit_attendance_msg`.
+Отправляет или обновляет главное сообщение в топике посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -691,7 +680,7 @@ async def _delete_old_attendance_msg(old_id: int | None) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_delete_old_attendance_msg`.
+Пытается удалить старое сообщение посещаемости из топика Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -724,7 +713,7 @@ async def recreate_attendance_topic_message() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `recreate_attendance_topic_message`.
+Удаляет старое сообщение топика посещаемости и создаёт новое.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -755,7 +744,7 @@ async def sync_attendance_topic_message(force_refresh: bool = False) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_attendance_topic_message`.
+Синхронизирует данные из таблицы и обновляет сообщение в топике под Redis-локом.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -789,7 +778,7 @@ def _get_attendance_sync_sleep_seconds() -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_attendance_sync_sleep_seconds`.
+Определяет интервал: 3 мин в учебные часы (08-19), иначе 15 мин.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -820,7 +809,7 @@ async def attendance_topic_sync_loop() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `attendance_topic_sync_loop`.
+Фоновый рабочий цикл авто-обновления топика с адаптивным интервалом.
 
 #### Parameters Contract
 *This method takes no input parameters.*

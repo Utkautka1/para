@@ -6,39 +6,32 @@
 > **Persistence Backend**: `Stateless Telegram Ingress & Memory In-Flight State`
 > **Service Level Objective**: `Sub-100ms Telegram Message Ingress & Auto-Splitting`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/user/voice_transcribe.py` module implements core operational logic for the `Voice Transcription Handler` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлер автоматической расшифровки голосовых и видеосообщений в топиках чата.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AudioMeta.__init__`](#audiometa__init__) | Method | L49–L76 | `Any` | Executes core domain logic for `__init__`. |
-| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L78–L88 | `Any` | Executes core domain logic for `__iter__`. |
-| [`is_allowed_chat`](#is_allowed_chat) | Function | L91–L101 | `bool` | Executes core domain logic for `is_allowed_chat`. |
-| [`is_voice_request_allowed`](#is_voice_request_allowed) | Function | L104–L123 | `bool` | Executes core domain logic for `is_voice_request_allowe... |
-| [`extract_audio_meta`](#extract_audio_meta) | Function | L126–L152 | `AudioMeta` | Extracts audio or video note metadata from inbound Tele... |
-| [`acquire_user_slot`](#acquire_user_slot) | Function | L155–L174 | `bool` | Atomically reserves an in-flight transcription slot for... |
-| [`release_user_slot`](#release_user_slot) | Function | L177–L190 | `None` | Releases the in-flight transcription slot after process... |
-| [`validate_audio_limits`](#validate_audio_limits) | Function | L193–L212 | `str | None` | Validates audio duration and payload size against safet... |
-| [`log_voice_request`](#log_voice_request) | Function | L215–L230 | `None` | Executes core domain logic for `log_voice_request`. |
-| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L233–L246 | `str` | Executes core domain logic for `_determine_audio_extens... |
-| [`download_temp_audio`](#download_temp_audio) | Function | L249–L274 | `str` | Downloads Telegram media payload directly to RAM-disk (... |
-| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L277–L291 | `None` | Safely unlinks temporary audio file from ephemeral stor... |
-| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L294–L306 | `None` | Sends subsequent chunks of long transcription to Telegr... |
-| [`deliver_transcription`](#deliver_transcription) | Function | L309–L333 | `None` | Delivers formatted transcription text with automatic mu... |
-| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L336–L352 | `str` | Executes core domain logic for `_download_and_transcrib... |
-| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L355–L387 | `None` | Executes core domain logic for `process_audio_pipeline`... |
-| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L390–L411 | `bool` | Executes core domain logic for `_check_and_acquire_voic... |
-| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L415–L436 | `None` | Executes core domain logic for `handle_voice_or_video_n... |
+| [`AudioMeta.__init__`](#audiometa__init__) | Method | L51–L78 | `Any` | Инициализирует контейнер метаданных входящего голосовог... |
+| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L80–L90 | `Any` | Обеспечивает распаковку основных полей: file_id, durati... |
+| [`is_allowed_chat`](#is_allowed_chat) | Function | L93–L103 | `bool` | Проверяет, разрешена ли обработка голосовых сообщений в... |
+| [`is_voice_request_allowed`](#is_voice_request_allowed) | Function | L106–L125 | `bool` | Проверяет, можно ли тратить GPU-очередь STT на это сооб... |
+| [`extract_audio_meta`](#extract_audio_meta) | Function | L128–L154 | `AudioMeta` | Извлекает нормализованные метаданные аудио- или видеосо... |
+| [`acquire_user_slot`](#acquire_user_slot) | Function | L157–L176 | `bool` | Атомарно проверяет и резервирует слот параллельной обра... |
+| [`release_user_slot`](#release_user_slot) | Function | L179–L192 | `None` | Освобождает занятый слот пользователя после завершения ... |
+| [`validate_audio_limits`](#validate_audio_limits) | Function | L195–L214 | `str \| None` | Проверяет длительность и размер файла на соответствие л... |
+| [`log_voice_request`](#log_voice_request) | Function | L217–L232 | `None` | Логирует структурированную информацию о входящем аудиос... |
+| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L235–L248 | `str` | Извлекает расширение исходного медиафайла Telegram из е... |
+| [`download_temp_audio`](#download_temp_audio) | Function | L251–L276 | `str` | Скачивает медиафайл из Telegram в общий с сервисом stt ... |
+| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L279–L293 | `None` | Удаляет временный аудиофайл с диска с безопасным подавл... |
+| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L296–L308 | `None` | Отправляет последующие части длинного сообщения с экран... |
+| [`deliver_transcription`](#deliver_transcription) | Function | L311–L335 | `None` | Отправляет результат распознавания текста пользователю ... |
+| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L338–L354 | `str` | Выполняет полный цикл скачивания и распознавания речи с... |
+| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L357–L388 | `None` | Координирует сквозной процесс транскрибации от скачиван... |
+| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L391–L412 | `bool` | Проверяет лимиты аудиосообщения и резервирует слот поль... |
+| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L416–L437 | `None` | Точка входа для голосовых сообщений и видео-кружочков в... |
 
 ---
 
@@ -46,19 +39,19 @@ graph LR
 
 ## Class Model: `AudioMeta`
 
-Encapsulates domain entities and data transfer logic for `AudioMeta`.
+Контейнер нормализованных метаданных аудиосообщения Telegram.
 
 ### `AudioMeta.__init__`
 ```python
 def __init__( self, file_id: str, duration: int, sender: str, file_size: int = 0, user_id: int = 0, username: str = "",
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L49-L76`](../../bot/handlers/user/voice_transcribe.py#L49-L76)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L51-L78`](../../bot/handlers/user/voice_transcribe.py#L51-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__init__`.
+Инициализирует контейнер метаданных входящего голосового или видеосообщения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -94,12 +87,12 @@ result = __init__(file_id=..., duration=..., sender=...)
 def __iter__(self)
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L78-L88`](../../bot/handlers/user/voice_transcribe.py#L78-L88)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L80-L90`](../../bot/handlers/user/voice_transcribe.py#L80-L90)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__iter__`.
+Обеспечивает распаковку основных полей: file_id, duration, sender.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -125,12 +118,12 @@ result = __iter__()
 def is_allowed_chat(chat_id: int, chat_type: str) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L91-L101`](../../bot/handlers/user/voice_transcribe.py#L91-L101)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L93-L103`](../../bot/handlers/user/voice_transcribe.py#L93-L103)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_allowed_chat`.
+Проверяет, разрешена ли обработка голосовых сообщений в данном чате.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -159,12 +152,12 @@ result = is_allowed_chat(chat_id=..., chat_type=...)
 async def is_voice_request_allowed(message: Message) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L104-L123`](../../bot/handlers/user/voice_transcribe.py#L104-L123)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L106-L125`](../../bot/handlers/user/voice_transcribe.py#L106-L125)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_voice_request_allowed`.
+Проверяет, можно ли тратить GPU-очередь STT на это сообщение.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -192,12 +185,12 @@ result = await is_voice_request_allowed(message=...)
 def extract_audio_meta(message: Message) -> AudioMeta
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L126-L152`](../../bot/handlers/user/voice_transcribe.py#L126-L152)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L128-L154`](../../bot/handlers/user/voice_transcribe.py#L128-L154)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AudioMeta`
 
 #### Overview & Architectural Purpose
-Extracts audio or video note metadata from inbound Telegram message.
+Извлекает нормализованные метаданные аудио- или видеосообщения Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -225,12 +218,12 @@ result = extract_audio_meta(message=...)
 def acquire_user_slot(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L155-L174`](../../bot/handlers/user/voice_transcribe.py#L155-L174)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L157-L176`](../../bot/handlers/user/voice_transcribe.py#L157-L176)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Atomically reserves an in-flight transcription slot for user.
+Атомарно проверяет и резервирует слот параллельной обработки для пользователя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -258,12 +251,12 @@ result = acquire_user_slot(user_id=...)
 def release_user_slot(user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L177-L190`](../../bot/handlers/user/voice_transcribe.py#L177-L190)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L179-L192`](../../bot/handlers/user/voice_transcribe.py#L179-L192)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Releases the in-flight transcription slot after processing completes.
+Освобождает занятый слот пользователя после завершения транскрибации.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -291,12 +284,12 @@ result = release_user_slot(user_id=...)
 def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L193-L212`](../../bot/handlers/user/voice_transcribe.py#L193-L212)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L195-L214`](../../bot/handlers/user/voice_transcribe.py#L195-L214)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Validates audio duration and payload size against safety boundaries.
+Проверяет длительность и размер файла на соответствие лимитам Telegram и модели.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -326,12 +319,12 @@ result = validate_audio_limits(duration=..., file_size=..., sender=...)
 def log_voice_request(meta: AudioMeta) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L215-L230`](../../bot/handlers/user/voice_transcribe.py#L215-L230)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L217-L232`](../../bot/handlers/user/voice_transcribe.py#L217-L232)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `log_voice_request`.
+Логирует структурированную информацию о входящем аудиосообщении.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -359,12 +352,12 @@ result = log_voice_request(meta=...)
 def _determine_audio_extension(file_path: str | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L233-L246`](../../bot/handlers/user/voice_transcribe.py#L233-L246)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L235-L248`](../../bot/handlers/user/voice_transcribe.py#L235-L248)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_determine_audio_extension`.
+Извлекает расширение исходного медиафайла Telegram из его пути.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -392,12 +385,12 @@ result = _determine_audio_extension(file_path=...)
 async def download_temp_audio(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L249-L274`](../../bot/handlers/user/voice_transcribe.py#L249-L274)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L251-L276`](../../bot/handlers/user/voice_transcribe.py#L251-L276)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Downloads Telegram media payload directly to RAM-disk (/dev/shm).
+Скачивает медиафайл из Telegram в общий с сервисом stt tmpfs-том.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -425,12 +418,12 @@ result = await download_temp_audio(file_id=...)
 def cleanup_temp_file(path: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L277-L291`](../../bot/handlers/user/voice_transcribe.py#L277-L291)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L279-L293`](../../bot/handlers/user/voice_transcribe.py#L279-L293)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Safely unlinks temporary audio file from ephemeral storage.
+Удаляет временный аудиофайл с диска с безопасным подавлением ошибок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -458,12 +451,12 @@ result = cleanup_temp_file(path=...)
 async def send_overflow_chunks(message: Message, chunks: list[str]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L294-L306`](../../bot/handlers/user/voice_transcribe.py#L294-L306)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L296-L308`](../../bot/handlers/user/voice_transcribe.py#L296-L308)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Sends subsequent chunks of long transcription to Telegram topic.
+Отправляет последующие части длинного сообщения с экранированием HTML.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -492,12 +485,12 @@ result = await send_overflow_chunks(message=..., chunks=...)
 async def deliver_transcription( message: Message, status_msg: Message, sender_name: str, duration: int, text: str, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L309-L333`](../../bot/handlers/user/voice_transcribe.py#L309-L333)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L311-L335`](../../bot/handlers/user/voice_transcribe.py#L311-L335)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Delivers formatted transcription text with automatic multi-chunk splitting.
+Отправляет результат распознавания текста пользователю или в топик.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -529,12 +522,12 @@ result = await deliver_transcription(message=..., status_msg=..., sender_name=..
 async def _download_and_transcribe(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L336-L352`](../../bot/handlers/user/voice_transcribe.py#L336-L352)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L338-L354`](../../bot/handlers/user/voice_transcribe.py#L338-L354)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_download_and_transcribe`.
+Выполняет полный цикл скачивания и распознавания речи с контролем таймаута.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -562,12 +555,12 @@ result = await _download_and_transcribe(file_id=...)
 async def process_audio_pipeline( file_id: str, sender: str, duration: int, message: Message, status_msg: Message, user_id: int = 0, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L355-L387`](../../bot/handlers/user/voice_transcribe.py#L355-L387)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L357-L388`](../../bot/handlers/user/voice_transcribe.py#L357-L388)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `process_audio_pipeline`.
+Координирует сквозной процесс транскрибации от скачивания до отправки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -600,12 +593,12 @@ result = await process_audio_pipeline(file_id=..., sender=..., duration=...)
 async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L390-L411`](../../bot/handlers/user/voice_transcribe.py#L390-L411)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L391-L412`](../../bot/handlers/user/voice_transcribe.py#L391-L412)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_check_and_acquire_voice`.
+Проверяет лимиты аудиосообщения и резервирует слот пользователя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -634,12 +627,12 @@ result = await _check_and_acquire_voice(message=..., meta=...)
 async def handle_voice_or_video_note(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L415-L436`](../../bot/handlers/user/voice_transcribe.py#L415-L436)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L416-L437`](../../bot/handlers/user/voice_transcribe.py#L416-L437)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_voice_or_video_note`.
+Точка входа для голосовых сообщений и видео-кружочков во всех топиках.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

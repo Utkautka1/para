@@ -1,45 +1,34 @@
 # Component Reference: `bot/handlers/admin/mute.py`
 > **File Path**: [`bot/handlers/admin/mute.py`](../../bot/handlers/admin/mute.py)
 > **Subsystem**: `Moderation Ban Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/mute.py` module implements core operational logic for the `Moderation Ban Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры команд модерации и ограничения отправки сообщений (Мут в топиках).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`cache_user_from_message`](#cache_user_from_message) | Function | L21–L42 | `None` | Executes core domain logic for `cache_user_from_message... |
-| [`_find_in_admins`](#_find_in_admins) | Function | L45–L64 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_admins`. |
-| [`_find_in_registry`](#_find_in_registry) | Function | L67–L87 | `tuple[int, str] | None` | Executes core domain logic for `_find_in_registry`. |
-| [`resolve_user_id_by_username`](#resolve_user_id_by_username) | Function | L90–L109 | `tuple[int, str] | None` | Executes core domain logic for `resolve_user_id_by_user... |
-| [`_resolve_from_entities`](#_resolve_from_entities) | Function | L112–L129 | `tuple[int, str] | None` | Executes core domain logic for `_resolve_from_entities`... |
-| [`resolve_target_identity`](#resolve_target_identity) | Function | L132–L155 | `tuple[int | None, str]` | Executes core domain logic for `resolve_target_identity... |
-| [`_strip_mute_prefix`](#_strip_mute_prefix) | Function | L158–L173 | `str` | Executes core domain logic for `_strip_mute_prefix`. |
-| [`parse_reply_mute_args`](#parse_reply_mute_args) | Function | L176–L196 | `tuple[str, str]` | Parses and extracts structured entities from `parse_rep... |
-| [`parse_standalone_mute_args`](#parse_standalone_mute_args) | Function | L199–L220 | `tuple[int | None, str, str, str]` | Parses and extracts structured entities from `parse_sta... |
-| [`extract_target_id_and_args`](#extract_target_id_and_args) | Function | L223–L238 | `tuple[int | None, str, str, str]` | Executes core domain logic for `extract_target_id_and_a... |
-| [`apply_user_restriction`](#apply_user_restriction) | Function | L241–L255 | `None` | Executes core domain logic for `apply_user_restriction`... |
-| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L258–L278 | `None` | Executes core domain logic for `_apply_unmute_permissio... |
-| [`send_mute_notification`](#send_mute_notification) | Function | L281–L295 | `None` | Dispatches notification message via Telegram API for `s... |
-| [`_safe_delete_message`](#_safe_delete_message) | Function | L298–L317 | `None` | Executes core domain logic for `_safe_delete_message`. |
-| [`_build_mute_report`](#_build_mute_report) | Function | L320–L335 | `str` | Executes core domain logic for `_build_mute_report`. |
-| [`is_mute_command`](#is_mute_command) | Function | L338–L353 | `bool` | Executes core domain logic for `is_mute_command`. |
-| [`is_unmute_command`](#is_unmute_command) | Function | L356–L371 | `bool` | Executes core domain logic for `is_unmute_command`. |
-| [`cmd_mute_user`](#cmd_mute_user) | Function | L375–L402 | `None` | Processes inbound Telegram slash command for `cmd_mute_... |
-| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L406–L432 | `None` | Processes inbound Telegram slash command for `cmd_unmut... |
+| [`cache_user_from_message`](#cache_user_from_message) | Function | L22–L43 | `None` | Сохраняет username и user_id авторов сообщений и реплае... |
+| [`_find_in_admins`](#_find_in_admins) | Function | L46–L65 | `tuple[int, str] \| None` | Ищет пользователя по юзернейму в списке администраторов... |
+| [`_find_in_registry`](#_find_in_registry) | Function | L68–L86 | `tuple[int, str] \| None` | Ищет студента в локальном реестре одногруппников по юзе... |
+| [`resolve_user_id_by_username`](#resolve_user_id_by_username) | Function | L89–L108 | `tuple[int, str] \| None` | Выполняет каскадный поиск Telegram ID по строковому юзе... |
+| [`_resolve_from_entities`](#_resolve_from_entities) | Function | L111–L128 | `tuple[int, str] \| None` | Извлекает Telegram ID из скрытых сущностей text_mention... |
+| [`resolve_target_identity`](#resolve_target_identity) | Function | L131–L154 | `tuple[int \| None, str]` | Определяет идентификатор и имя цели из текстовых аргуме... |
+| [`_strip_mute_prefix`](#_strip_mute_prefix) | Function | L157–L172 | `str` | Отрезает команду мута (.закрыть рот, .закрой рот) от на... |
+| [`parse_reply_mute_args`](#parse_reply_mute_args) | Function | L175–L195 | `tuple[str, str]` | Извлекает длительность и причину мута при ответе на чуж... |
+| [`parse_standalone_mute_args`](#parse_standalone_mute_args) | Function | L198–L219 | `tuple[int \| None, str, str, str]` | Парсит аргументы команды мута без реплая (с явным ID/@u... |
+| [`extract_target_id_and_args`](#extract_target_id_and_args) | Function | L222–L237 | `tuple[int \| None, str, str, str]` | Унифицированно извлекает параметры цели мута из реплая ... |
+| [`apply_user_restriction`](#apply_user_restriction) | Function | L240–L254 | `None` | Накладывает ограничение на отправку сообщений пользоват... |
+| [`_apply_unmute_permissions`](#_apply_unmute_permissions) | Function | L257–L277 | `None` | Восстанавливает стандартные права пользователя на отпра... |
+| [`send_mute_notification`](#send_mute_notification) | Function | L280–L294 | `None` | Отправляет публичный или приватный отчет о наложении ли... |
+| [`_safe_delete_message`](#_safe_delete_message) | Function | L297–L316 | `None` | Безопасно удаляет командное сообщение в супергруппе без... |
+| [`_build_mute_report`](#_build_mute_report) | Function | L319–L334 | `str` | Формирует стильный HTML-текст карточки уведомления о бл... |
+| [`is_mute_command`](#is_mute_command) | Function | L337–L352 | `bool` | Проверяет, соответствует ли входящий текст команде нало... |
+| [`is_unmute_command`](#is_unmute_command) | Function | L355–L370 | `bool` | Проверяет, соответствует ли входящий текст команде доср... |
+| [`cmd_mute_user`](#cmd_mute_user) | Function | L374–L401 | `None` | Исполняет команду ограничения отправки сообщений наруши... |
+| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L405–L431 | `None` | Снимает ограничения на отправку сообщений с ранее забло... |
 
 ---
 
@@ -50,12 +39,12 @@ graph LR
 def cache_user_from_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L21-L42`](../../bot/handlers/admin/mute.py#L21-L42)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L22-L43`](../../bot/handlers/admin/mute.py#L22-L43)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `cache_user_from_message`.
+Сохраняет username и user_id авторов сообщений и реплаев в Redis-кэш.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -83,12 +72,12 @@ result = cache_user_from_message(message=...)
 async def _find_in_admins(bot, chat_id: int, clean: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L45-L64`](../../bot/handlers/admin/mute.py#L45-L64)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L46-L65`](../../bot/handlers/admin/mute.py#L46-L65)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, str] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_in_admins`.
+Ищет пользователя по юзернейму в списке администраторов группы Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -118,12 +107,12 @@ result = await _find_in_admins(bot=..., chat_id=..., clean=...)
 def _find_in_registry(clean: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L67-L87`](../../bot/handlers/admin/mute.py#L67-L87)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L68-L86`](../../bot/handlers/admin/mute.py#L68-L86)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, str] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_in_registry`.
+Ищет студента в локальном реестре одногруппников по юзернейму.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -151,12 +140,12 @@ result = _find_in_registry(clean=...)
 async def resolve_user_id_by_username(bot, chat_id: int, username: str) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L90-L109`](../../bot/handlers/admin/mute.py#L90-L109)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L89-L108`](../../bot/handlers/admin/mute.py#L89-L108)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, str] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_user_id_by_username`.
+Выполняет каскадный поиск Telegram ID по строковому юзернейму.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -186,12 +175,12 @@ result = await resolve_user_id_by_username(bot=..., chat_id=..., username=...)
 def _resolve_from_entities(message: Message) -> tuple[int, str] | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L112-L129`](../../bot/handlers/admin/mute.py#L112-L129)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L111-L128`](../../bot/handlers/admin/mute.py#L111-L128)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, str] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_from_entities`.
+Извлекает Telegram ID из скрытых сущностей text_mention в сообщении.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -219,12 +208,12 @@ result = _resolve_from_entities(message=...)
 async def resolve_target_identity(message: Message, target_raw: str) -> tuple[int | None, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L132-L155`](../../bot/handlers/admin/mute.py#L132-L155)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L131-L154`](../../bot/handlers/admin/mute.py#L131-L154)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_target_identity`.
+Определяет идентификатор и имя цели из текстовых аргументов модератора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -253,12 +242,12 @@ result = await resolve_target_identity(message=..., target_raw=...)
 def _strip_mute_prefix(text: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L158-L173`](../../bot/handlers/admin/mute.py#L158-L173)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L157-L172`](../../bot/handlers/admin/mute.py#L157-L172)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_strip_mute_prefix`.
+Отрезает команду мута (.закрыть рот, .закрой рот) от начала строки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -286,12 +275,12 @@ result = _strip_mute_prefix(text=...)
 def parse_reply_mute_args(text: str) -> tuple[str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L176-L196`](../../bot/handlers/admin/mute.py#L176-L196)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L175-L195`](../../bot/handlers/admin/mute.py#L175-L195)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, str]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_reply_mute_args`.
+Извлекает длительность и причину мута при ответе на чужое сообщение (reply).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -319,12 +308,12 @@ result = parse_reply_mute_args(text=...)
 async def parse_standalone_mute_args(message: Message) -> tuple[int | None, str, str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L199-L220`](../../bot/handlers/admin/mute.py#L199-L220)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L198-L219`](../../bot/handlers/admin/mute.py#L198-L219)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str, str, str]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_standalone_mute_args`.
+Парсит аргументы команды мута без реплая (с явным ID/@username).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -352,12 +341,12 @@ result = await parse_standalone_mute_args(message=...)
 async def extract_target_id_and_args(message: Message) -> tuple[int | None, str, str, str]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L223-L238`](../../bot/handlers/admin/mute.py#L223-L238)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L222-L237`](../../bot/handlers/admin/mute.py#L222-L237)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int | None, str, str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_target_id_and_args`.
+Унифицированно извлекает параметры цели мута из реплая или текста команды.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -385,12 +374,12 @@ result = await extract_target_id_and_args(message=...)
 async def apply_user_restriction(bot, chat_id: int, user_id: int, duration_sec: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L241-L255`](../../bot/handlers/admin/mute.py#L241-L255)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L240-L254`](../../bot/handlers/admin/mute.py#L240-L254)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `apply_user_restriction`.
+Накладывает ограничение на отправку сообщений пользователю через Bot API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -421,12 +410,12 @@ result = await apply_user_restriction(bot=..., chat_id=..., user_id=...)
 async def _apply_unmute_permissions(bot, chat_id: int, user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L258-L278`](../../bot/handlers/admin/mute.py#L258-L278)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L257-L277`](../../bot/handlers/admin/mute.py#L257-L277)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_unmute_permissions`.
+Восстанавливает стандартные права пользователя на отправку всех типов сообщений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -456,12 +445,12 @@ result = await _apply_unmute_permissions(bot=..., chat_id=..., user_id=...)
 async def send_mute_notification(message: Message, res_text: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L281-L295`](../../bot/handlers/admin/mute.py#L281-L295)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L280-L294`](../../bot/handlers/admin/mute.py#L280-L294)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Dispatches notification message via Telegram API for `send_mute_notification`.
+Отправляет публичный или приватный отчет о наложении либо снятии мута.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -490,12 +479,12 @@ result = await send_mute_notification(message=..., res_text=...)
 async def _safe_delete_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L298-L317`](../../bot/handlers/admin/mute.py#L298-L317)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L297-L316`](../../bot/handlers/admin/mute.py#L297-L316)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_safe_delete_message`.
+Безопасно удаляет командное сообщение в супергруппе без падения от ошибок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -523,12 +512,12 @@ result = await _safe_delete_message(message=...)
 def _build_mute_report(target_name: str, time_raw: str, reason: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L320-L335`](../../bot/handlers/admin/mute.py#L320-L335)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L319-L334`](../../bot/handlers/admin/mute.py#L319-L334)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_mute_report`.
+Формирует стильный HTML-текст карточки уведомления о блокировке пользователя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -558,12 +547,12 @@ result = _build_mute_report(target_name=..., time_raw=..., reason=...)
 def is_mute_command(text: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L338-L353`](../../bot/handlers/admin/mute.py#L338-L353)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L337-L352`](../../bot/handlers/admin/mute.py#L337-L352)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_mute_command`.
+Проверяет, соответствует ли входящий текст команде наложения мута.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -591,12 +580,12 @@ result = is_mute_command(text=...)
 def is_unmute_command(text: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L356-L371`](../../bot/handlers/admin/mute.py#L356-L371)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L355-L370`](../../bot/handlers/admin/mute.py#L355-L370)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_unmute_command`.
+Проверяет, соответствует ли входящий текст команде досрочного размута.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -624,12 +613,12 @@ result = is_unmute_command(text=...)
 async def cmd_mute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L375-L402`](../../bot/handlers/admin/mute.py#L375-L402)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L374-L401`](../../bot/handlers/admin/mute.py#L374-L401)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_mute_user`.
+Исполняет команду ограничения отправки сообщений нарушителю в чате группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -657,12 +646,12 @@ result = await cmd_mute_user(message=...)
 async def cmd_unmute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L406-L432`](../../bot/handlers/admin/mute.py#L406-L432)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L405-L431`](../../bot/handlers/admin/mute.py#L405-L431)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_unmute_user`.
+Снимает ограничения на отправку сообщений с ранее заблокированного участника.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

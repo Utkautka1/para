@@ -1,37 +1,26 @@
 # Component Reference: `services/gamification_admin.py`
 > **File Path**: [`services/gamification_admin.py`](../../services/gamification_admin.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Gamification Admin Operations`
 
-## 1. Architectural Role & Responsibilities
-The `services/gamification_admin.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Ручное управление геймификацией из админ-панели старосты.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`list_students`](#list_students) | Function | L51–L54 | `list[StudentProfile]` | Executes core domain logic for `list_students`. |
-| [`_target_of`](#_target_of) | Function | L57–L62 | `StudentTarget` | Executes core domain logic for `_target_of`. |
-| [`get_student`](#get_student) | Function | L65–L72 | `StudentTarget | None` | Retrieves and resolves domain data for `get_student`. |
-| [`get_bonuses`](#get_bonuses) | Function | L75–L79 | `tuple[int, int]` | Retrieves and resolves domain data for `get_bonuses`. |
-| [`_notify`](#_notify) | Function | L82–L85 | `None` | Executes core domain logic for `_notify`. |
-| [`format_bonus_notification`](#format_bonus_notification) | Function | L88–L91 | `str` | Formats message payload and presentation markup for `fo... |
-| [`adjust_bonus`](#adjust_bonus) | Function | L94–L105 | `int` | Executes core domain logic for `adjust_bonus`. |
-| [`bonus_for_total`](#bonus_for_total) | Function | L108–L118 | `int` | Executes core domain logic for `bonus_for_total`. |
-| [`set_total`](#set_total) | Function | L121–L135 | `int` | Persists state updates for `set_total`. |
-| [`reset_bonuses`](#reset_bonuses) | Function | L138–L144 | `None` | Executes core domain logic for `reset_bonuses`. |
-| [`toggle_achievement`](#toggle_achievement) | Function | L147–L165 | `bool` | Executes core domain logic for `toggle_achievement`. |
+| [`list_students`](#list_students) | Function | L51–L54 | `list[StudentProfile]` | Возвращает профили всех студентов журнала в алфавитном ... |
+| [`_target_of`](#_target_of) | Function | L57–L62 | `StudentTarget` | Определяет ФИО-владельца и Telegram ID студента по реес... |
+| [`get_student`](#get_student) | Function | L65–L72 | `StudentTarget \| None` | Находит студента по индексу в алфавитном списке. |
+| [`get_bonuses`](#get_bonuses) | Function | L75–L79 | `tuple[int, int]` | Возвращает (бонус XP, бонус очков гильдии) студента. |
+| [`_notify`](#_notify) | Function | L82–L85 | `None` | Сообщает студенту об изменении, если у него привязан Te... |
+| [`format_bonus_notification`](#format_bonus_notification) | Function | L88–L91 | `str` | Текст уведомления студенту о ручном начислении или спис... |
+| [`adjust_bonus`](#adjust_bonus) | Function | L94–L105 | `int` | Прибавляет к бонусу студента delta (отрицательная — спи... |
+| [`bonus_for_total`](#bonus_for_total) | Function | L108–L118 | `int` | Считает бонус, при котором у студента будет ровно total... |
+| [`set_total`](#set_total) | Function | L121–L135 | `int` | Выставляет студенту ровно total XP или очков гильдии и ... |
+| [`reset_bonuses`](#reset_bonuses) | Function | L138–L144 | `None` | Обнуляет оба бонуса студента и уведомляет его. |
+| [`toggle_achievement`](#toggle_achievement) | Function | L147–L165 | `bool` | Выдаёт ачивку, если её нет, или снимает, если есть, и у... |
 
 ---
 
@@ -39,7 +28,7 @@ graph LR
 
 ## Class Model: `StudentTarget`
 
-Encapsulates domain entities and data transfer logic for `StudentTarget`.
+Студент, которым управляет староста.
 
 ### `list_students`
 ```python
@@ -51,7 +40,7 @@ async def list_students() -> list[StudentProfile]
 - **Return Contract**: `list[StudentProfile]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `list_students`.
+Возвращает профили всех студентов журнала в алфавитном порядке.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -82,7 +71,7 @@ def _target_of(profile: StudentProfile) -> StudentTarget
 - **Return Contract**: `StudentTarget`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_target_of`.
+Определяет ФИО-владельца и Telegram ID студента по реестру одногруппников.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -115,7 +104,7 @@ async def get_student(index: int) -> StudentTarget | None
 - **Return Contract**: `StudentTarget | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_student`.
+Находит студента по индексу в алфавитном списке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -148,7 +137,7 @@ async def get_bonuses(target: StudentTarget) -> tuple[int, int]
 - **Return Contract**: `tuple[int, int]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_bonuses`.
+Возвращает (бонус XP, бонус очков гильдии) студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -181,7 +170,7 @@ async def _notify(bot: Any, target: StudentTarget, text: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_notify`.
+Сообщает студенту об изменении, если у него привязан Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -216,7 +205,7 @@ def format_bonus_notification(label: str, delta: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_bonus_notification`.
+Текст уведомления студенту о ручном начислении или списании.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -250,7 +239,7 @@ async def adjust_bonus(bot: Any, target: StudentTarget, kind: str, delta: int) -
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `adjust_bonus`.
+Прибавляет к бонусу студента delta (отрицательная — списание) и уведомляет его.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -286,7 +275,7 @@ def bonus_for_total(target: StudentTarget, kind: str, total: int, bonuses: tuple
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `bonus_for_total`.
+Считает бонус, при котором у студента будет ровно total XP или очков гильдии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -322,7 +311,7 @@ async def set_total(bot: Any, target: StudentTarget, kind: str, total: int) -> i
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Persists state updates for `set_total`.
+Выставляет студенту ровно total XP или очков гильдии и уведомляет его.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -358,7 +347,7 @@ async def reset_bonuses(bot: Any, target: StudentTarget) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `reset_bonuses`.
+Обнуляет оба бонуса студента и уведомляет его.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -392,7 +381,7 @@ async def toggle_achievement(bot: Any, target: StudentTarget, achievement_id: st
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `toggle_achievement`.
+Выдаёт ачивку, если её нет, или снимает, если есть, и уведомляет студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -6,8 +6,8 @@
 > **Persistence Backend**: `Stateless High-Throughput Proxy`
 > **Service Level Objective**: `< 0.3ms gRPC RPC / < 2ms REST Endpoint`
 
-## 1. Architectural Role & Responsibilities
-The `api.py` module implements core operational logic for the `Ingress Gateway` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Точка входа сервиса para-api (FastAPI + gRPC Server + Swagger UI).
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -20,10 +20,10 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_InvalidHttpFilter.filter`](#_invalidhttpfilterfilter) | Method | L28–L38 | `bool` | Executes core domain logic for `filter`. |
-| [`lifespan`](#lifespan) | Function | L42–L65 | `AsyncGenerator[None, None]` | Executes core domain logic for `lifespan`. |
+| [`_InvalidHttpFilter.filter`](#_invalidhttpfilterfilter) | Method | L30–L40 | `bool` | Фильтрует мусорные записи логов о некорректных HTTP-зап... |
+| [`lifespan`](#lifespan) | Function | L44–L69 | `AsyncGenerator[None, None]` | Управляет жизненным циклом gRPC-сервера и соединений Fa... |
 
 ---
 
@@ -31,19 +31,19 @@ graph TD
 
 ## Class Model: `_InvalidHttpFilter`
 
-Encapsulates domain entities and data transfer logic for `_InvalidHttpFilter`.
+Фильтр сообщений логов для подавления шума сетевых сканеров.
 
 ### `_InvalidHttpFilter.filter`
 ```python
 def filter(self, record: logging.LogRecord) -> bool
 ```
 
-- **Source Reference**: [`api.py#L28-L38`](../../api.py#L28-L38)
+- **Source Reference**: [`api.py#L30-L40`](../../api.py#L30-L40)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `filter`.
+Фильтрует мусорные записи логов о некорректных HTTP-запросах.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -71,12 +71,12 @@ result = filter(record=...)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]
 ```
 
-- **Source Reference**: [`api.py#L42-L65`](../../api.py#L42-L65)
+- **Source Reference**: [`api.py#L44-L69`](../../api.py#L44-L69)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AsyncGenerator[None, None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `lifespan`.
+Управляет жизненным циклом gRPC-сервера и соединений FastAPI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

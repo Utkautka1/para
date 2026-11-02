@@ -1,43 +1,32 @@
 # Component Reference: `bot/handlers/admin/gamification.py`
 > **File Path**: [`bot/handlers/admin/gamification.py`](../../bot/handlers/admin/gamification.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Admin Gamification Panel`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/admin/gamification.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры раздела «Ачивки и очки» админ-панели (только для ALLOWED_USER_ID).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_render`](#_render) | Function | L28–L34 | `None` | Executes core domain logic for `_render`. |
-| [`_load_target`](#_load_target) | Function | L37–L42 | `StudentTarget | None` | Executes core domain logic for `_load_target`. |
-| [`_show_card`](#_show_card) | Function | L45–L52 | `None` | Executes core domain logic for `_show_card`. |
-| [`game_students`](#game_students) | Function | L56–L64 | `None` | Executes core domain logic for `game_students`. |
-| [`game_card`](#game_card) | Function | L68–L78 | `None` | Executes core domain logic for `game_card`. |
-| [`game_ask_amount`](#game_ask_amount) | Function | L82–L98 | `None` | Executes core domain logic for `game_ask_amount`. |
-| [`game_enter_amount`](#game_enter_amount) | Function | L102–L121 | `None` | Executes core domain logic for `game_enter_amount`. |
-| [`_delete_quietly`](#_delete_quietly) | Function | L124–L129 | `None` | Executes core domain logic for `_delete_quietly`. |
-| [`_edit_panel`](#_edit_panel) | Function | L132–L138 | `None` | Executes core domain logic for `_edit_panel`. |
-| [`_apply_amount`](#_apply_amount) | Function | L141–L147 | `None` | Executes core domain logic for `_apply_amount`. |
-| [`_edit_card`](#_edit_card) | Function | L150–L155 | `None` | Executes core domain logic for `_edit_card`. |
-| [`game_bonus`](#game_bonus) | Function | L159–L172 | `None` | Executes core domain logic for `game_bonus`. |
-| [`game_reset`](#game_reset) | Function | L176–L188 | `None` | Executes core domain logic for `game_reset`. |
-| [`game_categories`](#game_categories) | Function | L192–L204 | `None` | Executes core domain logic for `game_categories`. |
-| [`_show_category`](#_show_category) | Function | L207–L213 | `None` | Executes core domain logic for `_show_category`. |
-| [`game_category`](#game_category) | Function | L217–L225 | `None` | Executes core domain logic for `game_category`. |
-| [`game_toggle`](#game_toggle) | Function | L229–L242 | `None` | Executes core domain logic for `game_toggle`. |
+| [`_render`](#_render) | Function | L28–L34 | `None` | Перерисовывает экран, игнорируя «message is not modifie... |
+| [`_load_target`](#_load_target) | Function | L37–L42 | `StudentTarget \| None` | Находит студента по индексу или сообщает, что список ус... |
+| [`_show_card`](#_show_card) | Function | L45–L52 | `None` | Показывает карточку студента со свежими XP, очками и бо... |
+| [`game_students`](#game_students) | Function | L56–L64 | `None` | Список студентов для управления ачивками и очками :para... |
+| [`game_card`](#game_card) | Function | L68–L78 | `None` | Карточка студента (и отмена ввода числа — та же кнопка ... |
+| [`game_ask_amount`](#game_ask_amount) | Function | L82–L98 | `None` | Превращает карточку в запрос числа для бонуса XP или оч... |
+| [`game_enter_amount`](#game_enter_amount) | Function | L102–L121 | `None` | Применяет вписанное число (N — ровно N, +N/−N — прибави... |
+| [`_delete_quietly`](#_delete_quietly) | Function | L124–L129 | `None` | Удаляет введённое старостой сообщение, чтобы в чате ост... |
+| [`_edit_panel`](#_edit_panel) | Function | L132–L138 | `None` | Меняет сообщение-панель по id, игнорируя «message is no... |
+| [`_apply_amount`](#_apply_amount) | Function | L141–L147 | `None` | Выставляет итоговое значение или прибавляет к нему по р... |
+| [`_edit_card`](#_edit_card) | Function | L150–L155 | `None` | Возвращает на место запроса свежую карточку студента. |
+| [`game_bonus`](#game_bonus) | Function | L159–L172 | `None` | Начисление или списание бонусных XP / очков гильдии :pa... |
+| [`game_reset`](#game_reset) | Function | L176–L188 | `None` | Обнуление бонусов студента :param call: CallbackQuery :... |
+| [`game_categories`](#game_categories) | Function | L192–L204 | `None` | Категории ачивок студента :param call: CallbackQuery :p... |
+| [`_show_category`](#_show_category) | Function | L207–L213 | `None` | Показывает ачивки категории с отметками выдано / не выд... |
+| [`game_category`](#game_category) | Function | L217–L225 | `None` | Ачивки одной категории :param call: CallbackQuery :para... |
+| [`game_toggle`](#game_toggle) | Function | L229–L242 | `None` | Выдать или снять ачивку :param call: CallbackQuery :par... |
 
 ---
 
@@ -53,7 +42,7 @@ async def _render(call: CallbackQuery, text: str, markup: InlineKeyboardMarkup) 
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_render`.
+Перерисовывает экран, игнорируя «message is not modified».
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -88,7 +77,7 @@ async def _load_target(call: CallbackQuery, idx: int) -> StudentTarget | None
 - **Return Contract**: `StudentTarget | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_load_target`.
+Находит студента по индексу или сообщает, что список устарел.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -122,7 +111,7 @@ async def _show_card(call: CallbackQuery, idx: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_show_card`.
+Показывает карточку студента со свежими XP, очками и бонусами.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -156,7 +145,7 @@ async def game_students(call: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_students`.
+Список студентов для управления ачивками и очками :param call: CallbackQuery :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -189,7 +178,7 @@ async def game_card(call: CallbackQuery, callback_data: tgame.GameAdminCallback,
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_card`.
+Карточка студента (и отмена ввода числа — та же кнопка «Назад») :param call: CallbackQuery :param callback_data: индекс студента :param state: FSMContext :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -224,7 +213,7 @@ async def game_ask_amount(call: CallbackQuery, callback_data: tgame.GameAdminCal
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_ask_amount`.
+Превращает карточку в запрос числа для бонуса XP или очков гильдии :param call: CallbackQuery :param callback_data: индекс студента и вид бонуса ('xp' / 'guild') :param state: FSMContext :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -259,7 +248,7 @@ async def game_enter_amount(message: Message, state: FSMContext) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_enter_amount`.
+Применяет вписанное число (N — ровно N, +N/−N — прибавить/отнять) и возвращает карточку :param message: Message :param state: FSMContext :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -293,7 +282,7 @@ async def _delete_quietly(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_delete_quietly`.
+Удаляет введённое старостой сообщение, чтобы в чате оставалась только панель.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -326,7 +315,7 @@ async def _edit_panel(message: Message, panel_id: int, text: str, markup: Inline
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_edit_panel`.
+Меняет сообщение-панель по id, игнорируя «message is not modified».
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -362,7 +351,7 @@ async def _apply_amount(message: Message, target: StudentTarget, kind: str, pars
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_amount`.
+Выставляет итоговое значение или прибавляет к нему по разобранному вводу.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -398,7 +387,7 @@ async def _edit_card(message: Message, panel_id: int, idx: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_edit_card`.
+Возвращает на место запроса свежую карточку студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -433,7 +422,7 @@ async def game_bonus(call: CallbackQuery, callback_data: tgame.GameAdminCallback
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_bonus`.
+Начисление или списание бонусных XP / очков гильдии :param call: CallbackQuery :param callback_data: индекс студента и 'xp|100' / 'guild|-10' :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -467,7 +456,7 @@ async def game_reset(call: CallbackQuery, callback_data: tgame.GameAdminCallback
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_reset`.
+Обнуление бонусов студента :param call: CallbackQuery :param callback_data: индекс студента :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -501,7 +490,7 @@ async def game_categories(call: CallbackQuery, callback_data: tgame.GameAdminCal
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_categories`.
+Категории ачивок студента :param call: CallbackQuery :param callback_data: индекс студента :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -535,7 +524,7 @@ async def _show_category(call: CallbackQuery, idx: int, category: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_show_category`.
+Показывает ачивки категории с отметками выдано / не выдано.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -570,7 +559,7 @@ async def game_category(call: CallbackQuery, callback_data: tgame.GameAdminCallb
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_category`.
+Ачивки одной категории :param call: CallbackQuery :param callback_data: индекс студента и категория :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -604,7 +593,7 @@ async def game_toggle(call: CallbackQuery, callback_data: tgame.GameAdminCallbac
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `game_toggle`.
+Выдать или снять ачивку :param call: CallbackQuery :param callback_data: индекс студента и 'категория|id_ачивки' :return:
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

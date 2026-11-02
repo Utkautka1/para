@@ -1,29 +1,18 @@
 # Component Reference: `bot/middlewares/tracing.py`
 > **File Path**: [`bot/middlewares/tracing.py`](../../bot/middlewares/tracing.py)
 > **Subsystem**: `Telemetry Tracing Middleware`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/middlewares/tracing.py` module implements core operational logic for the `Telemetry Tracing Middleware` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Middleware распределенного трейсинга OpenTelemetry для входящих событий Telegram.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_extract_callback_attrs`](#_extract_callback_attrs) | Function | L21–L35 | `tuple[str, dict[str, Any]]` | Executes core domain logic for `_extract_callback_attrs... |
-| [`_extract_message_attrs`](#_extract_message_attrs) | Function | L38–L52 | `tuple[str, dict[str, Any]]` | Executes core domain logic for `_extract_message_attrs`... |
-| [`TracingMiddleware.__call__`](#tracingmiddleware__call__) | Method | L58–L73 | `Any` | Executes core domain logic for `__call__`. |
+| [`_extract_callback_attrs`](#_extract_callback_attrs) | Function | L21–L35 | `tuple[str, dict[str, Any]]` | Формирует имя спана и словарь телеметрии для нажатия ин... |
+| [`_extract_message_attrs`](#_extract_message_attrs) | Function | L38–L52 | `tuple[str, dict[str, Any]]` | Формирует имя спана и словарь телеметрии для входящего ... |
+| [`TracingMiddleware.__call__`](#tracingmiddleware__call__) | Method | L58–L73 | `Any` | Перехватывает событие Telegram и оборачивает вызов хэнд... |
 
 ---
 
@@ -39,7 +28,7 @@ def _extract_callback_attrs(query: CallbackQuery) -> tuple[str, dict[str, Any]]
 - **Return Contract**: `tuple[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_callback_attrs`.
+Формирует имя спана и словарь телеметрии для нажатия инлайн-кнопки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -72,7 +61,7 @@ def _extract_message_attrs(message: Message) -> tuple[str, dict[str, Any]]
 - **Return Contract**: `tuple[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_message_attrs`.
+Формирует имя спана и словарь телеметрии для входящего сообщения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -97,7 +86,7 @@ result = _extract_message_attrs(message=...)
 
 ## Class Model: `TracingMiddleware`
 
-Encapsulates domain entities and data transfer logic for `TracingMiddleware`.
+Сквозной трейсинг событий бота: создает родительский спан и передает trace_id.
 
 ### `TracingMiddleware.__call__`
 ```python
@@ -109,7 +98,7 @@ async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Aw
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Перехватывает событие Telegram и оборачивает вызов хэндлера в спан.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

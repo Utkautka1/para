@@ -1,33 +1,22 @@
 # Component Reference: `services/solver/task_processor.py`
 > **File Path**: [`services/solver/task_processor.py`](../../services/solver/task_processor.py)
 > **Subsystem**: `Solver Queue Processing`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/solver/task_processor.py` module implements core operational logic for the `Solver Queue Processing` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль оркестрации задач решения ДЗ и управления циклом воркера.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_temp_doc_path`](#_build_temp_doc_path) | Function | L28–L37 | `str` | Executes core domain logic for `_build_temp_doc_path`. |
-| [`_cleanup_temp_file`](#_cleanup_temp_file) | Function | L40–L49 | `None` | Executes core domain logic for `_cleanup_temp_file`. |
-| [`_handle_task_failure`](#_handle_task_failure) | Function | L52–L63 | `None` | Executes core domain logic for `_handle_task_failure`. |
-| [`execute_single_task`](#execute_single_task) | Function | L66–L89 | `None` | Executes core domain logic for `execute_single_task`. |
-| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L92–L101 | `None` | Executes core domain logic for `_guarded_execute_task`. |
-| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L104–L114 | `None` | Executes core domain logic for `_drain_active_tasks`. |
-| [`run_solver_loop`](#run_solver_loop) | Function | L117–L145 | `None` | Executes core domain logic for `run_solver_loop`. |
+| [`_build_temp_doc_path`](#_build_temp_doc_path) | Function | L28–L37 | `str` | Генерирует изолированный путь для временного .docx файл... |
+| [`_cleanup_temp_file`](#_cleanup_temp_file) | Function | L40–L49 | `None` | Безопасно удаляет временный файл документа, если он сущ... |
+| [`_handle_task_failure`](#_handle_task_failure) | Function | L52–L63 | `None` | Обрабатывает исключение задачи: регистрирует NACK и уве... |
+| [`execute_single_task`](#execute_single_task) | Function | L66–L89 | `None` | Обрабатывает одну задачу: решает ДЗ в DeepSeek и отправ... |
+| [`_guarded_execute_task`](#_guarded_execute_task) | Function | L92–L101 | `None` | Исполняет задачу под семафором параллелизма для защиты ... |
+| [`_drain_active_tasks`](#_drain_active_tasks) | Function | L104–L114 | `None` | Корректно ожидает завершения всех запущенных задач при ... |
+| [`run_solver_loop`](#run_solver_loop) | Function | L117–L145 | `None` | Бесконечный цикл чтения очереди задач и параллельного з... |
 
 ---
 
@@ -43,7 +32,7 @@ def _build_temp_doc_path(msg_id: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_temp_doc_path`.
+Генерирует изолированный путь для временного .docx файла решения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -76,7 +65,7 @@ def _cleanup_temp_file(path: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_cleanup_temp_file`.
+Безопасно удаляет временный файл документа, если он существует.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -109,7 +98,7 @@ async def _handle_task_failure(tg_bot: Bot, task: dict, msg_id: int, error: Exce
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_task_failure`.
+Обрабатывает исключение задачи: регистрирует NACK и уведомляет об ошибке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -145,7 +134,7 @@ async def execute_single_task(tg_bot: Bot, task: dict) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `execute_single_task`.
+Обрабатывает одну задачу: решает ДЗ в DeepSeek и отправляет документ.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -179,7 +168,7 @@ async def _guarded_execute_task(tg_bot: Bot, task: dict, semaphore: asyncio.Sema
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_guarded_execute_task`.
+Исполняет задачу под семафором параллелизма для защиты от перегрузки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -214,7 +203,7 @@ async def _drain_active_tasks(active_tasks: set[asyncio.Task]) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_drain_active_tasks`.
+Корректно ожидает завершения всех запущенных задач при остановке сервиса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -247,7 +236,7 @@ async def run_solver_loop(tg_bot: Bot, semaphore: asyncio.Semaphore) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `run_solver_loop`.
+Бесконечный цикл чтения очереди задач и параллельного запуска решений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

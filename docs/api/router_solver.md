@@ -1,32 +1,21 @@
 # Component Reference: `api/router/solver.py`
 > **File Path**: [`api/router/solver.py`](../../api/router/solver.py)
 > **Subsystem**: `HW Solver API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/solver.py` module implements core operational logic for the `HW Solver API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер AI-решения задач — GET /solver/status, task/{msg_id}, POST /solver/solve, queue/clear.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L35–L55 | `SolverQueueStatusResponse` | Retrieves and resolves domain data for `get_solver_queu... |
-| [`_decode_image_payload`](#_decode_image_payload) | Function | L58–L75 | `bytes | None` | Executes core domain logic for `_decode_image_payload`. |
-| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L78–L104 | `None` | Executes core domain logic for `_check_solver_rate_limi... |
-| [`solve_task_direct`](#solve_task_direct) | Function | L108–L127 | `DirectSolveResponse` | Executes core domain logic for `solve_task_direct`. |
-| [`check_task_status`](#check_task_status) | Function | L131–L144 | `TaskStatusResponse` | Executes core domain logic for `check_task_status`. |
-| [`clear_solver_queue`](#clear_solver_queue) | Function | L148–L160 | `ClearQueueResponse` | Flushes and resets state for `clear_solver_queue`. |
+| [`get_solver_queue_status`](#get_solver_queue_status) | Function | L36–L56 | `SolverQueueStatusResponse` | Возвращает текущую длину очередей решения домашних зада... |
+| [`_decode_image_payload`](#_decode_image_payload) | Function | L59–L76 | `bytes \| None` | Декодирует строку Base64 в бинарные данные изображения. |
+| [`_check_solver_rate_limit`](#_check_solver_rate_limit) | Function | L79–L95 | `None` | Ограничивает частоту вызовов DeepSeek API фиксированным... |
+| [`solve_task_direct`](#solve_task_direct) | Function | L99–L118 | `DirectSolveResponse` | Выполняет прямое решение учебной задачи через нейросеть... |
+| [`check_task_status`](#check_task_status) | Function | L122–L135 | `TaskStatusResponse` | Проверяет статус решения задачи по ID сообщения Telegra... |
+| [`clear_solver_queue`](#clear_solver_queue) | Function | L139–L151 | `ClearQueueResponse` | Полностью очищает очереди нерешённых задач и DLQ в Redi... |
 
 ---
 
@@ -37,12 +26,12 @@ graph LR
 async def get_solver_queue_status() -> SolverQueueStatusResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L35-L55`](../../api/router/solver.py#L35-L55)
+- **Source Reference**: [`api/router/solver.py#L36-L56`](../../api/router/solver.py#L36-L56)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SolverQueueStatusResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_solver_queue_status`.
+Возвращает текущую длину очередей решения домашних заданий в Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -68,12 +57,12 @@ result = await get_solver_queue_status()
 def _decode_image_payload(b64: str | None) -> bytes | None
 ```
 
-- **Source Reference**: [`api/router/solver.py#L58-L75`](../../api/router/solver.py#L58-L75)
+- **Source Reference**: [`api/router/solver.py#L59-L76`](../../api/router/solver.py#L59-L76)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bytes | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_decode_image_payload`.
+Декодирует строку Base64 в бинарные данные изображения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -101,12 +90,12 @@ result = _decode_image_payload(b64=...)
 async def _check_solver_rate_limit(identity: str) -> None
 ```
 
-- **Source Reference**: [`api/router/solver.py#L78-L104`](../../api/router/solver.py#L78-L104)
+- **Source Reference**: [`api/router/solver.py#L79-L95`](../../api/router/solver.py#L79-L95)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_check_solver_rate_limit`.
+Ограничивает частоту вызовов DeepSeek API фиксированным окном в Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -134,12 +123,12 @@ result = await _check_solver_rate_limit(identity=...)
 async def solve_task_direct( payload: DirectSolveRequest, identity: str = Depends(verify_api_or_tester), ) -> DirectSolveResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L108-L127`](../../api/router/solver.py#L108-L127)
+- **Source Reference**: [`api/router/solver.py#L99-L118`](../../api/router/solver.py#L99-L118)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `DirectSolveResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `solve_task_direct`.
+Выполняет прямое решение учебной задачи через нейросеть DeepSeek.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -168,12 +157,12 @@ result = await solve_task_direct(payload=..., identity=...)
 async def check_task_status(message_id: int) -> TaskStatusResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L131-L144`](../../api/router/solver.py#L131-L144)
+- **Source Reference**: [`api/router/solver.py#L122-L135`](../../api/router/solver.py#L122-L135)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TaskStatusResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `check_task_status`.
+Проверяет статус решения задачи по ID сообщения Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -201,12 +190,12 @@ result = await check_task_status(message_id=...)
 async def clear_solver_queue() -> ClearQueueResponse
 ```
 
-- **Source Reference**: [`api/router/solver.py#L148-L160`](../../api/router/solver.py#L148-L160)
+- **Source Reference**: [`api/router/solver.py#L139-L151`](../../api/router/solver.py#L139-L151)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `ClearQueueResponse`
 
 #### Overview & Architectural Purpose
-Flushes and resets state for `clear_solver_queue`.
+Полностью очищает очереди нерешённых задач и DLQ в Redis (Admin only).
 
 #### Parameters Contract
 *This method takes no input parameters.*

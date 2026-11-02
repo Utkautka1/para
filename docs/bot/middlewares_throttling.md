@@ -1,31 +1,20 @@
 # Component Reference: `bot/middlewares/throttling.py`
 > **File Path**: [`bot/middlewares/throttling.py`](../../bot/middlewares/throttling.py)
 > **Subsystem**: `Throttling Middleware`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/middlewares/throttling.py` module implements core operational logic for the `Throttling Middleware` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Middleware для защиты от частого нажатия инлайн-кнопок (Debounce / Throttling).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_determine_cooldown`](#_determine_cooldown) | Function | L30–L46 | `float` | Executes core domain logic for `_determine_cooldown`. |
-| [`CallbackThrottleMiddleware.__init__`](#callbackthrottlemiddleware__init__) | Method | L52–L60 | `None` | Executes core domain logic for `__init__`. |
-| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L62–L74 | `None` | Executes core domain logic for `_cleanup_old_entries`. |
-| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L76–L100 | `bool` | Executes core domain logic for `_handle_callback_thrott... |
-| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L102–L120 | `Any` | Executes core domain logic for `__call__`. |
+| [`_determine_cooldown`](#_determine_cooldown) | Function | L30–L46 | `float` | Определяет необходимый интервал кулдауна по префиксу ca... |
+| [`CallbackThrottleMiddleware.__init__`](#callbackthrottlemiddleware__init__) | Method | L52–L60 | `None` | Инициализирует локальное состояние трекинга времени кли... |
+| [`CallbackThrottleMiddleware._cleanup_old_entries`](#callbackthrottlemiddleware_cleanup_old_entries) | Method | L62–L74 | `None` | Очищает устаревшие записи, предотвращая утечку оператив... |
+| [`CallbackThrottleMiddleware._handle_callback_throttle`](#callbackthrottlemiddleware_handle_callback_throttle) | Method | L76–L100 | `bool` | Проверяет интервал времени между кликами и отправляет в... |
+| [`CallbackThrottleMiddleware.__call__`](#callbackthrottlemiddleware__call__) | Method | L102–L120 | `Any` | Перехватывает входящие события и отсекает частые нажати... |
 
 ---
 
@@ -41,7 +30,7 @@ def _determine_cooldown(cb_data: str) -> float
 - **Return Contract**: `float`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_determine_cooldown`.
+Определяет необходимый интервал кулдауна по префиксу callback_data.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -66,7 +55,7 @@ result = _determine_cooldown(cb_data=...)
 
 ## Class Model: `CallbackThrottleMiddleware`
 
-Encapsulates domain entities and data transfer logic for `CallbackThrottleMiddleware`.
+Предотвращает спам-клики по инлайн-кнопкам бота.
 
 ### `CallbackThrottleMiddleware.__init__`
 ```python
@@ -78,7 +67,7 @@ def __init__(self) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__init__`.
+Инициализирует локальное состояние трекинга времени кликов.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -109,7 +98,7 @@ def _cleanup_old_entries(self, now: float) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_cleanup_old_entries`.
+Очищает устаревшие записи, предотвращая утечку оперативной памяти.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -142,7 +131,7 @@ async def _handle_callback_throttle(self, event: CallbackQuery, now: float) -> b
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_handle_callback_throttle`.
+Проверяет интервал времени между кликами и отправляет всплывающее предупреждение.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -176,7 +165,7 @@ async def __call__( self, handler: Callable[[TelegramObject, dict[str, Any]], Aw
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `__call__`.
+Перехватывает входящие события и отсекает частые нажатия инлайн-кнопок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

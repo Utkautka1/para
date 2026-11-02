@@ -1,36 +1,25 @@
 # Component Reference: `bot/handlers/user/attendance.py`
 > **File Path**: [`bot/handlers/user/attendance.py`](../../bot/handlers/user/attendance.py)
 > **Subsystem**: `User Attendance Flow`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/user/attendance.py` module implements core operational logic for the `User Attendance Flow` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры просмотра персональной посещаемости студента (/my_attendance).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_calculate_attendance_percent`](#_calculate_attendance_percent) | Function | L38–L54 | `str` | Executes core domain logic for `_calculate_attendance_p... |
-| [`_format_personal_month_breakdown`](#_format_personal_month_breakdown) | Function | L57–L78 | `str` | Executes core domain logic for `_format_personal_month_... |
-| [`_format_card_header_and_summary`](#_format_card_header_and_summary) | Function | L81–L91 | `str` | Executes core domain logic for `_format_card_header_and... |
-| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L94–L106 | `str` | Formats message payload and presentation markup for `fo... |
-| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L109–L121 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_personal_at... |
-| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L124–L142 | `str | None` | Executes core domain logic for `_resolve_student_fio`. |
-| [`_respond_personal_attendance`](#_respond_personal_attendance) | Function | L145–L149 | `None` | Executes core domain logic for `_respond_personal_atten... |
-| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L153–L168 | `None` | Processes inbound Telegram slash command for `cmd_my_at... |
-| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L172–L188 | `None` | Handles Telegram inline callback query events for `cb_m... |
-| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L192–L206 | `None` | Handles Telegram inline callback query events for `cb_a... |
+| [`_calculate_attendance_percent`](#_calculate_attendance_percent) | Function | L38–L54 | `str` | Вычисляет процент посещаемости студента с учетом уважит... |
+| [`_format_personal_month_breakdown`](#_format_personal_month_breakdown) | Function | L57–L78 | `str` | Формирует текстовый блок детальной помесячной статистик... |
+| [`_format_card_header_and_summary`](#_format_card_header_and_summary) | Function | L81–L91 | `str` | Формирует шапку и сводный блок отметок персональной кар... |
+| [`format_personal_attendance_card`](#format_personal_attendance_card) | Function | L94–L106 | `str` | Формирует персональную HTML-карточку посещаемости конкр... |
+| [`get_personal_attendance_kb`](#get_personal_attendance_kb) | Function | L109–L121 | `InlineKeyboardMarkup` | Возвращает инлайн-клавиатуру персонального экрана посещ... |
+| [`_resolve_student_fio`](#_resolve_student_fio) | Function | L124–L142 | `str \| None` | Определяет официальное ФИО студента по реестру одногруп... |
+| [`_respond_personal_attendance`](#_respond_personal_attendance) | Function | L145–L149 | `None` | Отправляет карточку посещаемости и фиксирует ачивку сам... |
+| [`cmd_my_attendance`](#cmd_my_attendance) | Function | L153–L168 | `None` | Отображает персональную карточку посещаемости авторизов... |
+| [`cb_my_attendance_refresh`](#cb_my_attendance_refresh) | Function | L172–L188 | `None` | Обновляет персональную карточку посещаемости студента в... |
+| [`cb_att_topic_refresh`](#cb_att_topic_refresh) | Function | L192–L206 | `None` | Синхронизирует сводный реестр посещаемости по кнопке в ... |
 
 ---
 
@@ -46,7 +35,7 @@ def _calculate_attendance_percent(p: int, o: int, u: int, total: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_calculate_attendance_percent`.
+Вычисляет процент посещаемости студента с учетом уважительных причин.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -82,7 +71,7 @@ def _format_personal_month_breakdown(months: dict[str, dict[str, int]]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_personal_month_breakdown`.
+Формирует текстовый блок детальной помесячной статистики посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -115,7 +104,7 @@ def _format_card_header_and_summary(fio: str, p: int, o: int, u: int, n: int) ->
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_card_header_and_summary`.
+Формирует шапку и сводный блок отметок персональной карточки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -152,7 +141,7 @@ def format_personal_attendance_card(fio: str, student_data: dict[str, Any]) -> s
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_personal_attendance_card`.
+Формирует персональную HTML-карточку посещаемости конкретного студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -186,7 +175,7 @@ def get_personal_attendance_kb() -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_personal_attendance_kb`.
+Возвращает инлайн-клавиатуру персонального экрана посещаемости студента.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -217,7 +206,7 @@ def _resolve_student_fio(user, student: dict[str, Any] | None = None) -> str | N
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_student_fio`.
+Определяет официальное ФИО студента по реестру одногруппников группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -251,7 +240,7 @@ async def _respond_personal_attendance(message: Message, fio: str, data: dict[st
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_respond_personal_attendance`.
+Отправляет карточку посещаемости и фиксирует ачивку самопроверки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -286,7 +275,7 @@ async def cmd_my_attendance(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Processes inbound Telegram slash command for `cmd_my_attendance`.
+Отображает персональную карточку посещаемости авторизованного студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -319,7 +308,7 @@ async def cb_my_attendance_refresh(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_my_attendance_refresh`.
+Обновляет персональную карточку посещаемости студента в ЛС по кнопке.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -352,7 +341,7 @@ async def cb_att_topic_refresh(callback: CallbackQuery) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Handles Telegram inline callback query events for `cb_att_topic_refresh`.
+Синхронизирует сводный реестр посещаемости по кнопке в топике Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

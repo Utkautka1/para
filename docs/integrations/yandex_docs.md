@@ -1,67 +1,56 @@
 # Component Reference: `integrations/yandex_docs.py`
 > **File Path**: [`integrations/yandex_docs.py`](../../integrations/yandex_docs.py)
 > **Subsystem**: `WOPI Cloud Service`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `integrations/yandex_docs.py` module implements core operational logic for the `WOPI Cloud Service` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис интеграции с Яндекс Документами через протокол WOPI.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
 | [`WopiSession.__init__`](#wopisession__init__) | Method | L56–L62 | `Any` | Executes core domain logic for `__init__`. |
-| [`extract_client_config`](#extract_client_config) | Function | L65–L79 | `dict` | Executes core domain logic for `extract_client_config`. |
-| [`merge_cookie_header`](#merge_cookie_header) | Function | L82–L98 | `str` | Executes core domain logic for `merge_cookie_header`. |
-| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L101–L116 | `str` | Retrieves and resolves domain data for `get_yandex_cook... |
-| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L119–L138 | `str` | Retrieves and resolves domain data for `get_effective_y... |
-| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L141–L158 | `None` | Saves serialized entity data to storage for `save_effec... |
-| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L161–L175 | `None` | Synchronizes and updates domain state for `update_cooki... |
-| [`_build_dom_headers`](#_build_dom_headers) | Function | L178–L197 | `dict[str, str]` | Executes core domain logic for `_build_dom_headers`. |
-| [`fetch_page_dom`](#fetch_page_dom) | Function | L200–L216 | `str` | Executes core domain logic for `fetch_page_dom`. |
-| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L219–L234 | `str` | Retrieves and resolves domain data for `get_active_wopi... |
-| [`init_wopi_session`](#init_wopi_session) | Function | L237–L256 | `WopiSession` | Executes core domain logic for `init_wopi_session`. |
-| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L259–L272 | `openpyxl.Workbook` | Executes core domain logic for `load_workbook_from_byte... |
-| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L275–L297 | `dict[tuple[str, int], int]` | Executes core domain logic for `compute_sheet_summary_c... |
-| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L300–L326 | `str` | Executes core domain logic for `patch_sheet_xml_counts`... |
-| [`_write_summary_col_header`](#_write_summary_col_header) | Function | L329–L339 | `None` | Executes core domain logic for `_write_summary_col_head... |
-| [`_write_summary_formulas`](#_write_summary_formulas) | Function | L342–L355 | `None` | Executes core domain logic for `_write_summary_formulas... |
-| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L358–L380 | `None` | Executes core domain logic for `ensure_all_summary_head... |
-| [`inject_summary_cache`](#inject_summary_cache) | Function | L383–L403 | `bytes` | Executes core domain logic for `inject_summary_cache`. |
-| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L406–L421 | `bytes` | Saves serialized entity data to storage for `save_workb... |
-| [`download_workbook`](#download_workbook) | Function | L424–L440 | `openpyxl.Workbook` | Executes core domain logic for `download_workbook`. |
-| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L443–L455 | `bool` | Executes core domain logic for `acquire_wopi_lock`. |
-| [`release_wopi_lock`](#release_wopi_lock) | Function | L458–L469 | `bool` | Executes core domain logic for `release_wopi_lock`. |
-| [`put_wopi_contents`](#put_wopi_contents) | Function | L472–L493 | `httpx.Response` | Executes core domain logic for `put_wopi_contents`. |
-| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L496–L515 | `bool` | Executes core domain logic for `_try_put_with_lock`. |
-| [`upload_workbook`](#upload_workbook) | Function | L518–L533 | `bool` | Executes core domain logic for `upload_workbook`. |
-| [`verify_upload`](#verify_upload) | Function | L536–L555 | `bool` | Executes core domain logic for `verify_upload`. |
-| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L558–L572 | `bytes` | Executes core domain logic for `_download_raw_bytes`. |
-| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L575–L594 | `str | None` | Executes core domain logic for `_find_sheet_rid`. |
-| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L597–L614 | `str | None` | Executes core domain logic for `_resolve_sheet_target_p... |
-| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L617–L640 | `str | None` | Executes core domain logic for `_extract_sheet_xml`. |
-| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L643–L653 | `bool` | Executes core domain logic for `_cell_has_expected_mark... |
-| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L656–L676 | `bool` | Executes core domain logic for `_marks_found_in_xml`. |
-| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L679–L697 | `bool` | Executes core domain logic for `_verify_marks_in_raw`. |
-| [`get_month_sheet`](#get_month_sheet) | Function | L700–L711 | `Worksheet` | Retrieves and resolves domain data for `get_month_sheet... |
-| [`parse_date_cell`](#parse_date_cell) | Function | L714–L726 | `str | None` | Parses and extracts structured entities from `parse_dat... |
-| [`find_date_column_start`](#find_date_column_start) | Function | L729–L743 | `int | None` | Executes core domain logic for `find_date_column_start`... |
-| [`find_lesson_column`](#find_lesson_column) | Function | L746–L764 | `int | None` | Executes core domain logic for `find_lesson_column`. |
-| [`normalize_fio`](#normalize_fio) | Function | L767–L775 | `str` | Executes core domain logic for `normalize_fio`. |
-| [`get_students_list`](#get_students_list) | Function | L778–L794 | `list[tuple[int, str]]` | Retrieves and resolves domain data for `get_students_li... |
-| [`find_student_row`](#find_student_row) | Function | L797–L809 | `int | None` | Executes core domain logic for `find_student_row`. |
-| [`write_student_mark`](#write_student_mark) | Function | L812–L832 | `None` | Executes core domain logic for `write_student_mark`. |
+| [`extract_client_config`](#extract_client_config) | Function | L65–L79 | `dict` | Извлекает JSON конфигурации редактора из HTML-разметки ... |
+| [`merge_cookie_header`](#merge_cookie_header) | Function | L82–L98 | `str` | Объединяет текущую строку заголовка Cookie со свежими т... |
+| [`get_yandex_cookie_header`](#get_yandex_cookie_header) | Function | L101–L116 | `str` | Формирует резервную строку Cookie из статических переме... |
+| [`get_effective_yandex_cookie`](#get_effective_yandex_cookie) | Function | L119–L138 | `str` | Предоставляет наиболее свежие Cookie сессии с приоритет... |
+| [`save_effective_yandex_cookie`](#save_effective_yandex_cookie) | Function | L141–L158 | `None` | Атомарно сохраняет актуальную строку Cookie в постоянны... |
+| [`update_cookies_from_response`](#update_cookies_from_response) | Function | L161–L175 | `None` | Извлекает полученные от сервера Set-Cookie и синхронизи... |
+| [`_build_dom_headers`](#_build_dom_headers) | Function | L178–L197 | `dict[str, str]` | Формирует заголовки браузерного эмулятора для загрузки ... |
+| [`fetch_page_dom`](#fetch_page_dom) | Function | L200–L216 | `str` | Загружает исходный HTML-код страницы веб-редактора Янде... |
+| [`get_active_wopi_lock`](#get_active_wopi_lock) | Function | L219–L234 | `str` | Определяет текущий активный идентификатор блокировки фа... |
+| [`init_wopi_session`](#init_wopi_session) | Function | L237–L256 | `WopiSession` | Инициализирует сессию WOPI, извлекая resource_url, acce... |
+| [`load_workbook_from_bytes`](#load_workbook_from_bytes) | Function | L259–L272 | `openpyxl.Workbook` | Синхронно десериализует байты книги openpyxl с подавлен... |
+| [`compute_sheet_summary_counts`](#compute_sheet_summary_counts) | Function | L275–L297 | `dict[tuple[str, int], int]` | Вычисляет агрегированное количество отметок О, У, Н по ... |
+| [`patch_sheet_xml_counts`](#patch_sheet_xml_counts) | Function | L300–L326 | `str` | Заменяет кэшированные теги формул <v></v> в XML листа н... |
+| [`_write_summary_col_header`](#_write_summary_col_header) | Function | L329–L339 | `None` | Записывает текстовые заголовки и условные обозначения и... |
+| [`_write_summary_formulas`](#_write_summary_formulas) | Function | L342–L355 | `None` | Проставляет формулы COUNTIF для подсчета отметок по стр... |
+| [`ensure_all_summary_headers`](#ensure_all_summary_headers) | Function | L358–L380 | `None` | Гарантирует наличие заголовков, кодов и формул COUNTIF ... |
+| [`inject_summary_cache`](#inject_summary_cache) | Function | L383–L403 | `bytes` | Инжектирует предрассчитанные значения формул COUNTIF пр... |
+| [`save_workbook_to_bytes`](#save_workbook_to_bytes) | Function | L406–L421 | `bytes` | Сериализует книгу openpyxl в бинарные байты с принудите... |
+| [`download_workbook`](#download_workbook) | Function | L424–L440 | `openpyxl.Workbook` | Скачивает актуальный контент таблицы по протоколу WOPI ... |
+| [`acquire_wopi_lock`](#acquire_wopi_lock) | Function | L443–L455 | `bool` | Захватывает монопольную сессионную блокировку файла по ... |
+| [`release_wopi_lock`](#release_wopi_lock) | Function | L458–L469 | `bool` | Снимает активную сессионную блокировку с файла по станд... |
+| [`put_wopi_contents`](#put_wopi_contents) | Function | L472–L493 | `httpx.Response` | Выполняет HTTP POST-запрос с заголовком X-WOPI-Override... |
+| [`_try_put_with_lock`](#_try_put_with_lock) | Function | L496–L515 | `bool` | Пробует зафиксировать файл сначала с текущей сессионной... |
+| [`upload_workbook`](#upload_workbook) | Function | L518–L533 | `bool` | Сохраняет книгу openpyxl и выгружает обновленную версию... |
+| [`verify_upload`](#verify_upload) | Function | L536–L555 | `bool` | Легковесно валидирует сохранение отметок путем прямого ... |
+| [`_download_raw_bytes`](#_download_raw_bytes) | Function | L558–L572 | `bytes` | Скачивает сырые байты файла таблицы с сервера WOPI для ... |
+| [`_find_sheet_rid`](#_find_sheet_rid) | Function | L575–L594 | `str \| None` | Находит relationship ID (r:id) листа в структуре workbo... |
+| [`_resolve_sheet_target_path`](#_resolve_sheet_target_path) | Function | L597–L614 | `str \| None` | Определяет путь к файлу XML листа внутри zip-пакета по ... |
+| [`_extract_sheet_xml`](#_extract_sheet_xml) | Function | L617–L640 | `str \| None` | Извлекает строковое XML-содержимое листа по имени напря... |
+| [`_cell_has_expected_mark`](#_cell_has_expected_mark) | Function | L643–L653 | `bool` | Проверяет соответствие отметки посещаемости в XML-фрагм... |
+| [`_marks_found_in_xml`](#_marks_found_in_xml) | Function | L656–L676 | `bool` | Проверяет наличие ожидаемых отметок в сыром XML-тексте ... |
+| [`_verify_marks_in_raw`](#_verify_marks_in_raw) | Function | L679–L697 | `bool` | Координирует низкоуровневую верификацию отметок в байта... |
+| [`get_month_sheet`](#get_month_sheet) | Function | L700–L711 | `Worksheet` | Возвращает рабочий лист книги openpyxl, соответствующий... |
+| [`parse_date_cell`](#parse_date_cell) | Function | L714–L726 | `str \| None` | Приводит значение ячейки даты к стандартизированной стр... |
+| [`find_date_column_start`](#find_date_column_start) | Function | L729–L743 | `int \| None` | Находит начальную колонку даты во второй строке таблицы... |
+| [`find_lesson_column`](#find_lesson_column) | Function | L746–L764 | `int \| None` | Определяет точный номер колонки для конкретного номера ... |
+| [`normalize_fio`](#normalize_fio) | Function | L767–L775 | `str` | Очищает строковое ФИО от неразрывных пробелов и лишних ... |
+| [`get_students_list`](#get_students_list) | Function | L778–L794 | `list[tuple[int, str]]` | Извлекает список студентов академической группы из коло... |
+| [`find_student_row`](#find_student_row) | Function | L797–L809 | `int \| None` | Находит номер строки студента в таблице по имени или фа... |
+| [`write_student_mark`](#write_student_mark) | Function | L812–L832 | `None` | Записывает валидированную отметку посещаемости в целеву... |
 
 ---
 
@@ -69,7 +58,7 @@ graph LR
 
 ## Class Model: `WopiSession`
 
-Encapsulates domain entities and data transfer logic for `WopiSession`.
+Сессия авторизованного доступа к документу по протоколу WOPI.
 
 ### `WopiSession.__init__`
 ```python
@@ -116,7 +105,7 @@ def extract_client_config(html_content: str) -> dict
 - **Return Contract**: `dict`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_client_config`.
+Извлекает JSON конфигурации редактора из HTML-разметки страницы документа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -149,7 +138,7 @@ def merge_cookie_header(current_cookie: str, new_cookies: dict[str, str]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `merge_cookie_header`.
+Объединяет текущую строку заголовка Cookie со свежими токенами из Set-Cookie.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -183,7 +172,7 @@ def get_yandex_cookie_header() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_yandex_cookie_header`.
+Формирует резервную строку Cookie из статических переменных окружения.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -214,7 +203,7 @@ async def get_effective_yandex_cookie() -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_effective_yandex_cookie`.
+Предоставляет наиболее свежие Cookie сессии с приоритетом чтения из Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -246,7 +235,7 @@ async def save_effective_yandex_cookie(cookie_str: str) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_effective_yandex_cookie`.
+Атомарно сохраняет актуальную строку Cookie в постоянный кэш Redis с TTL.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -280,7 +269,7 @@ async def update_cookies_from_response(res: httpx.Response, current_cookie: str)
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Synchronizes and updates domain state for `update_cookies_from_response`.
+Извлекает полученные от сервера Set-Cookie и синхронизирует их с Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -314,7 +303,7 @@ def _build_dom_headers(cookie_hdr: str) -> dict[str, str]
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_dom_headers`.
+Формирует заголовки браузерного эмулятора для загрузки страницы документа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -347,7 +336,7 @@ async def fetch_page_dom(doc_url: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_page_dom`.
+Загружает исходный HTML-код страницы веб-редактора Яндекс Документов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -380,7 +369,7 @@ async def get_active_wopi_lock(resource_url: str, token: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_active_wopi_lock`.
+Определяет текущий активный идентификатор блокировки файла по стандарту WOPI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -415,7 +404,7 @@ async def init_wopi_session(doc_url: str = ATTENDANCE_DOC_URL) -> WopiSession
 - **Return Contract**: `WopiSession`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `init_wopi_session`.
+Инициализирует сессию WOPI, извлекая resource_url, access_token и lock.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -448,7 +437,7 @@ def load_workbook_from_bytes(content: bytes) -> openpyxl.Workbook
 - **Return Contract**: `openpyxl.Workbook`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_workbook_from_bytes`.
+Синхронно десериализует байты книги openpyxl с подавлением предупреждений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -481,7 +470,7 @@ def compute_sheet_summary_counts(sheet: Worksheet) -> dict[tuple[str, int], int]
 - **Return Contract**: `dict[tuple[str, int], int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `compute_sheet_summary_counts`.
+Вычисляет агрегированное количество отметок О, У, Н по строкам студентов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -514,7 +503,7 @@ def patch_sheet_xml_counts(xml_text: str, counts: dict[tuple[str, int], int]) ->
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `patch_sheet_xml_counts`.
+Заменяет кэшированные теги формул <v></v> в XML листа на вычисленные суммы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -548,7 +537,7 @@ def _write_summary_col_header(sheet: Worksheet, col: int, title: str, code: str)
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_write_summary_col_header`.
+Записывает текстовые заголовки и условные обозначения итоговых колонок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -584,7 +573,7 @@ def _write_summary_formulas(sheet: Worksheet, mc: int, l_o: str, l_u: str, l_n: 
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_write_summary_formulas`.
+Проставляет формулы COUNTIF для подсчета отметок по строкам 5-36.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -622,7 +611,7 @@ def ensure_all_summary_headers(wb: openpyxl.Workbook) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `ensure_all_summary_headers`.
+Гарантирует наличие заголовков, кодов и формул COUNTIF во всех листах месяцев.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -655,7 +644,7 @@ def inject_summary_cache(raw_bytes: bytes, wb: openpyxl.Workbook) -> bytes
 - **Return Contract**: `bytes`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `inject_summary_cache`.
+Инжектирует предрассчитанные значения формул COUNTIF прямо в zip-архив xlsx.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -689,7 +678,7 @@ def save_workbook_to_bytes(wb: openpyxl.Workbook) -> bytes
 - **Return Contract**: `bytes`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_workbook_to_bytes`.
+Сериализует книгу openpyxl в бинарные байты с принудительным пересчетом формул.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -722,7 +711,7 @@ async def download_workbook(session: WopiSession) -> openpyxl.Workbook
 - **Return Contract**: `openpyxl.Workbook`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `download_workbook`.
+Скачивает актуальный контент таблицы по протоколу WOPI и возвращает объект книги.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -756,7 +745,7 @@ async def acquire_wopi_lock(session: WopiSession, client: httpx.AsyncClient, loc
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `acquire_wopi_lock`.
+Захватывает монопольную сессионную блокировку файла по стандарту WOPI LOCK.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -791,7 +780,7 @@ async def release_wopi_lock(session: WopiSession, client: httpx.AsyncClient, loc
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `release_wopi_lock`.
+Снимает активную сессионную блокировку с файла по стандарту WOPI UNLOCK.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -826,7 +815,7 @@ async def put_wopi_contents( session: WopiSession, client: httpx.AsyncClient, da
 - **Return Contract**: `httpx.Response`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `put_wopi_contents`.
+Выполняет HTTP POST-запрос с заголовком X-WOPI-Override: PUT для перезаписи файла.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -862,7 +851,7 @@ async def _try_put_with_lock(session: WopiSession, client: httpx.AsyncClient, da
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_try_put_with_lock`.
+Пробует зафиксировать файл сначала с текущей сессионной блокировкой, затем с новой.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -897,7 +886,7 @@ async def upload_workbook(session: WopiSession, wb: openpyxl.Workbook) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `upload_workbook`.
+Сохраняет книгу openpyxl и выгружает обновленную версию на Яндекс Диск по WOPI.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -932,7 +921,7 @@ async def verify_upload( session: WopiSession, target_date: date, lesson_num: in
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `verify_upload`.
+Легковесно валидирует сохранение отметок путем прямого анализа XML листа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -968,7 +957,7 @@ async def _download_raw_bytes(session: WopiSession) -> bytes
 - **Return Contract**: `bytes`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_download_raw_bytes`.
+Скачивает сырые байты файла таблицы с сервера WOPI для верификации.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1002,7 +991,7 @@ def _find_sheet_rid(wb_xml: str, sheet_name: str) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_sheet_rid`.
+Находит relationship ID (r:id) листа в структуре workbook.xml.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1036,7 +1025,7 @@ def _resolve_sheet_target_path(rels_xml: str, rid: str) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_resolve_sheet_target_path`.
+Определяет путь к файлу XML листа внутри zip-пакета по его relationship ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1070,7 +1059,7 @@ def _extract_sheet_xml(raw: bytes, sheet_name: str) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_sheet_xml`.
+Извлекает строковое XML-содержимое листа по имени напрямую из zip-архива xlsx.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1104,7 +1093,7 @@ def _cell_has_expected_mark(cell_xml: str, mark: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_cell_has_expected_mark`.
+Проверяет соответствие отметки посещаемости в XML-фрагменте ячейки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1138,7 +1127,7 @@ def _marks_found_in_xml(xml_text: str, check_marks: dict[str, str]) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_marks_found_in_xml`.
+Проверяет наличие ожидаемых отметок в сыром XML-тексте листа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1172,7 +1161,7 @@ def _verify_marks_in_raw(raw: bytes, target_date: date, expected_marks: dict[str
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_verify_marks_in_raw`.
+Координирует низкоуровневую верификацию отметок в байтах книги.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1207,7 +1196,7 @@ def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet
 - **Return Contract**: `Worksheet`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_month_sheet`.
+Возвращает рабочий лист книги openpyxl, соответствующий месяцу даты.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1241,7 +1230,7 @@ def parse_date_cell(cell_value: object) -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_date_cell`.
+Приводит значение ячейки даты к стандартизированной строке 'ДД.ММ'.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1274,7 +1263,7 @@ def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `find_date_column_start`.
+Находит начальную колонку даты во второй строке таблицы посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1308,7 +1297,7 @@ def find_lesson_column(sheet: Worksheet, target_date: date, lesson_num: int) -> 
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `find_lesson_column`.
+Определяет точный номер колонки для конкретного номера учебной пары дня.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1343,7 +1332,7 @@ def normalize_fio(name: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `normalize_fio`.
+Очищает строковое ФИО от неразрывных пробелов и лишних краевых знаков.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1376,7 +1365,7 @@ def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]
 - **Return Contract**: `list[tuple[int, str]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_students_list`.
+Извлекает список студентов академической группы из колонки B таблицы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1409,7 +1398,7 @@ def find_student_row(sheet: Worksheet, student_name: str) -> int | None
 - **Return Contract**: `int | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `find_student_row`.
+Находит номер строки студента в таблице по имени или фамилии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -1443,7 +1432,7 @@ def write_student_mark( sheet: Worksheet, row: int, col: int, mark: str, ) -> No
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `write_student_mark`.
+Записывает валидированную отметку посещаемости в целевую ячейку листа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

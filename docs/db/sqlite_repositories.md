@@ -1,44 +1,33 @@
 # Component Reference: `db/sqlite/repositories.py`
 > **File Path**: [`db/sqlite/repositories.py`](../../db/sqlite/repositories.py)
 > **Subsystem**: `SQLite Repositories`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `db/sqlite/repositories.py` module implements core operational logic for the `SQLite Repositories` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Репозитории доступа к данным SQLite (SQLAlchemy 2.0).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L35–L40 | `set[int]` | Retrieves and resolves domain data for `get_active_chat... |
-| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L43–L57 | `bool` | Executes core domain logic for `add_subscriber`. |
-| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L60–L69 | `bool` | Executes core domain logic for `remove_subscriber`. |
-| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L72–L76 | `int` | Executes core domain logic for `count_active`. |
-| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L83–L102 | `SystemIncident` | Executes core domain logic for `record_incident`. |
-| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L105–L111 | `Sequence[SystemIncident]` | Retrieves and resolves domain data for `get_recent_inci... |
-| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L118–L140 | `int` | Saves serialized entity data to storage for `save_daily... |
-| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L143–L149 | `Sequence[AttendanceSnapshot]` | Retrieves and resolves domain data for `get_latest_snap... |
-| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L156–L168 | `dict[str, set[str]]` | Retrieves and resolves domain data for `get_all_unlocke... |
-| [`GamificationRepository.revoke_achievement`](#gamificationrepositoryrevoke_achievement) | Method | L171–L181 | `int` | Executes core domain logic for `revoke_achievement`. |
-| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L184–L198 | `bool` | Executes core domain logic for `unlock_achievement`. |
-| [`CounterRepository.increment`](#counterrepositoryincrement) | Method | L205–L227 | `int` | Executes core domain logic for `increment`. |
-| [`CounterRepository.set_value`](#counterrepositoryset_value) | Method | L230–L235 | `None` | Persists state updates for `set_value`. |
-| [`CounterRepository.add_value`](#counterrepositoryadd_value) | Method | L238–L249 | `int` | Executes core domain logic for `add_value`. |
-| [`CounterRepository.get_key_values`](#counterrepositoryget_key_values) | Method | L252–L264 | `dict[str, int]` | Retrieves and resolves domain data for `get_key_values`... |
-| [`CounterRepository.count_keys`](#counterrepositorycount_keys) | Method | L267–L283 | `int` | Executes core domain logic for `count_keys`. |
-| [`AchievementResetRepository.reset_with_baseline`](#achievementresetrepositoryreset_with_baseline) | Method | L290–L307 | `tuple[int, int]` | Executes core domain logic for `reset_with_baseline`. |
-| [`AchievementResetRepository.get_baselines`](#achievementresetrepositoryget_baselines) | Method | L310–L322 | `dict[str, dict[str, Any]]` | Retrieves and resolves domain data for `get_baselines`. |
+| [`SubscriberRepository.get_active_chat_ids`](#subscriberrepositoryget_active_chat_ids) | Method | L35–L40 | `set[int]` | Возвращает множество активных chat_id подписчиков. |
+| [`SubscriberRepository.add_subscriber`](#subscriberrepositoryadd_subscriber) | Method | L43–L57 | `bool` | Добавляет нового подписчика или реактивирует существующ... |
+| [`SubscriberRepository.remove_subscriber`](#subscriberrepositoryremove_subscriber) | Method | L60–L69 | `bool` | Деактивирует подписчика в базе данных. |
+| [`SubscriberRepository.count_active`](#subscriberrepositorycount_active) | Method | L72–L76 | `int` | Возвращает общее количество активных подписчиков. |
+| [`IncidentRepository.record_incident`](#incidentrepositoryrecord_incident) | Method | L83–L102 | `SystemIncident` | Фиксирует новый системный инцидент в реляционной базе д... |
+| [`IncidentRepository.get_recent_incidents`](#incidentrepositoryget_recent_incidents) | Method | L105–L111 | `Sequence[SystemIncident]` | Возвращает список недавних системных инцидентов. |
+| [`AttendanceRepository.save_daily_snapshots`](#attendancerepositorysave_daily_snapshots) | Method | L118–L140 | `int` | Сохраняет срез посещаемости студентов за указанную дату... |
+| [`AttendanceRepository.get_latest_snapshots`](#attendancerepositoryget_latest_snapshots) | Method | L143–L149 | `Sequence[AttendanceSnapshot]` | Возвращает последний доступный срез посещаемости всех с... |
+| [`GamificationRepository.get_all_unlocked_map`](#gamificationrepositoryget_all_unlocked_map) | Method | L156–L168 | `dict[str, set[str]]` | Возвращает карту открытых достижений по студентам {ФИО:... |
+| [`GamificationRepository.revoke_achievement`](#gamificationrepositoryrevoke_achievement) | Method | L171–L181 | `int` | Снимает ачивку со студента под любым из его ФИО (журнал... |
+| [`GamificationRepository.unlock_achievement`](#gamificationrepositoryunlock_achievement) | Method | L184–L198 | `bool` | Атомарно сохраняет открытое достижение студента в SQLit... |
+| [`CounterRepository.increment`](#counterrepositoryincrement) | Method | L205–L227 | `int` | Атомарно увеличивает счётчик студента и возвращает ново... |
+| [`CounterRepository.set_value`](#counterrepositoryset_value) | Method | L230–L235 | `None` | Записывает счётчику точное значение (например, бонус XP... |
+| [`CounterRepository.add_value`](#counterrepositoryadd_value) | Method | L238–L249 | `int` | Атомарно прибавляет к счётчику delta (может быть отрица... |
+| [`CounterRepository.get_key_values`](#counterrepositoryget_key_values) | Method | L252–L264 | `dict[str, int]` | Возвращает значения одного счётчика у всех студентов {Ф... |
+| [`CounterRepository.count_keys`](#counterrepositorycount_keys) | Method | L267–L283 | `int` | Считает разные счётчики студента с общим префиксом. |
+| [`AchievementResetRepository.reset_with_baseline`](#achievementresetrepositoryreset_with_baseline) | Method | L290–L307 | `tuple[int, int]` | В одной транзакции удаляет все ачивки и счётчики и запи... |
+| [`AchievementResetRepository.get_baselines`](#achievementresetrepositoryget_baselines) | Method | L310–L322 | `dict[str, dict[str, Any]]` | Возвращает снимки журнала {ФИО: запись журнала} на моме... |
 
 ---
 
@@ -46,7 +35,7 @@ graph LR
 
 ## Class Model: `SubscriberRepository`
 
-Encapsulates domain entities and data transfer logic for `SubscriberRepository`.
+Репозиторий управления списком подписчиков в SQLite.
 
 ### `SubscriberRepository.get_active_chat_ids`
 ```python
@@ -58,7 +47,7 @@ async def get_active_chat_ids() -> set[int]
 - **Return Contract**: `set[int]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_active_chat_ids`.
+Возвращает множество активных chat_id подписчиков.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -89,7 +78,7 @@ async def add_subscriber(chat_id: int, username: str | None = None, full_name: s
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_subscriber`.
+Добавляет нового подписчика или реактивирует существующего.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -124,7 +113,7 @@ async def remove_subscriber(chat_id: int) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `remove_subscriber`.
+Деактивирует подписчика в базе данных.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -157,7 +146,7 @@ async def count_active() -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `count_active`.
+Возвращает общее количество активных подписчиков.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -180,7 +169,7 @@ result = await count_active()
 
 ## Class Model: `IncidentRepository`
 
-Encapsulates domain entities and data transfer logic for `IncidentRepository`.
+Репозиторий журнала сбоев, сетевых аномалий и алертов.
 
 ### `IncidentRepository.record_incident`
 ```python
@@ -192,7 +181,7 @@ async def record_incident( incident_type: str, title: str, description: str, sev
 - **Return Contract**: `SystemIncident`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `record_incident`.
+Фиксирует новый системный инцидент в реляционной базе данных.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -229,7 +218,7 @@ async def get_recent_incidents(limit: int = 50, unresolved_only: bool = False) -
 - **Return Contract**: `Sequence[SystemIncident]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_recent_incidents`.
+Возвращает список недавних системных инцидентов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -255,7 +244,7 @@ result = await get_recent_incidents(limit=..., unresolved_only=...)
 
 ## Class Model: `AttendanceRepository`
 
-Encapsulates domain entities and data transfer logic for `AttendanceRepository`.
+Репозиторий исторических снимков посещаемости студентов.
 
 ### `AttendanceRepository.save_daily_snapshots`
 ```python
@@ -267,7 +256,7 @@ async def save_daily_snapshots(snapshot_date: date, records: list[dict[str, Any]
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_daily_snapshots`.
+Сохраняет срез посещаемости студентов за указанную дату.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -301,7 +290,7 @@ async def get_latest_snapshots() -> Sequence[AttendanceSnapshot]
 - **Return Contract**: `Sequence[AttendanceSnapshot]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_latest_snapshots`.
+Возвращает последний доступный срез посещаемости всех студентов.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -324,7 +313,7 @@ result = await get_latest_snapshots()
 
 ## Class Model: `GamificationRepository`
 
-Encapsulates domain entities and data transfer logic for `GamificationRepository`.
+Репозиторий прогресса геймификации и открытых достижений студентов.
 
 ### `GamificationRepository.get_all_unlocked_map`
 ```python
@@ -336,7 +325,7 @@ async def get_all_unlocked_map() -> dict[str, set[str]]
 - **Return Contract**: `dict[str, set[str]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_all_unlocked_map`.
+Возвращает карту открытых достижений по студентам {ФИО: {id_ачивки}}.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -367,7 +356,7 @@ async def revoke_achievement(student_fios: set[str], achievement_id: str) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `revoke_achievement`.
+Снимает ачивку со студента под любым из его ФИО (журнал и реестр могут отличаться).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -401,7 +390,7 @@ async def unlock_achievement(student_fio: str, achievement_id: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `unlock_achievement`.
+Атомарно сохраняет открытое достижение студента в SQLite.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -427,7 +416,7 @@ result = await unlock_achievement(student_fio=..., achievement_id=...)
 
 ## Class Model: `CounterRepository`
 
-Encapsulates domain entities and data transfer logic for `CounterRepository`.
+Репозиторий накопительных счётчиков действий студентов.
 
 ### `CounterRepository.increment`
 ```python
@@ -439,7 +428,7 @@ async def increment(student_fio: str, key: str, today: date | None = None) -> in
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `increment`.
+Атомарно увеличивает счётчик студента и возвращает новое значение.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -474,7 +463,7 @@ async def set_value(student_fio: str, key: str, value: int) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Persists state updates for `set_value`.
+Записывает счётчику точное значение (например, бонус XP, выданный админом).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -509,7 +498,7 @@ async def add_value(student_fio: str, key: str, delta: int) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `add_value`.
+Атомарно прибавляет к счётчику delta (может быть отрицательной).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -544,7 +533,7 @@ async def get_key_values(key: str) -> dict[str, int]
 - **Return Contract**: `dict[str, int]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_key_values`.
+Возвращает значения одного счётчика у всех студентов {ФИО в нижнем регистре: значение}.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -577,7 +566,7 @@ async def count_keys(student_fio: str, prefix: str) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `count_keys`.
+Считает разные счётчики студента с общим префиксом.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -603,7 +592,7 @@ result = await count_keys(student_fio=..., prefix=...)
 
 ## Class Model: `AchievementResetRepository`
 
-Encapsulates domain entities and data transfer logic for `AchievementResetRepository`.
+Сброс ачивок группы и хранение точки отсчёта журнала.
 
 ### `AchievementResetRepository.reset_with_baseline`
 ```python
@@ -615,7 +604,7 @@ async def reset_with_baseline(stats: dict[str, dict[str, Any]]) -> tuple[int, in
 - **Return Contract**: `tuple[int, int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `reset_with_baseline`.
+В одной транзакции удаляет все ачивки и счётчики и записывает новый снимок журнала.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -648,7 +637,7 @@ async def get_baselines() -> dict[str, dict[str, Any]]
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_baselines`.
+Возвращает снимки журнала {ФИО: запись журнала} на момент сброса.
 
 #### Parameters Contract
 *This method takes no input parameters.*

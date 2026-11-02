@@ -1,34 +1,23 @@
 # Component Reference: `bot/handlers/user/profile.py`
 > **File Path**: [`bot/handlers/user/profile.py`](../../bot/handlers/user/profile.py)
 > **Subsystem**: `Student Profile Flow`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/handlers/user/profile.py` module implements core operational logic for the `Student Profile Flow` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Хэндлеры студенческого профиля, достижений и лидерборда группы 1-КПД-3.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_build_miniapp_keyboard`](#_build_miniapp_keyboard) | Function | L32–L39 | `InlineKeyboardMarkup` | Executes core domain logic for `_build_miniapp_keyboard... |
-| [`_format_profile_achievements`](#_format_profile_achievements) | Function | L42–L51 | `str` | Executes core domain logic for `_format_profile_achieve... |
-| [`_render_ascii_progress`](#_render_ascii_progress) | Function | L54–L61 | `str` | Executes core domain logic for `_render_ascii_progress`... |
-| [`_format_profile_message`](#_format_profile_message) | Function | L64–L83 | `str` | Executes core domain logic for `_format_profile_message... |
-| [`handle_profile_command`](#handle_profile_command) | Function | L87–L107 | `None` | Executes core domain logic for `handle_profile_command`... |
-| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L110–L114 | `str` | Executes core domain logic for `_format_leaderboard_row... |
-| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L117–L131 | `str` | Executes core domain logic for `_format_leaderboard_mes... |
-| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L135–L146 | `None` | Executes core domain logic for `handle_leaderboard_comm... |
+| [`_build_miniapp_keyboard`](#_build_miniapp_keyboard) | Function | L32–L39 | `InlineKeyboardMarkup` | Формирует клавиатуру с WebApp кнопкой для открытия рейт... |
+| [`_format_profile_achievements`](#_format_profile_achievements) | Function | L42–L51 | `str` | Формирует компактный блок открытых ачивок студента. |
+| [`_render_ascii_progress`](#_render_ascii_progress) | Function | L54–L61 | `str` | Формирует текстовый прогресс-бар вида [██████░░░░]. |
+| [`_format_profile_message`](#_format_profile_message) | Function | L64–L83 | `str` | Формирует HTML-текст персональной карточки студента с р... |
+| [`handle_profile_command`](#handle_profile_command) | Function | L87–L107 | `None` | Отображает профиль студента, ранг и открытые достижения... |
+| [`_format_leaderboard_row`](#_format_leaderboard_row) | Function | L110–L114 | `str` | Формирует строку студента в турнирной таблице группы. |
+| [`_format_leaderboard_message`](#_format_leaderboard_message) | Function | L117–L131 | `str` | Формирует текстовое сообщение с топом успеваемости груп... |
+| [`handle_leaderboard_command`](#handle_leaderboard_command) | Function | L135–L144 | `None` | Отображает топ-10 студентов группы 1-КПД-3. |
 
 ---
 
@@ -44,7 +33,7 @@ def _build_miniapp_keyboard() -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_miniapp_keyboard`.
+Формирует клавиатуру с WebApp кнопкой для открытия рейтинга и ачивок.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -75,7 +64,7 @@ def _format_profile_achievements(ach_ids: list[str]) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_profile_achievements`.
+Формирует компактный блок открытых ачивок студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -108,7 +97,7 @@ def _render_ascii_progress(current: int, total: int, length: int = 10) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_render_ascii_progress`.
+Формирует текстовый прогресс-бар вида [██████░░░░].
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -143,7 +132,7 @@ def _format_profile_message(p) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_profile_message`.
+Формирует HTML-текст персональной карточки студента с рангом и XP.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -176,7 +165,7 @@ async def handle_profile_command(message: Message) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_profile_command`.
+Отображает профиль студента, ранг и открытые достижения.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -209,7 +198,7 @@ def _format_leaderboard_row(idx: int, p) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_leaderboard_row`.
+Формирует строку студента в турнирной таблице группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -243,7 +232,7 @@ def _format_leaderboard_message(profiles: list) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_format_leaderboard_message`.
+Формирует текстовое сообщение с топом успеваемости группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -271,12 +260,12 @@ result = _format_leaderboard_message(profiles=...)
 async def handle_leaderboard_command(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/profile.py#L135-L146`](../../bot/handlers/user/profile.py#L135-L146)
+- **Source Reference**: [`bot/handlers/user/profile.py#L135-L144`](../../bot/handlers/user/profile.py#L135-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `handle_leaderboard_command`.
+Отображает топ-10 студентов группы 1-КПД-3.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

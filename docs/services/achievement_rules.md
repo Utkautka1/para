@@ -1,39 +1,28 @@
 # Component Reference: `services/achievement_rules.py`
 > **File Path**: [`services/achievement_rules.py`](../../services/achievement_rules.py)
 > **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/achievement_rules.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Правила достижений, которые вычисляются из журнала посещаемости и рейтинга.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
 | [`MonthStat.total`](#monthstattotal) | Method | L46–L47 | `int` | Executes core domain logic for `total`. |
 | [`MonthStat.pct`](#monthstatpct) | Method | L50–L52 | `float` | Executes core domain logic for `pct`. |
 | [`StudentStat.visited`](#studentstatvisited) | Method | L66–L67 | `int` | Executes core domain logic for `visited`. |
-| [`_month_from_counts`](#_month_from_counts) | Function | L70–L79 | `MonthStat` | Executes core domain logic for `_month_from_counts`. |
-| [`build_student_stat`](#build_student_stat) | Function | L82–L99 | `StudentStat` | Executes core domain logic for `build_student_stat`. |
-| [`_full_months`](#_full_months) | Function | L102–L104 | `int` | Executes core domain logic for `_full_months`. |
-| [`_has_comeback`](#_has_comeback) | Function | L107–L109 | `bool` | Executes core domain logic for `_has_comeback`. |
-| [`_pct_between`](#_pct_between) | Function | L112–L114 | `bool` | Executes core domain logic for `_pct_between`. |
-| [`evaluate_stat_rules`](#evaluate_stat_rules) | Function | L147–L149 | `set[str]` | Executes core domain logic for `evaluate_stat_rules`. |
-| [`_categories_count`](#_categories_count) | Function | L164–L166 | `int` | Executes core domain logic for `_categories_count`. |
-| [`_xp_of`](#_xp_of) | Function | L169–L171 | `int` | Executes core domain logic for `_xp_of`. |
-| [`_meta_pass`](#_meta_pass) | Function | L174–L187 | `set[str]` | Executes core domain logic for `_meta_pass`. |
-| [`evaluate_meta_rules`](#evaluate_meta_rules) | Function | L190–L204 | `set[str]` | Executes core domain logic for `evaluate_meta_rules`. |
+| [`_month_from_counts`](#_month_from_counts) | Function | L70–L79 | `MonthStat` | Собирает MonthStat из словаря {'П': .., 'О': .., 'У': .... |
+| [`build_student_stat`](#build_student_stat) | Function | L82–L99 | `StudentStat` | Преобразует запись fetch_all_time_attendance в StudentS... |
+| [`_full_months`](#_full_months) | Function | L102–L104 | `int` | Считает «полные» месяцы без отметок указанных типов ('n... |
+| [`_has_comeback`](#_has_comeback) | Function | L107–L109 | `bool` | Проверяет, был ли месяц ниже 75%, за которым сразу шёл ... |
+| [`_pct_between`](#_pct_between) | Function | L112–L114 | `bool` | Проверяет, что процент посещаемости в диапазоне и отмет... |
+| [`evaluate_stat_rules`](#evaluate_stat_rules) | Function | L147–L149 | `set[str]` | Возвращает id журнальных ачивок, условия которых выполн... |
+| [`_categories_count`](#_categories_count) | Function | L164–L166 | `int` | Считает, в скольких категориях у студента есть открытые... |
+| [`_xp_of`](#_xp_of) | Function | L169–L171 | `int` | Суммирует XP открытых ачивок. |
+| [`_meta_pass`](#_meta_pass) | Function | L174–L187 | `set[str]` | Один проход мета-правил по текущему набору ачивок. |
+| [`evaluate_meta_rules`](#evaluate_meta_rules) | Function | L190–L204 | `set[str]` | Возвращает мета-ачивки, которые открываются поверх уже ... |
 
 ---
 
@@ -41,7 +30,7 @@ graph LR
 
 ## Class Model: `MonthStat`
 
-Encapsulates domain entities and data transfer logic for `MonthStat`.
+Отметки студента за один месяц журнала.
 
 ### `MonthStat.total`
 ```python
@@ -107,7 +96,7 @@ result = pct()
 
 ## Class Model: `StudentStat`
 
-Encapsulates domain entities and data transfer logic for `StudentStat`.
+Срез журнала студента, достаточный для всех журнальных правил.
 
 ### `StudentStat.visited`
 ```python
@@ -150,7 +139,7 @@ def _month_from_counts(counts: dict[str, int], base: dict[str, int] | None = Non
 - **Return Contract**: `MonthStat`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_month_from_counts`.
+Собирает MonthStat из словаря {'П': .., 'О': .., 'У': .., 'Н': ..} за вычетом снимка.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -184,7 +173,7 @@ def build_student_stat( raw: dict[str, Any], is_birthday: bool = False, baseline
 - **Return Contract**: `StudentStat`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_student_stat`.
+Преобразует запись fetch_all_time_attendance в StudentStat.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -219,7 +208,7 @@ def _full_months(s: StudentStat, *banned: str) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_full_months`.
+Считает «полные» месяцы без отметок указанных типов ('n', 'o').
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -252,7 +241,7 @@ def _has_comeback(s: StudentStat) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_has_comeback`.
+Проверяет, был ли месяц ниже 75%, за которым сразу шёл месяц на 90%+.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -285,7 +274,7 @@ def _pct_between(s: StudentStat, low: float, high: float, min_marks: int = MIN_M
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_pct_between`.
+Проверяет, что процент посещаемости в диапазоне и отметок достаточно.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -321,7 +310,7 @@ def evaluate_stat_rules(s: StudentStat) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `evaluate_stat_rules`.
+Возвращает id журнальных ачивок, условия которых выполнены.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -346,7 +335,7 @@ result = evaluate_stat_rules(s=...)
 
 ## Class Model: `MetaContext`
 
-Encapsulates domain entities and data transfer logic for `MetaContext`.
+Положение студента в группе для мета-правил.
 
 ### `_categories_count`
 ```python
@@ -358,7 +347,7 @@ def _categories_count(unlocked: set[str]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_categories_count`.
+Считает, в скольких категориях у студента есть открытые ачивки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -391,7 +380,7 @@ def _xp_of(unlocked: set[str]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_xp_of`.
+Суммирует XP открытых ачивок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -424,7 +413,7 @@ def _meta_pass(unlocked: set[str], ctx: MetaContext) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_meta_pass`.
+Один проход мета-правил по текущему набору ачивок.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -458,7 +447,7 @@ def evaluate_meta_rules(unlocked: set[str], ctx: MetaContext) -> set[str]
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `evaluate_meta_rules`.
+Возвращает мета-ачивки, которые открываются поверх уже открытых.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

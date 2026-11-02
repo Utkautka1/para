@@ -1,30 +1,19 @@
 # Component Reference: `api/router/birthdays.py`
 > **File Path**: [`api/router/birthdays.py`](../../api/router/birthdays.py)
 > **Subsystem**: `Birthdays API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/birthdays.py` module implements core operational logic for the `Birthdays API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер дней рождения — GET /birthdays, upcoming, today.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_map_calculated_to_dto`](#_map_calculated_to_dto) | Function | L25–L44 | `BirthdayItem` | Executes core domain logic for `_map_calculated_to_dto`... |
-| [`get_birthdays_calendar`](#get_birthdays_calendar) | Function | L48–L64 | `BirthdaysCalendarResponse` | Retrieves and resolves domain data for `get_birthdays_c... |
-| [`get_upcoming_birthdays`](#get_upcoming_birthdays) | Function | L68–L87 | `UpcomingBirthdaysResponse` | Retrieves and resolves domain data for `get_upcoming_bi... |
-| [`get_today_birthdays`](#get_today_birthdays) | Function | L91–L107 | `TodayBirthdaysResponse` | Retrieves and resolves domain data for `get_today_birth... |
+| [`_map_calculated_to_dto`](#_map_calculated_to_dto) | Function | L25–L44 | `BirthdayItem` | Преобразует словарь с расчетом возраста в строгий Pydan... |
+| [`get_birthdays_calendar`](#get_birthdays_calendar) | Function | L48–L64 | `BirthdaysCalendarResponse` | Возвращает полный календарь дней рождения одногруппнико... |
+| [`get_upcoming_birthdays`](#get_upcoming_birthdays) | Function | L68–L87 | `UpcomingBirthdaysResponse` | Возвращает список студентов, у которых день рождения на... |
+| [`get_today_birthdays`](#get_today_birthdays) | Function | L91–L107 | `TodayBirthdaysResponse` | Возвращает список одногруппников, празднующих день рожд... |
 
 ---
 
@@ -40,7 +29,7 @@ def _map_calculated_to_dto(c: dict) -> BirthdayItem
 - **Return Contract**: `BirthdayItem`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_map_calculated_to_dto`.
+Преобразует словарь с расчетом возраста в строгий Pydantic объект BirthdayItem.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -73,7 +62,7 @@ async def get_birthdays_calendar() -> BirthdaysCalendarResponse
 - **Return Contract**: `BirthdaysCalendarResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_birthdays_calendar`.
+Возвращает полный календарь дней рождения одногруппников на весь год.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -104,7 +93,7 @@ async def get_upcoming_birthdays( days: int = Query(default=30, ge=1, le=365, de
 - **Return Contract**: `UpcomingBirthdaysResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_upcoming_birthdays`.
+Возвращает список студентов, у которых день рождения наступит в ближайшие N дней.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -137,7 +126,7 @@ async def get_today_birthdays() -> TodayBirthdaysResponse
 - **Return Contract**: `TodayBirthdaysResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_today_birthdays`.
+Возвращает список одногруппников, празднующих день рождения прямо сегодня.
 
 #### Parameters Contract
 *This method takes no input parameters.*

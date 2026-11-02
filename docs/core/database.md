@@ -1,33 +1,22 @@
 # Component Reference: `core/database.py`
 > **File Path**: [`core/database.py`](../../core/database.py)
 > **Subsystem**: `Relational SQLite Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/database.py` module implements core operational logic for the `Relational SQLite Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль управления асинхронным подключением к реляционной БД SQLite (SQLAlchemy 2.0).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_sqlite_pragmas`](#_set_sqlite_pragmas) | Function | L29–L36 | `None` | Executes core domain logic for `_set_sqlite_pragmas`. |
-| [`get_database_engine`](#get_database_engine) | Function | L39–L52 | `AsyncEngine` | Retrieves and resolves domain data for `get_database_en... |
-| [`get_session_factory`](#get_session_factory) | Function | L55–L66 | `async_sessionmaker[AsyncSession]` | Retrieves and resolves domain data for `get_session_fac... |
-| [`get_async_session`](#get_async_session) | Function | L70–L79 | `AsyncGenerator[AsyncSession, None]` | Retrieves and resolves domain data for `get_async_sessi... |
-| [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L82–L96 | `None` | Executes core domain logic for `_migrate_subscribers_fr... |
-| [`_migrate_attendance_snapshot_columns`](#_migrate_attendance_snapshot_columns) | Function | L99–L108 | `None` | Executes core domain logic for `_migrate_attendance_sna... |
-| [`init_db`](#init_db) | Function | L111–L122 | `None` | Executes core domain logic for `init_db`. |
+| [`_set_sqlite_pragmas`](#_set_sqlite_pragmas) | Function | L29–L36 | `None` | Устанавливает оптимальные PRAGMA параметры для SQLite п... |
+| [`get_database_engine`](#get_database_engine) | Function | L39–L52 | `AsyncEngine` | Возвращает синглтон асинхронного движка SQLAlchemy для ... |
+| [`get_session_factory`](#get_session_factory) | Function | L55–L66 | `async_sessionmaker[AsyncSession]` | Возвращает фабрику асинхронных сессий SQLAlchemy. |
+| [`get_async_session`](#get_async_session) | Function | L70–L79 | `AsyncGenerator[AsyncSession, None]` | Контекстный менеджер для безопасной работы с асинхронно... |
+| [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L82–L96 | `None` | Выполняет плавную однократную миграцию подписчиков из s... |
+| [`_migrate_attendance_snapshot_columns`](#_migrate_attendance_snapshot_columns) | Function | L99–L108 | `None` | Добавляет недостающие столбцы посещаемости (late_hours,... |
+| [`init_db`](#init_db) | Function | L111–L122 | `None` | Создает все необходимые таблицы в SQLite и проводит ста... |
 
 ---
 
@@ -43,7 +32,7 @@ def _set_sqlite_pragmas(dbapi_connection: Any, _connection_record: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_set_sqlite_pragmas`.
+Устанавливает оптимальные PRAGMA параметры для SQLite при каждом новом подключении.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -77,7 +66,7 @@ def get_database_engine() -> AsyncEngine
 - **Return Contract**: `AsyncEngine`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_database_engine`.
+Возвращает синглтон асинхронного движка SQLAlchemy для SQLite.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -108,7 +97,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]
 - **Return Contract**: `async_sessionmaker[AsyncSession]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_session_factory`.
+Возвращает фабрику асинхронных сессий SQLAlchemy.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -139,7 +128,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]
 - **Return Contract**: `AsyncGenerator[AsyncSession, None]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_async_session`.
+Контекстный менеджер для безопасной работы с асинхронной сессией БД.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -170,7 +159,7 @@ async def _migrate_subscribers_from_json(session: AsyncSession) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_migrate_subscribers_from_json`.
+Выполняет плавную однократную миграцию подписчиков из subscribers.json в SQLite.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -203,7 +192,7 @@ def _migrate_attendance_snapshot_columns(conn: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_migrate_attendance_snapshot_columns`.
+Добавляет недостающие столбцы посещаемости (late_hours, excused_hours, unexcused_hours).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -236,7 +225,7 @@ async def init_db() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `init_db`.
+Создает все необходимые таблицы в SQLite и проводит стартовую миграцию.
 
 #### Parameters Contract
 *This method takes no input parameters.*

@@ -1,32 +1,21 @@
 # Component Reference: `utils/storage.py`
 > **File Path**: [`utils/storage.py`](../../utils/storage.py)
 > **Subsystem**: `Atomic Storage Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `utils/storage.py` module implements core operational logic for the `Atomic Storage Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль атомарного и безопасного ввода-вывода JSON-файлов.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`sync_load_json`](#sync_load_json) | Function | L20–L36 | `Any` | Executes core domain logic for `sync_load_json`. |
-| [`_flush_json_to_file`](#_flush_json_to_file) | Function | L39–L50 | `None` | Executes core domain logic for `_flush_json_to_file`. |
-| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L53–L75 | `bool` | Executes core domain logic for `_write_temp_and_replace... |
-| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L78–L87 | `bool` | Executes core domain logic for `sync_atomic_save_json`. |
-| [`load_json`](#load_json) | Function | L90–L99 | `Any` | Executes core domain logic for `load_json`. |
-| [`save_json`](#save_json) | Function | L102–L111 | `bool` | Saves serialized entity data to storage for `save_json`... |
+| [`sync_load_json`](#sync_load_json) | Function | L20–L36 | `Any` | Синхронно считывает данные из локального JSON-файла. |
+| [`_flush_json_to_file`](#_flush_json_to_file) | Function | L39–L50 | `None` | Сбрасывает сериализованный JSON на диск с принудительно... |
+| [`_write_temp_and_replace`](#_write_temp_and_replace) | Function | L53–L75 | `bool` | Записывает данные во временный файл и атомарно заменяет... |
+| [`sync_atomic_save_json`](#sync_atomic_save_json) | Function | L78–L87 | `bool` | Синхронно сохраняет структуру данных в JSON-файл с гара... |
+| [`load_json`](#load_json) | Function | L90–L99 | `Any` | Асинхронно считывает JSON в пуле потоков без блокировки... |
+| [`save_json`](#save_json) | Function | L102–L111 | `bool` | Асинхронно и атомарно сохраняет JSON в отдельном пуле п... |
 
 ---
 
@@ -42,7 +31,7 @@ def sync_load_json(file_path: str, default: Any = None) -> Any
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_load_json`.
+Синхронно считывает данные из локального JSON-файла.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -76,7 +65,7 @@ def _flush_json_to_file(temp_file, data: Any) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_flush_json_to_file`.
+Сбрасывает сериализованный JSON на диск с принудительной синхронизацией.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -110,7 +99,7 @@ def _write_temp_and_replace(file_path: str, data: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_write_temp_and_replace`.
+Записывает данные во временный файл и атомарно заменяет целевой файл.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -144,7 +133,7 @@ def sync_atomic_save_json(file_path: str, data: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `sync_atomic_save_json`.
+Синхронно сохраняет структуру данных в JSON-файл с гарантией целостности.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -178,7 +167,7 @@ async def load_json(file_path: str, default: Any = None) -> Any
 - **Return Contract**: `Any`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `load_json`.
+Асинхронно считывает JSON в пуле потоков без блокировки цикла событий.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -212,7 +201,7 @@ async def save_json(file_path: str, data: Any) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Saves serialized entity data to storage for `save_json`.
+Асинхронно и атомарно сохраняет JSON в отдельном пуле потоков.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

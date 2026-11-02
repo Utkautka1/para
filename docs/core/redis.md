@@ -1,30 +1,19 @@
 # Component Reference: `core/redis.py`
 > **File Path**: [`core/redis.py`](../../core/redis.py)
 > **Subsystem**: `Redis Engine`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `core/redis.py` module implements core operational logic for the `Redis Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль инициализации и подключения к Redis.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_redis_pool`](#get_redis_pool) | Function | L18–L39 | `ConnectionPool` | Retrieves and resolves domain data for `get_redis_pool`... |
-| [`init_redis`](#init_redis) | Function | L42–L61 | `Redis | None` | Executes core domain logic for `init_redis`. |
-| [`get_redis`](#get_redis) | Function | L64–L75 | `Redis | None` | Retrieves and resolves domain data for `get_redis`. |
-| [`close_redis`](#close_redis) | Function | L78–L94 | `None` | Executes core domain logic for `close_redis`. |
+| [`get_redis_pool`](#get_redis_pool) | Function | L18–L39 | `ConnectionPool` | Возвращает синглтон пула сетевых соединений к Redis с л... |
+| [`init_redis`](#init_redis) | Function | L42–L61 | `Redis \| None` | Инициализирует асинхронное подключение к серверу Redis ... |
+| [`get_redis`](#get_redis) | Function | L64–L75 | `Redis \| None` | Предоставляет активный синглтон клиента Redis с ленивой... |
+| [`close_redis`](#close_redis) | Function | L78–L94 | `None` | Корректно закрывает активный клиент и освобождает пул с... |
 
 ---
 
@@ -40,7 +29,7 @@ def get_redis_pool() -> ConnectionPool
 - **Return Contract**: `ConnectionPool`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_redis_pool`.
+Возвращает синглтон пула сетевых соединений к Redis с лимитом сокетов.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -71,7 +60,7 @@ async def init_redis() -> Redis | None
 - **Return Contract**: `Redis | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `init_redis`.
+Инициализирует асинхронное подключение к серверу Redis через пул.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -103,7 +92,7 @@ async def get_redis() -> Redis | None
 - **Return Contract**: `Redis | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_redis`.
+Предоставляет активный синглтон клиента Redis с ленивой инициализацией.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -134,7 +123,7 @@ async def close_redis() -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `close_redis`.
+Корректно закрывает активный клиент и освобождает пул сокетов Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*

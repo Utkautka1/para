@@ -1,30 +1,19 @@
 # Component Reference: `api/router/classmates.py`
 > **File Path**: [`api/router/classmates.py`](../../api/router/classmates.py)
 > **Subsystem**: `Classmates API`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `api/router/classmates.py` module implements core operational logic for the `Classmates API` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Роутер одногруппников — GET /classmates (список и карточка студента).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L40 | `ClassmateItem` | Executes core domain logic for `_to_classmate_item`. |
-| [`list_classmates`](#list_classmates) | Function | L44–L57 | `ClassmatesListResponse` | Executes core domain logic for `list_classmates`. |
-| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L60–L74 | `dict | None` | Executes core domain logic for `_find_student_in_regist... |
-| [`get_classmate_detail`](#get_classmate_detail) | Function | L78–L102 | `ClassmateDetailResponse` | Retrieves and resolves domain data for `get_classmate_d... |
+| [`_to_classmate_item`](#_to_classmate_item) | Function | L22–L40 | `ClassmateItem` | Конвертирует сырой словарь студента из JSON в Pydantic ... |
+| [`list_classmates`](#list_classmates) | Function | L44–L57 | `ClassmatesListResponse` | Возвращает полный реестр одногруппников группы 1-КПД-3. |
+| [`_find_student_in_registry`](#_find_student_in_registry) | Function | L60–L74 | `dict \| None` | Ищет запись студента по порядковому номеру или по Teleg... |
+| [`get_classmate_detail`](#get_classmate_detail) | Function | L78–L102 | `ClassmateDetailResponse` | Возвращает детальную карточку студента по его порядково... |
 
 ---
 
@@ -40,7 +29,7 @@ def _to_classmate_item(raw: dict) -> ClassmateItem
 - **Return Contract**: `ClassmateItem`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_to_classmate_item`.
+Конвертирует сырой словарь студента из JSON в Pydantic модель ClassmateItem.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -73,7 +62,7 @@ async def list_classmates() -> ClassmatesListResponse
 - **Return Contract**: `ClassmatesListResponse`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `list_classmates`.
+Возвращает полный реестр одногруппников группы 1-КПД-3.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -104,7 +93,7 @@ def _find_student_in_registry(registry: list[dict], identifier: int) -> dict | N
 - **Return Contract**: `dict | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_find_student_in_registry`.
+Ищет запись студента по порядковому номеру или по Telegram ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -138,7 +127,7 @@ async def get_classmate_detail(student_id: int) -> ClassmateDetailResponse
 - **Return Contract**: `ClassmateDetailResponse`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_classmate_detail`.
+Возвращает детальную карточку студента по его порядковому ID или Telegram ID.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

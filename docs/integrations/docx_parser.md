@@ -1,33 +1,22 @@
 # Component Reference: `integrations/docx_parser.py`
 > **File Path**: [`integrations/docx_parser.py`](../../integrations/docx_parser.py)
 > **Subsystem**: `Cloud DOCX Parser`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `integrations/docx_parser.py` module implements core operational logic for the `Cloud DOCX Parser` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль загрузки и парсинга контактов преподавателей с Yandex Disk.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L46–L70 | `bytes | None` | Executes core domain logic for `fetch_docx_bytes`. |
-| [`extract_row_texts`](#extract_row_texts) | Function | L73–L89 | `tuple[str, str]` | Executes core domain logic for `extract_row_texts`. |
-| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L92–L113 | `dict[str, TeacherData]` | Parses and extracts structured entities from `parse_doc... |
-| [`_get_docx_lock`](#_get_docx_lock) | Function | L116–L127 | `asyncio.Lock` | Executes core domain logic for `_get_docx_lock`. |
-| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L130–L144 | `bool` | Executes core domain logic for `_is_cache_fresh`. |
-| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L147–L165 | `dict[str, TeacherData]` | Executes core domain logic for `_fetch_and_cache_teache... |
-| [`get_teacher_links`](#get_teacher_links) | Function | L168–L184 | `dict[str, TeacherData]` | Retrieves and resolves domain data for `get_teacher_lin... |
+| [`fetch_docx_bytes`](#fetch_docx_bytes) | Function | L46–L70 | `bytes \| None` | Загружает бинарные байты docx-файла с Яндекс Диска чере... |
+| [`extract_row_texts`](#extract_row_texts) | Function | L73–L89 | `tuple[str, str]` | Извлекает нормализованное ФИО преподавателя и ссылку из... |
+| [`parse_docx_teachers`](#parse_docx_teachers) | Function | L92–L113 | `dict[str, TeacherData]` | Распаковывает docx-архив в памяти и парсит таблицу конт... |
+| [`_get_docx_lock`](#_get_docx_lock) | Function | L116–L127 | `asyncio.Lock` | Предоставляет лениво созданный мьютекс asyncio.Lock для... |
+| [`_is_cache_fresh`](#_is_cache_fresh) | Function | L130–L144 | `bool` | Проверяет валидность локального кэша преподавателей с з... |
+| [`_fetch_and_cache_teachers`](#_fetch_and_cache_teachers) | Function | L147–L165 | `dict[str, TeacherData]` | Загружает документ с диска, парсит преподавателей и сли... |
+| [`get_teacher_links`](#get_teacher_links) | Function | L168–L184 | `dict[str, TeacherData]` | Предоставляет реестр контактов преподавателей с Singlef... |
 
 ---
 
@@ -35,7 +24,7 @@ graph LR
 
 ## Class Model: `TeacherData`
 
-Encapsulates domain entities and data transfer logic for `TeacherData`.
+Типизированный словарь с контактной информацией преподавателя.
 
 ### `fetch_docx_bytes`
 ```python
@@ -47,7 +36,7 @@ async def fetch_docx_bytes() -> bytes | None
 - **Return Contract**: `bytes | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_docx_bytes`.
+Загружает бинарные байты docx-файла с Яндекс Диска через публичный API.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -79,7 +68,7 @@ def extract_row_texts(row_elem: Any) -> tuple[str, str]
 - **Return Contract**: `tuple[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_row_texts`.
+Извлекает нормализованное ФИО преподавателя и ссылку из XML-строки таблицы docx.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -112,7 +101,7 @@ def parse_docx_teachers(content: bytes) -> dict[str, TeacherData]
 - **Return Contract**: `dict[str, TeacherData]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_docx_teachers`.
+Распаковывает docx-архив в памяти и парсит таблицу контактов преподавателей.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -145,7 +134,7 @@ def _get_docx_lock() -> asyncio.Lock
 - **Return Contract**: `asyncio.Lock`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_docx_lock`.
+Предоставляет лениво созданный мьютекс asyncio.Lock для синхронизации запросов.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -176,7 +165,7 @@ def _is_cache_fresh(now: float, force_refresh: bool) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_is_cache_fresh`.
+Проверяет валидность локального кэша преподавателей с защитой от спама.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -210,7 +199,7 @@ async def _fetch_and_cache_teachers(now: float) -> dict[str, TeacherData]
 - **Return Contract**: `dict[str, TeacherData]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_and_cache_teachers`.
+Загружает документ с диска, парсит преподавателей и сливает с кастомным списком.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -243,7 +232,7 @@ async def get_teacher_links(force_refresh: bool = False) -> dict[str, TeacherDat
 - **Return Contract**: `dict[str, TeacherData]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_teacher_links`.
+Предоставляет реестр контактов преподавателей с Singleflight-блокировкой.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

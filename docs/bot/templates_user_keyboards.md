@@ -1,35 +1,24 @@
 # Component Reference: `bot/templates/user/keyboards.py`
 > **File Path**: [`bot/templates/user/keyboards.py`](../../bot/templates/user/keyboards.py)
 > **Subsystem**: `User Inline Keyboards`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/templates/user/keyboards.py` module implements core operational logic for the `User Inline Keyboards` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль аккуратных Inline-клавиатур навигации.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`format_lesson_button_text`](#format_lesson_button_text) | Function | L14–L26 | `str` | Formats message payload and presentation markup for `fo... |
-| [`chunk_link_buttons`](#chunk_link_buttons) | Function | L29–L46 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `chunk_link_buttons`. |
-| [`_build_admin_nav_rows`](#_build_admin_nav_rows) | Function | L49–L68 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_admin_nav_rows`. |
-| [`_build_calendar_rows`](#_build_calendar_rows) | Function | L71–L90 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_calendar_rows`. |
-| [`_build_nav_rows`](#_build_nav_rows) | Function | L93–L106 | `list[list[InlineKeyboardButton]]` | Executes core domain logic for `_build_nav_rows`. |
-| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L109–L120 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_schedule_in... |
-| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L123–L141 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_tester_cabi... |
-| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L144–L159 | `InlineKeyboardMarkup | None` | Retrieves and resolves domain data for `get_topic_inlin... |
-| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L162–L179 | `InlineKeyboardMarkup` | Retrieves and resolves domain data for `get_notice_sett... |
+| [`format_lesson_button_text`](#format_lesson_button_text) | Function | L14–L26 | `str` | Формирует лаконичный текст кнопки подключения к дистанц... |
+| [`chunk_link_buttons`](#chunk_link_buttons) | Function | L29–L46 | `list[list[InlineKeyboardButton]]` | Разбивает кнопки ссылок на дистанционные занятия по 2 ш... |
+| [`_build_admin_nav_rows`](#_build_admin_nav_rows) | Function | L49–L68 | `list[list[InlineKeyboardButton]]` | Формирует дополнительные служебные кнопки старосты и ад... |
+| [`_build_calendar_rows`](#_build_calendar_rows) | Function | L71–L90 | `list[list[InlineKeyboardButton]]` | Формирует базовые ряды кнопок календаря (сегодня, завтр... |
+| [`_build_nav_rows`](#_build_nav_rows) | Function | L93–L106 | `list[list[InlineKeyboardButton]]` | Формирует основные кнопки навигации по календарю и пере... |
+| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L109–L120 | `InlineKeyboardMarkup` | Генерирует полную навигационную клавиатуру для экрана р... |
+| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L123–L141 | `InlineKeyboardMarkup` | Формирует инлайн-клавиатуру персонального кабинета тест... |
+| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L144–L159 | `InlineKeyboardMarkup \| None` | Генерирует лаконичную клавиатуру со ссылками на пары дл... |
+| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L162–L179 | `InlineKeyboardMarkup` | Генерирует интерактивную клавиатуру управления уведомле... |
 
 ---
 
@@ -45,7 +34,7 @@ def format_lesson_button_text(lesson: Lesson) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Formats message payload and presentation markup for `format_lesson_button_text`.
+Формирует лаконичный текст кнопки подключения к дистанционной паре.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -78,7 +67,7 @@ def chunk_link_buttons(lessons: list[Lesson]) -> list[list[InlineKeyboardButton]
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `chunk_link_buttons`.
+Разбивает кнопки ссылок на дистанционные занятия по 2 штуки в ряд.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -111,7 +100,7 @@ def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[lis
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_admin_nav_rows`.
+Формирует дополнительные служебные кнопки старосты и администратора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -145,7 +134,7 @@ def _build_calendar_rows(week_offset: int, is_subscribed: bool) -> list[list[Inl
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_calendar_rows`.
+Формирует базовые ряды кнопок календаря (сегодня, завтра, смена недели, пуши).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -179,7 +168,7 @@ def _build_nav_rows( week_offset: int, is_admin: bool = False, is_subscribed: bo
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_nav_rows`.
+Формирует основные кнопки навигации по календарю и переключатели настроек.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -216,7 +205,7 @@ def get_schedule_inline_kb( lessons: list[Lesson] | None = None, week_offset: in
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_schedule_inline_kb`.
+Генерирует полную навигационную клавиатуру для экрана расписания в ЛС.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -254,7 +243,7 @@ def get_tester_cabinet_kb(login_url: str | None = None) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_tester_cabinet_kb`.
+Формирует инлайн-клавиатуру персонального кабинета тестера API.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -287,7 +276,7 @@ def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMa
 - **Return Contract**: `InlineKeyboardMarkup | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_topic_inline_kb`.
+Генерирует лаконичную клавиатуру со ссылками на пары для топика группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -320,7 +309,7 @@ def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_notice_settings_kb`.
+Генерирует интерактивную клавиатуру управления уведомлениями для /notice.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

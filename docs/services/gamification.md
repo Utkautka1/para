@@ -6,8 +6,8 @@
 > **Persistence Backend**: `Redis L2 + SQLite Attendance Stats`
 > **Service Level Objective**: `Sub-5ms Profile Calculation`
 
-## 1. Architectural Role & Responsibilities
-The `services/gamification.py` module implements core operational logic for the `Academic Gamification Engine` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис академической геймификации, расчета уровней, рангов и достижений.
 
 ### Component Architecture & Data Flow
 ```mermaid
@@ -21,23 +21,23 @@ graph TD
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`resolve_student_rank`](#resolve_student_rank) | Function | L50–L66 | `RankDefinition` | Executes core domain logic for `resolve_student_rank`. |
-| [`calculate_student_xp`](#calculate_student_xp) | Function | L69–L71 | `int` | Executes core domain logic for `calculate_student_xp`. |
-| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L74–L81 | `dict[str, Any]` | Executes core domain logic for `_extract_student_metric... |
-| [`is_starosta`](#is_starosta) | Function | L84–L86 | `bool` | Executes core domain logic for `is_starosta`. |
-| [`calculate_guild_points`](#calculate_guild_points) | Function | L89–L97 | `int` | Executes core domain logic for `calculate_guild_points`... |
-| [`build_student_profile`](#build_student_profile) | Function | L100–L125 | `StudentProfile` | Executes core domain logic for `build_student_profile`. |
-| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L128–L138 | `list[StudentProfile] | None` | Executes core domain logic for `_load_cached_leaderboar... |
-| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L141–L148 | `None` | Executes core domain logic for `_save_cached_leaderboar... |
-| [`bonus_for`](#bonus_for) | Function | L151–L154 | `int` | Executes core domain logic for `bonus_for`. |
-| [`_apply_bonuses`](#_apply_bonuses) | Function | L157–L170 | `StudentProfile` | Executes core domain logic for `_apply_bonuses`. |
-| [`_match_student_achievements`](#_match_student_achievements) | Function | L173–L180 | `set[str]` | Executes core domain logic for `_match_student_achievem... |
-| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L183–L209 | `list[StudentProfile]` | Retrieves and resolves domain data for `get_group_leade... |
-| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L212–L223 | `StudentProfile | None` | Retrieves and resolves domain data for `get_student_pro... |
-| [`hide_secret_achievements`](#hide_secret_achievements) | Function | L226–L240 | `StudentProfile` | Executes core domain logic for `hide_secret_achievement... |
-| [`_same_student`](#_same_student) | Function | L243–L246 | `bool` | Executes core domain logic for `_same_student`. |
+| [`resolve_student_rank`](#resolve_student_rank) | Function | L50–L66 | `RankDefinition` | Определяет актуальный ранг студента по проценту посещае... |
+| [`calculate_student_xp`](#calculate_student_xp) | Function | L69–L71 | `int` | Рассчитывает суммарные очки академического опыта (XP) с... |
+| [`_extract_student_metrics`](#_extract_student_metrics) | Function | L74–L81 | `dict[str, Any]` | Преобразует сырые показатели посещаемости в нормализова... |
+| [`is_starosta`](#is_starosta) | Function | L84–L86 | `bool` | Проверяет, является ли студент Старостой группы (Дмитри... |
+| [`calculate_guild_points`](#calculate_guild_points) | Function | L89–L97 | `int` | Считает очки гильдии: XP + пары после точки отсчёта − п... |
+| [`build_student_profile`](#build_student_profile) | Function | L100–L125 | `StudentProfile` | Создает профиль студента с открытыми достижениями и очк... |
+| [`_load_cached_leaderboard`](#_load_cached_leaderboard) | Function | L128–L138 | `list[StudentProfile] \| None` | Загружает предварительно рассчитанный рейтинг студентов... |
+| [`_save_cached_leaderboard`](#_save_cached_leaderboard) | Function | L141–L148 | `None` | Сохраняет рассчитанный рейтинг студентов в Redis на 300... |
+| [`bonus_for`](#bonus_for) | Function | L151–L154 | `int` | Суммирует бонусы студента; ФИО сопоставляется как у ачи... |
+| [`_apply_bonuses`](#_apply_bonuses) | Function | L157–L170 | `StudentProfile` | Добавляет бонусы админа: XP идёт и в опыт, и в очки гил... |
+| [`_match_student_achievements`](#_match_student_achievements) | Function | L173–L180 | `set[str]` | Находит все открытые ачивки студента по точному или час... |
+| [`get_group_leaderboard`](#get_group_leaderboard) | Function | L183–L209 | `list[StudentProfile]` | Формирует рейтинг группы 1-КПД-3 по очкам гильдии (стар... |
+| [`get_student_profile_by_fio`](#get_student_profile_by_fio) | Function | L212–L223 | `StudentProfile \| None` | Находит профиль студента в рейтинге группы по ФИО (полн... |
+| [`hide_secret_achievements`](#hide_secret_achievements) | Function | L226–L240 | `StudentProfile` | Убирает секретные ачивки из профиля, если его смотрит н... |
+| [`_same_student`](#_same_student) | Function | L243–L246 | `bool` | Сравнивает ФИО так же, как поиск профиля: одно имя соде... |
 
 ---
 
@@ -53,7 +53,7 @@ def resolve_student_rank(pct: float, n_count: int, o_count: int) -> RankDefiniti
 - **Return Contract**: `RankDefinition`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_student_rank`.
+Определяет актуальный ранг студента по проценту посещаемости и штрафам.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -88,7 +88,7 @@ def calculate_student_xp(stat: dict[str, Any], unlocked_ach_ids: list[str]) -> i
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `calculate_student_xp`.
+Рассчитывает суммарные очки академического опыта (XP) строго по открытым ачивкам.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -122,7 +122,7 @@ def _extract_student_metrics(fio: str, raw_data: dict[str, Any]) -> dict[str, An
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_student_metrics`.
+Преобразует сырые показатели посещаемости в нормализованную структуру.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -156,7 +156,7 @@ def is_starosta(fio: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `is_starosta`.
+Проверяет, является ли студент Старостой группы (Дмитрий Стрыгин).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -189,7 +189,7 @@ def calculate_guild_points(xp: int, raw_data: dict[str, Any], baseline: dict[str
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `calculate_guild_points`.
+Считает очки гильдии: XP + пары после точки отсчёта − прогулы после неё.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -224,7 +224,7 @@ def build_student_profile( fio: str, raw_data: dict[str, Any], extra: set[str] |
 - **Return Contract**: `StudentProfile`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `build_student_profile`.
+Создает профиль студента с открытыми достижениями и очками гильдии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -260,7 +260,7 @@ async def _load_cached_leaderboard() -> list[StudentProfile] | None
 - **Return Contract**: `list[StudentProfile] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_load_cached_leaderboard`.
+Загружает предварительно рассчитанный рейтинг студентов из Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -291,7 +291,7 @@ async def _save_cached_leaderboard(profiles: list[StudentProfile]) -> None
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_save_cached_leaderboard`.
+Сохраняет рассчитанный рейтинг студентов в Redis на 300 секунд.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -324,7 +324,7 @@ def bonus_for(fio: str, bonuses: dict[str, int]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `bonus_for`.
+Суммирует бонусы студента; ФИО сопоставляется как у ачивок (одно содержит другое).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -358,7 +358,7 @@ def _apply_bonuses( profile: StudentProfile, xp_bonuses: dict[str, int], guild_b
 - **Return Contract**: `StudentProfile`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_apply_bonuses`.
+Добавляет бонусы админа: XP идёт и в опыт, и в очки гильдии, бонус очков — только в очки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -393,7 +393,7 @@ def _match_student_achievements(fio: str, unlocked_map: dict[str, set[str]]) -> 
 - **Return Contract**: `set[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_match_student_achievements`.
+Находит все открытые ачивки студента по точному или частичному совпадению ФИО.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -427,7 +427,7 @@ async def get_group_leaderboard( provided_stats: dict[str, Any] | None = None, f
 - **Return Contract**: `list[StudentProfile]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_group_leaderboard`.
+Формирует рейтинг группы 1-КПД-3 по очкам гильдии (староста — вне рейтинга, в конце).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -461,7 +461,7 @@ async def get_student_profile_by_fio(fio: str) -> StudentProfile | None
 - **Return Contract**: `StudentProfile | None`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_student_profile_by_fio`.
+Находит профиль студента в рейтинге группы по ФИО (полному или частичному).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -494,7 +494,7 @@ def hide_secret_achievements(profile: StudentProfile, viewer_fio: str | None) ->
 - **Return Contract**: `StudentProfile`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `hide_secret_achievements`.
+Убирает секретные ачивки из профиля, если его смотрит не владелец.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -528,7 +528,7 @@ def _same_student(fio: str, other: str) -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_same_student`.
+Сравнивает ФИО так же, как поиск профиля: одно имя содержит другое.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

@@ -1,30 +1,19 @@
 # Component Reference: `services/achievement_reset.py`
 > **File Path**: [`services/achievement_reset.py`](../../services/achievement_reset.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Achievement Reset`
 
-## 1. Architectural Role & Responsibilities
-The `services/achievement_reset.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Разовый сброс ачивок группы с новой точкой отсчёта журнала.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_backup_database`](#_backup_database) | Function | L28–L39 | `str | None` | Executes core domain logic for `_backup_database`. |
-| [`reset_achievements`](#reset_achievements) | Function | L42–L68 | `bool` | Executes core domain logic for `reset_achievements`. |
-| [`_run`](#_run) | Function | L71–L79 | `bool` | Executes core domain logic for `_run`. |
-| [`main`](#main) | Function | L82–L91 | `int` | Executes core domain logic for `main`. |
+| [`_backup_database`](#_backup_database) | Function | L28–L39 | `str \| None` | Сохраняет копию SQLite перед удалением ачивок. |
+| [`reset_achievements`](#reset_achievements) | Function | L42–L68 | `bool` | Обнуляет ачивки и счётчики группы и ставит точку отсчёт... |
+| [`_run`](#_run) | Function | L71–L79 | `bool` | Поднимает Redis, выполняет сброс и закрывает соединения... |
+| [`main`](#main) | Function | L82–L91 | `int` | Требует явный --confirm: команда необратимо удаляет ачи... |
 
 ---
 
@@ -40,7 +29,7 @@ async def _backup_database() -> str | None
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_backup_database`.
+Сохраняет копию SQLite перед удалением ачивок.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -71,7 +60,7 @@ async def reset_achievements() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `reset_achievements`.
+Обнуляет ачивки и счётчики группы и ставит точку отсчёта по текущему журналу.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -102,7 +91,7 @@ async def _run() -> bool
 - **Return Contract**: `bool`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_run`.
+Поднимает Redis, выполняет сброс и закрывает соединения короткого процесса.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -133,7 +122,7 @@ def main(argv: list[str]) -> int
 - **Return Contract**: `int`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `main`.
+Требует явный --confirm: команда необратимо удаляет ачивки всей группы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

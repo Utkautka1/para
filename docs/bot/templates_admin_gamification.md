@@ -1,38 +1,27 @@
 # Component Reference: `bot/templates/admin/gamification.py`
 > **File Path**: [`bot/templates/admin/gamification.py`](../../bot/templates/admin/gamification.py)
-> **Subsystem**: `Achievement Rules`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
+> **Subsystem**: `Admin Gamification Keyboards`
 
-## 1. Architectural Role & Responsibilities
-The `bot/templates/admin/gamification.py` module implements core operational logic for the `Achievement Rules` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Тексты, колбэки и клавиатуры управления ачивками и очками в админ-панели.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_cb`](#_cb) | Function | L60–L62 | `str` | Executes core domain logic for `_cb`. |
-| [`students_ikb`](#students_ikb) | Function | L73–L86 | `InlineKeyboardMarkup` | Executes core domain logic for `students_ikb`. |
-| [`student_card_text`](#student_card_text) | Function | L89–L101 | `str` | Executes core domain logic for `student_card_text`. |
-| [`_bonus_row`](#_bonus_row) | Function | L104–L109 | `list[InlineKeyboardButton]` | Executes core domain logic for `_bonus_row`. |
-| [`student_card_ikb`](#student_card_ikb) | Function | L112–L133 | `InlineKeyboardMarkup` | Executes core domain logic for `student_card_ikb`. |
-| [`categories_ikb`](#categories_ikb) | Function | L136–L152 | `InlineKeyboardMarkup` | Executes core domain logic for `categories_ikb`. |
-| [`category_achievements`](#category_achievements) | Function | L155–L159 | `list[str]` | Executes core domain logic for `category_achievements`. |
-| [`category_ikb`](#category_ikb) | Function | L162–L181 | `InlineKeyboardMarkup` | Executes core domain logic for `category_ikb`. |
-| [`category_text`](#category_text) | Function | L184–L189 | `str` | Executes core domain logic for `category_text`. |
-| [`ask_amount_text`](#ask_amount_text) | Function | L195–L203 | `str` | Executes core domain logic for `ask_amount_text`. |
-| [`ask_amount_ikb`](#ask_amount_ikb) | Function | L206–L214 | `InlineKeyboardMarkup` | Executes core domain logic for `ask_amount_ikb`. |
-| [`parse_amount`](#parse_amount) | Function | L224–L239 | `tuple[bool, int] | None` | Parses and extracts structured entities from `parse_amo... |
+| [`_cb`](#_cb) | Function | L60–L62 | `str` | Упаковывает колбэк раздела в строку callback_data. |
+| [`students_ikb`](#students_ikb) | Function | L73–L86 | `InlineKeyboardMarkup` | Список студентов по алфавиту, по два в ряд - Фамилия И.... |
+| [`student_card_text`](#student_card_text) | Function | L89–L101 | `str` | Карточка студента: уровень, XP, очки гильдии, бонусы и ... |
+| [`_bonus_row`](#_bonus_row) | Function | L104–L109 | `list[InlineKeyboardButton]` | Ряд кнопок ± для одного вида бонуса. |
+| [`student_card_ikb`](#student_card_ikb) | Function | L112–L133 | `InlineKeyboardMarkup` | Карточка студента - ✨ XP: −1000 … +1000 - ⚔️ Очки гильд... |
+| [`categories_ikb`](#categories_ikb) | Function | L136–L152 | `InlineKeyboardMarkup` | Категории ачивок с числом открытых - 📅 Посещаемость (3/... |
+| [`category_achievements`](#category_achievements) | Function | L155–L159 | `list[str]` | Возвращает id ачивок категории; секретные — отдельной к... |
+| [`category_ikb`](#category_ikb) | Function | L162–L181 | `InlineKeyboardMarkup` | Ачивки категории с переключателем - ✅ Название (+XP) — ... |
+| [`category_text`](#category_text) | Function | L184–L189 | `str` | Заголовок экрана категории ачивок студента. |
+| [`ask_amount_text`](#ask_amount_text) | Function | L195–L203 | `str` | Просьба вписать число для бонуса студента. |
+| [`ask_amount_ikb`](#ask_amount_ikb) | Function | L206–L214 | `InlineKeyboardMarkup` | Запрос числа - ◀️ Отмена (возврат к карточке) :param id... |
+| [`parse_amount`](#parse_amount) | Function | L224–L239 | `tuple[bool, int] \| None` | Разбирает ввод старосты: число без знака (или '=N') — и... |
 
 ---
 
@@ -40,11 +29,11 @@ graph LR
 
 ## Class Model: `GameAdminCallback`
 
-Encapsulates domain entities and data transfer logic for `GameAdminCallback`.
+Колбэк раздела «Ачивки и очки»: действие, индекс студента и параметр.
 
 ## Class Model: `GameAdminState`
 
-Encapsulates domain entities and data transfer logic for `GameAdminState`.
+Ожидание числа для бонуса XP или очков гильдии.
 
 ### `_cb`
 ```python
@@ -56,7 +45,7 @@ def _cb(action: str, idx: int = -1, value: str = "") -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_cb`.
+Упаковывает колбэк раздела в строку callback_data.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -91,7 +80,7 @@ def students_ikb(students: list[StudentProfile]) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `students_ikb`.
+Список студентов по алфавиту, по два в ряд - Фамилия И. (очки) - ◀️ Назад в админку :param students: профили в алфавитном порядке :return: InlineKeyboardMarkup
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -124,7 +113,7 @@ def student_card_text(p: StudentProfile, xp_bonus: int, guild_bonus: int) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `student_card_text`.
+Карточка студента: уровень, XP, очки гильдии, бонусы и ачивки.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -159,7 +148,7 @@ def _bonus_row(idx: int, kind: str) -> list[InlineKeyboardButton]
 - **Return Contract**: `list[InlineKeyboardButton]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_bonus_row`.
+Ряд кнопок ± для одного вида бонуса.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -193,7 +182,7 @@ def student_card_ikb(idx: int) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `student_card_ikb`.
+Карточка студента - ✨ XP: −1000 … +1000 - ⚔️ Очки гильдии: −1000 … +1000 - 🏆 Ачивки • 🔁 Обнулить бонусы - ◀️ К списку :param idx: индекс студента в алфавитном списке :return: InlineKeyboardMarkup
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -226,7 +215,7 @@ def categories_ikb(idx: int, unlocked: list[str]) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `categories_ikb`.
+Категории ачивок с числом открытых - 📅 Посещаемость (3/10) … - ◀️ К студенту :param idx: индекс студента :param unlocked: открытые ачивки студента :return: InlineKeyboardMarkup
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -260,7 +249,7 @@ def category_achievements(category: str) -> list[str]
 - **Return Contract**: `list[str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `category_achievements`.
+Возвращает id ачивок категории; секретные — отдельной категорией.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -293,7 +282,7 @@ def category_ikb(idx: int, category: str, unlocked: list[str]) -> InlineKeyboard
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `category_ikb`.
+Ачивки категории с переключателем - ✅ Название (+XP) — выдана, нажатие снимает - ➖ Название (+XP) — не выдана, нажатие выдаёт - ◀️ К категориям :param idx: индекс студента :param category: категория ачивок :param unlocked: открытые ачивки студента :return: InlineKeyboardMarkup
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -328,7 +317,7 @@ def category_text(p: StudentProfile, category: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `category_text`.
+Заголовок экрана категории ачивок студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -362,7 +351,7 @@ def ask_amount_text(student: str, kind: str) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `ask_amount_text`.
+Просьба вписать число для бонуса студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -396,7 +385,7 @@ def ask_amount_ikb(idx: int) -> InlineKeyboardMarkup
 - **Return Contract**: `InlineKeyboardMarkup`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `ask_amount_ikb`.
+Запрос числа - ◀️ Отмена (возврат к карточке) :param idx: индекс студента :return: InlineKeyboardMarkup
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -429,7 +418,7 @@ def parse_amount(text: str | None) -> tuple[bool, int] | None
 - **Return Contract**: `tuple[bool, int] | None`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_amount`.
+Разбирает ввод старосты: число без знака (или '=N') — итоговое значение, '+N' / '-N' — прибавить или отнять.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

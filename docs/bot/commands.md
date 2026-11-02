@@ -1,29 +1,18 @@
 # Component Reference: `bot/commands.py`
 > **File Path**: [`bot/commands.py`](../../bot/commands.py)
 > **Subsystem**: `Bot Menu Registry`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `bot/commands.py` module implements core operational logic for the `Bot Menu Registry` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль регистрации интерактивного меню команд Telegram (bot.set_my_commands).
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L36 | `list[BotCommand]` | Retrieves and resolves domain data for `get_default_use... |
-| [`get_admin_commands`](#get_admin_commands) | Function | L39–L56 | `list[BotCommand]` | Retrieves and resolves domain data for `get_admin_comma... |
-| [`register_bot_commands`](#register_bot_commands) | Function | L59–L82 | `None` | Executes core domain logic for `register_bot_commands`. |
+| [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L36 | `list[BotCommand]` | Возвращает список общедоступных команд бота для студент... |
+| [`get_admin_commands`](#get_admin_commands) | Function | L39–L56 | `list[BotCommand]` | Возвращает расширенный список команд управления для ста... |
+| [`register_bot_commands`](#register_bot_commands) | Function | L59–L79 | `None` | Регистрирует меню команд в Telegram API для пользовател... |
 
 ---
 
@@ -39,7 +28,7 @@ def get_default_user_commands() -> list[BotCommand]
 - **Return Contract**: `list[BotCommand]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_default_user_commands`.
+Возвращает список общедоступных команд бота для студентов группы.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -70,7 +59,7 @@ def get_admin_commands() -> list[BotCommand]
 - **Return Contract**: `list[BotCommand]`
 
 #### Overview & Architectural Purpose
-Retrieves and resolves domain data for `get_admin_commands`.
+Возвращает расширенный список команд управления для старосты группы.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -96,12 +85,12 @@ result = get_admin_commands()
 async def register_bot_commands(bot: Bot) -> None
 ```
 
-- **Source Reference**: [`bot/commands.py#L59-L82`](../../bot/commands.py#L59-L82)
+- **Source Reference**: [`bot/commands.py#L59-L79`](../../bot/commands.py#L59-L79)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `register_bot_commands`.
+Регистрирует меню команд в Telegram API для пользователей и старосты.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

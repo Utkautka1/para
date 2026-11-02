@@ -1,48 +1,37 @@
 # Component Reference: `services/attendance_stats.py`
 > **File Path**: [`services/attendance_stats.py`](../../services/attendance_stats.py)
 > **Subsystem**: `Spreadsheet Analytics`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/attendance_stats.py` module implements core operational logic for the `Spreadsheet Analytics` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Сервис агрегации сквозной статистики посещаемости студентов.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_init_student_stat`](#_init_student_stat) | Function | L38–L51 | `dict[str, Any]` | Executes core domain logic for `_init_student_stat`. |
-| [`_count_row_marks`](#_count_row_marks) | Function | L54–L71 | `dict[str, int]` | Executes core domain logic for `_count_row_marks`. |
-| [`_process_student_row`](#_process_student_row) | Function | L74–L94 | `None` | Executes core domain logic for `_process_student_row`. |
-| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L97–L108 | `None` | Executes core domain logic for `_aggregate_sheet_stats`... |
-| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L111–L127 | `dict[str, dict[str, Any]]` | Parses and extracts structured entities from `parse_wor... |
-| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L130–L146 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_from_redis_cache`... |
-| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L149–L163 | `None` | Executes core domain logic for `_save_to_redis_cache`. |
-| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L166–L177 | `None` | Executes core domain logic for `invalidate_attendance_s... |
-| [`_build_snapshot_record`](#_build_snapshot_record) | Function | L180–L194 | `dict[str, Any]` | Executes core domain logic for `_build_snapshot_record`... |
-| [`_save_sqlite_snapshot`](#_save_sqlite_snapshot) | Function | L197–L209 | `None` | Executes core domain logic for `_save_sqlite_snapshot`. |
-| [`_extract_snapshot_dict`](#_extract_snapshot_dict) | Function | L212–L224 | `dict[str, dict[str, Any]]` | Executes core domain logic for `_extract_snapshot_dict`... |
-| [`_load_sqlite_snapshot`](#_load_sqlite_snapshot) | Function | L227–L241 | `dict[str, dict[str, Any]] | None` | Executes core domain logic for `_load_sqlite_snapshot`. |
-| [`_download_and_cache_fresh_stats`](#_download_and_cache_fresh_stats) | Function | L247–L260 | `dict[str, dict[str, Any]]` | Executes core domain logic for `_download_and_cache_fre... |
-| [`_trigger_background_attendance_refresh`](#_trigger_background_attendance_refresh) | Function | L263–L275 | `None` | Executes core domain logic for `_trigger_background_att... |
-| [`_fetch_with_sync_lock`](#_fetch_with_sync_lock) | Function | L278–L291 | `dict[str, dict[str, Any]]` | Executes core domain logic for `_fetch_with_sync_lock`. |
-| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L294–L308 | `dict[str, dict[str, Any]]` | Executes core domain logic for `fetch_all_time_attendan... |
-| [`find_student_attendance`](#find_student_attendance) | Function | L311–L331 | `dict[str, Any] | None` | Executes core domain logic for `find_student_attendance... |
-| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L334–L347 | `None` | Executes core domain logic for `_adjust_student_counts`... |
-| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L350–L364 | `dict[str, str]` | Executes core domain logic for `_get_saved_lesson_marks... |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L367–L376 | `None` | Executes core domain logic for `_save_lesson_marks`. |
-| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L379–L397 | `dict[str, str]` | Executes core domain logic for `_update_session_marks_i... |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L400–L415 | `dict[str, dict[str, Any]]` | Executes core domain logic for `apply_session_optimisti... |
+| [`_init_student_stat`](#_init_student_stat) | Function | L39–L52 | `dict[str, Any]` | Инициализирует базовую структуру счетчиков посещаемости... |
+| [`_count_row_marks`](#_count_row_marks) | Function | L55–L72 | `dict[str, int]` | Подсчитывает отметки посещаемости студента в строке кон... |
+| [`_process_student_row`](#_process_student_row) | Function | L75–L95 | `None` | Извлекает и суммирует отметки одного студента из конкре... |
+| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L98–L109 | `None` | Обрабатывает один лист месяца и накапливает отметки в о... |
+| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L112–L128 | `dict[str, dict[str, Any]]` | Извлекает отметки всех студентов по всем месяцам из кни... |
+| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L131–L147 | `dict[str, dict[str, Any]] \| None` | Считывает закэшированную сквозную статистику посещаемос... |
+| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L150–L164 | `None` | Сохраняет структуру статистики в Redis с настроенным вр... |
+| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L167–L178 | `None` | Принудительно инвалидирует кэш сквозной статистики и ли... |
+| [`_build_snapshot_record`](#_build_snapshot_record) | Function | L181–L195 | `dict[str, Any]` | Формирует нормализованную запись посещаемости для сохра... |
+| [`_save_sqlite_snapshot`](#_save_sqlite_snapshot) | Function | L198–L210 | `None` | Сохраняет срез посещаемости в SQLite и локальный дисков... |
+| [`_extract_snapshot_dict`](#_extract_snapshot_dict) | Function | L213–L225 | `dict[str, dict[str, Any]]` | Преобразует объекты AttendanceSnapshot в словарь сквозн... |
+| [`_load_sqlite_snapshot`](#_load_sqlite_snapshot) | Function | L228–L242 | `dict[str, dict[str, Any]] \| None` | Восстанавливает срез посещаемости из локального кэша ил... |
+| [`_download_and_cache_fresh_stats`](#_download_and_cache_fresh_stats) | Function | L248–L261 | `dict[str, dict[str, Any]]` | Загружает актуальный XLSX-файл из Яндекса и кэширует в ... |
+| [`_trigger_background_attendance_refresh`](#_trigger_background_attendance_refresh) | Function | L264–L276 | `None` | Запускает обновление посещаемости в фоновом режиме без ... |
+| [`_fetch_with_sync_lock`](#_fetch_with_sync_lock) | Function | L279–L292 | `dict[str, dict[str, Any]]` | Синхронизированная загрузка актуальной посещаемости с з... |
+| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L295–L309 | `dict[str, dict[str, Any]]` | Возвращает сквозную статистику посещаемости по стратеги... |
+| [`find_student_attendance`](#find_student_attendance) | Function | L312–L332 | `dict[str, Any] \| None` | Находит статистику студента по точному или частичному с... |
+| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L335–L348 | `None` | Корректирует счетчики студента с учетом замены старой о... |
+| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L351–L365 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L368–L377 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL д... |
+| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L380–L398 | `dict[str, str]` | Применяет новые отметки студентов из интерактивной сесс... |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L401–L416 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе от... |
 
 ---
 
@@ -53,12 +42,12 @@ graph LR
 def _init_student_stat(fio: str) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L38-L51`](../../services/attendance_stats.py#L38-L51)
+- **Source Reference**: [`services/attendance_stats.py#L39-L52`](../../services/attendance_stats.py#L39-L52)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_init_student_stat`.
+Инициализирует базовую структуру счетчиков посещаемости для одного студента.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -86,12 +75,12 @@ result = _init_student_stat(fio=...)
 def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L54-L71`](../../services/attendance_stats.py#L54-L71)
+- **Source Reference**: [`services/attendance_stats.py#L55-L72`](../../services/attendance_stats.py#L55-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_count_row_marks`.
+Подсчитывает отметки посещаемости студента в строке конкретного месяца.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -121,12 +110,12 @@ result = _count_row_marks(sheet=..., row=..., mc=...)
 def _process_student_row(sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L74-L94`](../../services/attendance_stats.py#L74-L94)
+- **Source Reference**: [`services/attendance_stats.py#L75-L95`](../../services/attendance_stats.py#L75-L95)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_process_student_row`.
+Извлекает и суммирует отметки одного студента из конкретной строки таблицы.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -158,12 +147,12 @@ result = _process_student_row(sheet=..., r=..., mc=...)
 def _aggregate_sheet_stats(sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L97-L108`](../../services/attendance_stats.py#L97-L108)
+- **Source Reference**: [`services/attendance_stats.py#L98-L109`](../../services/attendance_stats.py#L98-L109)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_aggregate_sheet_stats`.
+Обрабатывает один лист месяца и накапливает отметки в общий реестр.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -193,12 +182,12 @@ result = _aggregate_sheet_stats(sheet=..., s_name=..., stats=...)
 def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L111-L127`](../../services/attendance_stats.py#L111-L127)
+- **Source Reference**: [`services/attendance_stats.py#L112-L128`](../../services/attendance_stats.py#L112-L128)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_workbook_attendance`.
+Извлекает отметки всех студентов по всем месяцам из книги openpyxl.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -226,12 +215,12 @@ result = parse_workbook_attendance(wb=...)
 async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L130-L146`](../../services/attendance_stats.py#L130-L146)
+- **Source Reference**: [`services/attendance_stats.py#L131-L147`](../../services/attendance_stats.py#L131-L147)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_load_from_redis_cache`.
+Считывает закэшированную сквозную статистику посещаемости из Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -257,12 +246,12 @@ result = await _load_from_redis_cache()
 async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L149-L163`](../../services/attendance_stats.py#L149-L163)
+- **Source Reference**: [`services/attendance_stats.py#L150-L164`](../../services/attendance_stats.py#L150-L164)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_save_to_redis_cache`.
+Сохраняет структуру статистики в Redis с настроенным временем жизни TTL.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -290,12 +279,12 @@ result = await _save_to_redis_cache(stats=...)
 async def invalidate_attendance_stats_cache() -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L166-L177`](../../services/attendance_stats.py#L166-L177)
+- **Source Reference**: [`services/attendance_stats.py#L167-L178`](../../services/attendance_stats.py#L167-L178)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `invalidate_attendance_stats_cache`.
+Принудительно инвалидирует кэш сквозной статистики и лидерборда в Redis.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -321,12 +310,12 @@ result = await invalidate_attendance_stats_cache()
 def _build_snapshot_record(name: str, data: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L180-L194`](../../services/attendance_stats.py#L180-L194)
+- **Source Reference**: [`services/attendance_stats.py#L181-L195`](../../services/attendance_stats.py#L181-L195)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_build_snapshot_record`.
+Формирует нормализованную запись посещаемости для сохранения в БД.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -355,12 +344,12 @@ result = _build_snapshot_record(name=..., data=...)
 async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L197-L209`](../../services/attendance_stats.py#L197-L209)
+- **Source Reference**: [`services/attendance_stats.py#L198-L210`](../../services/attendance_stats.py#L198-L210)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_save_sqlite_snapshot`.
+Сохраняет срез посещаемости в SQLite и локальный дисковый кэш.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -388,12 +377,12 @@ result = await _save_sqlite_snapshot(stats=...)
 def _extract_snapshot_dict(snapshots: list[Any]) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L212-L224`](../../services/attendance_stats.py#L212-L224)
+- **Source Reference**: [`services/attendance_stats.py#L213-L225`](../../services/attendance_stats.py#L213-L225)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_snapshot_dict`.
+Преобразует объекты AttendanceSnapshot в словарь сквозной посещаемости.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -421,12 +410,12 @@ result = _extract_snapshot_dict(snapshots=...)
 async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L227-L241`](../../services/attendance_stats.py#L227-L241)
+- **Source Reference**: [`services/attendance_stats.py#L228-L242`](../../services/attendance_stats.py#L228-L242)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_load_sqlite_snapshot`.
+Восстанавливает срез посещаемости из локального кэша или SQLite при недоступности Яндекса.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -452,12 +441,12 @@ result = await _load_sqlite_snapshot()
 async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L247-L260`](../../services/attendance_stats.py#L247-L260)
+- **Source Reference**: [`services/attendance_stats.py#L248-L261`](../../services/attendance_stats.py#L248-L261)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_download_and_cache_fresh_stats`.
+Загружает актуальный XLSX-файл из Яндекса и кэширует в Redis и SQLite.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -483,12 +472,12 @@ result = await _download_and_cache_fresh_stats()
 async def _trigger_background_attendance_refresh() -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L263-L275`](../../services/attendance_stats.py#L263-L275)
+- **Source Reference**: [`services/attendance_stats.py#L264-L276`](../../services/attendance_stats.py#L264-L276)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_trigger_background_attendance_refresh`.
+Запускает обновление посещаемости в фоновом режиме без блокировки вызывающего потока.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -514,12 +503,12 @@ result = await _trigger_background_attendance_refresh()
 async def _fetch_with_sync_lock(force_refresh: bool) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L278-L291`](../../services/attendance_stats.py#L278-L291)
+- **Source Reference**: [`services/attendance_stats.py#L279-L292`](../../services/attendance_stats.py#L279-L292)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_fetch_with_sync_lock`.
+Синхронизированная загрузка актуальной посещаемости с защитой от лавины запросов.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -547,12 +536,12 @@ result = await _fetch_with_sync_lock(force_refresh=...)
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L294-L308`](../../services/attendance_stats.py#L294-L308)
+- **Source Reference**: [`services/attendance_stats.py#L295-L309`](../../services/attendance_stats.py#L295-L309)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `fetch_all_time_attendance`.
+Возвращает сквозную статистику посещаемости по стратегии Stale-While-Revalidate.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -580,12 +569,12 @@ result = await fetch_all_time_attendance(force_refresh=...)
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L311-L331`](../../services/attendance_stats.py#L311-L331)
+- **Source Reference**: [`services/attendance_stats.py#L312-L332`](../../services/attendance_stats.py#L312-L332)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `find_student_attendance`.
+Находит статистику студента по точному или частичному совпадению ФИО.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -614,12 +603,12 @@ result = find_student_attendance(stats=..., target_name=...)
 def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L334-L347`](../../services/attendance_stats.py#L334-L347)
+- **Source Reference**: [`services/attendance_stats.py#L335-L348`](../../services/attendance_stats.py#L335-L348)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_adjust_student_counts`.
+Корректирует счетчики студента с учетом замены старой отметки на новую.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -649,12 +638,12 @@ result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
 async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L350-L364`](../../services/attendance_stats.py#L350-L364)
+- **Source Reference**: [`services/attendance_stats.py#L351-L365`](../../services/attendance_stats.py#L351-L365)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_get_saved_lesson_marks`.
+Считывает ранее сохраненный срез отметок пары из Redis.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -683,12 +672,12 @@ result = await _get_saved_lesson_marks(t_date=..., l_num=...)
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L367-L376`](../../services/attendance_stats.py#L367-L376)
+- **Source Reference**: [`services/attendance_stats.py#L368-L377`](../../services/attendance_stats.py#L368-L377)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_save_lesson_marks`.
+Сохраняет срез отметок пары в Redis с настроенным TTL для защиты от задвоений.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -718,12 +707,12 @@ result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
 def _update_session_marks_in_stats( session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]] ) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L379-L397`](../../services/attendance_stats.py#L379-L397)
+- **Source Reference**: [`services/attendance_stats.py#L380-L398`](../../services/attendance_stats.py#L380-L398)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_update_session_marks_in_stats`.
+Применяет новые отметки студентов из интерактивной сессии к агрегированной статистике.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -753,12 +742,12 @@ result = _update_session_marks_in_stats(session=..., saved_marks=..., stats=...)
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L400-L415`](../../services/attendance_stats.py#L400-L415)
+- **Source Reference**: [`services/attendance_stats.py#L401-L416`](../../services/attendance_stats.py#L401-L416)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `apply_session_optimistic_update`.
+Мгновенно обновляет кэш статистики в Redis на основе отметок активной сессии.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |

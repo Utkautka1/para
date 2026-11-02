@@ -1,33 +1,22 @@
 # Component Reference: `services/solver/payload_extractor.py`
 > **File Path**: [`services/solver/payload_extractor.py`](../../services/solver/payload_extractor.py)
 > **Subsystem**: `Solver Payload Ingestion`
-> **Architecture Layer**: `Enterprise Microservice Subsystem`
-> **Concurrency Model**: `AsyncIO Non-blocking Concurrency`
-> **Persistence Backend**: `Redis 7 Persistent Store`
-> **Service Level Objective**: `High-Availability Academic Telemetry`
 
-## 1. Architectural Role & Responsibilities
-The `services/solver/payload_extractor.py` module implements core operational logic for the `Solver Payload Ingestion` domain. It operates within an asynchronous microservices topology designed for ultra-low latency, zero-loss persistence guarantees, and strict single-responsibility function decomposition (≤25 lines).
+## 1. Purpose
+Модуль извлечения и парсинга полезной нагрузки задач ДЗ.
 
-### Component Architecture & Data Flow
-```mermaid
-graph LR
-    Inbound[Inbound Request] --> Logic[Domain Service Logic]
-    Logic --> Redis[(Redis 7 State Store)]
-    Logic --> Outbound[Outbound Event Dispatch]
-```
 
 ---
 ## 2. Public API & Symbol Inventory
-| Symbol | Nature | Line Range | Return Contract | Core Invariant |
+| Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`download_file_bytes`](#download_file_bytes) | Function | L21–L45 | `bytes | None` | Executes core domain logic for `download_file_bytes`. |
-| [`_extract_docx_images`](#_extract_docx_images) | Function | L48–L64 | `list[bytes]` | Executes core domain logic for `_extract_docx_images`. |
-| [`extract_docx_data`](#extract_docx_data) | Function | L67–L86 | `tuple[str, list[bytes]]` | Executes core domain logic for `extract_docx_data`. |
-| [`extract_pdf_data`](#extract_pdf_data) | Function | L89–L106 | `str` | Executes core domain logic for `extract_pdf_data`. |
-| [`_read_code_file_payload`](#_read_code_file_payload) | Function | L109–L122 | `str` | Executes core domain logic for `_read_code_file_payload... |
-| [`parse_file_payload`](#parse_file_payload) | Function | L125–L150 | `tuple[bytes | None, str | None]` | Parses and extracts structured entities from `parse_fil... |
-| [`resolve_task_payload`](#resolve_task_payload) | Function | L153–L175 | `tuple[bytes | None, str | None]` | Executes core domain logic for `resolve_task_payload`. |
+| [`download_file_bytes`](#download_file_bytes) | Function | L21–L45 | `bytes \| None` | Безопасно скачивает байты файла из Telegram с контролем... |
+| [`_extract_docx_images`](#_extract_docx_images) | Function | L48–L64 | `list[bytes]` | Извлекает бинарные данные встроенных изображений из стр... |
+| [`extract_docx_data`](#extract_docx_data) | Function | L67–L86 | `tuple[str, list[bytes]]` | Извлекает весь текстовый контент и встроенные изображен... |
+| [`extract_pdf_data`](#extract_pdf_data) | Function | L89–L106 | `str` | Извлекает текстовые слои со всех страниц переданного PD... |
+| [`_read_code_file_payload`](#_read_code_file_payload) | Function | L109–L122 | `str` | Декодирует текстовый файл исходного кода с контролем ма... |
+| [`parse_file_payload`](#parse_file_payload) | Function | L125–L150 | `tuple[bytes \| None, str \| None]` | Разбирает байты файла (изображение, docx, pdf, текст) в... |
+| [`resolve_task_payload`](#resolve_task_payload) | Function | L153–L175 | `tuple[bytes \| None, str \| None]` | Скачивает и подготавливает медиа/текст задания для пере... |
 
 ---
 
@@ -43,7 +32,7 @@ async def download_file_bytes(tg_bot: Bot, file_id: str, file_size: int) -> byte
 - **Return Contract**: `bytes | None`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `download_file_bytes`.
+Безопасно скачивает байты файла из Telegram с контролем лимита размера.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -78,7 +67,7 @@ def _extract_docx_images(doc) -> list[bytes]
 - **Return Contract**: `list[bytes]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_extract_docx_images`.
+Извлекает бинарные данные встроенных изображений из структуры docx.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -111,7 +100,7 @@ def extract_docx_data(doc_bytes: bytes) -> tuple[str, list[bytes]]
 - **Return Contract**: `tuple[str, list[bytes]]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_docx_data`.
+Извлекает весь текстовый контент и встроенные изображения из .docx документа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -144,7 +133,7 @@ def extract_pdf_data(doc_bytes: bytes) -> str
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `extract_pdf_data`.
+Извлекает текстовые слои со всех страниц переданного PDF-документа.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -177,7 +166,7 @@ def _read_code_file_payload(doc_bytes: bytes, file_name: str, prompt: str) -> st
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `_read_code_file_payload`.
+Декодирует текстовый файл исходного кода с контролем максимальной длины.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -212,7 +201,7 @@ def parse_file_payload( doc_bytes: bytes, file_name: str, mime: str | None, prom
 - **Return Contract**: `tuple[bytes | None, str | None]`
 
 #### Overview & Architectural Purpose
-Parses and extracts structured entities from `parse_file_payload`.
+Разбирает байты файла (изображение, docx, pdf, текст) в формат для DeepSeek.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -248,7 +237,7 @@ async def resolve_task_payload(tg_bot: Bot, task: dict) -> tuple[bytes | None, s
 - **Return Contract**: `tuple[bytes | None, str | None]`
 
 #### Overview & Architectural Purpose
-Executes core domain logic for `resolve_task_payload`.
+Скачивает и подготавливает медиа/текст задания для передачи в нейросеть.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
