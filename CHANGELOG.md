@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Jaeger Monitor (SPM)**: new `otel-collector` (OpenTelemetry Collector contrib 0.115.1) and `prometheus` (v2.55.1) services. Services export 100% of spans to the collector (`x-otel-env` in `compose.yml` overrides `.env`); the `spanmetrics` connector turns all spans into RED metrics (calls, errors, latency histograms) for Prometheus, and only 10% of traces go on to Jaeger via `probabilistic_sampler`, as before. Jaeger reads the metrics (`METRICS_STORAGE_TYPE=prometheus`), so the Monitor tab shows request rate, p95 latency and error rate per service and operation. Configs live in `observability/`.
+
 ## [v3.0.0] - 2026-11-02
 
 Major release: everything since v2.9.0 (55 commits). The headline changes are a hardened

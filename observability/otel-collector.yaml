@@ -1,0 +1,59 @@
+# OpenTelemetry Collector: единая точка приёма трейсов всех сервисов para.
+#
+# Сервисы отправляют сюда 100% спанов (OTEL_SAMPLING_RATIO=1.0 в compose.yml), а дальше:
+#   1. spanmetrics считает RED-метрики (запросы, ошибки, задержки) по ВСЕМ спанам
+#      и отдаёт их Prometheus — из них строится вкладка Monitor в Jaeger
+#   2. в сам Jaeger уходит только 10% трейсов (probabilistic_sampler), как было раньше:
+#      хранилище Jaeger в памяти, и полный поток его бы переполнил
+# Если сэмплировать в SDK сервисов, метрики видели бы лишь 10% запросов и
+# занижали бы req/s в 10 раз.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        # Корзины под реальные задержки: от быстрых ответов кэша до DeepSeek и таблиц
+        buckets: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s]
+    metrics_flush_interval: 15s
+
+processors:
+  # Защита от OOM при всплеске спанов: лимит контейнера 192 МБ
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 150
+    spike_limit_mib: 30
+  # Решение по trace_id: спаны одного трейса либо все попадают в Jaeger, либо ни один
+  probabilistic_sampler:
+    sampling_percentage: 10
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    traces/spanmetrics:
+      receivers: [otlp]
+      processors: [memory_limiter]
+      exporters: [spanmetrics]
+    traces/jaeger:
+      receivers: [otlp]
+      processors: [memory_limiter, probabilistic_sampler, batch]
+      exporters: [otlp/jaeger]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]
+  telemetry:
+    logs:
+      level: warn

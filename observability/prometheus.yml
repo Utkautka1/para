@@ -1,0 +1,11 @@
+# Prometheus хранит только RED-метрики spanmetrics из OTel Collector.
+# Читает их Jaeger для вкладки Monitor (METRICS_STORAGE_TYPE=prometheus в compose.yml).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: spanmetrics
+    static_configs:
+      - targets: ["otel-collector:8889"]

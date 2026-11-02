@@ -1,3 +1,10 @@
+# Трейсы всех сервисов идут в OTel Collector, а не напрямую в Jaeger: коллектор считает
+# RED-метрики по 100% спанов и сам отбирает 10% трейсов для Jaeger (observability/otel-collector.yaml).
+# Значения здесь важнее .env — сэмплирование в SDK занизило бы метрики вкладки Monitor.
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SAMPLING_RATIO: "1.0"
+
 services:
   redis:
     image: redis:7-alpine
@@ -50,6 +57,12 @@ services:
       - ALL
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+      # Вкладка Monitor (SPM): RED-метрики spanmetrics из Prometheus
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+      - PROMETHEUS_QUERY_NAMESPACE=traces_span_metrics
+      - PROMETHEUS_QUERY_NORMALIZE_CALLS=true
+      - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
     command: ["--query.base-path=/jaeger"]
     ports:
       - "127.0.0.1:16686:16686"
@@ -58,6 +71,62 @@ services:
       resources:
         limits:
           memory: 384M
+          cpus: '0.50'
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1@sha256:d2da12c4336a79758826700be9e21ecf4a9f7d945b7f8a58ba55ee3fa45427c8
+    container_name: para-otel-collector
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    depends_on:
+      - jaeger
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.50'
+        reservations:
+          memory: 48M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  prometheus:
+    image: prom/prometheus:v2.55.1@sha256:2659f4c2ebb718e7695cb9b25ffa7d6be64db013daba13e05c875451cf51b0d3
+    container_name: para-prometheus
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Хранит только метрики spanmetrics; 15 дней хватает для графиков Monitor
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Именованный том, а не ./data: Prometheus пишет от nobody, а ./data принадлежит root
+      - prometheus_data:/prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 256M
           cpus: '0.50'
         reservations:
           memory: 64M
@@ -92,6 +161,8 @@ services:
       start_period: 5s
     env_file:
       - .env
+    environment:
+      <<: *otel-env
     volumes:
       - ./integrations:/app/integrations:ro
       - ./api:/app/api:ro
@@ -137,6 +208,7 @@ services:
       - .env
     # Секреты, которые боту не нужны: config.py требует их при импорте, поэтому подменяем заглушкой
     environment:
+      <<: *otel-env
       DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
     volumes:
@@ -187,6 +259,7 @@ services:
       - .env
     # Секреты, которые worker не нужны (см. bot)
     environment:
+      <<: *otel-env
       DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
     volumes:
@@ -233,6 +306,7 @@ services:
       - .env
     # Solver нужны только BOT_TOKEN (ответы в топик) и DEEPSEEK_API_KEY
     environment:
+      <<: *otel-env
       API_SECRET_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
       YANDEX_COOKIE: "disabled:not-used-by-this-service"
@@ -278,6 +352,7 @@ services:
       - .env
     # STT разбирает чужое аудио (ffmpeg) и ходит только в Redis — секреты ему не отдаём
     environment:
+      <<: *otel-env
       BOT_TOKEN: "disabled:not-used-by-this-service"
       API_SECRET_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
@@ -313,6 +388,9 @@ services:
         max-file: "3"
 
 volumes:
+  # Метрики spanmetrics для вкладки Monitor в Jaeger
+  prometheus_data:
+
   # Общий RAM-диск для голосовых между bot (пишет) и stt (читает): без износа диска,
   # права 0700 на uid приложения (1000) — другие процессы хоста файлы не видят
   stt_audio:
