@@ -1085,9 +1085,25 @@ jobs:
           cache: "pip"
       - name: "Install Detect-Secrets"
         run: pip install detect-secrets==1.5.0
-      - name: "Compare Tracked Files Against Baseline"
-        # Новый секрет вне .secrets.baseline валит джобу; ложное срабатывание — обновить baseline
-        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+      - name: "Compare Fresh Scan Against Baseline"
+        # Сравниваем пары (файл, хеш секрета), а не номера строк: detect-secrets-hook валится,
+        # даже когда известная строка просто сдвинулась. Ложное срабатывание — обновить baseline:
+        # detect-secrets scan --baseline .secrets.baseline
+        run: |
+          # Обновляем baseline на месте: так сохраняются его фильтры (exclude) и он не сканирует сам себя
+          cp .secrets.baseline /tmp/committed.baseline
+          detect-secrets scan --baseline .secrets.baseline
+          python3 -c "
+          import json, sys
+          def keys(path):
+              data = json.load(open(path))['results']
+              return {(f, s['hashed_secret']) for f, items in data.items() for s in items}
+          new = keys('.secrets.baseline') - keys('/tmp/committed.baseline')
+          if new:
+              print('Secrets not in .secrets.baseline:', *sorted(f for f, _ in new), sep='\\n  ')
+              sys.exit(1)
+          print('No new secrets outside the baseline')
+          "
 
   arch-module-imports:
     name: "🔄 Standalone Module Imports & Circular Import Detection"
