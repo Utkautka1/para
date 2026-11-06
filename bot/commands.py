@@ -9,7 +9,7 @@
 from aiogram import Bot
 from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 
-from config import ALLOWED_USER_ID, MINIAPP_URL
+from config import ADMIN_USER_IDS, MINIAPP_URL
 from core.logger import get_logger
 
 log = get_logger("bot_commands")
@@ -68,7 +68,8 @@ async def register_bot_commands(bot: Bot) -> None:
 
     try:
         await bot.set_my_commands(get_default_user_commands(), scope=BotCommandScopeDefault())
-        await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=ALLOWED_USER_ID))
+        for admin_id in ADMIN_USER_IDS:
+            await bot.set_my_commands(get_admin_commands(), scope=BotCommandScopeChat(chat_id=admin_id))
 
         if MINIAPP_URL:
             await bot.set_chat_menu_button(

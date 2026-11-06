@@ -10,21 +10,21 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L60–L78 | `None` | Устанавливает подписанную защищенную сессионную куку те... |
-| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L82–L98 | `HTMLResponse` | Отдаёт одностраничный интерфейс Telegram Mini App порта... |
-| [`_resolve_api_key_user`](#_resolve_api_key_user) | Function | L101–L111 | `tuple[int, str, str] \| None` | Определяет Telegram ID и профиль пользователя по мастер... |
-| [`login_by_token`](#login_by_token) | Function | L115–L136 | `Response` | Обменивает одноразовый токен из ссылки бота на сессионн... |
-| [`_auth_by_key`](#_auth_by_key) | Function | L139–L147 | `MiniappAuthResponse` | Проверяет ключ доступа и устанавливает сессионную куку ... |
-| [`_auth_telegram_init`](#_auth_telegram_init) | Function | L150–L164 | `MiniappAuthResponse` | Валидирует подпись Telegram initData и проверяет права ... |
-| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L168–L174 | `MiniappAuthResponse` | Аутентифицирует пользователя по Telegram initData или к... |
-| [`check_tester_status`](#check_tester_status) | Function | L178–L196 | `MiniappCheckResponse` | Проверяет статус авторизации и наличие прав тестера по ... |
-| [`resolve_action_uid`](#resolve_action_uid) | Function | L199–L209 | `int \| None` | Определяет Telegram ID инициатора действия из сессии ил... |
-| [`_action_result`](#_action_result) | Function | L222–L230 | `MiniappActionResult` | Собирает ответ action-эндпоинта с паспортом открытой ач... |
-| [`require_group_member`](#require_group_member) | Function | L233–L243 | `int` | Пропускает только одногруппников: валидный initData ест... |
-| [`trigger_miniapp_action`](#trigger_miniapp_action) | Function | L247–L259 | `MiniappActionResult` | Разблокирует клиентские достижения Mini App (пасхалки, ... |
-| [`list_api_testers`](#list_api_testers) | Function | L263–L276 | `TesterListResponse` | Возвращает список всех зарегистрированных тестеров Swag... |
-| [`api_add_tester`](#api_add_tester) | Function | L280–L294 | `TesterActionResponse` | Добавляет пользователя в постоянный список тестеров API... |
-| [`api_remove_tester`](#api_remove_tester) | Function | L298–L312 | `TesterActionResponse` | Удаляет пользователя из списка авторизованных тестеров ... |
+| [`_set_tester_cookie`](#_set_tester_cookie) | Function | L61–L79 | `None` | Устанавливает подписанную защищенную сессионную куку те... |
+| [`serve_miniapp_page`](#serve_miniapp_page) | Function | L83–L99 | `HTMLResponse` | Отдаёт одностраничный интерфейс Telegram Mini App порта... |
+| [`_resolve_api_key_user`](#_resolve_api_key_user) | Function | L102–L112 | `tuple[int, str, str] \| None` | Определяет Telegram ID и профиль пользователя по мастер... |
+| [`login_by_token`](#login_by_token) | Function | L116–L137 | `Response` | Обменивает одноразовый токен из ссылки бота на сессионн... |
+| [`_auth_by_key`](#_auth_by_key) | Function | L140–L148 | `MiniappAuthResponse` | Проверяет ключ доступа и устанавливает сессионную куку ... |
+| [`_auth_telegram_init`](#_auth_telegram_init) | Function | L151–L165 | `MiniappAuthResponse` | Валидирует подпись Telegram initData и проверяет права ... |
+| [`authenticate_miniapp`](#authenticate_miniapp) | Function | L169–L175 | `MiniappAuthResponse` | Аутентифицирует пользователя по Telegram initData или к... |
+| [`check_tester_status`](#check_tester_status) | Function | L179–L197 | `MiniappCheckResponse` | Проверяет статус авторизации и наличие прав тестера по ... |
+| [`resolve_action_uid`](#resolve_action_uid) | Function | L200–L210 | `int \| None` | Определяет Telegram ID инициатора действия из сессии ил... |
+| [`_action_result`](#_action_result) | Function | L223–L231 | `MiniappActionResult` | Собирает ответ action-эндпоинта с паспортом открытой ач... |
+| [`require_group_member`](#require_group_member) | Function | L234–L244 | `int` | Пропускает только одногруппников: валидный initData ест... |
+| [`trigger_miniapp_action`](#trigger_miniapp_action) | Function | L248–L260 | `MiniappActionResult` | Разблокирует клиентские достижения Mini App (пасхалки, ... |
+| [`list_api_testers`](#list_api_testers) | Function | L264–L277 | `TesterListResponse` | Возвращает список всех зарегистрированных тестеров Swag... |
+| [`api_add_tester`](#api_add_tester) | Function | L281–L295 | `TesterActionResponse` | Добавляет пользователя в постоянный список тестеров API... |
+| [`api_remove_tester`](#api_remove_tester) | Function | L299–L313 | `TesterActionResponse` | Удаляет пользователя из списка авторизованных тестеров ... |
 
 ---
 
@@ -35,7 +35,7 @@
 def _set_tester_cookie(response: Response, user_id: int) -> None
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L60-L78`](../../api/router/miniapp.py#L60-L78)
+- **Source Reference**: [`api/router/miniapp.py#L61-L79`](../../api/router/miniapp.py#L61-L79)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -69,7 +69,7 @@ result = _set_tester_cookie(response=..., user_id=...)
 async def serve_miniapp_page() -> HTMLResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L82-L98`](../../api/router/miniapp.py#L82-L98)
+- **Source Reference**: [`api/router/miniapp.py#L83-L99`](../../api/router/miniapp.py#L83-L99)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `HTMLResponse`
 
@@ -100,7 +100,7 @@ result = await serve_miniapp_page()
 async def _resolve_api_key_user(key: str) -> tuple[int, str, str] | None
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L101-L111`](../../api/router/miniapp.py#L101-L111)
+- **Source Reference**: [`api/router/miniapp.py#L102-L112`](../../api/router/miniapp.py#L102-L112)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[int, str, str] | None`
 
@@ -133,7 +133,7 @@ result = await _resolve_api_key_user(key=...)
 async def login_by_token( t: str = Query(..., description="Одноразовый токен входа из бота"), next_target: str = Query(default="miniapp", alias="next"), ) -> Response
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L115-L136`](../../api/router/miniapp.py#L115-L136)
+- **Source Reference**: [`api/router/miniapp.py#L116-L137`](../../api/router/miniapp.py#L116-L137)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Response`
 
@@ -167,7 +167,7 @@ result = await login_by_token(t=..., next_target=...)
 async def _auth_by_key(api_key: str, response: Response) -> MiniappAuthResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L139-L147`](../../api/router/miniapp.py#L139-L147)
+- **Source Reference**: [`api/router/miniapp.py#L140-L148`](../../api/router/miniapp.py#L140-L148)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappAuthResponse`
 
@@ -201,7 +201,7 @@ result = await _auth_by_key(api_key=..., response=...)
 async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuthResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L150-L164`](../../api/router/miniapp.py#L150-L164)
+- **Source Reference**: [`api/router/miniapp.py#L151-L165`](../../api/router/miniapp.py#L151-L165)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappAuthResponse`
 
@@ -235,7 +235,7 @@ result = await _auth_telegram_init(init_data=..., response=...)
 async def authenticate_miniapp(payload: MiniappAuthRequest, response: Response) -> MiniappAuthResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L168-L174`](../../api/router/miniapp.py#L168-L174)
+- **Source Reference**: [`api/router/miniapp.py#L169-L175`](../../api/router/miniapp.py#L169-L175)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappAuthResponse`
 
@@ -269,7 +269,7 @@ result = await authenticate_miniapp(payload=..., response=...)
 async def check_tester_status(para_session: str = Cookie(default=None)) -> MiniappCheckResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L178-L196`](../../api/router/miniapp.py#L178-L196)
+- **Source Reference**: [`api/router/miniapp.py#L179-L197`](../../api/router/miniapp.py#L179-L197)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappCheckResponse`
 
@@ -302,7 +302,7 @@ result = await check_tester_status(para_session=...)
 def resolve_action_uid(init_data: str | None, session: str | None) -> int | None
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L199-L209`](../../api/router/miniapp.py#L199-L209)
+- **Source Reference**: [`api/router/miniapp.py#L200-L210`](../../api/router/miniapp.py#L200-L210)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -336,7 +336,7 @@ result = resolve_action_uid(init_data=..., session=...)
 def _action_result(ach_id: str | None, unlocked: bool) -> MiniappActionResult
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L222-L230`](../../api/router/miniapp.py#L222-L230)
+- **Source Reference**: [`api/router/miniapp.py#L223-L231`](../../api/router/miniapp.py#L223-L231)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `MiniappActionResult`
 
@@ -370,7 +370,7 @@ result = _action_result(ach_id=..., unlocked=...)
 def require_group_member(uid: int | None) -> int
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L233-L243`](../../api/router/miniapp.py#L233-L243)
+- **Source Reference**: [`api/router/miniapp.py#L234-L244`](../../api/router/miniapp.py#L234-L244)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -403,7 +403,7 @@ result = require_group_member(uid=...)
 async def trigger_miniapp_action( payload: MiniappActionRequest, para_session: str | None = Cookie(default=None) ) -> MiniappActionResult
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L247-L259`](../../api/router/miniapp.py#L247-L259)
+- **Source Reference**: [`api/router/miniapp.py#L248-L260`](../../api/router/miniapp.py#L248-L260)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `MiniappActionResult`
 
@@ -437,7 +437,7 @@ result = await trigger_miniapp_action(payload=..., para_session=...)
 async def list_api_testers() -> TesterListResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L263-L276`](../../api/router/miniapp.py#L263-L276)
+- **Source Reference**: [`api/router/miniapp.py#L264-L277`](../../api/router/miniapp.py#L264-L277)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterListResponse`
 
@@ -468,7 +468,7 @@ result = await list_api_testers()
 async def api_add_tester(user_id: int) -> TesterActionResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L280-L294`](../../api/router/miniapp.py#L280-L294)
+- **Source Reference**: [`api/router/miniapp.py#L281-L295`](../../api/router/miniapp.py#L281-L295)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterActionResponse`
 
@@ -501,7 +501,7 @@ result = await api_add_tester(user_id=...)
 async def api_remove_tester(user_id: int) -> TesterActionResponse
 ```
 
-- **Source Reference**: [`api/router/miniapp.py#L298-L312`](../../api/router/miniapp.py#L298-L312)
+- **Source Reference**: [`api/router/miniapp.py#L299-L313`](../../api/router/miniapp.py#L299-L313)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `TesterActionResponse`
 

@@ -14,7 +14,7 @@ from typing import Any
 
 from aiogram.types import User
 
-from config import ALLOWED_USER_ID, BIRTHDAYS_FILE_PATH
+from config import ADMIN_USER_IDS, BIRTHDAYS_FILE_PATH
 from core.logger import get_logger
 from services.user_cache import add_user_to_cache
 from utils.storage import sync_atomic_save_json, sync_load_json
@@ -159,14 +159,14 @@ def is_authorized_user(user: User | None) -> bool:
     """
     Проверяет наличие прав доступа к функционалу бота у входящего пользователя.
 
-    Предоставляет доступ главному администратору (ALLOWED_USER_ID) и студентам,
+    Предоставляет доступ администраторам (ADMIN_USER_IDS) и студентам,
     чей числовой tg_id успешно сопоставлен с реестром группы.
 
     Возвращает True, если пользователь авторизован, иначе False.
     """
     if not user:
         return False
-    if user.id == ALLOWED_USER_ID:
+    if user.id in ADMIN_USER_IDS:
         return True
     return find_classmate_by_tg_id(user.id) is not None
 
@@ -182,7 +182,7 @@ def process_user_auth(user: User | None) -> tuple[bool, bool, dict[str, Any] | N
     """
     if not user:
         return False, False, None
-    if user.id == ALLOWED_USER_ID:
+    if user.id in ADMIN_USER_IDS:
         return True, False, None
     existing = find_classmate_by_tg_id(user.id)
     if existing:

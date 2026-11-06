@@ -22,7 +22,7 @@ from bot.templates.admin.attendance import (
     get_lesson_select_kb,
     get_student_poll_kb,
 )
-from config import ALLOWED_USER_ID, DEPUTY_USER_ID, TIMEZONE
+from config import ADMIN_USER_IDS, ALLOWED_USER_ID, DEPUTY_USER_ID, TIMEZONE
 from core.api_client import get_api_schedule_for_date
 from core.background import spawn
 from core.bot import bot
@@ -226,13 +226,13 @@ def get_initiator_title(initiator_id: int) -> str:
     """
     Возвращает русскоязычное наименование роли старосты по его Telegram ID.
 
-    Сверяет ID с ALLOWED_USER_ID, определяя Старосту или Замстаросты.
+    Сверяет ID с ADMIN_USER_IDS, определяя Старосту или Замстаросты.
     Используется в журналах и уведомлениях напарника.
 
     Возвращает строку 'Староста' или 'Замстаросты'.
     """
 
-    return "Староста" if initiator_id == ALLOWED_USER_ID else "Замстаросты"
+    return "Староста" if initiator_id in ADMIN_USER_IDS else "Замстаросты"
 
 
 async def check_session_ownership(cb: CallbackQuery, session) -> bool:

@@ -68,7 +68,7 @@ def get_env_int(key: str, default: int | None = None) -> int:
     Извлекает целочисленный параметр окружения с приведением типа.
 
     Предотвращает ошибки типов при работе с портами, идентификаторами
-    чатов Telegram и таймаутами кэширования.
+    чатов Telegram и таймаутами кэширования. При наличии запятой берет первый ID.
 
     Возвращает целочисленное значение параметра.
     """
@@ -78,7 +78,23 @@ def get_env_int(key: str, default: int | None = None) -> int:
             return default
         raise ValueError(f"ОШИБКА: Обязательная числовая переменная '{key}' не задана!")
 
-    return int(raw_val)
+    clean_val = raw_val.split(",")[0].strip()
+    return int(clean_val)
+
+
+def get_env_int_list(key: str, default: tuple[int, ...] = ()) -> tuple[int, ...]:
+    """
+    Парсит разделенный запятыми список целых чисел из переменной окружения.
+
+    Очищает пробелы и отсекает пустые элементы для безопасного парсинга.
+
+    Возвращает кортеж целых чисел.
+    """
+    raw_val = os.getenv(key)
+    if not raw_val:
+        return default
+
+    return tuple(int(item.strip()) for item in raw_val.split(",") if item.strip())
 
 
 def get_env_float(key: str, default: float | None = None) -> float:
@@ -132,9 +148,13 @@ def get_env_bool(key: str, default: bool = False) -> bool:
 # 1. TELEGRAM BOT & ACCESS CONTROL
 # ==============================================================================
 
+_admin_ids = get_env_int_list("ALLOWED_USER_ID")
+_primary_admin_id = _admin_ids[0] if _admin_ids else get_env_int("ALLOWED_USER_ID")
+
 telegram_config = TelegramConfig(
     bot_token=get_required_env("BOT_TOKEN"),
-    allowed_user_id=get_env_int("ALLOWED_USER_ID"),
+    allowed_user_id=_primary_admin_id,
+    admin_user_ids=_admin_ids,
     deputy_user_id=get_env_int("DEPUTY_USER_ID"),
     group_id=get_required_env("GROUP_ID"),
     group_name=get_required_env("GROUP_NAME"),
@@ -155,6 +175,7 @@ telegram_config = TelegramConfig(
 
 BOT_TOKEN: str = telegram_config.bot_token
 ALLOWED_USER_ID: int = telegram_config.allowed_user_id
+ADMIN_USER_IDS: set[int] = telegram_config.allowed_admin_user_ids
 DEPUTY_USER_ID: int = telegram_config.deputy_user_id
 ALLOWED_ATTENDANCE_USER_IDS: set[int] = telegram_config.allowed_attendance_user_ids
 GROUP_ID: str = telegram_config.group_id

@@ -11,7 +11,7 @@ from fastapi import Cookie, Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
 from config import (
-    ALLOWED_USER_ID,
+    ADMIN_USER_IDS,
     API_SECRET_KEY,
     API_TESTER_KEY_PREFIX,
     DEPUTY_USER_ID,
@@ -72,7 +72,7 @@ async def _resolve_token_identity(token: str | None) -> str | None:
     uid = verify_tester_session(token)
     if not uid:
         return None
-    if uid == ALLOWED_USER_ID or find_classmate_by_tg_id(uid) is not None:
+    if uid in ADMIN_USER_IDS or find_classmate_by_tg_id(uid) is not None:
         return f"classmate:{uid}"
     return f"tester:{uid}" if await is_tester_allowed(uid) else None
 
@@ -187,7 +187,7 @@ async def verify_admin_access(auth_identity: str = Depends(verify_api_or_tester)
 
     Возвращает подтвержденный идентификатор или вызывает HTTP 403 Forbidden.
     """
-    if auth_identity == "master_admin" or _identity_uid(auth_identity) in {ALLOWED_USER_ID, DEPUTY_USER_ID}:
+    if auth_identity == "master_admin" or _identity_uid(auth_identity) in (ADMIN_USER_IDS | {DEPUTY_USER_ID}):
         return auth_identity
 
     log.warning("🚫 Попытка несанкционированного доступа: %s", auth_identity)

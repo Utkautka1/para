@@ -608,9 +608,7 @@ def _update_public_cache(idx_res: httpx.Response, shard_res: httpx.Response) -> 
         _LAST_SHARD_ETAG = shard_res.headers.get("etag")
 
 
-def _assemble_public_bundle(
-    idx_res: httpx.Response, shard_res: httpx.Response
-) -> httpx.Response | None:
+def _assemble_public_bundle(idx_res: httpx.Response, shard_res: httpx.Response) -> httpx.Response | None:
     """
     Объединяет свежие и кэшированные части публичного API в итоговый HTTP-ответ.
 

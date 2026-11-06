@@ -82,3 +82,26 @@ def test_domain_configs_immutability() -> None:
     """Проверяет неизменяемость (frozen dataclass) доменных конфигураций."""
     with pytest.raises(FrozenInstanceError):
         config.telegram_config.allowed_user_id = 999999  # type: ignore[misc]
+
+
+def test_telegram_config_multi_admin() -> None:
+    """Проверяет корректность объединения множества администраторов при наличии нескольких ID."""
+    cfg = TelegramConfig(
+        bot_token="test_token",
+        allowed_user_id=1000965210,
+        deputy_user_id=1120072536,
+        group_id="-1001",
+        group_name="Test",
+        topic_chat_id=-1001,
+        topic_thread_id=1,
+        exam_topic_thread_id=2,
+        flood_topic_thread_id=3,
+        birthday_topic_thread_id=4,
+        important_topic_thread_id=5,
+        attendance_topic_thread_id=6,
+        hw_input_topic_thread_id=7,
+        hw_output_topic_thread_id=8,
+        admin_user_ids=(1000965210, 999999999),
+    )
+    assert cfg.allowed_admin_user_ids == {1000965210, 999999999}
+    assert cfg.allowed_attendance_user_ids == {1000965210, 999999999, 1120072536}

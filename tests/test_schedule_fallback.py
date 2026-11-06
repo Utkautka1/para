@@ -108,11 +108,18 @@ async def test_fetch_public_bundle_success():
     """Проверяет успешное объединение публичного индекса и шарда группы."""
     from services.schedule_parser import _fetch_public_bundle
 
-    idx_payload = {"publishedAt": "2026-11-06T00:00:00Z", "data": {"config": {"semesterStart": "2026-09-01"}, "subjects": []}}
+    idx_payload = {
+        "publishedAt": "2026-11-06T00:00:00Z",
+        "data": {"config": {"semesterStart": "2026-09-01"}, "subjects": []},
+    }
     shard_payload = {"schedule": {"instances": []}, "dataPatch": {"loads": [], "substitutions": []}}
 
-    r_idx = httpx.Response(200, json=idx_payload, headers={"etag": "idx_etag"}, request=httpx.Request("GET", "http://t/idx"))
-    r_shard = httpx.Response(200, json=shard_payload, headers={"etag": "shard_etag"}, request=httpx.Request("GET", "http://t/shard"))
+    r_idx = httpx.Response(
+        200, json=idx_payload, headers={"etag": "idx_etag"}, request=httpx.Request("GET", "http://t/idx")
+    )
+    r_shard = httpx.Response(
+        200, json=shard_payload, headers={"etag": "shard_etag"}, request=httpx.Request("GET", "http://t/shard")
+    )
 
     client = AsyncMock()
     client.get = AsyncMock(side_effect=[r_idx, r_shard])
@@ -152,7 +159,9 @@ async def test_fetch_public_bundle_index_200_shard_304():
     idx_payload = {"publishedAt": "2026-11-06T00:00:00Z", "data": {"config": {}, "subjects": []}}
     cached_shard = {"schedule": {"instances": [{"id": 1}]}, "dataPatch": {"loads": []}}
 
-    r_idx = httpx.Response(200, json=idx_payload, headers={"etag": "idx_new"}, request=httpx.Request("GET", "http://t/idx"))
+    r_idx = httpx.Response(
+        200, json=idx_payload, headers={"etag": "idx_new"}, request=httpx.Request("GET", "http://t/idx")
+    )
     r_shard = httpx.Response(304, headers={"etag": "shard_cached"}, request=httpx.Request("GET", "http://t/shard"))
 
     client = AsyncMock()
@@ -178,7 +187,9 @@ async def test_fetch_public_bundle_index_304_shard_200():
     new_shard = {"schedule": {"instances": [{"id": 2}]}, "dataPatch": {"loads": []}}
 
     r_idx = httpx.Response(304, headers={"etag": "idx_cached"}, request=httpx.Request("GET", "http://t/idx"))
-    r_shard = httpx.Response(200, json=new_shard, headers={"etag": "shard_new"}, request=httpx.Request("GET", "http://t/shard"))
+    r_shard = httpx.Response(
+        200, json=new_shard, headers={"etag": "shard_new"}, request=httpx.Request("GET", "http://t/shard")
+    )
 
     client = AsyncMock()
     client.get = AsyncMock(side_effect=[r_idx, r_shard])

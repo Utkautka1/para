@@ -9,7 +9,7 @@ from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import ChatPermissions, Message
 
-from config import ALLOWED_USER_ID, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
+from config import ADMIN_USER_IDS, FLOOD_TOPIC_THREAD_ID, TIMEZONE, TOPIC_CHAT_ID
 from core.logger import get_logger
 from services.classmates_auth import load_classmates_registry
 from services.user_cache import add_user_to_cache, get_cached_user_id
@@ -370,26 +370,8 @@ def is_unmute_command(text: str | None) -> bool:
     return t.startswith((".открыть рот", ".открой рот"))
 
 
-@router.message(F.text & F.text.func(is_mute_command))
-async def cmd_mute_user(message: Message) -> None:
-    """
-    Исполняет команду ограничения отправки сообщений нарушителю в чате группы.
-
-    Проверяет права вызывающего (только ALLOWED_USER_ID), извлекает цель и время.
-    Применяет ограничение в супергруппе и публикует отчет с удалением команды.
-
-    Ничего не возвращает.
-    """
-
-    cache_user_from_message(message)
-    if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
-        return
-
-    target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
-    if not target_id:
-        await message.answer("⚠️ <b>Пользователь не найден!</b> Укажите ID или ответьте на его сообщение.")
-        return
-
+async def _execute_mute(message: Message, target_id: int, target_name: str, time_raw: str, reason: str | None) -> None:
+    """Применяет мут к пользователю в чате и отправляет отчет."""
     duration_sec = parse_duration_to_seconds(time_raw) or 600
     target_chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
     try:
@@ -401,25 +383,28 @@ async def cmd_mute_user(message: Message) -> None:
         await message.answer(f"❌ <b>Не удалось наложить мут:</b> {html.escape(str(e))}")
 
 
-@router.message(F.text & F.text.func(is_unmute_command))
-async def cmd_unmute_user(message: Message) -> None:
+@router.message(F.text & F.text.func(is_mute_command))
+async def cmd_mute_user(message: Message) -> None:
     """
-    Снимает ограничения на отправку сообщений с ранее заблокированного участника.
+    Исполняет команду ограничения отправки сообщений нарушителю в чате группы.
 
-    Проверяет права администратора, восстанавливает полные права в супергруппе.
-    Публикует радостное уведомление о разблокировке и подчищает команду.
-
-    Ничего не возвращает.
+    Проверяет права вызывающего (только ADMIN_USER_IDS), извлекает цель и время.
+    Применяет ограничение в супергруппе и публикует отчет с удалением команды.
     """
-
-    if not message.from_user or message.from_user.id != ALLOWED_USER_ID:
+    cache_user_from_message(message)
+    if not message.from_user or message.from_user.id not in ADMIN_USER_IDS:
         return
 
-    target_id, target_name, _, _ = await extract_target_id_and_args(message)
+    target_id, target_name, time_raw, reason = await extract_target_id_and_args(message)
     if not target_id:
         await message.answer("⚠️ <b>Пользователь не найден!</b> Укажите ID или ответьте на его сообщение.")
         return
 
+    await _execute_mute(message, target_id, target_name, time_raw, reason)
+
+
+async def _execute_unmute(message: Message, target_id: int, target_name: str) -> None:
+    """Снимает мут с пользователя в чате и отправляет отчет."""
     target_chat_id = message.chat.id if message.chat.type != "private" else TOPIC_CHAT_ID
     try:
         await _apply_unmute_permissions(message.bot, target_chat_id, target_id)
@@ -429,3 +414,22 @@ async def cmd_unmute_user(message: Message) -> None:
     except Exception as e:
         log.error("Ошибка размута target_id=%s: %s", target_id, e)
         await message.answer(f"❌ <b>Не удалось размутить:</b> {html.escape(str(e))}")
+
+
+@router.message(F.text & F.text.func(is_unmute_command))
+async def cmd_unmute_user(message: Message) -> None:
+    """
+    Снимает ограничения на отправку сообщений с ранее заблокированного участника.
+
+    Проверяет права администратора, восстанавливает полные права в супергруппе.
+    Публикует радостное уведомление о разблокировке и подчищает команду.
+    """
+    if not message.from_user or message.from_user.id not in ADMIN_USER_IDS:
+        return
+
+    target_id, target_name, _, _ = await extract_target_id_and_args(message)
+    if not target_id:
+        await message.answer("⚠️ <b>Пользователь не найден!</b> Укажите ID или ответьте на его сообщение.")
+        return
+
+    await _execute_unmute(message, target_id, target_name)

@@ -25,7 +25,7 @@ from bot.templates.user.messages import (
     format_notice_settings_text,
     format_week_schedule,
 )
-from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID, TIMEZONE
+from config import ADMIN_USER_IDS, ALLOWED_ATTENDANCE_USER_IDS, TIMEZONE
 from core.api_client import (
     fetch_teachers,
     get_api_schedule_for_date,
@@ -86,7 +86,7 @@ async def edit_or_answer(
     kb = get_schedule_inline_kb(
         lessons,
         week_offset=week_offset,
-        is_admin=(uid == ALLOWED_USER_ID),
+        is_admin=(uid in ADMIN_USER_IDS),
         is_subscribed=is_subscribed(uid),
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),
@@ -180,7 +180,7 @@ async def _send_today_schedule(message: Message, uid: int, is_tester: bool) -> l
     text, lessons = await get_day_schedule_cached(now)
     kb = get_schedule_inline_kb(
         lessons,
-        is_admin=(uid == ALLOWED_USER_ID),
+        is_admin=(uid in ADMIN_USER_IDS),
         is_subscribed=is_subscribed(uid),
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=is_tester,
@@ -280,7 +280,7 @@ async def _update_schedule_inline_markup(callback: CallbackQuery, uid: int, new_
     _, lessons = await get_day_schedule_cached(now)
     kb = get_schedule_inline_kb(
         lessons,
-        is_admin=(uid == ALLOWED_USER_ID),
+        is_admin=(uid in ADMIN_USER_IDS),
         is_subscribed=new_sub,
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),
@@ -527,7 +527,7 @@ async def cmd_help(message: Message) -> None:
 
     spawn(award_achievement(uid, "bot_manual", message.bot, message.from_user.full_name if message.from_user else None))
 
-    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
+    text = format_help_text(is_admin=(uid in ADMIN_USER_IDS))
     await message.answer(text)
 
 
@@ -538,12 +538,12 @@ async def handle_user_text_message(message: Message) -> None:
         return
 
     uid = message.from_user.id if message.from_user else 0
-    text = format_help_text(is_admin=(uid == ALLOWED_USER_ID))
+    text = format_help_text(is_admin=(uid in ADMIN_USER_IDS))
     now = datetime.now(TIMEZONE).date()
     _, lessons = await get_day_schedule_cached(now)
     kb = get_schedule_inline_kb(
         lessons,
-        is_admin=(uid == ALLOWED_USER_ID),
+        is_admin=(uid in ADMIN_USER_IDS),
         is_subscribed=is_subscribed(uid),
         is_attendance_admin=bool(uid in ALLOWED_ATTENDANCE_USER_IDS),
         is_tester=await is_tester_allowed(uid),

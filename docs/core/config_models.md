@@ -10,8 +10,9 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L37–L39 | `set[int]` | Множество доверенных администраторов для фиксации посещ... |
-| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L58–L60 | `ZoneInfo` | Объект таймзоны для синхронизации расписания занятий. |
+| [`TelegramConfig.allowed_admin_user_ids`](#telegramconfigallowed_admin_user_ids) | Method | L38–L43 | `set[int]` | Все главные администраторы (включая указанных через зап... |
+| [`TelegramConfig.allowed_attendance_user_ids`](#telegramconfigallowed_attendance_user_ids) | Method | L46–L48 | `set[int]` | Множество доверенных администраторов для фиксации посещ... |
+| [`ScheduleConfig.timezone`](#scheduleconfigtimezone) | Method | L67–L69 | `ZoneInfo` | Объект таймзоны для синхронизации расписания занятий. |
 
 ---
 
@@ -21,12 +22,43 @@
 
 Конфигурация Telegram-бота, ролевого доступа и идентификаторов топиков форума.
 
+### `TelegramConfig.allowed_admin_user_ids`
+```python
+def allowed_admin_user_ids(self) -> set[int]
+```
+
+- **Source Reference**: [`core/config_models.py#L38-L43`](../../core/config_models.py#L38-L43)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `set[int]`
+
+#### Overview & Architectural Purpose
+Все главные администраторы (включая указанных через запятую в ALLOWED_USER_ID).
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.config_models import allowed_admin_user_ids
+
+# Execute call
+result = allowed_admin_user_ids()
+```
+
+---
+
 ### `TelegramConfig.allowed_attendance_user_ids`
 ```python
 def allowed_attendance_user_ids(self) -> set[int]
 ```
 
-- **Source Reference**: [`core/config_models.py#L37-L39`](../../core/config_models.py#L37-L39)
+- **Source Reference**: [`core/config_models.py#L46-L48`](../../core/config_models.py#L46-L48)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[int]`
 
@@ -61,7 +93,7 @@ result = allowed_attendance_user_ids()
 def timezone(self) -> ZoneInfo
 ```
 
-- **Source Reference**: [`core/config_models.py#L58-L60`](../../core/config_models.py#L58-L60)
+- **Source Reference**: [`core/config_models.py#L67-L69`](../../core/config_models.py#L67-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `ZoneInfo`
 

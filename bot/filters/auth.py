@@ -8,7 +8,7 @@
 from aiogram.filters import Filter
 from aiogram.types import CallbackQuery, Message
 
-from config import ALLOWED_ATTENDANCE_USER_IDS, ALLOWED_USER_ID
+from config import ADMIN_USER_IDS, ALLOWED_ATTENDANCE_USER_IDS
 from services.classmates_auth import is_authorized_user
 
 
@@ -22,14 +22,14 @@ class AuthFilter(Filter):
         Используется в защищенных роутерах панели управления старосты.
         Защищает от выполнения административных команд посторонними лицами.
 
-        Возвращает True, если user.id совпадает с ALLOWED_USER_ID, иначе False.
+        Возвращает True, если user.id входит в ADMIN_USER_IDS, иначе False.
         """
 
         user = getattr(event, "from_user", None)
         if not user:
             return False
 
-        return user.id == ALLOWED_USER_ID
+        return user.id in ADMIN_USER_IDS
 
 
 class ClassmateAuthFilter(Filter):

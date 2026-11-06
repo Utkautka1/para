@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from config import (
-    ALLOWED_USER_ID,
+    ADMIN_USER_IDS,
     HW_PROCESSED_TTL_SECONDS,
     HW_RATE_LIMIT_PER_WINDOW,
     HW_RATE_LIMIT_WINDOW_SECONDS,
@@ -203,7 +203,7 @@ async def check_user_rate_limit(user_id: int) -> bool:
 
     Возвращает True, если запрос разрешен, иначе False (троттлинг).
     """
-    if user_id == ALLOWED_USER_ID:
+    if user_id in ADMIN_USER_IDS:
         return True
     return await allow_request(f"hw_rate:{user_id}", HW_RATE_LIMIT_PER_WINDOW, HW_RATE_LIMIT_WINDOW_SECONDS)
 

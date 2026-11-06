@@ -28,15 +28,24 @@ class TelegramConfig:
     attendance_topic_thread_id: int
     hw_input_topic_thread_id: int
     hw_output_topic_thread_id: int
+    admin_user_ids: tuple[int, ...] = ()
     debug_chat_id: int | None = None
     debug_thread_id: int | None = None
     warning_thread_id: int | None = None
     fatal_thread_id: int | None = None
 
     @property
+    def allowed_admin_user_ids(self) -> set[int]:
+        """Все главные администраторы (включая указанных через запятую в ALLOWED_USER_ID)."""
+        base = {self.allowed_user_id}
+        if self.admin_user_ids:
+            base.update(self.admin_user_ids)
+        return base
+
+    @property
     def allowed_attendance_user_ids(self) -> set[int]:
         """Множество доверенных администраторов для фиксации посещаемости."""
-        return {self.allowed_user_id, self.deputy_user_id}
+        return self.allowed_admin_user_ids | {self.deputy_user_id}
 
 
 @dataclass(frozen=True, slots=True)

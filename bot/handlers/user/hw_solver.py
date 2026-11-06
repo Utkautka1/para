@@ -164,7 +164,7 @@ async def is_hw_allowed(msg: Message, target: Message, user_id: int) -> bool:
     Возвращает True, если задачу разрешено принять в работу, иначе False.
     """
 
-    if user_id != config.ALLOWED_USER_ID and not await check_user_rate_limit(user_id):
+    if user_id not in config.ADMIN_USER_IDS and not await check_user_rate_limit(user_id):
         log.warning("⚠️ Превышен rate-limit для пользователя %s.", user_id)
         return False
 

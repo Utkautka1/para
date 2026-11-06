@@ -27,8 +27,10 @@
 | [`_build_mute_report`](#_build_mute_report) | Function | L319–L334 | `str` | Формирует стильный HTML-текст карточки уведомления о бл... |
 | [`is_mute_command`](#is_mute_command) | Function | L337–L352 | `bool` | Проверяет, соответствует ли входящий текст команде нало... |
 | [`is_unmute_command`](#is_unmute_command) | Function | L355–L370 | `bool` | Проверяет, соответствует ли входящий текст команде доср... |
-| [`cmd_mute_user`](#cmd_mute_user) | Function | L374–L401 | `None` | Исполняет команду ограничения отправки сообщений наруши... |
-| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L405–L431 | `None` | Снимает ограничения на отправку сообщений с ранее забло... |
+| [`_execute_mute`](#_execute_mute) | Function | L373–L383 | `None` | Применяет мут к пользователю в чате и отправляет отчет. |
+| [`cmd_mute_user`](#cmd_mute_user) | Function | L387–L403 | `None` | Исполняет команду ограничения отправки сообщений наруши... |
+| [`_execute_unmute`](#_execute_unmute) | Function | L406–L416 | `None` | Снимает мут с пользователя в чате и отправляет отчет. |
+| [`cmd_unmute_user`](#cmd_unmute_user) | Function | L420–L435 | `None` | Снимает ограничения на отправку сообщений с ранее забло... |
 
 ---
 
@@ -608,12 +610,49 @@ result = is_unmute_command(text=...)
 
 ---
 
+### `_execute_mute`
+```python
+async def _execute_mute(message: Message, target_id: int, target_name: str, time_raw: str, reason: str | None) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/mute.py#L373-L383`](../../bot/handlers/admin/mute.py#L373-L383)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Применяет мут к пользователю в чате и отправляет отчет.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `target_id` | `int` | Yes | Parameter `target_id` of type `int`. |
+| `target_name` | `str` | Yes | Parameter `target_name` of type `str`. |
+| `time_raw` | `str` | Yes | Parameter `time_raw` of type `str`. |
+| `reason` | `str | None` | Yes | Parameter `reason` of type `str | None`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.mute import _execute_mute
+
+# Execute call
+result = await _execute_mute(message=..., target_id=..., target_name=...)
+```
+
+---
+
 ### `cmd_mute_user`
 ```python
 async def cmd_mute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L374-L401`](../../bot/handlers/admin/mute.py#L374-L401)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L387-L403`](../../bot/handlers/admin/mute.py#L387-L403)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -626,10 +665,10 @@ async def cmd_mute_user(message: Message) -> None
 | `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python
@@ -641,12 +680,47 @@ result = await cmd_mute_user(message=...)
 
 ---
 
+### `_execute_unmute`
+```python
+async def _execute_unmute(message: Message, target_id: int, target_name: str) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/mute.py#L406-L416`](../../bot/handlers/admin/mute.py#L406-L416)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Снимает мут с пользователя в чате и отправляет отчет.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
+| `target_id` | `int` | Yes | Parameter `target_id` of type `int`. |
+| `target_name` | `str` | Yes | Parameter `target_name` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.mute import _execute_unmute
+
+# Execute call
+result = await _execute_unmute(message=..., target_id=..., target_name=...)
+```
+
+---
+
 ### `cmd_unmute_user`
 ```python
 async def cmd_unmute_user(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/mute.py#L405-L431`](../../bot/handlers/admin/mute.py#L405-L431)
+- **Source Reference**: [`bot/handlers/admin/mute.py#L420-L435`](../../bot/handlers/admin/mute.py#L420-L435)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -659,10 +733,10 @@ async def cmd_unmute_user(message: Message) -> None
 | `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
 
 #### Concurrency & Side Effects
-- Emits structured telemetry events to system logging subsystem.
+- Stateless pure functional computation without external mutations.
 
 #### Fault Tolerance & Error Modes
-Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+Propagates unexpected runtime errors up the call stack to global exception handlers.
 
 #### Production Usage Example
 ```python

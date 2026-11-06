@@ -12,7 +12,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | [`get_default_user_commands`](#get_default_user_commands) | Function | L18–L36 | `list[BotCommand]` | Возвращает список общедоступных команд бота для студент... |
 | [`get_admin_commands`](#get_admin_commands) | Function | L39–L56 | `list[BotCommand]` | Возвращает расширенный список команд управления для ста... |
-| [`register_bot_commands`](#register_bot_commands) | Function | L59–L79 | `None` | Регистрирует меню команд в Telegram API для пользовател... |
+| [`register_bot_commands`](#register_bot_commands) | Function | L59–L80 | `None` | Регистрирует меню команд в Telegram API для пользовател... |
 
 ---
 
@@ -85,7 +85,7 @@ result = get_admin_commands()
 async def register_bot_commands(bot: Bot) -> None
 ```
 
-- **Source Reference**: [`bot/commands.py#L59-L79`](../../bot/commands.py#L59-L79)
+- **Source Reference**: [`bot/commands.py#L59-L80`](../../bot/commands.py#L59-L80)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

@@ -24,6 +24,7 @@ from api.schemas.miniapp import (
     TesterListResponse,
 )
 from config import (
+    ADMIN_USER_IDS,
     ALLOWED_USER_ID,
     API_SECRET_KEY,
     DEPUTY_USER_ID,
@@ -153,7 +154,7 @@ async def _auth_telegram_init(init_data: str, response: Response) -> MiniappAuth
     if not info or "id" not in info:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram signature")
     uid = int(info["id"])
-    is_classmate = bool(uid == ALLOWED_USER_ID or find_classmate_by_tg_id(uid) is not None)
+    is_classmate = bool(uid in ADMIN_USER_IDS or find_classmate_by_tg_id(uid) is not None)
     is_tester = await is_tester_allowed(uid)
     if not is_classmate and not is_tester:
         log.warning("🚫 Пользователь %s не в группе 1-КПД-3 и не в списке тестеров", uid)
@@ -238,7 +239,7 @@ def require_group_member(uid: int | None) -> int:
     """
     if uid is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-    if uid != ALLOWED_USER_ID and find_classmate_by_tg_id(uid) is None:
+    if uid not in ADMIN_USER_IDS and find_classmate_by_tg_id(uid) is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a group member")
     return uid
 
@@ -271,7 +272,7 @@ async def list_api_testers() -> TesterListResponse:
     """
 
     uids = await get_all_testers()
-    items = [TesterItemResponse(user_id=u, is_admin=(u in {ALLOWED_USER_ID, DEPUTY_USER_ID})) for u in uids]
+    items = [TesterItemResponse(user_id=u, is_admin=(u in (ADMIN_USER_IDS | {DEPUTY_USER_ID}))) for u in uids]
 
     return TesterListResponse(count=len(items), testers=items)
 

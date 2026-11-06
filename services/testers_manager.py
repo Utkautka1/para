@@ -8,7 +8,7 @@
 import secrets
 
 from config import (
-    ALLOWED_USER_ID,
+    ADMIN_USER_IDS,
     API_TESTER_KEY_PREFIX,
     DEPUTY_USER_ID,
     REDIS_TESTER_KEY_TO_UID_PREFIX,
@@ -20,7 +20,7 @@ from core.redis import get_redis
 
 log = get_logger("testers_manager")
 
-ADMIN_TESTERS: set[int] = {ALLOWED_USER_ID, DEPUTY_USER_ID}
+ADMIN_TESTERS: set[int] = ADMIN_USER_IDS | {DEPUTY_USER_ID}
 
 
 async def generate_or_get_tester_key(user_id: int) -> str | None:
