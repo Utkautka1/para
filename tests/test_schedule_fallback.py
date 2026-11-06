@@ -142,3 +142,54 @@ async def test_fetch_public_bundle_cached_304():
         res = await _fetch_public_bundle("https://example.com", {}, httpx.Timeout(5.0))
         assert res is not None
         assert res.status_code == 304
+
+
+@pytest.mark.asyncio
+async def test_fetch_public_bundle_index_200_shard_304():
+    """Проверяет сборку бандла при неизменном шарде группы (304) и обновлённом индексе (200)."""
+    from services.schedule_parser import _fetch_public_bundle
+
+    idx_payload = {"publishedAt": "2026-11-06T00:00:00Z", "data": {"config": {}, "subjects": []}}
+    cached_shard = {"schedule": {"instances": [{"id": 1}]}, "dataPatch": {"loads": []}}
+
+    r_idx = httpx.Response(200, json=idx_payload, headers={"etag": "idx_new"}, request=httpx.Request("GET", "http://t/idx"))
+    r_shard = httpx.Response(304, headers={"etag": "shard_cached"}, request=httpx.Request("GET", "http://t/shard"))
+
+    client = AsyncMock()
+    client.get = AsyncMock(side_effect=[r_idx, r_shard])
+
+    with (
+        patch("services.schedule_parser.get_http_client", return_value=client),
+        patch("services.schedule_parser._CACHED_SHARD_RAW", cached_shard),
+        patch("services.schedule_parser._LAST_SHARD_ETAG", "shard_cached"),
+    ):
+        res = await _fetch_public_bundle("https://example.com", timeout=httpx.Timeout(5.0))
+        assert res is not None
+        assert res.status_code == 200
+        assert res.json()["schedule"]["instances"] == [{"id": 1}]
+
+
+@pytest.mark.asyncio
+async def test_fetch_public_bundle_index_304_shard_200():
+    """Проверяет сборку бандла при неизменном индексе (304) и новом шарде группы (200)."""
+    from services.schedule_parser import _fetch_public_bundle
+
+    cached_idx = {"publishedAt": "2026-11-05T00:00:00Z", "data": {"config": {"sem": 1}, "subjects": []}}
+    new_shard = {"schedule": {"instances": [{"id": 2}]}, "dataPatch": {"loads": []}}
+
+    r_idx = httpx.Response(304, headers={"etag": "idx_cached"}, request=httpx.Request("GET", "http://t/idx"))
+    r_shard = httpx.Response(200, json=new_shard, headers={"etag": "shard_new"}, request=httpx.Request("GET", "http://t/shard"))
+
+    client = AsyncMock()
+    client.get = AsyncMock(side_effect=[r_idx, r_shard])
+
+    with (
+        patch("services.schedule_parser.get_http_client", return_value=client),
+        patch("services.schedule_parser._CACHED_INDEX_RAW", cached_idx),
+        patch("services.schedule_parser._LAST_INDEX_ETAG", "idx_cached"),
+    ):
+        res = await _fetch_public_bundle("https://example.com", timeout=httpx.Timeout(5.0))
+        assert res is not None
+        assert res.status_code == 200
+        assert res.json()["schedule"]["instances"] == [{"id": 2}]
+        assert res.json()["config"] == {"sem": 1}

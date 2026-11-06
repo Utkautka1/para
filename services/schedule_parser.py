@@ -329,6 +329,10 @@ def get_period_time_str(
 _HTTP_CLIENT: httpx.AsyncClient | None = None
 _LAST_ETAG: str | None = None
 _LAST_MODIFIED: str | None = None
+_LAST_INDEX_ETAG: str | None = None
+_LAST_SHARD_ETAG: str | None = None
+_CACHED_INDEX_RAW: dict[str, Any] | None = None
+_CACHED_SHARD_RAW: dict[str, Any] | None = None
 _COOLDOWN_UNTIL: float = 0.0
 _COOLDOWN_SECONDS: float = float(SCHEDULE_COOLDOWN_SECONDS)
 
@@ -573,28 +577,84 @@ def _combine_public_payloads(idx_data: dict[str, Any], shard_data: dict[str, Any
     }
 
 
-async def _fetch_public_bundle(
-    base_url: str, headers: dict[str, str], timeout: httpx.Timeout
+def _build_public_request_headers() -> tuple[dict[str, str], dict[str, str]]:
+    """
+    Формирует раздельные заголовки If-None-Match для публичного индекса и шарда.
+
+    Заголовок отправляется только при наличии сохранённого снимка в памяти,
+    чтобы при ответе 304 гарантированно иметь данные для объединения.
+    """
+    idx_hdr: dict[str, str] = {}
+    shard_hdr: dict[str, str] = {}
+    if _LAST_INDEX_ETAG and _CACHED_INDEX_RAW is not None:
+        idx_hdr["If-None-Match"] = _LAST_INDEX_ETAG
+    if _LAST_SHARD_ETAG and _CACHED_SHARD_RAW is not None:
+        shard_hdr["If-None-Match"] = _LAST_SHARD_ETAG
+    return idx_hdr, shard_hdr
+
+
+def _update_public_cache(idx_res: httpx.Response, shard_res: httpx.Response) -> None:
+    """
+    Обновляет локальный кэш и ETag для успешно полученных частей публичного API.
+
+    Раздельное кэширование исключает рассинхронизацию при частичном обновлении данных.
+    """
+    global _LAST_INDEX_ETAG, _LAST_SHARD_ETAG, _CACHED_INDEX_RAW, _CACHED_SHARD_RAW
+    if idx_res.status_code == 200:
+        _CACHED_INDEX_RAW = idx_res.json()
+        _LAST_INDEX_ETAG = idx_res.headers.get("etag")
+    if shard_res.status_code == 200:
+        _CACHED_SHARD_RAW = shard_res.json()
+        _LAST_SHARD_ETAG = shard_res.headers.get("etag")
+
+
+def _assemble_public_bundle(
+    idx_res: httpx.Response, shard_res: httpx.Response
 ) -> httpx.Response | None:
-    """Запрашивает публичный индекс и шард группы, объединяя их в компактный HTTP-ответ."""
+    """
+    Объединяет свежие и кэшированные части публичного API в итоговый HTTP-ответ.
+
+    Если обе части неизменны — возвращает 304. При наличии данных возвращает 200.
+    """
+    if idx_res.status_code == 304 and shard_res.status_code == 304:
+        return httpx.Response(304, request=idx_res.request)
+
+    has_idx = idx_res.status_code in (200, 304) and _CACHED_INDEX_RAW is not None
+    has_shd = shard_res.status_code in (200, 304) and _CACHED_SHARD_RAW is not None
+    if not (has_idx and has_shd):
+        return None
+
+    combined = _combine_public_payloads(_CACHED_INDEX_RAW, _CACHED_SHARD_RAW)
+    etag = shard_res.headers.get("etag") or _LAST_SHARD_ETAG or _LAST_INDEX_ETAG or ""
+    headers = {"etag": etag} if etag else {}
+    return httpx.Response(200, json=combined, headers=headers, request=shard_res.request)
+
+
+async def _fetch_public_bundle(
+    base_url: str,
+    headers: dict[str, str] | httpx.Timeout | None = None,
+    timeout: httpx.Timeout | None = None,
+) -> httpx.Response | None:
+    """
+    Параллельно запрашивает публичный индекс и шард группы с раздельными ETag.
+
+    Предотвращает падение в fallback при несовпадении версий индекса и расписания.
+    """
+    eff_to = headers if isinstance(headers, httpx.Timeout) else (timeout or httpx.Timeout(10.0))
     client = get_http_client()
     index_url = f"{base_url}/api/public-index"
     shard_url = f"{base_url}/api/public-schedule/group/{GROUP_ID}"
+    idx_h, shd_h = _build_public_request_headers()
     try:
-        index_res, shard_res = await asyncio.gather(
-            client.get(index_url, headers=headers, timeout=timeout),
-            client.get(shard_url, headers=headers, timeout=timeout),
+        idx_res, shd_res = await asyncio.gather(
+            client.get(index_url, headers=idx_h, timeout=eff_to),
+            client.get(shard_url, headers=shd_h, timeout=eff_to),
         )
-        if index_res.status_code == 304 and shard_res.status_code == 304:
-            return httpx.Response(304, request=index_res.request)
-        if index_res.status_code == 200 and shard_res.status_code == 200:
-            combined = _combine_public_payloads(index_res.json(), shard_res.json())
-            etag = shard_res.headers.get("etag") or index_res.headers.get("etag")
-            resp_headers = {"etag": etag} if etag else {}
-            return httpx.Response(200, json=combined, headers=resp_headers, request=shard_res.request)
+        _update_public_cache(idx_res, shd_res)
+        return _assemble_public_bundle(idx_res, shd_res)
     except Exception as exc:
         log.debug("Публичный API на %s недоступен (%s), пробуем прямой запрос", base_url, exc)
-    return None
+        return None
 
 
 async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Response:
@@ -605,7 +665,7 @@ async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Res
         read=HTTP_CLIENT_TIMEOUT_SECONDS,
     )
     base_url = _extract_base_url(url)
-    res = await _fetch_public_bundle(base_url, headers, timeout)
+    res = await _fetch_public_bundle(base_url, timeout=timeout)
     if res is not None:
         return res
     return await get_http_client().get(url, headers=headers, timeout=timeout)
