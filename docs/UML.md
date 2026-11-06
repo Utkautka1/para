@@ -2669,9 +2669,9 @@ flowchart TD
 
 ## 12. Resilient Fallback Upstream & Clean Micro-Functions Architecture
 
-### 12.1. Dual-Endpoint Schedule Upstream Failover (TLS Alert Mitigation)
+### 12.1. Dual-Endpoint Schedule Upstream Failover & Public Shard Optimization
 
-When the primary college schedule endpoint (`raspisanie-ktmu.ru`, formerly `timetable-ktmu.ru` until 2026-10-30) experiences TLS handshake failures (`[SSL: TLSV1_ALERT_INTERNAL_ERROR]`), the system dynamically switches to the configured `SCHEDULE_FALLBACK_API_URL` (`DEFAULT_FALLBACK_SCHEDULE_API_URL`), preserving cold-start capability and ensuring uninterrupted service.
+The system fetches timetable data via high-efficiency public API shards (`/api/public-index` and `/api/public-schedule/group/{GROUP_ID}`) instead of downloading the monolithic 57.5 MB raw storage dump. When the primary college schedule endpoint experiences connection failures, the system dynamically switches to the configured `SCHEDULE_FALLBACK_API_URL` (`DEFAULT_FALLBACK_SCHEDULE_API_URL`), preserving cold-start capability and ensuring uninterrupted service.
 
 ```mermaid
 sequenceDiagram
@@ -2684,16 +2684,16 @@ sequenceDiagram
 
     Caller->>Engine: fetch_schedule_data(force=True)
     activate Engine
-    Engine->>Primary: GET /api/storage/schedule-data-v2
-    alt Primary TLS Handshake Failure (internal_error 1016)
-        Primary-->>Engine: [SSL: TLSV1_ALERT_INTERNAL_ERROR]
+    Engine->>Primary: GET /api/public-index & /api/public-schedule/group/{id}
+    alt Primary Failure / Timeout
+        Primary-->>Engine: Error / Timeout / 5xx
         Engine->>Engine: Log WARNING & record failure cooldown
-        Engine->>Fallback: GET fallback schedule endpoint
-        Fallback-->>Engine: HTTP 200 OK (Schedule JSON payload)
+        Engine->>Fallback: GET public shards from fallback
+        Fallback-->>Engine: HTTP 200 OK (~570 KB combined payload)
         Engine->>Redis: SET sched:raw_cache (TTL=1800s)
         Engine-->>Caller: Clean Parsed Group Schedule
     else Primary Success
-        Primary-->>Engine: HTTP 200 OK (Schedule JSON payload)
+        Primary-->>Engine: HTTP 200 OK (~570 KB combined payload)
         Engine->>Redis: SET sched:raw_cache (TTL=1800s)
         Engine-->>Caller: Clean Parsed Group Schedule
     end

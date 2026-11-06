@@ -18,6 +18,7 @@ import re
 import time
 from datetime import date, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -434,14 +435,14 @@ def filter_snapshot_for_target_group(snapshot: dict[str, Any]) -> dict[str, Any]
 
 def _parse_and_clean_payload(content: bytes) -> tuple[str | None, dict[str, Any]]:
     """
-    Синхронно парсит сырой бинарный JSON API и фильтрует целевую группу.
+    Синхронно парсит бинарный JSON API и возвращает срез для целевой группы.
 
-    Запускается в asyncio.to_thread для изоляции десериализации 50 МБ данных
-    от основного цикла событий веб-сервера.
+    Поддерживает как старый монолит (57 МБ с полем value), так и объединённый публичный ответ.
 
     Возвращает кортеж (published_at, cleaned_snapshot).
     """
-    val = json.loads(content).get("value", {})
+    raw = json.loads(content)
+    val = raw.get("value") if isinstance(raw.get("value"), dict) else raw
     snapshot = val.get("publishedSnapshot") or val
     pub_at = snapshot.get("publishedAt")
     cleaned = filter_snapshot_for_target_group(snapshot)
@@ -545,19 +546,68 @@ def _build_cache_headers() -> dict[str, str]:
     return headers
 
 
+def _extract_base_url(url: str) -> str:
+    """Извлекает базовый origin из URL для формирования путей к публичному API."""
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.netloc:
+        return url.rstrip("/")
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _combine_public_payloads(idx_data: dict[str, Any], shard_data: dict[str, Any]) -> dict[str, Any]:
+    """Объединяет общеколледжный публичный индекс и срез расписания группы."""
+    raw_idx = idx_data.get("data", {})
+    data_patch = shard_data.get("dataPatch", {})
+    return {
+        "config": raw_idx.get("config", {}),
+        "publishedAt": idx_data.get("publishedAt"),
+        "subjects": raw_idx.get("subjects", []),
+        "teachers": raw_idx.get("teachers", []),
+        "rooms": raw_idx.get("rooms", []),
+        "groups": raw_idx.get("groups", []),
+        "lessonTypes": raw_idx.get("lessonTypes", []),
+        "loads": data_patch.get("loads", []),
+        "schedule": shard_data.get("schedule", {}),
+        "substitutions": data_patch.get("substitutions", []),
+        "publishedWeeks": raw_idx.get("publishedWeeks", []),
+    }
+
+
+async def _fetch_public_bundle(
+    base_url: str, headers: dict[str, str], timeout: httpx.Timeout
+) -> httpx.Response | None:
+    """Запрашивает публичный индекс и шард группы, объединяя их в компактный HTTP-ответ."""
+    client = get_http_client()
+    index_url = f"{base_url}/api/public-index"
+    shard_url = f"{base_url}/api/public-schedule/group/{GROUP_ID}"
+    try:
+        index_res, shard_res = await asyncio.gather(
+            client.get(index_url, headers=headers, timeout=timeout),
+            client.get(shard_url, headers=headers, timeout=timeout),
+        )
+        if index_res.status_code == 304 and shard_res.status_code == 304:
+            return httpx.Response(304, request=index_res.request)
+        if index_res.status_code == 200 and shard_res.status_code == 200:
+            combined = _combine_public_payloads(index_res.json(), shard_res.json())
+            etag = shard_res.headers.get("etag") or index_res.headers.get("etag")
+            resp_headers = {"etag": etag} if etag else {}
+            return httpx.Response(200, json=combined, headers=resp_headers, request=shard_res.request)
+    except Exception as exc:
+        log.debug("Публичный API на %s недоступен (%s), пробуем прямой запрос", base_url, exc)
+    return None
+
+
 async def _fetch_single_endpoint(url: str, headers: dict[str, str]) -> httpx.Response:
-    """
-    Выполняет HTTP GET запрос к конкретному URL расписания с коротким таймаутом соединения.
-
-    Использует connect=5.0s для быстрого failover и read=60.0s для загрузки 56 МБ данных.
-
-    Возвращает объект httpx.Response.
-    """
+    """Выполняет запрос расписания: сначала через легковесный публичный API, затем fallback."""
     timeout = httpx.Timeout(
         HTTP_CLIENT_TIMEOUT_SECONDS,
         connect=5.0,
         read=HTTP_CLIENT_TIMEOUT_SECONDS,
     )
+    base_url = _extract_base_url(url)
+    res = await _fetch_public_bundle(base_url, headers, timeout)
+    if res is not None:
+        return res
     return await get_http_client().get(url, headers=headers, timeout=timeout)
 
 

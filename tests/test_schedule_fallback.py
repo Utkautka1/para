@@ -92,3 +92,53 @@ async def test_fetch_remote_schedule_all_fail():
         pytest.raises(httpx.ConnectError),
     ):
         await _fetch_remote_schedule()
+
+
+def test_extract_base_url():
+    """Проверяет корректное извлечение origin из URL с путем и без него."""
+    from services.schedule_parser import _extract_base_url
+
+    assert _extract_base_url("https://raspisanie-ktmu.ru/api/storage/schedule-data-v2") == "https://raspisanie-ktmu.ru"
+    assert _extract_base_url("https://example.com:8080/path?q=1") == "https://example.com:8080"
+    assert _extract_base_url("https://plain.example.com") == "https://plain.example.com"
+
+
+@pytest.mark.asyncio
+async def test_fetch_public_bundle_success():
+    """Проверяет успешное объединение публичного индекса и шарда группы."""
+    from services.schedule_parser import _fetch_public_bundle
+
+    idx_payload = {"publishedAt": "2026-11-06T00:00:00Z", "data": {"config": {"semesterStart": "2026-09-01"}, "subjects": []}}
+    shard_payload = {"schedule": {"instances": []}, "dataPatch": {"loads": [], "substitutions": []}}
+
+    r_idx = httpx.Response(200, json=idx_payload, headers={"etag": "idx_etag"}, request=httpx.Request("GET", "http://t/idx"))
+    r_shard = httpx.Response(200, json=shard_payload, headers={"etag": "shard_etag"}, request=httpx.Request("GET", "http://t/shard"))
+
+    client = AsyncMock()
+    client.get = AsyncMock(side_effect=[r_idx, r_shard])
+
+    with patch("services.schedule_parser.get_http_client", return_value=client):
+        res = await _fetch_public_bundle("https://example.com", {}, httpx.Timeout(5.0))
+        assert res is not None
+        assert res.status_code == 200
+        assert res.headers["etag"] == "shard_etag"
+        data = res.json()
+        assert data["publishedAt"] == "2026-11-06T00:00:00Z"
+        assert "config" in data
+
+
+@pytest.mark.asyncio
+async def test_fetch_public_bundle_cached_304():
+    """Проверяет возврат HTTP 304, когда оба публичных эндпоинта не изменились."""
+    from services.schedule_parser import _fetch_public_bundle
+
+    r_idx = httpx.Response(304, request=httpx.Request("GET", "http://t/idx"))
+    r_shard = httpx.Response(304, request=httpx.Request("GET", "http://t/shard"))
+
+    client = AsyncMock()
+    client.get = AsyncMock(side_effect=[r_idx, r_shard])
+
+    with patch("services.schedule_parser.get_http_client", return_value=client):
+        res = await _fetch_public_bundle("https://example.com", {}, httpx.Timeout(5.0))
+        assert res is not None
+        assert res.status_code == 304
