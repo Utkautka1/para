@@ -15,6 +15,7 @@ from aiogram.types import User
 
 from bot.handlers.admin.attendance import (
     _build_single_session,
+    _commit_single_attendance_background,
     cb_lesson_mode,
     cb_pick_student,
     cb_set_single_mark,
@@ -150,7 +151,7 @@ async def test_cb_set_single_mark_handler() -> None:
         patch("bot.handlers.admin.attendance.fetch_target_students", return_value=students),
         patch("bot.handlers.admin.attendance._resolve_lesson_title_for_start", return_value="БЖД"),
         patch("bot.handlers.admin.attendance.apply_session_optimistic_update", new=AsyncMock()) as mock_opt,
-        patch("bot.handlers.admin.attendance.spawn") as mock_spawn,
+        patch("bot.handlers.admin.attendance.spawn", side_effect=lambda c: c.close()) as mock_spawn,
     ):
         await cb_set_single_mark(cb)
     mock_opt.assert_awaited_once()
@@ -180,3 +181,82 @@ def test_update_session_marks_in_stats_with_cleared_mark() -> None:
     new_saved = _update_session_marks_in_stats(session, saved_marks, stats)
     assert "5" not in new_saved
     assert stats["Базаров Аюр"]["total"]["Н"] == 0
+
+
+@pytest.mark.asyncio
+async def test_commit_single_attendance_background_success() -> None:
+    """Проверяет добавление плашки успешной синхронизации в сообщение."""
+    session = _build_single_session("2026-11-21", 1, "БЖД", [(5, "Базаров Аюр")], 5, "П", 123)
+    msg = AsyncMock()
+    msg.text = "Отметка обновлена"
+    with patch("bot.handlers.admin.attendance.commit_session_to_table", return_value=True):
+        await _commit_single_attendance_background(session, msg, "Базаров Аюр", "П")
+    msg.edit_text.assert_awaited_once()
+    assert "Синхронизировано" in msg.edit_text.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_commit_single_attendance_background_failure() -> None:
+    """Проверяет добавление предупреждения при сбое записи в таблицу."""
+    session = _build_single_session("2026-11-21", 1, "БЖД", [(5, "Базаров Аюр")], 5, "П", 123)
+    msg = AsyncMock()
+    msg.text = "Отметка обновлена"
+    with patch("bot.handlers.admin.attendance.commit_session_to_table", return_value=False):
+        await _commit_single_attendance_background(session, msg, "Базаров Аюр", "П")
+    msg.edit_text.assert_awaited_once()
+    assert "Не удалось сохранить" in msg.edit_text.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_commit_single_attendance_background_no_message() -> None:
+    """Проверяет корректное завершение без сообщения пользователя."""
+    session = _build_single_session("2026-11-21", 1, "БЖД", [(5, "Базаров Аюр")], 5, "П", 123)
+    with patch("bot.handlers.admin.attendance.commit_session_to_table", return_value=True):
+        await _commit_single_attendance_background(session, None, "Базаров Аюр", "П")
+
+
+@pytest.mark.asyncio
+async def test_notify_partner_when_no_partner_configured() -> None:
+    """Проверяет отсутствие попытки отправки, если напарник не задан."""
+    session = _build_single_session("2026-11-21", 1, "БЖД", [(5, "Базаров Аюр")], 5, "П", 123)
+    with (
+        patch("bot.handlers.admin.attendance.get_partner_admin_id", return_value=None),
+        patch("bot.handlers.admin.attendance.bot.send_message", new=AsyncMock()) as mock_send,
+    ):
+        await notify_partner_about_single_update(session, "Базаров Аюр", "П", 123)
+        mock_send.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cb_pick_student_fallback_row_name() -> None:
+    """Проверяет fallback имени студента при отсутствии в списке группы."""
+    cb = AsyncMock()
+    cb.data = "att:p:2026-11-21:2:99"
+    cb.message = AsyncMock()
+    with (
+        patch("bot.handlers.admin.attendance.fetch_target_students", return_value=[]),
+        patch("bot.handlers.admin.attendance._resolve_lesson_title_for_start", return_value="БЖД"),
+        patch("bot.handlers.admin.attendance.get_saved_lesson_marks", return_value={}),
+    ):
+        await cb_pick_student(cb)
+    cb.message.edit_text.assert_awaited_once()
+    assert "Строка 99" in cb.message.edit_text.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_cb_set_single_mark_clearing_handler() -> None:
+    """Проверяет очистку отметки в пустую строку при callback со знаком '_'."""
+    cb = AsyncMock()
+    cb.data = "att:set:2026-11-21:2:5:_"
+    cb.from_user = User(id=123, is_bot=False, first_name="Admin", full_name="Admin")
+    cb.message = AsyncMock()
+    with (
+        patch("bot.handlers.admin.attendance.fetch_target_students", return_value=[(5, "Базаров Аюр")]),
+        patch("bot.handlers.admin.attendance._resolve_lesson_title_for_start", return_value="БЖД"),
+        patch("bot.handlers.admin.attendance.apply_session_optimistic_update", new=AsyncMock()) as mock_opt,
+        patch("bot.handlers.admin.attendance.spawn", side_effect=lambda c: c.close()),
+    ):
+        await cb_set_single_mark(cb)
+    saved_session = mock_opt.call_args[0][0]
+    assert saved_session.marks["5"] == ""
+    assert "очищена" in cb.message.edit_text.call_args[0][0]
