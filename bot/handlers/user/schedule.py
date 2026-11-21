@@ -391,22 +391,19 @@ async def cb_tomorrow(callback: CallbackQuery) -> None:
     await edit_or_answer(callback, text, lessons)
 
 
+def _get_current_week_monday() -> date:
+    """Вычисляет дату понедельника текущей недели."""
+    today = datetime.now(TIMEZONE).date()
+    return today - timedelta(days=today.weekday())
+
+
 @router.callback_query(F.data == "sched:week")
 async def cb_week(callback: CallbackQuery) -> None:
-    """
-    Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием.
-
-    Вычисляет дату понедельника текущей недели и кэширует сводку на 600 секунд.
-    Отображает все учебные дни недели в одном компактном посте.
-
-    Ничего не возвращает.
-    """
-
+    """Заменяет сообщение на расписание на текущую неделю с Redis-кэшированием."""
     log.info("Нажата инлайн-кнопка: Эта неделя")
     await _ack_callback(callback)
     spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK, []))
-    today = datetime.now(TIMEZONE).date()
-    monday = today - timedelta(days=today.weekday())
+    monday = _get_current_week_monday()
     cache_key = f"sched:week:{monday.isoformat()}"
     cached_text = await cache_get(cache_key)
 
@@ -418,6 +415,32 @@ async def cb_week(callback: CallbackQuery) -> None:
     text = format_week_schedule(days_data)
     await cache_set(cache_key, text, ttl=600)
     await edit_or_answer(callback, text, week_offset=0)
+
+
+def _get_prev_week_monday() -> date:
+    """Вычисляет дату понедельника прошлой недели."""
+    today = datetime.now(TIMEZONE).date()
+    return today - timedelta(days=today.weekday()) - timedelta(weeks=1)
+
+
+@router.callback_query(F.data == "sched:week_prev")
+async def cb_week_prev(callback: CallbackQuery) -> None:
+    """Заменяет сообщение на расписание на прошлую неделю с Redis-кэшированием."""
+    log.info("Нажата инлайн-кнопка: Прошлая неделя")
+    await _ack_callback(callback)
+    spawn(on_schedule_view(callback.from_user, callback.bot, ScheduleView.WEEK_PREV, []))
+
+    prev_monday = _get_prev_week_monday()
+    cache_key = f"sched:week_prev:{prev_monday.isoformat()}"
+    cached_text = await cache_get(cache_key)
+    if cached_text:
+        await edit_or_answer(callback, cached_text, week_offset=-1)
+        return
+
+    days_data = await get_api_week_schedule(prev_monday)
+    text = format_week_schedule(days_data)
+    await cache_set(cache_key, text, ttl=600)
+    await edit_or_answer(callback, text, week_offset=-1)
 
 
 def _get_next_week_monday() -> date:

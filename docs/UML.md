@@ -1168,22 +1168,22 @@ classDiagram
         +List~DayScheduleResponse~ days
     }
 
-    TelegramGateway --> WeekNavigationHandler : clicks button Неделя След or Неделя Тек
+    TelegramGateway --> WeekNavigationHandler : clicks week buttons (⏪ Прошлая, 📅 Текущая, ⏩ Следующая)
     WeekNavigationHandler --> AcademicCalendarService : computes target Monday and parity
     WeekNavigationHandler --> ScheduleApiService : requests 6 day academic timetable
     ScheduleApiService --> RedisCacheManager : reads L2 week schedule cache
     ScheduleApiService ..> WeekScheduleResponse : returns full week payload
     WeekNavigationHandler --> WeekScheduleFormatter : formats weekly report with dividers
-    WeekNavigationHandler --> ScheduleKeyboardBuilder : toggles button between Неделя След and Неделя Тек
+    WeekNavigationHandler --> ScheduleKeyboardBuilder : builds tri-state week navigation row
     WeekNavigationHandler --> TelegramGateway : updates view via editMessageText
 ```
 
 #### Execution Flow & Under-the-Hood Lifecycle
 
-1. **Calendar Parity Calculation**: `AcademicCalendarService` calculates the Monday date for offset `+0` (current) or `+1` (next) and resolves academic week parity (Numerator/Denominator).
+1. **Calendar Parity Calculation**: `AcademicCalendarService` calculates the Monday date for offset `-1` (previous), `+0` (current), or `+1` (next) and resolves academic week parity (Numerator/Denominator).
 2. **L2 Snapshot Query**: `ScheduleApiService` checks Redis key `sched:week:{monday}` (TTL 14,400s). On hit, all 6 academic days are returned immediately.
 3. **Aggregated Rendering**: `WeekScheduleFormatter` compiles all daily schedules into a compact, structured Markdown view separated by clean day headers.
-4. **Smart Button Toggling**: The keyboard dynamically adjusts its callback action: when viewing the next week, the button switches to `⏮ Неделя (Тек.)` to allow seamless return.
+4. **Tri-State Week Navigation**: The keyboard offers direct one-click navigation for previous, current, and next academic weeks (`⏪ Прошлая`, `📅 Текущая`, `⏩ Следующая`) and a full-width centered `🔄 Обновить` button.
 
 ---
 

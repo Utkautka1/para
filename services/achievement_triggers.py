@@ -51,6 +51,7 @@ class ScheduleView(StrEnum):
     TOMORROW = "tomorrow"
     WEEK = "week"
     WEEK_NEXT = "week_next"
+    WEEK_PREV = "week_prev"
 
 
 def parse_lesson_slot(time_str: str) -> tuple[time, time] | None:

@@ -69,9 +69,7 @@ def _build_admin_nav_rows(is_admin: bool, is_attendance_admin: bool) -> list[lis
 
 
 def _build_calendar_rows(week_offset: int, is_subscribed: bool) -> list[list[InlineKeyboardButton]]:
-    """Формирует базовые ряды кнопок календаря (сегодня, завтра, смена недели, пуши)."""
-    w_text = "⏭ Неделя (След.)" if week_offset == 0 else "⏮ Неделя (Тек.)"
-    w_data = "sched:week_next" if week_offset == 0 else "sched:week"
+    """Формирует базовые ряды кнопок календаря (сегодня, завтра, недели, обновление, пуши)."""
     n_text = "🔔 Напоминания: Вкл" if is_subscribed else "🔕 Напоминания: Выкл"
     return [
         [
@@ -79,7 +77,11 @@ def _build_calendar_rows(week_offset: int, is_subscribed: bool) -> list[list[Inl
             InlineKeyboardButton(text="📆 Завтра", callback_data="sched:tomorrow", style="success"),
         ],
         [
-            InlineKeyboardButton(text=w_text, callback_data=w_data, style="primary"),
+            InlineKeyboardButton(text="⏪ Прошлая", callback_data="sched:week_prev", style="primary"),
+            InlineKeyboardButton(text="📅 Текущая", callback_data="sched:week", style="primary"),
+            InlineKeyboardButton(text="⏩ Следующая", callback_data="sched:week_next", style="primary"),
+        ],
+        [
             InlineKeyboardButton(text="🔄 Обновить", callback_data="sched:refresh", style="primary"),
         ],
         [

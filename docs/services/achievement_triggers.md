@@ -10,15 +10,15 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`parse_lesson_slot`](#parse_lesson_slot) | Function | L56–L68 | `tuple[time, time] \| None` | Разбирает строку времени пары в (начало, конец). |
-| [`_day_slots`](#_day_slots) | Function | L71–L74 | `list[tuple[time, time]]` | Возвращает уникальные слоты пар дня по возрастанию (под... |
-| [`_minutes`](#_minutes) | Function | L77–L79 | `int` | Переводит время суток в минуты от полуночи. |
-| [`lesson_moment_achievements`](#lesson_moment_achievements) | Function | L82–L95 | `set[str]` | Проверяет, попал ли момент на пару, перемену или «форто... |
-| [`time_of_day_achievements`](#time_of_day_achievements) | Function | L98–L107 | `set[str]` | Ачивки «открыл расписание в такое-то время», общие для ... |
-| [`_view_specific`](#_view_specific) | Function | L110–L127 | `set[str]` | Ачивки, которые зависят от конкретной кнопки расписания... |
-| [`schedule_view_achievements`](#schedule_view_achievements) | Function | L130–L143 | `set[str]` | Собирает все ачивки за просмотр расписания. |
-| [`homework_kind`](#homework_kind) | Function | L158–L162 | `str` | Определяет формат задания по MIME-типу вложения. |
-| [`homework_achievements`](#homework_achievements) | Function | L165–L181 | `set[str]` | Ачивки, которые даёт одно задание ДЗ независимо от исто... |
+| [`parse_lesson_slot`](#parse_lesson_slot) | Function | L57–L69 | `tuple[time, time] \| None` | Разбирает строку времени пары в (начало, конец). |
+| [`_day_slots`](#_day_slots) | Function | L72–L75 | `list[tuple[time, time]]` | Возвращает уникальные слоты пар дня по возрастанию (под... |
+| [`_minutes`](#_minutes) | Function | L78–L80 | `int` | Переводит время суток в минуты от полуночи. |
+| [`lesson_moment_achievements`](#lesson_moment_achievements) | Function | L83–L96 | `set[str]` | Проверяет, попал ли момент на пару, перемену или «форто... |
+| [`time_of_day_achievements`](#time_of_day_achievements) | Function | L99–L108 | `set[str]` | Ачивки «открыл расписание в такое-то время», общие для ... |
+| [`_view_specific`](#_view_specific) | Function | L111–L128 | `set[str]` | Ачивки, которые зависят от конкретной кнопки расписания... |
+| [`schedule_view_achievements`](#schedule_view_achievements) | Function | L131–L144 | `set[str]` | Собирает все ачивки за просмотр расписания. |
+| [`homework_kind`](#homework_kind) | Function | L159–L163 | `str` | Определяет формат задания по MIME-типу вложения. |
+| [`homework_achievements`](#homework_achievements) | Function | L166–L182 | `set[str]` | Ачивки, которые даёт одно задание ДЗ независимо от исто... |
 
 ---
 
@@ -33,7 +33,7 @@
 def parse_lesson_slot(time_str: str) -> tuple[time, time] | None
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L56-L68`](../../services/achievement_triggers.py#L56-L68)
+- **Source Reference**: [`services/achievement_triggers.py#L57-L69`](../../services/achievement_triggers.py#L57-L69)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[time, time] | None`
 
@@ -66,7 +66,7 @@ result = parse_lesson_slot(time_str=...)
 def _day_slots(lessons: list[Lesson]) -> list[tuple[time, time]]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L71-L74`](../../services/achievement_triggers.py#L71-L74)
+- **Source Reference**: [`services/achievement_triggers.py#L72-L75`](../../services/achievement_triggers.py#L72-L75)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[time, time]]`
 
@@ -99,7 +99,7 @@ result = _day_slots(lessons=...)
 def _minutes(t: time) -> int
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L77-L79`](../../services/achievement_triggers.py#L77-L79)
+- **Source Reference**: [`services/achievement_triggers.py#L78-L80`](../../services/achievement_triggers.py#L78-L80)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -132,7 +132,7 @@ result = _minutes(t=...)
 def lesson_moment_achievements(now: time, lessons: list[Lesson]) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L82-L95`](../../services/achievement_triggers.py#L82-L95)
+- **Source Reference**: [`services/achievement_triggers.py#L83-L96`](../../services/achievement_triggers.py#L83-L96)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -166,7 +166,7 @@ result = lesson_moment_achievements(now=..., lessons=...)
 def time_of_day_achievements(now: datetime) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L98-L107`](../../services/achievement_triggers.py#L98-L107)
+- **Source Reference**: [`services/achievement_triggers.py#L99-L108`](../../services/achievement_triggers.py#L99-L108)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -199,7 +199,7 @@ result = time_of_day_achievements(now=...)
 def _view_specific(view: ScheduleView, now: datetime) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L110-L127`](../../services/achievement_triggers.py#L110-L127)
+- **Source Reference**: [`services/achievement_triggers.py#L111-L128`](../../services/achievement_triggers.py#L111-L128)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -233,7 +233,7 @@ result = _view_specific(view=..., now=...)
 def schedule_view_achievements(view: ScheduleView, now: datetime, lessons: list[Lesson]) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L130-L143`](../../services/achievement_triggers.py#L130-L143)
+- **Source Reference**: [`services/achievement_triggers.py#L131-L144`](../../services/achievement_triggers.py#L131-L144)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 
@@ -272,7 +272,7 @@ result = schedule_view_achievements(view=..., now=..., lessons=...)
 def homework_kind(mime_type: str | None, has_file: bool) -> str
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L158-L162`](../../services/achievement_triggers.py#L158-L162)
+- **Source Reference**: [`services/achievement_triggers.py#L159-L163`](../../services/achievement_triggers.py#L159-L163)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -306,7 +306,7 @@ result = homework_kind(mime_type=..., has_file=...)
 def homework_achievements(task: HomeworkTask, now: datetime) -> set[str]
 ```
 
-- **Source Reference**: [`services/achievement_triggers.py#L165-L181`](../../services/achievement_triggers.py#L165-L181)
+- **Source Reference**: [`services/achievement_triggers.py#L166-L182`](../../services/achievement_triggers.py#L166-L182)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `set[str]`
 

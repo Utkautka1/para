@@ -8,8 +8,13 @@ Unit-тесты модуля генерации клавиатур Telegram (bot
   4. Генерацию полных клавиатур для ЛС и топиков (get_schedule_inline_kb, get_topic_inline_kb)
 """
 
-import pytest
+from datetime import date, timedelta
+from unittest.mock import AsyncMock, patch
 
+import pytest
+from aiogram.types import CallbackQuery, Message, User
+
+from bot.handlers.user.schedule import _get_prev_week_monday, cb_week_prev
 from bot.templates.user.keyboards import (
     _build_nav_rows,
     chunk_link_buttons,
@@ -94,19 +99,22 @@ def test_chunk_link_buttons_extracts_http_url() -> None:
     assert rows[0][0].url == "https://telemost.yandex.ru/j/999"
 
 
-@pytest.mark.parametrize(
-    "week_offset,expected_btn_text,expected_callback",
-    [
-        (0, "⏭ Неделя (След.)", "sched:week_next"),
-        (1, "⏮ Неделя (Тек.)", "sched:week"),
-    ],
-)
-def test_build_nav_rows_week_offset(week_offset: int, expected_btn_text: str, expected_callback: str) -> None:
-    """Проверяет переключение кнопки недели при разном смещении."""
-    rows = _build_nav_rows(week_offset)
-    week_btn = rows[1][0]
-    assert week_btn.text == expected_btn_text
-    assert week_btn.callback_data == expected_callback
+def test_build_nav_rows_week_buttons() -> None:
+    """Проверяет наличие кнопок навигации по неделям (прошлая, текущая, следующая)."""
+    rows = _build_nav_rows(week_offset=0)
+    week_row = rows[1]
+    assert len(week_row) == 3
+    assert week_row[0].text == "⏪ Прошлая"
+    assert week_row[0].callback_data == "sched:week_prev"
+    assert week_row[1].text == "📅 Текущая"
+    assert week_row[1].callback_data == "sched:week"
+    assert week_row[2].text == "⏩ Следующая"
+    assert week_row[2].callback_data == "sched:week_next"
+
+    refresh_row = rows[2]
+    assert len(refresh_row) == 1
+    assert refresh_row[0].text == "🔄 Обновить"
+    assert refresh_row[0].callback_data == "sched:refresh"
 
 
 def test_get_topic_inline_kb_behavior() -> None:
@@ -128,6 +136,8 @@ def test_get_schedule_inline_kb_contains_navigation() -> None:
     user_cbs = [btn.callback_data for row in kb_user.inline_keyboard for btn in row]
     assert "sched:today" in user_cbs
     assert "sched:tomorrow" in user_cbs
+    assert "sched:week_prev" in user_cbs
+    assert "sched:week" in user_cbs
     assert "sched:week_next" in user_cbs
     assert "sched:refresh" in user_cbs
     assert "sched:toggle_notify" in user_cbs
@@ -163,3 +173,26 @@ def test_get_notice_settings_kb_states() -> None:
 
     kb_off = get_notice_settings_kb(is_subscribed=False)
     assert any("Включить" in btn.text for row in kb_off.inline_keyboard for btn in row)
+
+
+@pytest.mark.asyncio
+async def test_cb_week_prev_handler() -> None:
+    """Проверяет вычисление даты прошлой недели и вызов хэндлера cb_week_prev."""
+    prev_monday = _get_prev_week_monday()
+    today = date.today()
+    expected = today - timedelta(days=today.weekday()) - timedelta(weeks=1)
+    assert prev_monday == expected
+
+    cb = AsyncMock(spec=CallbackQuery)
+    cb.data = "sched:week_prev"
+    cb.from_user = User(id=123, is_bot=False, first_name="Test")
+    cb.bot = AsyncMock()
+    cb.message = AsyncMock(spec=Message)
+
+    with (
+        patch("bot.handlers.user.schedule._ack_callback", new=AsyncMock()),
+        patch("bot.handlers.user.schedule.cache_get", new=AsyncMock(return_value="Cached Week")),
+        patch("bot.handlers.user.schedule.edit_or_answer", new=AsyncMock()) as mock_edit,
+    ):
+        await cb_week_prev(cb)
+        mock_edit.assert_awaited_once_with(cb, "Cached Week", week_offset=-1)

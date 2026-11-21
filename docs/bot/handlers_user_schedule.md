@@ -29,15 +29,18 @@
 | [`cb_notice_toggle`](#cb_notice_toggle) | Function | L331–L351 | `None` | Переключает статус подписки в меню /notice с обновление... |
 | [`cb_today`](#cb_today) | Function | L355–L371 | `None` | Заменяет сообщение на расписание на сегодня с Redis-кэш... |
 | [`cb_tomorrow`](#cb_tomorrow) | Function | L375–L391 | `None` | Заменяет сообщение на расписание на завтра с Redis-кэши... |
-| [`cb_week`](#cb_week) | Function | L395–L420 | `None` | Заменяет сообщение на расписание на текущую неделю с Re... |
-| [`_get_next_week_monday`](#_get_next_week_monday) | Function | L423–L426 | `date` | Вычисляет дату понедельника следующей недели. |
-| [`cb_week_next`](#cb_week_next) | Function | L430–L446 | `None` | Заменяет сообщение на расписание на следующую неделю с ... |
-| [`_safe_fetch_lessons_for_refresh`](#_safe_fetch_lessons_for_refresh) | Function | L449–L455 | `list[Lesson]` | Запрашивает расписание из API с fallback на кэш при сбо... |
-| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L458–L468 | `tuple[str, list[Lesson], int]` | Сбрасывает UI-кэш представлений и загружает свежее расп... |
-| [`cb_refresh`](#cb_refresh) | Function | L472–L483 | `None` | Сразу показывает расписание из кэша и просит worker ска... |
-| [`format_help_text`](#format_help_text) | Function | L486–L509 | `str` | Формирует справочное сообщение со списком команд бота. |
-| [`cmd_help`](#cmd_help) | Function | L513–L531 | `None` | Выводит список доступных команд для авторизованного пол... |
-| [`handle_user_text_message`](#handle_user_text_message) | Function | L535–L551 | `None` | Отвечает на произвольный текст авторизованного пользова... |
+| [`_get_current_week_monday`](#_get_current_week_monday) | Function | L394–L397 | `date` | Вычисляет дату понедельника текущей недели. |
+| [`cb_week`](#cb_week) | Function | L401–L417 | `None` | Заменяет сообщение на расписание на текущую неделю с Re... |
+| [`_get_prev_week_monday`](#_get_prev_week_monday) | Function | L420–L423 | `date` | Вычисляет дату понедельника прошлой недели. |
+| [`cb_week_prev`](#cb_week_prev) | Function | L427–L443 | `None` | Заменяет сообщение на расписание на прошлую неделю с Re... |
+| [`_get_next_week_monday`](#_get_next_week_monday) | Function | L446–L449 | `date` | Вычисляет дату понедельника следующей недели. |
+| [`cb_week_next`](#cb_week_next) | Function | L453–L469 | `None` | Заменяет сообщение на расписание на следующую неделю с ... |
+| [`_safe_fetch_lessons_for_refresh`](#_safe_fetch_lessons_for_refresh) | Function | L472–L478 | `list[Lesson]` | Запрашивает расписание из API с fallback на кэш при сбо... |
+| [`_refresh_and_format_schedule`](#_refresh_and_format_schedule) | Function | L481–L491 | `tuple[str, list[Lesson], int]` | Сбрасывает UI-кэш представлений и загружает свежее расп... |
+| [`cb_refresh`](#cb_refresh) | Function | L495–L506 | `None` | Сразу показывает расписание из кэша и просит worker ска... |
+| [`format_help_text`](#format_help_text) | Function | L509–L532 | `str` | Формирует справочное сообщение со списком команд бота. |
+| [`cmd_help`](#cmd_help) | Function | L536–L554 | `None` | Выводит список доступных команд для авторизованного пол... |
+| [`handle_user_text_message`](#handle_user_text_message) | Function | L558–L574 | `None` | Отвечает на произвольный текст авторизованного пользова... |
 
 ---
 
@@ -688,12 +691,43 @@ result = await cb_tomorrow(callback=...)
 
 ---
 
+### `_get_current_week_monday`
+```python
+def _get_current_week_monday() -> date
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L394-L397`](../../bot/handlers/user/schedule.py#L394-L397)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Вычисляет дату понедельника текущей недели.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _get_current_week_monday
+
+# Execute call
+result = _get_current_week_monday()
+```
+
+---
+
 ### `cb_week`
 ```python
 async def cb_week(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L395-L420`](../../bot/handlers/user/schedule.py#L395-L420)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L401-L417`](../../bot/handlers/user/schedule.py#L401-L417)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -721,12 +755,76 @@ result = await cb_week(callback=...)
 
 ---
 
+### `_get_prev_week_monday`
+```python
+def _get_prev_week_monday() -> date
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L420-L423`](../../bot/handlers/user/schedule.py#L420-L423)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `date`
+
+#### Overview & Architectural Purpose
+Вычисляет дату понедельника прошлой недели.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import _get_prev_week_monday
+
+# Execute call
+result = _get_prev_week_monday()
+```
+
+---
+
+### `cb_week_prev`
+```python
+async def cb_week_prev(callback: CallbackQuery) -> None
+```
+
+- **Source Reference**: [`bot/handlers/user/schedule.py#L427-L443`](../../bot/handlers/user/schedule.py#L427-L443)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Заменяет сообщение на расписание на прошлую неделю с Redis-кэшированием.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `callback` | `CallbackQuery` | Yes | Parameter `callback` of type `CallbackQuery`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.schedule import cb_week_prev
+
+# Execute call
+result = await cb_week_prev(callback=...)
+```
+
+---
+
 ### `_get_next_week_monday`
 ```python
 def _get_next_week_monday() -> date
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L423-L426`](../../bot/handlers/user/schedule.py#L423-L426)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L446-L449`](../../bot/handlers/user/schedule.py#L446-L449)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `date`
 
@@ -757,7 +855,7 @@ result = _get_next_week_monday()
 async def cb_week_next(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L430-L446`](../../bot/handlers/user/schedule.py#L430-L446)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L453-L469`](../../bot/handlers/user/schedule.py#L453-L469)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -790,7 +888,7 @@ result = await cb_week_next(callback=...)
 async def _safe_fetch_lessons_for_refresh(now: date) -> list[Lesson]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L449-L455`](../../bot/handlers/user/schedule.py#L449-L455)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L472-L478`](../../bot/handlers/user/schedule.py#L472-L478)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[Lesson]`
 
@@ -823,7 +921,7 @@ result = await _safe_fetch_lessons_for_refresh(now=...)
 async def _refresh_and_format_schedule(now: date) -> tuple[str, list[Lesson], int]
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L458-L468`](../../bot/handlers/user/schedule.py#L458-L468)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L481-L491`](../../bot/handlers/user/schedule.py#L481-L491)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[str, list[Lesson], int]`
 
@@ -856,7 +954,7 @@ result = await _refresh_and_format_schedule(now=...)
 async def cb_refresh(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L472-L483`](../../bot/handlers/user/schedule.py#L472-L483)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L495-L506`](../../bot/handlers/user/schedule.py#L495-L506)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -889,7 +987,7 @@ result = await cb_refresh(callback=...)
 def format_help_text(is_admin: bool) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L486-L509`](../../bot/handlers/user/schedule.py#L486-L509)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L509-L532`](../../bot/handlers/user/schedule.py#L509-L532)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -922,7 +1020,7 @@ result = format_help_text(is_admin=...)
 async def cmd_help(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L513-L531`](../../bot/handlers/user/schedule.py#L513-L531)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L536-L554`](../../bot/handlers/user/schedule.py#L536-L554)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -955,7 +1053,7 @@ result = await cmd_help(message=...)
 async def handle_user_text_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/schedule.py#L535-L551`](../../bot/handlers/user/schedule.py#L535-L551)
+- **Source Reference**: [`bot/handlers/user/schedule.py#L558-L574`](../../bot/handlers/user/schedule.py#L558-L574)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

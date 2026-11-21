@@ -13,12 +13,12 @@
 | [`format_lesson_button_text`](#format_lesson_button_text) | Function | L14–L26 | `str` | Формирует лаконичный текст кнопки подключения к дистанц... |
 | [`chunk_link_buttons`](#chunk_link_buttons) | Function | L29–L46 | `list[list[InlineKeyboardButton]]` | Разбивает кнопки ссылок на дистанционные занятия по 2 ш... |
 | [`_build_admin_nav_rows`](#_build_admin_nav_rows) | Function | L49–L68 | `list[list[InlineKeyboardButton]]` | Формирует дополнительные служебные кнопки старосты и ад... |
-| [`_build_calendar_rows`](#_build_calendar_rows) | Function | L71–L90 | `list[list[InlineKeyboardButton]]` | Формирует базовые ряды кнопок календаря (сегодня, завтр... |
-| [`_build_nav_rows`](#_build_nav_rows) | Function | L93–L106 | `list[list[InlineKeyboardButton]]` | Формирует основные кнопки навигации по календарю и пере... |
-| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L109–L120 | `InlineKeyboardMarkup` | Генерирует полную навигационную клавиатуру для экрана р... |
-| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L123–L141 | `InlineKeyboardMarkup` | Формирует инлайн-клавиатуру персонального кабинета тест... |
-| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L144–L159 | `InlineKeyboardMarkup \| None` | Генерирует лаконичную клавиатуру со ссылками на пары дл... |
-| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L162–L179 | `InlineKeyboardMarkup` | Генерирует интерактивную клавиатуру управления уведомле... |
+| [`_build_calendar_rows`](#_build_calendar_rows) | Function | L71–L92 | `list[list[InlineKeyboardButton]]` | Формирует базовые ряды кнопок календаря (сегодня, завтр... |
+| [`_build_nav_rows`](#_build_nav_rows) | Function | L95–L108 | `list[list[InlineKeyboardButton]]` | Формирует основные кнопки навигации по календарю и пере... |
+| [`get_schedule_inline_kb`](#get_schedule_inline_kb) | Function | L111–L122 | `InlineKeyboardMarkup` | Генерирует полную навигационную клавиатуру для экрана р... |
+| [`get_tester_cabinet_kb`](#get_tester_cabinet_kb) | Function | L125–L143 | `InlineKeyboardMarkup` | Формирует инлайн-клавиатуру персонального кабинета тест... |
+| [`get_topic_inline_kb`](#get_topic_inline_kb) | Function | L146–L161 | `InlineKeyboardMarkup \| None` | Генерирует лаконичную клавиатуру со ссылками на пары дл... |
+| [`get_notice_settings_kb`](#get_notice_settings_kb) | Function | L164–L181 | `InlineKeyboardMarkup` | Генерирует интерактивную клавиатуру управления уведомле... |
 
 ---
 
@@ -129,12 +129,12 @@ result = _build_admin_nav_rows(is_admin=..., is_attendance_admin=...)
 def _build_calendar_rows(week_offset: int, is_subscribed: bool) -> list[list[InlineKeyboardButton]]
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L71-L90`](../../bot/templates/user/keyboards.py#L71-L90)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L71-L92`](../../bot/templates/user/keyboards.py#L71-L92)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
 #### Overview & Architectural Purpose
-Формирует базовые ряды кнопок календаря (сегодня, завтра, смена недели, пуши).
+Формирует базовые ряды кнопок календаря (сегодня, завтра, недели, обновление, пуши).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -163,7 +163,7 @@ result = _build_calendar_rows(week_offset=..., is_subscribed=...)
 def _build_nav_rows( week_offset: int, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> list[list[InlineKeyboardButton]]
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L93-L106`](../../bot/templates/user/keyboards.py#L93-L106)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L95-L108`](../../bot/templates/user/keyboards.py#L95-L108)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[list[InlineKeyboardButton]]`
 
@@ -200,7 +200,7 @@ result = _build_nav_rows(week_offset=..., is_admin=..., is_subscribed=...)
 def get_schedule_inline_kb( lessons: list[Lesson] | None = None, week_offset: int = 0, is_admin: bool = False, is_subscribed: bool = True, is_attendance_admin: bool = False, is_tester: bool = False, ) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L109-L120`](../../bot/templates/user/keyboards.py#L109-L120)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L111-L122`](../../bot/templates/user/keyboards.py#L111-L122)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -238,7 +238,7 @@ result = get_schedule_inline_kb(lessons=..., week_offset=..., is_admin=...)
 def get_tester_cabinet_kb(login_url: str | None = None) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L123-L141`](../../bot/templates/user/keyboards.py#L123-L141)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L125-L143`](../../bot/templates/user/keyboards.py#L125-L143)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -271,7 +271,7 @@ result = get_tester_cabinet_kb(login_url=...)
 def get_topic_inline_kb(lessons: list[Lesson] | None = None) -> InlineKeyboardMarkup | None
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L144-L159`](../../bot/templates/user/keyboards.py#L144-L159)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L146-L161`](../../bot/templates/user/keyboards.py#L146-L161)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup | None`
 
@@ -304,7 +304,7 @@ result = get_topic_inline_kb(lessons=...)
 def get_notice_settings_kb(is_subscribed: bool) -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/templates/user/keyboards.py#L162-L179`](../../bot/templates/user/keyboards.py#L162-L179)
+- **Source Reference**: [`bot/templates/user/keyboards.py#L164-L181`](../../bot/templates/user/keyboards.py#L164-L181)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
