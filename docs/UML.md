@@ -1398,6 +1398,9 @@ classDiagram
         +record_student_mark(user_id, status_code) void
         +step_back(user_id) void
         +submit_and_commit(user_id) void
+        +show_lesson_mode(user_id, date, lesson_num) void
+        +show_single_student_menu(user_id, date, lesson_num) void
+        +set_single_student_mark(user_id, date, lesson_num, student_idx, mark) void
     }
 
     class AttendanceSessionManager {
@@ -1416,6 +1419,9 @@ classDiagram
 
     class AttendanceStepKeyboard {
         +render_step_keyboard(student_idx, total) InlineKeyboardMarkup
+        +render_mode_keyboard(date, lesson_num) InlineKeyboardMarkup
+        +render_single_student_keyboard(students, saved_marks) InlineKeyboardMarkup
+        +render_student_mark_choice_keyboard(row_idx) InlineKeyboardMarkup
     }
 
     class OptimisticTopicUpdater {
@@ -1431,16 +1437,16 @@ classDiagram
         +get_partner_admin_id(current_user_id) int
         +notify_partner_about_attendance(session, stats, user_name) void
         +notify_partner_about_cancellation(lesson_num, user_id, user_name) void
+        +notify_partner_about_single_update(session, fio, mark, user_id, user_name) void
     }
 
     TelegramGateway --> AttendanceAuthFilter : enters attendance command
     AttendanceAuthFilter --> AttendanceWorkflowHandler : validates headman role
-    AttendanceWorkflowHandler --> AttendanceSessionManager : creates session in Redis
+    AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays mode options (full survey or single student)
+    AttendanceWorkflowHandler --> AttendanceSessionManager : creates session in Redis for full survey
     AttendanceSessionManager --> RedisCacheManager : stores state in Redis session key
-    AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays controls buttons П, О, У, Н, Назад, Завершить
-    TelegramGateway --> AttendanceWorkflowHandler : clicks mark button П or О or У or Н
-    AttendanceWorkflowHandler --> AttendanceSessionManager : updates student record and advances index
-    TelegramGateway --> AttendanceWorkflowHandler : clicks button Завершить
+    AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays student cards or 2-per-row student roster
+    TelegramGateway --> AttendanceWorkflowHandler : clicks mark button П, О, У, Н or single student status
     AttendanceWorkflowHandler --> OptimisticTopicUpdater : immediately updates attendance topic in 1s
     AttendanceWorkflowHandler --> WopiCloudOfficeClient : triggers background async WOPI PUT commit
     AttendanceWorkflowHandler --> PartnerNotificationDispatcher : asynchronously notifies peer administrator
@@ -1450,10 +1456,12 @@ classDiagram
 #### Execution Flow & Under-the-Hood Lifecycle
 
 1. **Role Verification & Concurrency Control**: `AttendanceAuthFilter` validates headman status. Active survey sessions check `att:active_session` in Redis to prevent multiple headmen from conflicting.
-2. **Interactive Survey State Machine**: Each student is presented sequentially with status buttons: `🟢 П` (Present), `🟡 О` (Late), `🔵 У` (Excused), `🔴 Н` (Unexcused), plus `⬅️ Назад` (Undo) and `💾 Завершить` (Submit).
-3. **1-Second Optimistic Topic Update**: When the headman submits, `apply_session_optimistic_update` adjusts student statistics in Redis memory and refreshes the pinned Topic message within ~1 second.
-4. **Asynchronous Cloud Commit**: `_async_commit_and_update` executes a background task to write records into the remote Excel workbook on Yandex Disk via WOPI without blocking the Telegram bot.
-5. **Mutual Headman & Deputy Statistics Notification**: Upon completing the survey or cancelling a lesson, `notify_partner_about_attendance` asynchronously dispatches a comprehensive breakdown (present, late, excused, unexcused counts and names of absent students) directly to the peer administrator's direct messages.
+2. **Dual-Mode Workflow (Full Survey vs Single Student)**:
+   - **Mode A (Full Sequential Survey)**: Each student is presented sequentially with status buttons: `🟢 П` (Present), `🟡 О` (Late), `🔵 У` (Excused), `🔴 Н` (Unexcused), plus `⬅️ Назад` (Undo) and `💾 Завершить` (Submit).
+   - **Mode B (Single Student Targeted Edit)**: Displays an alphabetical roster of students 2-per-row with their current status tags (styled like the admin achievements panel). Selecting a student opens their mark selection card (`П`, `О`, `У`, `Н`, `Очистить`) allowing instant modification without restarting the entire group survey.
+3. **1-Second Optimistic Topic Update**: When the headman submits a survey or changes a single student's status, `apply_session_optimistic_update` adjusts student statistics in Redis memory and refreshes the pinned Topic message within ~1 second.
+4. **Asynchronous Cloud Commit**: `_commit_single_attendance_background` or `_async_commit_and_update` executes a background task to write records into the remote Excel workbook on Yandex Disk via WOPI without blocking the Telegram bot.
+5. **Mutual Headman & Deputy Statistics Notification**: Upon completing the survey, altering an individual mark, or cancelling a lesson, `notify_partner_about_attendance` or `notify_partner_about_single_update` asynchronously dispatches a comprehensive update directly to the peer administrator's direct messages.
 
 ---
 

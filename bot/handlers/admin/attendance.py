@@ -16,10 +16,17 @@ from bot.filters.auth import AttendanceAuthFilter
 from bot.templates.admin.attendance import (
     format_partner_attendance_report,
     format_partner_cancel_report,
+    format_partner_single_report,
+    format_single_student_card,
+    format_single_update_confirm,
     format_student_card,
     format_summary_text,
     get_days_select_kb,
+    get_lesson_mode_kb,
     get_lesson_select_kb,
+    get_single_mark_confirmed_kb,
+    get_single_student_select_kb,
+    get_student_mark_choice_kb,
     get_student_poll_kb,
 )
 from config import ADMIN_USER_IDS, ALLOWED_USER_ID, DEPUTY_USER_ID, TIMEZONE
@@ -28,16 +35,18 @@ from core.background import spawn
 from core.bot import bot
 from core.logger import get_logger
 from services.attendance_manager import (
+    AttendanceSession,
     calculate_summary_stats,
     clear_session,
     commit_session_to_table,
     create_attendance_session,
+    fetch_target_students,
     get_active_session,
     mark_all_remaining_present,
     record_student_mark,
     step_back,
 )
-from services.attendance_stats import apply_session_optimistic_update
+from services.attendance_stats import apply_session_optimistic_update, get_saved_lesson_marks
 from services.attendance_topic_updater import sync_attendance_topic_message
 
 log = get_logger("attendance_handlers")
@@ -315,6 +324,172 @@ async def _init_session_safe(cb: CallbackQuery, target_date, lesson_num: int, ti
     if cb.message:
         await cb.message.edit_text(f"❌ Не удалось открыть таблицу: {reason}")
     return None
+
+
+async def notify_partner_about_single_update(
+    session: AttendanceSession, fio: str, mark: str, user_id: int, user_full_name: str | None = None
+) -> None:
+    """
+    Отправляет уведомление второму администратору о точечном изменении отметки.
+
+    Формирует текст отчета с указанием ФИО студента и нового статуса.
+
+    Ничего не возвращает.
+    """
+    partner_id = get_partner_admin_id(user_id)
+    if not partner_id:
+        return
+    title = get_initiator_title(user_id)
+    if user_full_name:
+        title = f"{title} ({user_full_name})"
+    text = format_partner_single_report(fio, session.target_date, session.lesson_num, session.lesson_title, mark, title)
+    try:
+        await bot.send_message(partner_id, text)
+        log.info("Уведомление о смене отметки %s отправлено партнеру %s", fio, partner_id)
+    except Exception as e:
+        log.warning("Не удалось доставить уведомление партнеру %s: %s", partner_id, e)
+
+
+async def _commit_single_attendance_background(
+    session: AttendanceSession, message: Message | None, fio: str, mark: str
+) -> None:
+    """
+    Выполняет фоновую фиксацию одиночной отметки в Яндекс Таблицу.
+
+    Обновляет сообщение со статусом синхронизации по окончании попыток.
+
+    Ничего не возвращает.
+    """
+    success = await commit_session_to_table(session)
+    if not message:
+        return
+    note = (
+        "\n\n✅ <i>Синхронизировано с Яндекс Таблицей!</i>"
+        if success
+        else "\n\n⚠️ <i>Не удалось сохранить в Яндекс. Ошибка синхронизации.</i>"
+    )
+    try:
+        curr_text = message.text or message.html_text or ""
+        await message.edit_text(curr_text + note, reply_markup=message.reply_markup)
+    except Exception as e:
+        log.debug("Не удалось обновить статус выгрузки одиночной отметки: %s", e)
+
+
+@router.callback_query(F.data.startswith("att:mode:"))
+async def cb_lesson_mode(cb: CallbackQuery) -> None:
+    """
+    Отображает выбор режима отметки пары: опрос всей группы или один студент.
+
+    Показывает кнопки выбора сценария и возврат к выбору даты.
+
+    Ничего не возвращает.
+    """
+    target_date, lesson_num = parse_start_callback(cb.data)
+    title = await _resolve_lesson_title_for_start(target_date, lesson_num)
+    d_str = target_date.isoformat()
+    text = (
+        f"📋 <b>Дата: {target_date.strftime('%d.%m.%Y')}</b>\n"
+        f"📖 <b>Пара {lesson_num}: {html.escape(title)}</b>\n\n"
+        "Выберите режим отметки:"
+    )
+    if cb.message:
+        await cb.message.edit_text(text, reply_markup=get_lesson_mode_kb(d_str, lesson_num))
+    await cb.answer()
+
+
+@router.callback_query(F.data.startswith("att:sngl:"))
+async def cb_single_student_menu(cb: CallbackQuery) -> None:
+    """
+    Отображает список студентов по два в ряд для точечной отметки.
+
+    Загружает актуальные отметки из Redis и отображает их на кнопках.
+
+    Ничего не возвращает.
+    """
+    target_date, lesson_num = parse_start_callback(cb.data)
+    d_str = target_date.isoformat()
+    students = await fetch_target_students(target_date)
+    saved_marks = await get_saved_lesson_marks(d_str, lesson_num)
+    text = (
+        f"📋 <b>Дата: {target_date.strftime('%d.%m.%Y')} | Пара {lesson_num}</b>\n\n"
+        "Выберите студента для изменения отметки:"
+    )
+    kb = get_single_student_select_kb(students, saved_marks, d_str, lesson_num)
+    if cb.message:
+        await cb.message.edit_text(text, reply_markup=kb)
+    await cb.answer()
+
+
+@router.callback_query(F.data.startswith("att:p:"))
+async def cb_pick_student(cb: CallbackQuery) -> None:
+    """
+    Отображает карточку студента с кнопками установки новой отметки.
+
+    Выводит текущую отметку студента за выбранную пару.
+
+    Ничего не возвращает.
+    """
+    parts = cb.data.split(":")
+    d_str, lesson_num, row_idx = parts[2], int(parts[3]), int(parts[4])
+    target_date = date.fromisoformat(d_str)
+    students = await fetch_target_students(target_date)
+    fio = next((name for r, name in students if r == row_idx), f"Строка {row_idx}")
+    title = await _resolve_lesson_title_for_start(target_date, lesson_num)
+    saved_marks = await get_saved_lesson_marks(d_str, lesson_num)
+    mark = saved_marks.get(str(row_idx))
+    text = format_single_student_card(fio, d_str, lesson_num, title, mark)
+    if cb.message:
+        await cb.message.edit_text(text, reply_markup=get_student_mark_choice_kb(d_str, lesson_num, row_idx))
+    await cb.answer()
+
+
+def _build_single_session(
+    d_str: str, lesson_num: int, title: str, students: list, row_idx: int, mark: str, user_id: int
+) -> AttendanceSession:
+    """
+    Создает объект AttendanceSession с отметкой для одного студента.
+
+    Используется для передачи в общие механизмы оптимистичного апдейта и выгрузки.
+
+    Возвращает сформированный объект AttendanceSession.
+    """
+    return AttendanceSession(
+        target_date=d_str,
+        lesson_num=lesson_num,
+        lesson_title=title,
+        students=students,
+        marks={str(row_idx): mark},
+        initiator_id=user_id,
+    )
+
+
+@router.callback_query(F.data.startswith("att:set:"))
+async def cb_set_single_mark(cb: CallbackQuery) -> None:
+    """
+    Устанавливает новую отметку выбранному студенту и запускает сохранение.
+
+    Применяет оптимистичное обновление топика и фоновую запись в таблицу.
+
+    Ничего не возвращает.
+    """
+    parts = cb.data.split(":")
+    d_str, lesson_num, row_idx, raw_mark = parts[2], int(parts[3]), int(parts[4]), parts[5]
+    mark = "" if raw_mark == "_" else raw_mark
+    target_date = date.fromisoformat(d_str)
+    students = await fetch_target_students(target_date)
+    fio = next((name for r, name in students if r == row_idx), f"Строка {row_idx}")
+    title = await _resolve_lesson_title_for_start(target_date, lesson_num)
+    session = _build_single_session(d_str, lesson_num, title, students, row_idx, mark, cb.from_user.id)
+    await apply_session_optimistic_update(session)
+    spawn(sync_attendance_topic_message(force_refresh=False))
+    spawn(_commit_single_attendance_background(session, cb.message, fio, mark))
+    spawn(notify_partner_about_single_update(session, fio, mark, cb.from_user.id, cb.from_user.full_name))
+    if cb.message:
+        await cb.message.edit_text(
+            format_single_update_confirm(fio, d_str, lesson_num, title, mark),
+            reply_markup=get_single_mark_confirmed_kb(d_str, lesson_num),
+        )
+    await cb.answer("Отметка зафиксирована!")
 
 
 @router.callback_query(F.data.startswith("att:start:"))

@@ -28,10 +28,10 @@
 | [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L295–L309 | `dict[str, dict[str, Any]]` | Возвращает сквозную статистику посещаемости по стратеги... |
 | [`find_student_attendance`](#find_student_attendance) | Function | L312–L332 | `dict[str, Any] \| None` | Находит статистику студента по точному или частичному с... |
 | [`_adjust_student_counts`](#_adjust_student_counts) | Function | L335–L348 | `None` | Корректирует счетчики студента с учетом замены старой о... |
-| [`_get_saved_lesson_marks`](#_get_saved_lesson_marks) | Function | L351–L365 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L368–L377 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL д... |
-| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L380–L398 | `dict[str, str]` | Применяет новые отметки студентов из интерактивной сесс... |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L401–L416 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе от... |
+| [`get_saved_lesson_marks`](#get_saved_lesson_marks) | Function | L351–L365 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L371–L380 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL д... |
+| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L383–L404 | `dict[str, str]` | Применяет новые отметки студентов из интерактивной сесс... |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L407–L422 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе от... |
 
 ---
 
@@ -633,9 +633,9 @@ result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
 
 ---
 
-### `_get_saved_lesson_marks`
+### `get_saved_lesson_marks`
 ```python
-async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
+async def get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
 ```
 
 - **Source Reference**: [`services/attendance_stats.py#L351-L365`](../../services/attendance_stats.py#L351-L365)
@@ -659,10 +659,10 @@ Encapsulates faults within `try/except` blocks, logging errors and returning saf
 
 #### Production Usage Example
 ```python
-from services.attendance_stats import _get_saved_lesson_marks
+from services.attendance_stats import get_saved_lesson_marks
 
 # Execute call
-result = await _get_saved_lesson_marks(t_date=..., l_num=...)
+result = await get_saved_lesson_marks(t_date=..., l_num=...)
 ```
 
 ---
@@ -672,7 +672,7 @@ result = await _get_saved_lesson_marks(t_date=..., l_num=...)
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L368-L377`](../../services/attendance_stats.py#L368-L377)
+- **Source Reference**: [`services/attendance_stats.py#L371-L380`](../../services/attendance_stats.py#L371-L380)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -707,7 +707,7 @@ result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
 def _update_session_marks_in_stats( session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]] ) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L380-L398`](../../services/attendance_stats.py#L380-L398)
+- **Source Reference**: [`services/attendance_stats.py#L383-L404`](../../services/attendance_stats.py#L383-L404)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -742,7 +742,7 @@ result = _update_session_marks_in_stats(session=..., saved_marks=..., stats=...)
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L401-L416`](../../services/attendance_stats.py#L401-L416)
+- **Source Reference**: [`services/attendance_stats.py#L407-L422`](../../services/attendance_stats.py#L407-L422)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 

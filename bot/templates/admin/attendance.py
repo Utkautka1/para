@@ -7,12 +7,15 @@
   - Форматирование карточек студентов и итоговой сводки
 """
 
-from datetime import datetime, timedelta
+import html
+from datetime import date, datetime, timedelta
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from config import TIMEZONE
 from services.attendance_manager import AttendanceSession
+from services.attendance_topic_updater import extract_short_fio
 
 
 def get_lesson_confirm_kb(lesson_num: int) -> InlineKeyboardMarkup:
@@ -229,11 +232,11 @@ def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarku
         if num not in seen:
             seen.add(num)
             subj = getattr(les, "subject", "")[:20]
-            kb.append([InlineKeyboardButton(text=f"Пара {num}: {subj}", callback_data=f"att:start:{d_str}:{num}")])
+            kb.append([InlineKeyboardButton(text=f"Пара {num}: {subj}", callback_data=f"att:mode:{d_str}:{num}")])
 
     if not kb:
         for num in range(1, 7):
-            kb.append([InlineKeyboardButton(text=f"Пара {num}", callback_data=f"att:start:{d_str}:{num}")])
+            kb.append([InlineKeyboardButton(text=f"Пара {num}", callback_data=f"att:mode:{d_str}:{num}")])
 
     kb.append(
         [
@@ -243,3 +246,105 @@ def get_lesson_select_kb(lessons: list, chosen_date=None) -> InlineKeyboardMarku
     )
 
     return InlineKeyboardMarkup(inline_keyboard=kb)
+
+
+def get_lesson_mode_kb(chosen_date: str, lesson_num: int) -> InlineKeyboardMarkup:
+    """Генерирует выбор режима отметки пары: опрос всей группы или один студент."""
+    kb = [
+        [InlineKeyboardButton(text="👥 Отметить всю пару", callback_data=f"att:start:{chosen_date}:{lesson_num}")],
+        [
+            InlineKeyboardButton(
+                text="👤 Изменить одного студента", callback_data=f"att:sngl:{chosen_date}:{lesson_num}"
+            )
+        ],
+        [InlineKeyboardButton(text="⬅️ Назад к выбору пар", callback_data=f"att:day:{chosen_date}")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=kb)
+
+
+def get_single_student_select_kb(
+    students: list[tuple[int, str]],
+    saved_marks: dict[str, str],
+    chosen_date: str,
+    lesson_num: int,
+) -> InlineKeyboardMarkup:
+    """Генерирует список студентов по два в ряд для точечной отметки."""
+    builder = InlineKeyboardBuilder()
+    for row_idx, fio in students:
+        short = extract_short_fio(fio)
+        current = saved_marks.get(str(row_idx))
+        label = f"{short} [{current}]" if current else short
+        builder.button(text=label, callback_data=f"att:p:{chosen_date}:{lesson_num}:{row_idx}")
+    builder.adjust(2)
+    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data=f"att:mode:{chosen_date}:{lesson_num}"))
+    return builder.as_markup()
+
+
+def get_student_mark_choice_kb(chosen_date: str, lesson_num: int, row_idx: int) -> InlineKeyboardMarkup:
+    """Генерирует кнопки выбора статуса посещаемости для одного студента."""
+    pfx = f"att:set:{chosen_date}:{lesson_num}:{row_idx}"
+    kb = [
+        [
+            InlineKeyboardButton(text="🟢 П (Присутствует)", callback_data=f"{pfx}:П"),
+            InlineKeyboardButton(text="🟡 О (Опоздал)", callback_data=f"{pfx}:О"),
+        ],
+        [
+            InlineKeyboardButton(text="🔵 У (Уважительная)", callback_data=f"{pfx}:У"),
+            InlineKeyboardButton(text="🔴 Н (Не был)", callback_data=f"{pfx}:Н"),
+        ],
+        [InlineKeyboardButton(text="⚪ Очистить отметку", callback_data=f"{pfx}:_")],
+        [InlineKeyboardButton(text="⬅️ Назад к списку студентов", callback_data=f"att:sngl:{chosen_date}:{lesson_num}")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=kb)
+
+
+def get_single_mark_confirmed_kb(chosen_date: str, lesson_num: int) -> InlineKeyboardMarkup:
+    """Генерирует кнопки после успешного обновления отметки студента."""
+    kb = [
+        [
+            InlineKeyboardButton(
+                text="👤 Выбрать другого студента", callback_data=f"att:sngl:{chosen_date}:{lesson_num}"
+            )
+        ],
+        [InlineKeyboardButton(text="⬅️ К выбору пар", callback_data=f"att:day:{chosen_date}")],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="att:close")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=kb)
+
+
+def format_single_student_card(fio: str, target_date: str, lesson_num: int, title: str, mark: str | None) -> str:
+    """Формирует карточку студента для выбора нового статуса посещаемости."""
+    d_obj = date.fromisoformat(target_date)
+    curr_text = f"<b>[{mark}]</b>" if mark else "<i>не выставлена</i>"
+    return (
+        f"👤 <b>Студент:</b> {html.escape(fio)}\n"
+        f"📅 <b>Дата:</b> {d_obj.strftime('%d.%m.%Y')} | <b>Пара {lesson_num}:</b> {html.escape(title)}\n"
+        f"Текущая отметка: {curr_text}\n\n"
+        "<i>Выберите новую отметку:</i>"
+    )
+
+
+def format_single_update_confirm(fio: str, target_date: str, lesson_num: int, title: str, mark: str) -> str:
+    """Формирует сообщение подтверждения изменения отметки студента."""
+    d_obj = date.fromisoformat(target_date)
+    mark_text = f"<b>[{mark}]</b>" if mark else "<i>очищена</i>"
+    return (
+        "✅ <b>Отметка обновлена!</b>\n\n"
+        f"👤 <b>{html.escape(fio)}</b> ➔ {mark_text}\n"
+        f"📅 <b>Дата:</b> {d_obj.strftime('%d.%m.%Y')} | <b>Пара {lesson_num}:</b> {html.escape(title)}\n\n"
+        "⏳ <i>Сохранение в Яндекс Таблицу запущено...</i>"
+    )
+
+
+def format_partner_single_report(
+    fio: str, target_date: str, lesson_num: int, title: str, mark: str, initiator: str
+) -> str:
+    """Формирует отчет напарнику о точечном изменении отметки студента."""
+    d_obj = date.fromisoformat(target_date)
+    mark_text = f"[{mark}]" if mark else "[очищена]"
+    return (
+        "🔔 <b>Изменение посещаемости</b>\n\n"
+        f"👤 <b>{initiator}</b> обновил отметку:\n"
+        f"• <b>{html.escape(fio)}</b> ➔ <b>{mark_text}</b>\n"
+        f"📅 {d_obj.strftime('%d.%m.%Y')} | Пара {lesson_num}: {html.escape(title)}"
+    )

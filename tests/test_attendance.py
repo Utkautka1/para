@@ -320,8 +320,8 @@ def test_get_lesson_select_kb_with_lesson_models():
     kb = get_lesson_select_kb([l1, l2, l3], chosen_date=date(2026, 9, 29))
     # 2 ряда пар (Пара 1 дедуплицирована, Пара 2) + 1 ряд навигации = 3 ряда
     assert len(kb.inline_keyboard) == 3
-    assert kb.inline_keyboard[0][0].callback_data == "att:start:2026-09-29:1"
-    assert kb.inline_keyboard[1][0].callback_data == "att:start:2026-09-29:2"
+    assert kb.inline_keyboard[0][0].callback_data == "att:mode:2026-09-29:1"
+    assert kb.inline_keyboard[1][0].callback_data == "att:mode:2026-09-29:2"
 
 
 @pytest.mark.asyncio

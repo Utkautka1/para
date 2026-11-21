@@ -348,7 +348,7 @@ def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark:
         tot[new_mark] += 1
 
 
-async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
+async def get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
     """
     Считывает ранее сохраненный срез отметок пары из Redis.
 
@@ -363,6 +363,9 @@ async def _get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]:
         return json.loads(raw)
     except Exception:
         return {}
+
+
+_get_saved_lesson_marks = get_saved_lesson_marks
 
 
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None:
@@ -390,11 +393,14 @@ def _update_session_marks_in_stats(
     new_saved_marks = dict(saved_marks)
     for row_idx, fio in session.students:
         new_mark = session.marks.get(str(row_idx))
-        if not new_mark or saved_marks.get(str(row_idx)) == new_mark:
+        if new_mark is None or saved_marks.get(str(row_idx)) == new_mark:
             continue
         student_stat = stats.setdefault(fio, _init_student_stat(fio))
         _adjust_student_counts(student_stat, saved_marks.get(str(row_idx)), new_mark)
-        new_saved_marks[str(row_idx)] = new_mark
+        if new_mark:
+            new_saved_marks[str(row_idx)] = new_mark
+        else:
+            new_saved_marks.pop(str(row_idx), None)
     return new_saved_marks
 
 
