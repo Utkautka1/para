@@ -28,9 +28,9 @@ from core.logger import get_logger
 
 log = get_logger("saved_photos_downloader")
 
-# API credentials пользователя
-DEFAULT_API_ID = int(os.getenv("TELEGRAM_API_ID", "20206975"))
-DEFAULT_API_HASH = os.getenv("TELEGRAM_API_HASH", "8c07a87842578d965994135946e64392")
+# API credentials пользователя из переменных окружения
+DEFAULT_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
+DEFAULT_API_HASH = os.getenv("TELEGRAM_API_HASH", "")
 SESSION_NAME = "data/telegram_user_session"
 
 
@@ -71,40 +71,51 @@ def save_message_meta(meta_path: Path, meta_data: dict) -> None:
         json.dump(meta_data, f, ensure_ascii=False, indent=2)
 
 
-async def download_photo_message(
-    client: TelegramClient, message, out_dir: Path
-) -> dict | None:
+def _is_image_message(message) -> bool:
     """
-    Скачивает изображение и текст одного сообщения из Избранного.
+    Проверяет, содержит ли сообщение фото или графическое вложение.
 
-    Пропускает сообщения без фото или графических вложений.
-
-    Возвращает словарь с описанием файла или None если вложение отсутствует.
+    Возвращает True, если найдено фото или документ с mime-типом image.
     """
-    if not (message.photo or (message.document and "image" in (message.file.mime_type or ""))):
+    return bool(message.photo or (message.document and "image" in (message.file.mime_type or "")))
+
+
+def _build_photo_meta(message, photo_path: Path) -> dict:
+    """
+    Формирует словарь метаданных для скачанного фотосообщения.
+
+    Возвращает словарь с идентификатором, датой, текстом и именем файла.
+    """
+    return {
+        "msg_id": message.id,
+        "date": str(message.date),
+        "text": message.text or message.message or "",
+        "photo_file": photo_path.name,
+    }
+
+
+async def download_photo_message(client: TelegramClient, message, out_dir: Path) -> dict | None:
+    """
+    Скачивает изображение и сохраняет метаданные одного сообщения.
+
+    Пропускает сообщения без графических вложений.
+
+    Возвращает словарь с метаданными или None при отсутствии фото.
+    """
+    if not _is_image_message(message):
         return None
 
     stem = format_file_stem(message.id, str(message.date))
     photo_path = out_dir / f"{stem}.jpg"
-    meta_path = out_dir / f"{stem}.json"
-
     log.info("Скачивание фото к сообщению ID %s...", message.id)
     await client.download_media(message, file=str(photo_path))
 
-    text = message.text or message.message or ""
-    meta = {
-        "msg_id": message.id,
-        "date": str(message.date),
-        "text": text,
-        "photo_file": photo_path.name,
-    }
-    save_message_meta(meta_path, meta)
+    meta = _build_photo_meta(message, photo_path)
+    save_message_meta(out_dir / f"{stem}.json", meta)
     return meta
 
 
-async def fetch_saved_photos(
-    client: TelegramClient, limit: int = 40
-) -> list[dict]:
+async def fetch_saved_photos(client: TelegramClient, limit: int = 40) -> list[dict]:
     """
     Итерирует по диалогу 'me' и последовательно загружает все медиа.
 
@@ -126,11 +137,44 @@ async def fetch_saved_photos(
     return downloaded
 
 
+def _display_qr_code(qr) -> None:
+    """
+    Отображает QR-код в терминале для сканирования приложением Telegram.
+
+    Выводит подсказку по пути в интерфейсе и ASCII-представление QR-кода.
+
+    Ничего не возвращает; выполняет вывод в stdout.
+    """
+    print("\n" + "=" * 55)
+    print("📲 Отсканируйте QR-код в Telegram на телефоне:")
+    print("   Настройки ➔ Устройства ➔ Подключить устройство")
+    print("=" * 55 + "\n")
+    qr_gen = qrcode.QRCode()
+    qr_gen.add_data(qr.url)
+    qr_gen.print_ascii(invert=True)
+    print(f"\nТокен входа: {qr.url}\nОжидание сканирования...")
+
+
+async def _wait_for_qr_login(client: TelegramClient, qr) -> None:
+    """
+    Ожидает подтверждения входа по QR-коду или запрашивает 2FA пароль.
+
+    Перехватывает SessionPasswordNeededError для безопасного ввода 2FA.
+
+    Ничего не возвращает; завершает сессию авторизации.
+    """
+    try:
+        await qr.wait(timeout=120)
+    except SessionPasswordNeededError:
+        pwd = getpass.getpass("🔒 Введите пароль двухфакторной аутентификации (2FA): ")
+        await client.sign_in(password=pwd)
+
+
 async def perform_auth(client: TelegramClient) -> None:
     """
     Авторизует пользователя через QR-код с поддержкой 2FA-пароля.
 
-    Запрашивает пароль двухэтапной аутентификации при наличии защиты.
+    Проверяет существующую сессию перед показом QR-кода.
 
     Ничего не возвращает; ожидает подтверждения авторизации на устройстве.
     """
@@ -139,22 +183,8 @@ async def perform_auth(client: TelegramClient) -> None:
         return
 
     qr = await client.qr_login()
-    print("\n" + "=" * 55)
-    print("📲 Отсканируйте QR-код в Telegram на телефоне:")
-    print("   Настройки ➔ Устройства ➔ Подключить устройство")
-    print("=" * 55 + "\n")
-
-    qr_gen = qrcode.QRCode()
-    qr_gen.add_data(qr.url)
-    qr_gen.print_ascii(invert=True)
-
-    print(f"\nТокен входа: {qr.url}\nОжидание сканирования...")
-    try:
-        await qr.wait(timeout=120)
-    except SessionPasswordNeededError:
-        pwd = getpass.getpass("🔒 Введите пароль двухфакторной аутентификации (2FA): ")
-        await client.sign_in(password=pwd)
-
+    _display_qr_code(qr)
+    await _wait_for_qr_login(client, qr)
     print("✅ Авторизация успешно подтверждена!")
 
 

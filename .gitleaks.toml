@@ -3,5 +3,7 @@
 useDefault = true
 
 [allowlist]
-description = "Baseline detect-secrets хранит хеши найденных строк, а не сами секреты"
+description = "Baseline detect-secrets и коммит выгрузки фото в истории"
 paths = ['''^\.secrets\.baseline$''']
+commits = ["6254abef799b59d3f2d76c63af373a6b765faf3e"]
+
