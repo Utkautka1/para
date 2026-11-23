@@ -93,10 +93,10 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 | **Inter-Service Comms** | Tight synchronous imports or slow JSON HTTP | **Dual-Protocol RPC Mesh**: Binary `Protobuf HTTP/2 gRPC` (`< 0.3 ms`) + REST + W3C `traceparent` context propagation |
 | **Schedule Ingress** | Blocking HTTP scrapers on every user click | **Two-Tier Cache Hierarchy**: In-memory L1 (`< 10 µs`) + Redis L2 Snapshots with tokenized singleflight distributed locks |
 | **State & Data Persistence** | Transient process RAM or fragile JSON files | **Distributed RedisStorage FSM + Asynchronous SQLite (SQLAlchemy 2.0 / aiosqlite)** with WAL mode, foreign keys & daily automated hot backups to Telegram |
-| **Attendance Tracking** | Manual pen-and-paper or clumsy polls | **WOPI Cloud Spreadsheet (OnlyOffice)** + Instant Optimistic UI + Mutual Peer Telegram Briefings (Headman <-> Deputy) |
+| **Attendance Tracking** | Manual pen-and-paper or clumsy polls | **Google Sheets & Drive API Cloud Spreadsheet** + Instant Optimistic UI + Atomic Batch Updates + Full .xlsx Export on Demand + Mutual Peer Telegram Briefings (Headman <-> Deputy) |
 | **AI Task Execution** | Synchronous LLM calls freezing event loops | **Decomposed Worker Pipeline**: `BLMOVE` at-least-once queue, multi-stage prompt injection sanitizer, stateful Circuit Breaker with jitter & GOST 7.32-2017 Word generator |
 | **Distributed Observability** | Print statements or untraceable text logs | **Full-Stack Distributed Tracing**: OpenTelemetry SDK + OTLP gRPC collector + Jaeger all-in-one + authenticated dual-tab Telegram Mini App portal (Swagger & Jaeger) + Prometheus `/metrics` |
-| **Incident Management** | Silent crashes and unhandled outages | **Proactive System Incident Engine**: Circuit Breaker trips, Yandex cookie expiry, and timetable degradation immediately dispatch severity-routed alerts to Debug Forum topics (`Fatal` #7, `Warning` #5, `Debug` #3) with distributed Redis cooldown throttling |
+| **Incident Management** | Silent crashes and unhandled outages | **Proactive System Incident Engine**: Circuit Breaker trips, Google Sheets API errors, and timetable degradation immediately dispatch severity-routed alerts to Debug Forum topics (`Fatal` #7, `Warning` #5, `Debug` #3) with distributed Redis cooldown throttling |
 | **Voice / STT Ingress** | Unsupported or manual playback | **GPU-Accelerated faster-whisper** (`large-v3-turbo`, 0.36s inference) + `/dev/shm` RAM-disk ephemeral streaming + automatic CPU int8 fallback |
 | **Quality Assurance** | "Tested in production" (manual testing) | **1000 Automated Tests (100% passing)**, **Locust 846+ RPS stress testing** (sub-10ms gRPC p99), strict Ruff, Bandit AST security & GitHub Actions CI |
 
@@ -159,7 +159,7 @@ graph TD
 
     subgraph Upstream Clouds
         KTMU[("College Upstream API\n(Timetable)")]
-        Yandex[("Yandex Docs Cloud\n(WOPI OnlyOffice)")]
+        Google[("Google Cloud\n(Sheets & Drive API)")]
         DeepSeek[("DeepSeek Cloud\n(Reasoning Model)")]
     end
 
@@ -173,7 +173,7 @@ graph TD
     Api -->|Async SQLAlchemy 2.0| Sqlite
     Api -->|OTLP Spans| Jaeger
     Api -->|Scrape| KTMU
-    Api -->|WOPI Sync| Yandex
+    Bot -->|BatchUpdate & Export| Google
     Worker -->|Fetch Schedule| Api
     Worker -->|Clean ZSET Messages| Redis
     Worker -->|Hot Online Backup| Sqlite
@@ -234,14 +234,15 @@ To protect college infrastructure while delivering instantaneous responses to 30
 </details>
 
 <details>
-<summary><b>3. Electronic Attendance Registry & WOPI Cloud Synchronization</b></summary>
+<summary><b>3. Electronic Attendance Registry & Google Cloud Synchronization</b></summary>
 
 ### Collaborative Spreadsheet Architecture
-Para bridges the gap between Telegram interactive buttons and Yandex Documents (OnlyOffice) collaborative spreadsheets via the **WOPI (Web Application Open Platform Interface)** protocol:
+Para bridges the gap between Telegram interactive buttons and Google Sheets collaborative spreadsheets via Google Sheets API v4 and Google Drive API v3 with enterprise Service Account authorization:
 
 * **Instant Optimistic UI**: Marks applied in Telegram reflect in the UI in `~ 10 ms`, immediately queuing a background save task.
 * **Dual Operation Modes**: Support for full-lesson polling (`👥 Отметить всю пару`) across all students sequentially and targeted single-student editing (`👤 Изменить одного студента`) to quickly adjust individual statuses without re-running the full roster.
-* **Co-authoring Settling Pass**: OnlyOffice buffers edits in its auto-save memory. Para executes a delayed verification pass (20–30s post-commit) to guarantee the `.xlsx` workbook on disk is bit-identical to Telegram state.
+* **Atomic Batch Updates**: High-performance batch updates via `spreadsheets.values.batchUpdate` without locking or file rewriting latency.
+* **On-Demand Full Workbook Download**: Starosta can download the complete `.xlsx` workbook (all 12 monthly sheets, student rosters, formulas) directly from the Admin Panel at any time.
 * **Mutual Peer Telemetry (Headman <-> Deputy)**: Whenever an administrator submits an attendance poll, changes a single student mark, or cancels a session, the bot dispatches an immediate structured briefing to the peer administrator's direct messages detailing present, late, excused, unexcused headcounts, and absent student names.
 </details>
 
@@ -642,16 +643,14 @@ para/
 │
 ├── integrations/             # External Upstream Integrations
 │   ├── deepseek.py           # Multimodal DeepSeek LLM vision API client
-│   ├── docx_parser.py        # Yandex Disk instructor contact parser
-│   ├── yandex_docs.py        # WOPI protocol implementation for Yandex Documents
-│   └── yandex_keepalive.py   # Autonomous session keep-alive loop with incident triggers
+│   ├── docx_parser.py        # Cloud instructor contact parser (.docx)
+│   └── google_sheets.py      # Google Sheets API v4 & Google Drive API v3 integration
 │
 ├── scripts/                  # Operational & Engineering Automation Scripts
 │   ├── backup.py             # Hot SQLite backup, Redis snapshot & Telegram archival runner
 │   ├── dev_setup.sh          # One-click developer environment provisioning script
 │   ├── generate_docs_suite.py# Automated Google-style enterprise documentation generator
 │   ├── run_load_test.sh      # Automated Locust load test executor with HTML report export
-│   ├── sync_yandex_cookie.py # Headless browser cookie harvester for Yandex WOPI
 │   └── tunnel_sync.py        # Cloudflare Tunnel webhook synchronization daemon
 │
 ├── services/                 # Business Logic & Orchestration Tier
@@ -823,7 +822,7 @@ Para features an **enterprise-grade, exhaustive documentation suite** authored u
 | **📱 Telegram Bot Gateway & UX** | [`docs/bot/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | User & Admin Handlers, Throttling & Retry Middlewares, OTel Tracing Middleware, Dynamic Keyboards & Voice STT Formatters. |
 | **🚀 Dual-Protocol API & gRPC Mesh** | [`docs/api/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | 13 REST Routers, gRPC HTTP/2 Server & Servicers, Protobuf Converters, HMAC Security & Dual-Tab Mini App Portal. |
 | **🧠 Distributed Core & Caching** | [`docs/core/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | Redis L2 Distributed Cache, Tokenized Distributed Locks, Connection Pool, Prometheus Metrics & Rotating Structured Logger. |
-| **🔌 Integrations & Utilities** | [`docs/integrations/`](docs/index.md#subsystem-catalogs--architectural-boundaries) • [`docs/utils/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | DeepSeek-V3/R1 Client, WOPI Yandex Docs Session Host, GOST 7.32-2017 Word Builder, MiniApp HMAC Auth & Mute Duration Parser. |
+| **🔌 Integrations & Utilities** | [`docs/integrations/`](docs/index.md#subsystem-catalogs--architectural-boundaries) • [`docs/utils/`](docs/index.md#subsystem-catalogs--architectural-boundaries) | DeepSeek-V3/R1 Client, Google Sheets & Drive API Integration, GOST 7.32-2017 Word Builder, MiniApp HMAC Auth & Mute Duration Parser. |
 | **📊 UML Architectural Specification** | [`docs/UML.md`](docs/UML.md) | Exhaustive 3,000+ line UML specification covering 16 architectural sections (Sequences, Class, Deployment & State Diagrams). |
 | **📈 Load Testing & Benchmarks** | [`docs/reports/load_test/`](docs/reports/load_test/benchmark.html) • [`tests/load/locustfile.py`](tests/load/locustfile.py) | Locust 846+ RPS dual-protocol load testing harness, 0% errors, sub-10ms gRPC latency distributions & HTML reports. |
 | **📦 Community Standards & Tooling** | [`CONTRIBUTING.md`](CONTRIBUTING.md) • [`SECURITY.md`](SECURITY.md) • [`CHANGELOG.md`](CHANGELOG.md) • [`Makefile`](Makefile) | Engineering contribution rules, security disclosure policy, semantic release changelog & one-command automation. |

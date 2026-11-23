@@ -261,14 +261,13 @@ async def test_collect_health_summary() -> None:
         patch("bot.handlers.admin.panel.load_subscribers", return_value={1, 2}),
         patch("bot.handlers.admin.panel.load_classmates_registry", return_value=[{"tg_id": 1}]),
         patch("bot.handlers.admin.panel.fetch_teachers", AsyncMock(return_value={"count": 15})),
-        patch("bot.handlers.admin.panel.get_effective_yandex_cookie", AsyncMock(return_value="cookie=123")),
         patch("bot.handlers.admin.panel.init_redis", AsyncMock(return_value=None)),
     ):
         summary = await _collect_health_summary()
         assert "ДИАГНОСТИКА СИСТЕМЫ" in summary
         assert "15" in summary
         assert "Подписчики ЛС:</b> <code>2</code>" in summary
-        assert "Сессия Яндекс:</b> ✅ Активна" in summary
+        assert "Google Таблица:</b> ✅ Подключена" in summary
 
 
 @pytest.mark.asyncio

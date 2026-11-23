@@ -5,11 +5,10 @@
   1. Создаёт сессию при начале опроса пары
   2. Фиксирует выбор статусов студентов (П, О, У, Н)
   3. Поддерживает шаг назад и пакетную отметку оставшихся (П)
-  4. Сохраняет итоговые данные в Яндекс Документы через yandex_docs
+  4. Сохраняет итоговые данные в Google Таблицу через google_sheets
 """
 
 import asyncio
-import gc
 import json
 from datetime import date
 
@@ -26,14 +25,9 @@ from config import (
 from core.background import spawn
 from core.logger import get_logger
 from core.redis import get_redis
-from integrations.yandex_docs import (
-    download_workbook,
-    find_lesson_column,
-    get_month_sheet,
-    get_students_list,
-    init_wopi_session,
-    upload_workbook,
-    verify_upload,
+from integrations.google_sheets import (
+    fetch_students_from_google,
+    write_lesson_marks,
     write_student_mark,
 )
 
@@ -119,23 +113,22 @@ async def clear_session() -> None:
         log.info("Сессия посещаемости сброшена в Redis")
 
 
-async def _fetch_students_from_wopi(target_date: date) -> list[tuple[int, str]]:
+async def _fetch_students_from_google(target_date: date) -> list[tuple[int, str]]:
     """
-    Скачивает таблицу через WOPI протокол и считывает список студентов.
+    Считывает список студентов из Google Таблицы.
 
     Используется как fallback при промахе кэша Redis для первичной загрузки.
 
-    Возвращает список пар (индекс строки в Excel, ФИО студента).
+    Возвращает список пар (индекс строки в таблице, ФИО студента).
     """
-    wopi = await init_wopi_session()
-    wb = await download_workbook(wopi)
-    sheet = get_month_sheet(wb, target_date)
-    students = get_students_list(sheet)
-
+    students = await fetch_students_from_google(target_date)
     if not students:
         raise ValueError("В таблице не найдено ни одного студента")
-
     return students
+
+
+# Псевдоним для обратной совместимости тестов
+_fetch_students_from_wopi = _fetch_students_from_google
 
 
 async def _read_cached_students(client) -> list[tuple[int, str]] | None:
@@ -171,7 +164,7 @@ async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
     if cached_students:
         return cached_students
 
-    students = await _fetch_students_from_wopi(target_date)
+    students = await _fetch_students_from_google(target_date)
     if client and students:
         payload = json.dumps(students, ensure_ascii=False)
         await client.set(REDIS_STUDENTS_CACHE_KEY, payload, ex=STUDENTS_CACHE_TTL_SECONDS)
@@ -312,59 +305,22 @@ def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None:
         write_student_mark(sheet, int(row_str), col, mark)
 
 
-async def _prepare_updated_workbook(
-    wopi,
-    t_date: date,
-    session: AttendanceSession,
-):
-    """
-    Скачивает книгу и проставляет отметки сессии в колонку пары.
-
-    Возвращает модифицированный объект openpyxl.Workbook.
-    """
-    wb = await download_workbook(wopi)
-    sheet = get_month_sheet(wb, t_date)
-    col = find_lesson_column(sheet, t_date, session.lesson_num)
-
-    if not col:
-        raise ValueError(f"Не найдена колонка для {t_date} пара {session.lesson_num}")
-
-    apply_marks_to_sheet(sheet, session, col)
-    ensure_summary_headers(sheet)
-
-    return wb
-
-
 async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool:
     """
-    Выполняет одну итерацию сохранения: скачать -> применить -> залить -> проверить.
+    Выполняет одну итерацию сохранения отметок сессии в Google Таблицу.
 
-    Возвращает True в случае успешной верификации сохранения, иначе False.
+    Вызывает write_lesson_marks для пакетного обновления через Sheets API.
+
+    Возвращает True в случае успешной записи, иначе False.
     """
-    wopi = await init_wopi_session()
-    wb = await _prepare_updated_workbook(wopi, t_date, session)
-    upload_ok = await upload_workbook(wopi, wb)
-
-    del wb
-    gc.collect()
-
-    if not upload_ok:
-        return False
-
-    verified = await verify_upload(wopi, t_date, session.lesson_num, session.marks)
-    if verified:
-        log.info("✅ Посещаемость пары %s подтверждена верификацией", session.lesson_num)
-    else:
-        log.warning("⚠️  WOPI PUT успешен (200 OK), но верификация чтения не подтвердила отметки")
-
-    return True
+    return await write_lesson_marks(t_date, session.lesson_num, session.marks)
 
 
 async def _post_commit_sync() -> None:
     """
-    Выполняет контрольную сверку реестра с Яндекс Документами после сохранения.
+    Выполняет контрольную сверку и обновление топика после сохранения.
 
-    Ожидает сброс буфера OnlyOffice на диск, сбрасывает кэш и обновляет топик.
+    Инвалидирует кэш статистики посещаемости и обновляет закрепленное сообщение.
 
     Ничего не возвращает.
     """
@@ -372,8 +328,6 @@ async def _post_commit_sync() -> None:
         from services.attendance_stats import invalidate_attendance_stats_cache
         from services.attendance_topic_updater import sync_attendance_topic_message
 
-        # Пауза 15 сек для сброса OnlyOffice буфера совместного редактирования на диск
-        await asyncio.sleep(15)
         await invalidate_attendance_stats_cache()
         await sync_attendance_topic_message(force_refresh=True)
     except Exception as e:
@@ -403,7 +357,7 @@ async def _execute_commit_attempts(session: AttendanceSession, t_date: date) -> 
 
 async def commit_session_to_table(session: AttendanceSession) -> bool:
     """
-    Выгружает все зафиксированные отметки сессии в Яндекс Документы.
+    Выгружает все зафиксированные отметки сессии в Google Таблицу.
 
     Выполняет до MAX_COMMIT_RETRIES попыток, очищает сессию и инициирует пост-синк.
 

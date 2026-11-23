@@ -129,7 +129,7 @@ result = timezone()
 
 ## Class Model: `YandexConfig`
 
-Конфигурация интеграции с Яндекс Документами и журналами посещаемости WOPI.
+Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser).
 
 ## Class Model: `ApiConfig`
 
@@ -154,3 +154,7 @@ result = timezone()
 ## Class Model: `TracingConfig`
 
 Конфигурация распределенного трейсинга OpenTelemetry и Jaeger OTLP.
+
+## Class Model: `GoogleSheetsConfig`
+
+Конфигурация интеграции с Google Sheets & Drive API для журнала посещаемости.

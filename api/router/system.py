@@ -25,30 +25,32 @@ from services.schedule_parser import clear_resolved_day_cache
 router = APIRouter(tags=["System"], prefix="/system", dependencies=[Depends(verify_api_or_tester)])
 
 
-@router.get("/info", response_model=SystemInfoResponse)
-async def get_system_info() -> SystemInfoResponse:
-    """
-    Возвращает диагностическую сводку о состоянии сервиса и подсистем.
-
-    Опрашивает статус соединения с Redis и формирует список активных модулей.
-    Используется в панели администратора для оперативного мониторинга.
-
-    Возвращает SystemInfoResponse с версией, таймзоной и фичами.
-    """
-
-    client = await init_redis()
-    redis_alive = client is not None
-    now_str = datetime.now(TIMEZONE).isoformat()
-    feats = {
+def _collect_system_features(redis_alive: bool) -> dict[str, bool]:
+    """Формирует словарь активных возможностей и интеграций системы."""
+    return {
         "grpc": True,
         "swagger_ui": True,
         "telegram_miniapp": True,
         "redis_caching": redis_alive,
         "sqlite_database": True,
         "automated_backups": True,
-        "yandex_docs": True,
+        "google_sheets": True,
         "deepseek_solver": True,
     }
+
+
+@router.get("/info", response_model=SystemInfoResponse)
+async def get_system_info() -> SystemInfoResponse:
+    """
+    Возвращает диагностическую сводку о состоянии сервиса и подсистем.
+
+    Опрашивает статус соединения с Redis и формирует список активных модулей.
+    Возвращает SystemInfoResponse с версией, таймзоной и фичами.
+    """
+    client = await init_redis()
+    redis_alive = client is not None
+    now_str = datetime.now(TIMEZONE).isoformat()
+    feats = _collect_system_features(redis_alive)
 
     return SystemInfoResponse(
         service="para-api",

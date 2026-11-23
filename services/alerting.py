@@ -29,7 +29,7 @@ class IncidentType(StrEnum):
     """Типы системных инцидентов и сетевых отказов."""
 
     CIRCUIT_BREAKER_OPEN = "CIRCUIT_BREAKER_OPEN"
-    YANDEX_COOKIE_EXPIRED = "YANDEX_COOKIE_EXPIRED"
+    GOOGLE_SHEETS_ERROR = "GOOGLE_SHEETS_ERROR"
     TIMETABLE_API_DOWN = "TIMETABLE_API_DOWN"
     BACKUP_FAILED = "BACKUP_FAILED"
     BACKUP_SUCCESS = "BACKUP_SUCCESS"
@@ -39,7 +39,7 @@ class IncidentType(StrEnum):
 
 DEFAULT_ALERT_COOLDOWNS: dict[str, float] = {
     IncidentType.TIMETABLE_API_DOWN: 3600.0,
-    IncidentType.YANDEX_COOKIE_EXPIRED: 7200.0,
+    IncidentType.GOOGLE_SHEETS_ERROR: 3600.0,
     IncidentType.CIRCUIT_BREAKER_OPEN: 1800.0,
     IncidentType.BACKUP_FAILED: 1800.0,
     # О каждом деплое сообщаем отдельно — подавлять повторы нельзя

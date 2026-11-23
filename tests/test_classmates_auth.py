@@ -154,6 +154,8 @@ async def test_cb_toggle_notify() -> None:
     cb.message.edit_reply_markup = AsyncMock()
     with (
         patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True),
+        patch("bot.handlers.user.schedule.is_tester_allowed", AsyncMock(return_value=False)),
+        patch("bot.handlers.user.schedule._trigger_notify_achievements"),
         patch("bot.handlers.user.schedule.get_api_schedule_for_date", return_value=[]),
     ):
         await cb_toggle_notify(cb)

@@ -1,6 +1,6 @@
 # para: справочник модулей
 
-> Сгенерировано `scripts/generate_docs_suite.py` из docstring кода. Модулей: 113.
+> Сгенерировано `scripts/generate_docs_suite.py` из docstring кода. Модулей: 111.
 
 | Subsystem | Source Module | Specification Reference | Layer |
 | :--- | :--- | :--- | :--- |
@@ -50,6 +50,7 @@
 | `Gamification Domain Models` | [`services/gamification_models.py`](../services/gamification_models.py) | [📖 View Specification](services/gamification_models.md) | `services` |
 | `Gamification Registry` | [`services/gamification_registry.py`](../services/gamification_registry.py) | [📖 View Specification](services/gamification_registry.md) | `services` |
 | `Global Error Trapper` | [`bot/handlers/errors.py`](../bot/handlers/errors.py) | [📖 View Specification](bot/handlers_errors.md) | `bot` |
+| `Google Sheets Attendance Service` | [`integrations/google_sheets.py`](../integrations/google_sheets.py) | [📖 View Specification](integrations/google_sheets.md) | `integrations` |
 | `HMAC-SHA256 Auth` | [`utils/miniapp_auth.py`](../utils/miniapp_auth.py) | [📖 View Specification](utils/miniapp_auth.md) | `utils` |
 | `HW Solver API` | [`api/router/solver.py`](../api/router/solver.py) | [📖 View Specification](api/router_solver.md) | `api` |
 | `Headman Attendance Polling` | [`bot/handlers/admin/attendance.py`](../bot/handlers/admin/attendance.py) | [📖 View Specification](bot/handlers_admin_attendance.md) | `bot` |
@@ -81,7 +82,6 @@
 | `SQLite Repositories` | [`db/sqlite/repositories.py`](../db/sqlite/repositories.py) | [📖 View Specification](db/sqlite_repositories.md) | `db` |
 | `Schedule API` | [`api/router/schedule.py`](../api/router/schedule.py) | [📖 View Specification](api/router_schedule.md) | `api` |
 | `Security Dependencies` | [`api/deps.py`](../api/deps.py) | [📖 View Specification](api/deps.md) | `api` |
-| `Session Keepalive` | [`integrations/yandex_keepalive.py`](../integrations/yandex_keepalive.py) | [📖 View Specification](integrations/yandex_keepalive.md) | `integrations` |
 | `Solver Delivery & Reporting` | [`services/solver/telegram_reporter.py`](../services/solver/telegram_reporter.py) | [📖 View Specification](services/solver_telegram_reporter.md) | `services` |
 | `Solver Payload Ingestion` | [`services/solver/payload_extractor.py`](../services/solver/payload_extractor.py) | [📖 View Specification](services/solver_payload_extractor.md) | `services` |
 | `Solver Queue Processing` | [`core/hw_queue.py`](../core/hw_queue.py) | [📖 View Specification](core/hw_queue.md) | `core` |
@@ -113,7 +113,5 @@
 | `User Schedule Flow` | [`bot/handlers/user/schedule.py`](../bot/handlers/user/schedule.py) | [📖 View Specification](bot/handlers_user_schedule.md) | `bot` |
 | `Voice Message Templates` | [`bot/templates/user/voice.py`](../bot/templates/user/voice.py) | [📖 View Specification](bot/templates_user_voice.md) | `bot` |
 | `Voice Transcription Handler` | [`bot/handlers/user/voice_transcribe.py`](../bot/handlers/user/voice_transcribe.py) | [📖 View Specification](bot/handlers_user_voice_transcribe.md) | `bot` |
-| `WOPI Cloud Service` | [`integrations/yandex_docs.py`](../integrations/yandex_docs.py) | [📖 View Specification](integrations/yandex_docs.md) | `integrations` |
-| `Yandex Cookie Sync` | [`scripts/sync_yandex_cookie.py`](../scripts/sync_yandex_cookie.py) | [📖 View Specification](scripts/sync_yandex_cookie.md) | `scripts` |
 | `gRPC HTTP/2 Server` | [`api/grpc/server.py`](../api/grpc/server.py) | [📖 View Specification](api/grpc_server.md) | `api` |
 | `gRPC RPC Servicers` | [`api/grpc/servicers.py`](../api/grpc/servicers.py) | [📖 View Specification](api/grpc_servicers.md) | `api` |

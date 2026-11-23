@@ -38,18 +38,15 @@ def _build_topic_action_rows() -> list:
     ]
 
 
-def _build_action_rows() -> list:
-    """
-    Формирует основную матрицу кнопок панели управления администратора.
-
-    Включает быстрый вход в посещаемость, полную синхронизацию, тестеров и топики.
-    Служит структурным шаблоном для главного меню команды /admin.
-
-    Возвращает полный список рядов кнопок админки.
-    """
-
-    rows = [
+def _build_core_action_rows() -> list:
+    """Формирует основные кнопки сервисных действий админки."""
+    return [
         [InlineKeyboardButton(text="📝 Отметить посещаемость", callback_data="att:menu", style="success")],
+        [
+            InlineKeyboardButton(
+                text="📥 Скачать журнал (.xlsx)", callback_data="admin:download_attendance_xlsx", style="primary"
+            )
+        ],
         [
             InlineKeyboardButton(text="🔄 Синхронизировать всё", callback_data="admin:sync", style="primary"),
             InlineKeyboardButton(text="📊 Статус и Кэш", callback_data="admin:status", style="primary"),
@@ -63,8 +60,18 @@ def _build_action_rows() -> list:
         ],
         [InlineKeyboardButton(text="👥 Привязать студента по ID", callback_data="admin:bind_student", style="primary")],
     ]
-    rows.extend(_build_topic_action_rows())
 
+
+def _build_action_rows() -> list:
+    """
+    Формирует полную матрицу кнопок панели управления администратора.
+
+    Объединяет базовые действия и кнопки управления топиками.
+
+    Возвращает полный список рядов кнопок админки.
+    """
+    rows = _build_core_action_rows()
+    rows.extend(_build_topic_action_rows())
     return rows
 
 
@@ -97,30 +104,32 @@ def get_swagger_launch_btn() -> InlineKeyboardButton:
     return InlineKeyboardButton(text="🚀 Ссылка на веб-портал", callback_data="admin:show_swagger_link")
 
 
+def _build_tester_rows(testers: list[int]) -> list:
+    """Формирует ряды кнопок для отображения списка тестеров с удалением."""
+    return [
+        [
+            InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
+            InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
+        ]
+        for uid in testers[:6]
+    ]
+
+
 def get_testers_management_kb(testers: list[int]) -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру управления списком разрешенных тестеров API.
 
     Отображает до 6 тестеров с кнопками быстрого удаления и кнопку добавления.
-    Включает кнопку возврата в главное меню панели администратора.
 
     Возвращает InlineKeyboardMarkup управления тестерами.
     """
-
-    rows: list = [[get_swagger_launch_btn()]]
-    rows.append(
+    rows: list = [
+        [get_swagger_launch_btn()],
         [
             InlineKeyboardButton(text="➕ Добавить тестера", callback_data="admin:add_tester", style="success"),
             InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin:testers", style="primary"),
-        ]
-    )
-    for uid in testers[:6]:
-        rows.append(
-            [
-                InlineKeyboardButton(text=f"👤 ID: {uid}", callback_data=f"admin:view_tester:{uid}"),
-                InlineKeyboardButton(text="❌ Удалить", callback_data=f"admin:del_tester:{uid}", style="danger"),
-            ]
-        )
+        ],
+    ]
+    rows.extend(_build_tester_rows(testers))
     rows.append([InlineKeyboardButton(text="◀️ Назад в админку", callback_data="admin:menu", style="primary")])
-
     return InlineKeyboardMarkup(inline_keyboard=rows)

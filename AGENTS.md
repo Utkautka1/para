@@ -25,7 +25,7 @@ Telegram-бот и API группы 1-КПД-3: расписание, экзам
 - `api/` — `deps.py` (вся авторизация), `router/*` (группа эндпоинтов = файл), `schemas/*` (имена совпадают с роутерами), `grpc/` + `proto/` (сгенерированные `*_pb2*.py`, не править).
 - `bot/` — `commands.py` (связующий роутер), `handlers/{admin,user}`, `templates/{admin,user}` (тексты/клавиатуры/стейты), `filters/auth.py`, `middlewares/` (throttling, retry, tracing, achievements).
 - `services/` — бизнес-логика и воркеры. Группы: `schedule_*`/`topic_updater` (расписание), `exam_*`, `attendance_*`, `achievement_*`/`gamification*` (ачивки), `solver/`, `stt_queue`/`transcriber`, `birthday_manager`, `backup_manager`, `alerting`, `notifier`, `deploy_notifier`, `testers_manager`, `login_tokens`, `classmates_auth`.
-- `integrations/` — внешние источники: `yandex_docs.py` (WOPI-таблица посещаемости, cookie из Redis), `docx_parser.py`, `deepseek.py`, `yandex_keepalive.py`.
+- `integrations/` — внешние источники: `google_sheets.py` (журнал посещаемости через Google Sheets/Drive API), `docx_parser.py` (контакты преподавателей с Yandex Disk), `deepseek.py`.
 - `db/` — `sqlite/models.py`, `sqlite/repositories.py`, `subscribers.py`.
 - `utils/` — `miniapp_auth.py` (initData HMAC, сессии тестеров), `storage.py` (атомарная запись JSON), `doc_generator.py` (.docx решений), `mute_parser.py`.
 - `data/` — `birthdays.json` = реестр одногруппников (ФИО, tg_id, ДР) — это и есть база авторизации студентов; `api/miniapp.html`, `api/pulse.js`.
@@ -41,7 +41,7 @@ Telegram-бот и API группы 1-КПД-3: расписание, экзам
 
 - ДЗ: `bot/handlers/user/hw_solver.py` → `push_hw_task`/`schedule_hw_task` (Redis) → `solver` `pop_hw_task` (BLMOVE в processing) → `ack_hw_task`/`nack_hw_task` (LREM по JSON-строке, поэтому задачу нельзя мутировать до LREM).
 - Расписание: `services/schedule_parser.py` (API колледжа + fallback, снапшот в Redis) → `topic_updater.py` редактирует закреп в топике.
-- Посещаемость: `bot/handlers/admin/attendance.py` (опрос) → `services/attendance_manager.py` → `integrations/yandex_docs.py` (запись в таблицу) → `attendance_topic_updater.py`.
+- Посещаемость: `bot/handlers/admin/attendance.py` (опрос) → `services/attendance_manager.py` → `integrations/google_sheets.py` (запись в Google Таблицу) → `attendance_topic_updater.py`.
 - Ачивки: события из хэндлеров/middleware → `services/achievement_events.py` → `achievement_service.award_achievement` → правила в `achievement_rules.py`, каталог в `gamification_registry.py`.
 
 ## Разработка и деплой

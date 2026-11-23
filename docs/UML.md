@@ -13,7 +13,7 @@ Technical specification of the distributed system architecture, end-to-end data 
 3. [End-to-End Flow: Schedule Query & L2 Caching](#3-end-to-end-flow-schedule-query--l2-caching)
 4. [End-to-End Flow: Bell Notifications & Topic Auto-Cleanup](#4-end-to-end-flow-bell-notifications--topic-auto-cleanup)
 5. [End-to-End Flow: Reliable AI Homework Solver Queue](#5-end-to-end-flow-reliable-ai-homework-solver-queue)
-6. [End-to-End Flow: Electronic Attendance Registry (WOPI)](#6-end-to-end-flow-electronic-attendance-registry-wopi)
+6. [End-to-End Flow: Electronic Attendance Registry (Google Sheets & Drive API)](#6-end-to-end-flow-electronic-attendance-registry-google-sheets--drive-api)
 7. [Data Models & Redis Storage Structure](#7-data-models--redis-storage-structure)
 8. [User Interaction Flows & Per-Button Architecture Diagrams](#8-user-interaction-flows--per-button-architecture-diagrams)
    - 8.1. [Command /start & Classmate Onboarding Flow](#81-command-start--classmate-onboarding-flow)
@@ -52,7 +52,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 16.2. [Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation](#162-locust-dual-protocol-load-testing-architecture--morning-peak-simulation)
    - 16.3. [Dual-Tab Mini App & Jaeger Reverse Proxy Architecture](#163-dual-tab-mini-app--jaeger-reverse-proxy-architecture)
 17. [High-Performance Reliability, PII Protection & Gamification Showcase](#17-high-performance-reliability-pii-protection--gamification-showcase)
-   - 17.1. [Telegram Bot Ingress & WOPI L2 Cache Sequence](#171-telegram-bot-ingress--wopi-l2-cache-sequence)
+   - 17.1. [Telegram Bot Ingress & Google Sheets Attendance Sequence](#171-telegram-bot-ingress--google-sheets-attendance-sequence)
    - 17.2. [Classmate Role-Based Whitelist Gate Flowchart](#172-classmate-role-based-whitelist-gate-flowchart)
    - 17.3. [Gamification Progress Bar & Visual Status Architecture](#173-gamification-progress-bar--visual-status-architecture)
    - 17.4. [Decoupled Starosta Unranked, Lightweight Mini App & Path Traversal Security](#174-decoupled-starosta-unranked-lightweight-mini-app--path-traversal-security)
@@ -131,12 +131,12 @@ classDiagram
         +solve_task(task_data) void
     }
 
-    class WopiAttendanceService {
-        +init_session(admin_id) str
-        +check_file_info(file_id, token) dict
-        +get_file(file_id, token) bytes
-        +put_file(file_id, content, token) bool
-        +check_session_ownership(session, user_id) bool
+    class GoogleSheetsAttendanceService {
+        +fetch_students_from_google(target_date) list
+        +write_lesson_marks(sheet_name, lesson_col, marks) void
+        +write_student_mark(sheet_name, row, col, mark) void
+        +export_attendance_xlsx() bytes
+        +download_workbook() Workbook
     }
 
     class BirthdayService {
@@ -197,10 +197,10 @@ classDiagram
         +generate_solution(prompt) str
     }
 
-    class YandexOfficeProvider {
-        +open_web_editor(token) html
-        +read_disk_xlsx(path) bytes
-        +write_disk_xlsx(path, data) bool
+    class GoogleCloudWorkspaceProvider {
+        +spreadsheets_values_batchUpdate() dict
+        +files_export_media(mime_type) bytes
+        +get_access_token() str
     }
 
     class AudioTranscriberService {
@@ -241,7 +241,7 @@ classDiagram
     VoiceTranscribeHandler --> AudioTranscriberService : offloads async speech recognition
     TelegramGateway --> ScheduleApiService : HTTP GET schedule
     TelegramGateway --> RedisStateManager : LPUSH HW queue
-    TelegramGateway --> WopiAttendanceService : POST init session
+    TelegramGateway --> GoogleSheetsAttendanceService : records marks & exports xlsx
     TopicWorkerService --> ScheduleApiService : query today schedule
     TopicWorkerService --> RedisStateManager : verify flags and ZSET
     TopicWorkerService --> TelegramGateway : publish bell reminders
@@ -249,18 +249,17 @@ classDiagram
     NotifierService --> ScheduleApiService : fetch daily schedule for broadcasts
     ScheduleApiService --> RedisStateManager : L2 snapshot cache
     ScheduleApiService --> DocxParserService : singleflight contact sync (30s cooldown)
-    DocxParserService --> YandexOfficeProvider : public disk download
     ScheduleApiService ..> KTMUProvider : parse upstream on cache miss
     HomeworkSolverService --> RedisStateManager : BLMOVE HW queue
     HomeworkSolverService --> DeepSeekProvider : generate step solution
     HomeworkSolverService --> TelegramGateway : send docx to student
-    WopiAttendanceService --> RedisStateManager : token validation
-    WopiAttendanceService --> YandexOfficeProvider : spreadsheet sync
+    GoogleSheetsAttendanceService --> RedisStateManager : session & roster cache
+    GoogleSheetsAttendanceService --> GoogleCloudWorkspaceProvider : batchUpdate & export
 ```
 
 ### Architectural Principles
 
-1. **Decoupled Ingress & Asynchronous Queuing**: The Telegram Gateway never blocks on compute-heavy tasks or document rendering. Inbound student homework is atomically placed onto Redis queues (`LPUSH`) and acknowledged instantly. Attendance commit to Yandex Documents runs asynchronously via background worker tasks (`_async_commit_and_update`), immediately returning interactive feedback to group admins.
+1. **Decoupled Ingress & Asynchronous Queuing**: The Telegram Gateway never blocks on compute-heavy tasks or document rendering. Inbound student homework is atomically placed onto Redis queues (`LPUSH`) and acknowledged instantly. Attendance commit to Google Sheets runs via atomic batch updates (`spreadsheets.values.batchUpdate`) with OAuth2 Service Account authentication.
 2. **Network Resilience & Connection Pooling**: Telegram API outbound calls operate over a persistent `AiohttpSession` pool (concurrency limit 50, keepalive), protected by `RetryAfterMiddleware` to transparently handle flood control (HTTP 429 / TelegramRetryAfter).
 3. **Thundering Herd & Click Debounce Protection**: `CallbackThrottleMiddleware` intercepts rapid clicks on inline-buttons (cooldown 1.0–4.0s). `DocxParserService` applies `asyncio.Lock` singleflight synchronization and a 30s forced-refresh guard, completely eliminating parallel cache stampedes to Yandex Disk.
 4. **Multi-Tier L2 Snapshot Caching**: The Schedule API isolates upstream college infrastructure by serving pre-computed, group-filtered timetable snapshots directly from Redis memory in `<2ms`.
@@ -709,9 +708,9 @@ classDiagram
 
 ---
 
-## 6. End-to-End Flow: Electronic Attendance Registry (WOPI)
+## 6. End-to-End Flow: Electronic Attendance Registry (Google Sheets & Drive API)
 
-Data flow bridging the group administrator, Telegram Bot, FastAPI backend, and Yandex Documents cloud office via the WOPI standard.
+Data flow bridging the group administrator, Telegram Bot, FastAPI backend, and Google Cloud Workspace (Google Sheets API v4 and Google Drive API v3) via Service Account OAuth2 credentials.
 
 ```mermaid
 classDiagram
@@ -729,28 +728,28 @@ classDiagram
         +check_session_ownership(user_id) bool
     }
 
-    class WopiController {
-        +init_attendance(group, date, period) str
-        +check_file_info(file_id, access_token) dict
-        +get_file(file_id, access_token) bytes
-        +put_file(file_id, access_token, body) dict
+    class GoogleSheetsIntegration {
+        +get_access_token() str
+        +export_attendance_xlsx() bytes
+        +download_workbook() Workbook
+        +fetch_students_from_google(target_date) list
+        +write_lesson_marks(sheet_name, lesson_col, marks) void
+        +write_student_mark(sheet_name, row, col, mark) void
     }
 
     class RedisCacheManager {
         +save_attendance_session(id, data, ttl) void
         +get_attendance_session(id) dict
-        +mark_attendance_committed(group, date, period) void
+        +cache_attendance_students(date, list) void
     }
 
-    class YandexDiskClient {
-        +download_file(remote_path) bytes
-        +upload_file(remote_path, content) bool
+    class GoogleDriveClient {
+        +export_file(file_id, mime_type) bytes
     }
 
-    class YandexDocsEditor {
-        +CheckFileInfo(access_token) dict
-        +GetFile(access_token) bytes
-        +PutFile(access_token, content) bool
+    class GoogleSheetsAPIClient {
+        +batchUpdate_values(sheet_id, data) dict
+        +get_values(sheet_id, range) list
     }
 
     class AttendanceStatsService {
@@ -768,41 +767,24 @@ classDiagram
         +attendance_topic_sync_loop() void
     }
 
-    class ZenCookieSyncUtility {
-        +get_target_doc_url() str
-        +find_zen_cookies_db() Path
-        +extract_raw_yandex_cookies(db_path) dict
-        +refresh_yandex_session(cookies, target_url) dict
-        +build_cookie_header(cookies) str
-        +verify_yandex_cookie(cookie_hdr, test_url) bool
-        +update_env_file(env_path, cookie_hdr) void
-        +send_cookie_to_remote_env(cookie_hdr, host, remote_dir) void
-        +send_api_urls_to_remote_env(api_url, host, remote_dir) void
-        +update_remote_redis_and_restart(cookie_hdr, host, remote_dir) void
-        +sync_cookies(host) bool
-    }
-
-    WopiController --> RedisCacheManager : session token validation
-    WopiController --> YandexDiskClient : reads and writes xlsx
-    WopiController ..> AttendanceSession : parses session context
-    YandexDocsEditor --> WopiController : WOPI REST protocol
+    GoogleSheetsIntegration --> RedisCacheManager : session & student roster caching
+    GoogleSheetsIntegration --> GoogleDriveClient : exports full .xlsx binary via Drive API v3
+    GoogleSheetsIntegration --> GoogleSheetsAPIClient : atomic batchUpdate cell writes via Sheets API v4
+    GoogleSheetsIntegration ..> AttendanceSession : parses session context
     AttendanceTopicUpdater --> AttendanceStatsService : requests aggregated metrics
     AttendanceTopicUpdater --> RedisCacheManager : caches snapshot and acquires redis_lock
-    AttendanceStatsService --> YandexDiskClient : downloads workbook sheets
-    ZenCookieSyncUtility --> RedisCacheManager : updates yandex session cookie
-    ZenCookieSyncUtility --> YandexDiskClient : validates auth via client-config
-    ZenCookieSyncUtility ..> WopiController : provisions YANDEX_COOKIE in .env
+    AttendanceStatsService --> GoogleSheetsIntegration : downloads workbook sheets via Drive API
 ```
 
 
-### WOPI Session Lifecycle & All-Time Registry
+### Google Sheets Session Lifecycle & All-Time Registry
 
-1. **Session Provisioning**: When the admin clicks "Mark Attendance", the bot issues a secure access token and creates a session in Redis `att:session:{id}` with a 1-hour TTL.
-2. **Cloud Office Interaction**: Yandex Documents connects to the backend:
-   - `CheckFileInfo`: verifies write permissions, user identity, and spreadsheet metadata;
-   - `GetFile`: streams the binary `.xlsx` spreadsheet loaded from Yandex Disk;
-   - `PutFile`: receives and updates the modified spreadsheet directly back to Yandex Disk storage.
-3. **Instant Optimistic UI & Non-Blocking Commit**: Upon completing attendance input in the Telegram UI, `apply_session_optimistic_update` immediately adjusts student metrics in Redis and updates the Telegram Topic message within ~1s. An asynchronous task (`_async_commit_and_update`) persists records to the Yandex Table, followed by a delayed 15s settling pass.
+1. **Session Provisioning**: When the admin clicks "Mark Attendance", the bot initiates an attendance session in Redis `att:session:{id}` with a 1-hour TTL.
+2. **Cloud Office Interaction (Google Sheets & Drive API)**:
+   - `Google Sheets API v4 (spreadsheets.values.batchUpdate)`: writes lesson attendance marks in atomic batch operations (`USER_ENTERED`) without manual cell-by-cell locking;
+   - `Google Drive API v3 (files.export)`: provides instant on-demand binary export of the complete `.xlsx` workbook with all historical sheets, conditional formatting, and formulas for the group headman (`/admin`);
+   - `Service Account Authentication`: Google OAuth2 credentials authenticated via `google-auth` token refreshes, eliminating captcha, session expiration, and browser cookies.
+3. **Instant Optimistic UI & Non-Blocking Commit**: Upon completing attendance input in the Telegram UI, `apply_session_optimistic_update` immediately adjusts student metrics in Redis and updates the Telegram Topic message within ~1s. An asynchronous task (`_async_commit_and_update`) persists records to Google Sheets via `write_lesson_marks`, followed by cache synchronization.
 4. **All-Time Multi-Month Tally**: `AttendanceStatsService` scans all historical monthly sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`...), aggregates cumulative counts (`П`, `О`, `У`, `Н`) for each student, and stores the structured result in Redis (`att:stats:all_time`) with a 1-hour TTL. Excused absences (`У`) are considered legitimate and do not lower the academic percentage.
 5. **Academic Leagues Dashboard (Thread ID 7025)**: `AttendanceTopicUpdater` maintains an idempotent pinned message in the dedicated Telegram Topic containing the full group ranking divided into 3 Academic Leagues (Gold 90-100%, Silver 60-89%, Risk Zone <60%), clean single-line rows without line-wrapping, and progress bars. Late arrivals are formatted as `N оп` to eliminate optical confusion with the number 10. Background sync adapts between 3 min (daytime 08-19) and 15 min (night).
 6. **Student Self-Service (`/my_attendance`)**: Students can check their private cumulative record and percentage of attendance in PM without group disclosure.
@@ -901,8 +883,8 @@ Comprehensive registry of all Redis keys, data structures, expiration policies, 
 | `hw:tasks:processing` | List | Indefinite | `hw:tasks:queue` (via `BLMOVE`) | Homework Solver: in-flight task isolation. Purged via `LREM` upon delivery |
 | `topic:cleanup_messages` | Sorted Set (ZSET) | Dynamic | Topic Service on alert dispatch | Topic Service: scheduled message collector purged every 60s past 15 min |
 | `rem:sent:{group}:{date}:{period}:{type}` | String (flag) | 2 hours | Topic Service before alert dispatch | Bell alert deduplication guard preventing repeats across worker restarts |
-| `att:session:{session_id}` | String (JSON) | 1 hour | Backend on headman action | Yandex Documents: ephemeral token validation following WOPI standard |
-| `att:committed:{group}:{date}:{period}` | String (flag) | 24 hours | WOPI controller on save | Bot & Worker: confirmation flag that attendance was marked for the lesson |
+| `att:session:{session_id}` | String (JSON) | 1 hour | Bot on headman action | Bot & Service: active survey session state and temporary marks |
+| `att:committed:{group}:{date}:{period}` | String (flag) | 24 hours | AttendanceManager on save | Bot & Worker: confirmation flag that attendance was marked for the lesson |
 | `topic:schedule_msg_id:{group}` | String (int) | Indefinite | Bot on initial timetable post | Topic Service: pinned main schedule message ID updated in-place |
 | `api:testers:whitelist` | Set (Strings) | Indefinite | Bot / Admin (`/add_tester`) | MiniApp Auth Router: O(1) membership check for authorized Swagger UI testers |
 
@@ -1429,8 +1411,9 @@ classDiagram
         +trigger_instant_topic_update(session) void
     }
 
-    class WopiCloudOfficeClient {
-        +commit_marks_to_excel_async(session) void
+    class GoogleSheetsClient {
+        +write_lesson_marks(sheet_name, lesson_col, marks) void
+        +write_student_mark(sheet_name, row, col, mark) void
     }
 
     class PartnerNotificationDispatcher {
@@ -1448,7 +1431,7 @@ classDiagram
     AttendanceWorkflowHandler --> AttendanceStepKeyboard : displays student cards or 2-per-row student roster
     TelegramGateway --> AttendanceWorkflowHandler : clicks mark button П, О, У, Н or single student status
     AttendanceWorkflowHandler --> OptimisticTopicUpdater : immediately updates attendance topic in 1s
-    AttendanceWorkflowHandler --> WopiCloudOfficeClient : triggers background async WOPI PUT commit
+    AttendanceWorkflowHandler --> GoogleSheetsClient : triggers background async batchUpdate commit
     AttendanceWorkflowHandler --> PartnerNotificationDispatcher : asynchronously notifies peer administrator
     PartnerNotificationDispatcher --> TelegramGateway : sends direct DM with detailed stats or cancellation
 ```
@@ -1460,7 +1443,7 @@ classDiagram
    - **Mode A (Full Sequential Survey)**: Each student is presented sequentially with status buttons: `🟢 П` (Present), `🟡 О` (Late), `🔵 У` (Excused), `🔴 Н` (Unexcused), plus `⬅️ Назад` (Undo) and `💾 Завершить` (Submit).
    - **Mode B (Single Student Targeted Edit)**: Displays an alphabetical roster of students 2-per-row with their current status tags (styled like the admin achievements panel). Selecting a student opens their mark selection card (`П`, `О`, `У`, `Н`, `Очистить`) allowing instant modification without restarting the entire group survey.
 3. **1-Second Optimistic Topic Update**: When the headman submits a survey or changes a single student's status, `apply_session_optimistic_update` adjusts student statistics in Redis memory and refreshes the pinned Topic message within ~1 second.
-4. **Asynchronous Cloud Commit**: `_commit_single_attendance_background` or `_async_commit_and_update` executes a background task to write records into the remote Excel workbook on Yandex Disk via WOPI without blocking the Telegram bot.
+4. **Asynchronous Cloud Commit**: `_commit_single_attendance_background` or `_async_commit_and_update` executes a background task to write records into the remote Google Spreadsheet via `write_lesson_marks` (Sheets API v4 batchUpdate) without blocking the Telegram bot.
 5. **Mutual Headman & Deputy Statistics Notification**: Upon completing the survey, altering an individual mark, or cancelling a lesson, `notify_partner_about_attendance` or `notify_partner_about_single_update` asynchronously dispatches a comprehensive update directly to the peer administrator's direct messages.
 
 ---
@@ -2464,9 +2447,9 @@ sequenceDiagram
 
 ### 10.2. High-Performance Attendance Caching & Thread-Offloading Flow
 
-Architecture flow showing the mitigation of WOPI network latency and Excel parsing Event Loop blocking:
-- Student roster is cached in Redis (`att:cached_students`) for 24 hours, reducing headman session startup from 3–7 seconds to 10–20 ms.
-- Synchronous CPU-intensive 12-sheet Excel parsing (`parse_workbook_attendance`) is offloaded via `asyncio.to_thread`, keeping the async event loop responsive.
+Architecture flow showing attendance caching and Excel parsing Event Loop offloading:
+- Student roster is cached in Redis (`att:cached_students`) for 24 hours, reducing headman session startup from network latency to 10–20 ms.
+- Synchronous CPU-intensive multi-sheet Excel parsing (`parse_workbook_attendance`) is offloaded via `asyncio.to_thread`, keeping the async event loop responsive.
 
 ```mermaid
 sequenceDiagram
@@ -2475,7 +2458,7 @@ sequenceDiagram
     participant Bot as Telegram Bot (para-bot)
     participant AttMgr as AttendanceManager
     participant Redis as Redis Cache (para-redis)
-    participant Wopi as WOPI Client (Yandex Docs)
+    participant GoogleSheets as Google Sheets & Drive API
     participant StatsMgr as AttendanceStats
     participant WorkerThread as asyncio.to_thread (Threadpool)
 
@@ -2487,8 +2470,8 @@ sequenceDiagram
         Note over AttMgr: Zero network roundtrips (~15ms latency)
     else Cache Miss (Cold / Expired)
         Redis-->>AttMgr: null
-        AttMgr->>Wopi: Download raw XLSX & extract students
-        Wopi-->>AttMgr: Excel bytes
+        AttMgr->>GoogleSheets: fetch_students_from_google()
+        GoogleSheets-->>AttMgr: Student names & row numbers
         AttMgr->>Redis: SETEX "att:cached_students" 86400 (24h)
     end
     AttMgr-->>Bot: List[str] students
@@ -2496,8 +2479,8 @@ sequenceDiagram
 
     Headman->>Bot: /my_attendance (Fetch Stats)
     Bot->>StatsMgr: get_all_students_stats()
-    StatsMgr->>Wopi: Download current XLSX
-    Wopi-->>StatsMgr: Excel raw bytes
+    StatsMgr->>GoogleSheets: export_attendance_xlsx() via Drive API
+    GoogleSheets-->>StatsMgr: Excel raw bytes
     Note over StatsMgr,WorkerThread: CPU-bound 12-month sheets traversal
     StatsMgr->>WorkerThread: asyncio.to_thread(parse_workbook_attendance, wb)
     WorkerThread-->>StatsMgr: Parsed Attendance Matrix
@@ -2776,7 +2759,7 @@ classDiagram
         +3. Schedule & Upstream Failover
         +4. Campus Addresses & Locations
         +5. Redis Caching & State
-        +6. Yandex & Attendance
+        +6. Google Sheets & Attendance
         +7. Dual-Protocol API Gateway
         +8. DeepSeek AI Solver
         +9. Whisper Voice STT
@@ -3224,7 +3207,7 @@ sequenceDiagram
 
 ### 17.1. Zero-Latency Event Loop & Resilient Long-Polling Architecture
 
-To eliminate socket drops and event loop blocking, the long-polling timeout is configured to 20 seconds, well within the 45-second client session timeout over SOCKS5 proxy. Expensive operations (WOPI Excel downloads and parsing) are cached in Redis (`gamification:leaderboard:v1`, TTL=300s) with seamless failover to local SQLite snapshots.
+To eliminate socket drops and event loop blocking, the long-polling timeout is configured to 20 seconds, well within the 45-second client session timeout over SOCKS5 proxy. Expensive operations (Google Drive Excel downloads and parsing) are cached in Redis (`gamification:leaderboard:v1`, TTL=300s) with seamless failover to local SQLite snapshots.
 
 ```mermaid
 sequenceDiagram
@@ -3234,7 +3217,7 @@ sequenceDiagram
     participant Redis as ⚡ Redis 7 Cache
     participant SQLite as 🗄️ SQLite WAL Snapshot
     participant Worker as ⚙️ para-worker (Background)
-    participant Yandex as ☁️ Yandex Docs (WOPI)
+    participant Google as ☁️ Google Sheets API v4 / Drive API
 
     Note over Bot: Polling loop: timeout=20s < client_timeout=45s (Zero drops)
     User->>Bot: /leaderboard or /profile
@@ -3257,9 +3240,9 @@ sequenceDiagram
     deactivate Bot
 
     Note over Worker: Background async loop maintains fresh cache
-    Worker->>Yandex: WOPI Download & Parse Workbook (1MB)
+    Worker->>Google: export_attendance_xlsx() via Drive API (1MB)
     activate Worker
-    Yandex-->>Worker: Updated attendance workbook
+    Google-->>Worker: Updated attendance workbook
     Worker->>SQLite: AttendanceRepository.save_daily_snapshots()
     Worker->>Redis: cache_set("att:stats:all_time", ...)
     Worker->>Redis: cache_set("gamification:leaderboard:v1", ...)

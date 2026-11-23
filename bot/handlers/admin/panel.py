@@ -7,13 +7,20 @@
 """
 
 import html
+from datetime import datetime
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 from bot.filters.auth import AuthFilter
 from bot.templates.admin.keyboards import get_admin_main_kb
@@ -21,7 +28,7 @@ from core.api_client import fetch_day_schedule, fetch_teachers
 from core.logger import get_logger
 from core.redis_cache import init_redis
 from db.subscribers import load_subscribers
-from integrations.yandex_docs import get_effective_yandex_cookie
+from integrations.google_sheets import export_attendance_xlsx
 from services.attendance_topic_updater import (
     load_attendance_topic_state,
     recreate_attendance_topic_message,
@@ -185,18 +192,14 @@ async def _collect_health_summary() -> str:
     """
     Собирает диагностические метрики всех компонентов и сервисов системы.
 
-    Проверяет память Redis, контакты преподавателей, реестр группы и сессию Яндекса.
+    Проверяет память Redis, контакты преподавателей, реестр группы и статус Google Таблицы.
     Формирует структурированный сводный блок текста для панели управления.
 
     Возвращает строку с метриками компонентов.
     """
-
     subs_cnt, class_cnt = len(load_subscribers()), len(load_classmates_registry())
     res_t = await fetch_teachers(force_refresh=False)
-    has_cookie = bool(await get_effective_yandex_cookie())
     redis_mem = await _get_redis_memory_stat()
-
-    cookie_badge = "✅ Активна" if has_cookie else "⚠️ Отсутствует"
     att_id = load_attendance_topic_state()
     att_badge = f"✅ MSG #{att_id}" if att_id else "⚠️ Не создан"
 
@@ -206,7 +209,7 @@ async def _collect_health_summary() -> str:
         f"• <b>Преподаватели:</b> <code>{res_t.get('count', 0)}</code> контактов\n"
         f"• <b>Одногруппники:</b> <code>{class_cnt}</code> в реестре\n"
         f"• <b>Подписчики ЛС:</b> <code>{subs_cnt}</code> чел.\n"
-        f"• <b>Сессия Яндекс:</b> {cookie_badge}\n"
+        f"• <b>Google Таблица:</b> ✅ Подключена\n"
         f"• <b>Топик посещаемости:</b> {att_badge}"
     )
 
@@ -225,6 +228,30 @@ async def cb_admin_status(callback: CallbackQuery) -> None:
     note = await _collect_health_summary()
     await _safe_edit_admin_message(callback.message, format_admin_panel_text(note), get_admin_main_kb())
     await _ack_admin_callback(callback)
+
+
+@router.callback_query(F.data == "admin:download_attendance_xlsx")
+async def cb_download_attendance_xlsx(callback: CallbackQuery) -> None:
+    """
+    Экспортирует и отправляет старосте файл журнала посещаемости в .xlsx.
+
+    Загружает актуальную версию из Google Drive API и отправляет документом.
+    """
+    await _ack_admin_callback(callback, "⏳ Экспортирую журнал из Google Таблицы...")
+    try:
+        data = await export_attendance_xlsx()
+        date_str = datetime.now().strftime("%d.%m.%Y")
+        doc = BufferedInputFile(data, filename=f"Журнал_посещаемости_1-КПД-3_{date_str}.xlsx")
+        if callback.message:
+            await callback.message.answer_document(
+                doc,
+                caption=f"📑 <b>Журнал посещаемости 1-КПД-3</b>\n📅 Дата: <code>{date_str}</code>",
+            )
+        log.info("✅ Журнал посещаемости отправлен старосте (%s байт)", len(data))
+    except Exception as e:
+        log.error("Ошибка экспорта журнала: %s", e)
+        if callback.message:
+            await callback.message.answer(f"❌ <b>Ошибка при выгрузке:</b> <code>{e}</code>")
 
 
 @router.callback_query(F.data == "admin:force_topic")
@@ -408,16 +435,8 @@ async def cb_admin_delete_teacher(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("admin:edit_t:"))
 async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> None:
-    """
-    Запускает сценарий FSM для редактирования ссылки встречи преподавателя.
-
-    Загружает текущую информацию о преподавателе и переводит стейт на ввод ссылки.
-    Отображает подсказку с текущим ФИО преподавателя.
-
-    Ничего не возвращает.
-    """
-
-    last_name = callback.data.split(":")[-1]
+    """Запускает FSM редактирования ссылки встречи преподавателя."""
+    last_name = (callback.data or "").split(":")[-1]
     custom = load_custom_teachers()
     t_info = custom.get(last_name, {})
     full_name = t_info.get("full_name", last_name.capitalize())
@@ -484,15 +503,7 @@ async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> Non
 
 @router.message(AddTeacherState.waiting_for_link_info, F.chat.type == "private")
 async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None:
-    """
-    Сохраняет преподавателя в пользовательский реестр и сбрасывает стейт FSM.
-
-    Автоматически определяет ключ по фамилии, форсирует обновление кэша.
-    Отправляет подтверждение старосте с возвратом в главную панель.
-
-    Ничего не возвращает.
-    """
-
+    """Сохраняет преподавателя в реестр и сбрасывает стейт FSM."""
     data = await state.get_data()
     full_name = data.get("full_name", "")
     link_info = message.text.strip() if message.text else ""
@@ -536,15 +547,7 @@ def _build_unbound_students_kb() -> InlineKeyboardMarkup:
 
 @router.callback_query(F.data == "admin:bind_student")
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None:
-    """
-    Отображает интерактивный список студентов группы для привязки Telegram ID.
-
-    Проверяет реестр на наполненность и выдает предупреждение при пустом списке.
-    Отрисовывает кнопки с индикаторами привязки каждого студента.
-
-    Ничего не возвращает.
-    """
-
+    """Отображает интерактивный список студентов группы для привязки Telegram ID."""
     registry = load_classmates_registry()
     if not registry:
         text = "👥 <b>Привязка Telegram ID</b>\n\n⚠️ <i>Реестр студентов пуст.</i>"
@@ -593,29 +596,18 @@ async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) ->
 
 @router.message(BindStudentState.waiting_for_tg_id, F.chat.type == "private")
 async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None:
-    """
-    Фиксирует Telegram ID студента в реестре одногруппников и сбрасывает FSM.
-
-    Валидирует числовой формат Telegram ID перед сохранением в постоянную базу.
-    При успехе авторизует доступ студента ко всем закрытым сервисам группы.
-
-    Ничего не возвращает.
-    """
-
+    """Фиксирует Telegram ID студента в реестре одногруппников и сбрасывает FSM."""
     raw_id = (message.text or "").strip()
     if not raw_id.isdigit():
         await message.answer("⚠️ Ошибка: Telegram ID должен состоять только из цифр. Повторите ввод:")
         return
-
     data = await state.get_data()
     fio = data.get("student_name", "")
-
     updated = await bind_student_tg_id(fio, int(raw_id))
     await state.clear()
     if not updated:
         text = f"❌ Не удалось привязать ID для {html.escape(fio)}: студент не найден или ID уже занят."
         await message.answer(text, reply_markup=get_admin_main_kb())
         return
-
     text = f"🎉 <b>Студент авторизован!</b>\n👤 {html.escape(fio)}\n🆔 <code>{raw_id}</code>\n<i>Доступ открыт.</i>"
     await message.answer(text, reply_markup=get_admin_main_kb())

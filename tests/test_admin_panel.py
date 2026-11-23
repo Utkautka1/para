@@ -16,11 +16,11 @@ import pytest
 from bot.handlers.admin.panel import (
     _build_custom_teachers_view,
     cb_admin_list_custom,
+    cb_download_attendance_xlsx,
 )
 from bot.handlers.admin.panel import (
     router as panel_router,
 )
-from integrations.yandex_docs import extract_client_config
 
 
 def test_build_custom_teachers_view_empty() -> None:
@@ -78,8 +78,15 @@ def test_routers_have_no_sync_handlers() -> None:
                 )
 
 
-def test_extract_client_config_auth_redirect() -> None:
-    """Проверяет информативное исключение при истекшей сессии Яндекс Паспорта."""
-    html_sample = "<html><head><title>Авторизация</title></head><body>passport.yandex.ru</body></html>"
-    with pytest.raises(ValueError, match="Сессия Яндекс Документов истекла"):
-        extract_client_config(html_sample)
+@pytest.mark.asyncio
+async def test_cb_download_attendance_xlsx() -> None:
+    """Проверяет отправку документа .xlsx при нажатии кнопки выгрузки журнала."""
+    cb = AsyncMock()
+    cb.message = AsyncMock()
+    with patch(
+        "bot.handlers.admin.panel.export_attendance_xlsx", new_callable=AsyncMock, return_value=b"PK\x03\x04test"
+    ):
+        await cb_download_attendance_xlsx(cb)
+        cb.message.answer_document.assert_awaited_once()
+        args, _kwargs = cb.message.answer_document.call_args
+        assert "Журнал_посещаемости" in args[0].filename

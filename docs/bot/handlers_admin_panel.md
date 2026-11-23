@@ -10,31 +10,32 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L51–L67 | `None` | Мгновенно подтверждает callback в админ-панели с обрабо... |
-| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L70–L92 | `None` | Безопасно обновляет сообщение админки, перехватывая 'no... |
-| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L95–L114 | `str` | Формирует приветственный HTML-текст главной панели упра... |
-| [`cb_admin_menu`](#cb_admin_menu) | Function | L119–L137 | `None` | Отображает главную панель управления старосты с инлайн-... |
-| [`cb_admin_sync`](#cb_admin_sync) | Function | L141–L160 | `None` | Принудительно скачивает расписание КТМУ и таблицу препо... |
-| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L163–L181 | `str` | Безопасно извлекает объем используемой оперативной памя... |
-| [`_collect_health_summary`](#_collect_health_summary) | Function | L184–L211 | `str` | Собирает диагностические метрики всех компонентов и сер... |
-| [`cb_admin_status`](#cb_admin_status) | Function | L215–L227 | `None` | Отображает подробный дашборд состояния компонентов и се... |
-| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L231–L245 | `None` | Принудительно публикует или обновляет сообщение расписа... |
-| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L249–L264 | `None` | Удаляет старое сообщение топика и создает новое с фикса... |
-| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L268–L283 | `None` | Принудительно обновляет сообщение сессии и экзаменов в ... |
-| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L287–L302 | `None` | Удаляет закрепленное сообщение экзаменов и создает ново... |
-| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L306–L321 | `None` | Принудительно обновляет сводный реестр посещаемости в т... |
-| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L325–L340 | `None` | Удаляет старое сообщение реестра и создает новое в топи... |
-| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L343–L367 | `tuple[str, list]` | Формирует текст списка кастомных преподавателей и ряды ... |
-| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L371–L387 | `None` | Отображает список кастомных преподавателей с кнопками д... |
-| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L391–L406 | `None` | Удаляет запись преподавателя из пользовательского реест... |
-| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L410–L435 | `None` | Запускает сценарий FSM для редактирования ссылки встреч... |
-| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L439–L459 | `None` | Инициирует пошаговый диалог FSM для добавления нового п... |
-| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L463–L482 | `None` | Принимает ФИО преподавателя и переключает FSM на ожидан... |
-| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L486–L511 | `None` | Сохраняет преподавателя в пользовательский реестр и сбр... |
-| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L514–L534 | `InlineKeyboardMarkup` | Формирует клавиатуру со списком студентов группы для пр... |
-| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L538–L565 | `None` | Отображает интерактивный список студентов группы для пр... |
-| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L569–L591 | `None` | Запрашивает числовой Telegram ID для выбранного из реес... |
-| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L595–L621 | `None` | Фиксирует Telegram ID студента в реестре одногруппников... |
+| [`_ack_admin_callback`](#_ack_admin_callback) | Function | L58–L74 | `None` | Мгновенно подтверждает callback в админ-панели с обрабо... |
+| [`_safe_edit_admin_message`](#_safe_edit_admin_message) | Function | L77–L99 | `None` | Безопасно обновляет сообщение админки, перехватывая 'no... |
+| [`format_admin_panel_text`](#format_admin_panel_text) | Function | L102–L121 | `str` | Формирует приветственный HTML-текст главной панели упра... |
+| [`cb_admin_menu`](#cb_admin_menu) | Function | L126–L144 | `None` | Отображает главную панель управления старосты с инлайн-... |
+| [`cb_admin_sync`](#cb_admin_sync) | Function | L148–L167 | `None` | Принудительно скачивает расписание КТМУ и таблицу препо... |
+| [`_get_redis_memory_stat`](#_get_redis_memory_stat) | Function | L170–L188 | `str` | Безопасно извлекает объем используемой оперативной памя... |
+| [`_collect_health_summary`](#_collect_health_summary) | Function | L191–L214 | `str` | Собирает диагностические метрики всех компонентов и сер... |
+| [`cb_admin_status`](#cb_admin_status) | Function | L218–L230 | `None` | Отображает подробный дашборд состояния компонентов и се... |
+| [`cb_download_attendance_xlsx`](#cb_download_attendance_xlsx) | Function | L234–L254 | `None` | Экспортирует и отправляет старосте файл журнала посещае... |
+| [`cb_admin_force_topic`](#cb_admin_force_topic) | Function | L258–L272 | `None` | Принудительно публикует или обновляет сообщение расписа... |
+| [`cb_admin_recreate_topic`](#cb_admin_recreate_topic) | Function | L276–L291 | `None` | Удаляет старое сообщение топика и создает новое с фикса... |
+| [`cb_admin_force_exam`](#cb_admin_force_exam) | Function | L295–L310 | `None` | Принудительно обновляет сообщение сессии и экзаменов в ... |
+| [`cb_admin_recreate_exam`](#cb_admin_recreate_exam) | Function | L314–L329 | `None` | Удаляет закрепленное сообщение экзаменов и создает ново... |
+| [`cb_admin_force_att_topic`](#cb_admin_force_att_topic) | Function | L333–L348 | `None` | Принудительно обновляет сводный реестр посещаемости в т... |
+| [`cb_admin_recreate_att_topic`](#cb_admin_recreate_att_topic) | Function | L352–L367 | `None` | Удаляет старое сообщение реестра и создает новое в топи... |
+| [`_build_custom_teachers_view`](#_build_custom_teachers_view) | Function | L370–L394 | `tuple[str, list]` | Формирует текст списка кастомных преподавателей и ряды ... |
+| [`cb_admin_list_custom`](#cb_admin_list_custom) | Function | L398–L414 | `None` | Отображает список кастомных преподавателей с кнопками д... |
+| [`cb_admin_delete_teacher`](#cb_admin_delete_teacher) | Function | L418–L433 | `None` | Удаляет запись преподавателя из пользовательского реест... |
+| [`cb_admin_edit_teacher`](#cb_admin_edit_teacher) | Function | L437–L454 | `None` | Запускает FSM редактирования ссылки встречи преподавате... |
+| [`cb_admin_start_add_teacher`](#cb_admin_start_add_teacher) | Function | L458–L478 | `None` | Инициирует пошаговый диалог FSM для добавления нового п... |
+| [`msg_admin_got_teacher_name`](#msg_admin_got_teacher_name) | Function | L482–L501 | `None` | Принимает ФИО преподавателя и переключает FSM на ожидан... |
+| [`msg_admin_got_teacher_link`](#msg_admin_got_teacher_link) | Function | L505–L522 | `None` | Сохраняет преподавателя в реестр и сбрасывает стейт FSM... |
+| [`_build_unbound_students_kb`](#_build_unbound_students_kb) | Function | L525–L545 | `InlineKeyboardMarkup` | Формирует клавиатуру со списком студентов группы для пр... |
+| [`cb_admin_list_students_for_binding`](#cb_admin_list_students_for_binding) | Function | L549–L568 | `None` | Отображает интерактивный список студентов группы для пр... |
+| [`cb_admin_select_student`](#cb_admin_select_student) | Function | L572–L594 | `None` | Запрашивает числовой Telegram ID для выбранного из реес... |
+| [`msg_admin_got_student_id`](#msg_admin_got_student_id) | Function | L598–L613 | `None` | Фиксирует Telegram ID студента в реестре одногруппников... |
 
 ---
 
@@ -53,7 +54,7 @@
 async def _ack_admin_callback(callback: CallbackQuery, text: str | None = None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L51-L67`](../../bot/handlers/admin/panel.py#L51-L67)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L58-L74`](../../bot/handlers/admin/panel.py#L58-L74)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -87,7 +88,7 @@ result = await _ack_admin_callback(callback=..., text=...)
 async def _safe_edit_admin_message( message: Message | None, text: str, reply_markup: InlineKeyboardMarkup | None = None ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L70-L92`](../../bot/handlers/admin/panel.py#L70-L92)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L77-L99`](../../bot/handlers/admin/panel.py#L77-L99)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -122,7 +123,7 @@ result = await _safe_edit_admin_message(message=..., text=..., reply_markup=...)
 def format_admin_panel_text(status_note: str = "") -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L95-L114`](../../bot/handlers/admin/panel.py#L95-L114)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L102-L121`](../../bot/handlers/admin/panel.py#L102-L121)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -155,7 +156,7 @@ result = format_admin_panel_text(status_note=...)
 async def cb_admin_menu(event: Message | CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L119-L137`](../../bot/handlers/admin/panel.py#L119-L137)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L126-L144`](../../bot/handlers/admin/panel.py#L126-L144)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -188,7 +189,7 @@ result = await cb_admin_menu(event=...)
 async def cb_admin_sync(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L141-L160`](../../bot/handlers/admin/panel.py#L141-L160)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L148-L167`](../../bot/handlers/admin/panel.py#L148-L167)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -221,7 +222,7 @@ result = await cb_admin_sync(callback=...)
 async def _get_redis_memory_stat() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L163-L181`](../../bot/handlers/admin/panel.py#L163-L181)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L170-L188`](../../bot/handlers/admin/panel.py#L170-L188)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -252,7 +253,7 @@ result = await _get_redis_memory_stat()
 async def _collect_health_summary() -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L184-L211`](../../bot/handlers/admin/panel.py#L184-L211)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L191-L214`](../../bot/handlers/admin/panel.py#L191-L214)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -283,7 +284,7 @@ result = await _collect_health_summary()
 async def cb_admin_status(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L215-L227`](../../bot/handlers/admin/panel.py#L215-L227)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L218-L230`](../../bot/handlers/admin/panel.py#L218-L230)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -311,12 +312,45 @@ result = await cb_admin_status(callback=...)
 
 ---
 
+### `cb_download_attendance_xlsx`
+```python
+async def cb_download_attendance_xlsx(callback: CallbackQuery) -> None
+```
+
+- **Source Reference**: [`bot/handlers/admin/panel.py#L234-L254`](../../bot/handlers/admin/panel.py#L234-L254)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Экспортирует и отправляет старосте файл журнала посещаемости в .xlsx.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `callback` | `CallbackQuery` | Yes | Parameter `callback` of type `CallbackQuery`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.admin.panel import cb_download_attendance_xlsx
+
+# Execute call
+result = await cb_download_attendance_xlsx(callback=...)
+```
+
+---
+
 ### `cb_admin_force_topic`
 ```python
 async def cb_admin_force_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L231-L245`](../../bot/handlers/admin/panel.py#L231-L245)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L258-L272`](../../bot/handlers/admin/panel.py#L258-L272)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -349,7 +383,7 @@ result = await cb_admin_force_topic(callback=...)
 async def cb_admin_recreate_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L249-L264`](../../bot/handlers/admin/panel.py#L249-L264)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L276-L291`](../../bot/handlers/admin/panel.py#L276-L291)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -382,7 +416,7 @@ result = await cb_admin_recreate_topic(callback=...)
 async def cb_admin_force_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L268-L283`](../../bot/handlers/admin/panel.py#L268-L283)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L295-L310`](../../bot/handlers/admin/panel.py#L295-L310)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -415,7 +449,7 @@ result = await cb_admin_force_exam(callback=...)
 async def cb_admin_recreate_exam(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L287-L302`](../../bot/handlers/admin/panel.py#L287-L302)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L314-L329`](../../bot/handlers/admin/panel.py#L314-L329)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -448,7 +482,7 @@ result = await cb_admin_recreate_exam(callback=...)
 async def cb_admin_force_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L306-L321`](../../bot/handlers/admin/panel.py#L306-L321)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L333-L348`](../../bot/handlers/admin/panel.py#L333-L348)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -481,7 +515,7 @@ result = await cb_admin_force_att_topic(callback=...)
 async def cb_admin_recreate_att_topic(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L325-L340`](../../bot/handlers/admin/panel.py#L325-L340)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L352-L367`](../../bot/handlers/admin/panel.py#L352-L367)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -514,7 +548,7 @@ result = await cb_admin_recreate_att_topic(callback=...)
 def _build_custom_teachers_view(custom: dict) -> tuple[str, list]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L343-L367`](../../bot/handlers/admin/panel.py#L343-L367)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L370-L394`](../../bot/handlers/admin/panel.py#L370-L394)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, list]`
 
@@ -547,7 +581,7 @@ result = _build_custom_teachers_view(custom=...)
 async def cb_admin_list_custom(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L371-L387`](../../bot/handlers/admin/panel.py#L371-L387)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L398-L414`](../../bot/handlers/admin/panel.py#L398-L414)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -580,7 +614,7 @@ result = await cb_admin_list_custom(callback=...)
 async def cb_admin_delete_teacher(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L391-L406`](../../bot/handlers/admin/panel.py#L391-L406)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L418-L433`](../../bot/handlers/admin/panel.py#L418-L433)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -613,12 +647,12 @@ result = await cb_admin_delete_teacher(callback=...)
 async def cb_admin_edit_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L410-L435`](../../bot/handlers/admin/panel.py#L410-L435)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L437-L454`](../../bot/handlers/admin/panel.py#L437-L454)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Запускает сценарий FSM для редактирования ссылки встречи преподавателя.
+Запускает FSM редактирования ссылки встречи преподавателя.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -647,7 +681,7 @@ result = await cb_admin_edit_teacher(callback=..., state=...)
 async def cb_admin_start_add_teacher(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L439-L459`](../../bot/handlers/admin/panel.py#L439-L459)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L458-L478`](../../bot/handlers/admin/panel.py#L458-L478)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -681,7 +715,7 @@ result = await cb_admin_start_add_teacher(callback=..., state=...)
 async def msg_admin_got_teacher_name(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L463-L482`](../../bot/handlers/admin/panel.py#L463-L482)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L482-L501`](../../bot/handlers/admin/panel.py#L482-L501)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -715,12 +749,12 @@ result = await msg_admin_got_teacher_name(message=..., state=...)
 async def msg_admin_got_teacher_link(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L486-L511`](../../bot/handlers/admin/panel.py#L486-L511)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L505-L522`](../../bot/handlers/admin/panel.py#L505-L522)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Сохраняет преподавателя в пользовательский реестр и сбрасывает стейт FSM.
+Сохраняет преподавателя в реестр и сбрасывает стейт FSM.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -749,7 +783,7 @@ result = await msg_admin_got_teacher_link(message=..., state=...)
 def _build_unbound_students_kb() -> InlineKeyboardMarkup
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L514-L534`](../../bot/handlers/admin/panel.py#L514-L534)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L525-L545`](../../bot/handlers/admin/panel.py#L525-L545)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `InlineKeyboardMarkup`
 
@@ -780,7 +814,7 @@ result = _build_unbound_students_kb()
 async def cb_admin_list_students_for_binding(callback: CallbackQuery) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L538-L565`](../../bot/handlers/admin/panel.py#L538-L565)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L549-L568`](../../bot/handlers/admin/panel.py#L549-L568)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -813,7 +847,7 @@ result = await cb_admin_list_students_for_binding(callback=...)
 async def cb_admin_select_student(callback: CallbackQuery, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L569-L591`](../../bot/handlers/admin/panel.py#L569-L591)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L572-L594`](../../bot/handlers/admin/panel.py#L572-L594)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -847,7 +881,7 @@ result = await cb_admin_select_student(callback=..., state=...)
 async def msg_admin_got_student_id(message: Message, state: FSMContext) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/panel.py#L595-L621`](../../bot/handlers/admin/panel.py#L595-L621)
+- **Source Reference**: [`bot/handlers/admin/panel.py#L598-L613`](../../bot/handlers/admin/panel.py#L598-L613)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

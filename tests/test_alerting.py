@@ -76,9 +76,9 @@ async def test_send_admin_alert_success(tmp_path: Path) -> None:
         mock_send = AsyncMock()
         with patch("services.alerting.bot.send_message", mock_send):
             ok = await send_admin_alert(
-                incident_type=IncidentType.YANDEX_COOKIE_EXPIRED,
-                title="Yandex Cookie Dead",
-                description="Needs renewal",
+                incident_type=IncidentType.GOOGLE_SHEETS_ERROR,
+                title="Google Sheets Error",
+                description="Needs attention",
             )
             assert ok is True
             mock_send.assert_awaited_once()

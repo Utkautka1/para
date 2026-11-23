@@ -732,8 +732,8 @@ jobs:
       - name: "Run Voice Transcription Tests"
         run: cp .env.ci .env && PYTHONPATH=. pytest tests/test_voice_transcribe.py -v
 
-  unit-test-yandex-wopi-sync:
-    name: "🧪 Unit: Yandex Disk WOPI Cookie Keepalive & Sync"
+  unit-test-google-sheets:
+    name: "🧪 Unit: Google Sheets & Drive API Integration"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repository"
@@ -747,8 +747,8 @@ jobs:
           cache: "pip"
       - name: "Install Dependencies"
         run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: "Run Yandex Sync Tests"
-        run: cp .env.ci .env && PYTHONPATH=. pytest tests/test_sync_yandex_cookie.py tests/test_yandex_keepalive.py -v
+      - name: "Run Google Sheets Tests"
+        run: cp .env.ci .env && PYTHONPATH=. pytest tests/test_google_sheets.py -v
 
   # =========================================================================
   # 6. Full Test Matrix & Coverage (Jobs 38-39)
@@ -1191,7 +1191,7 @@ jobs:
       - unit-test-observability-jaeger
       - unit-test-grpc-services
       - unit-test-voice-transcription
-      - unit-test-yandex-wopi-sync
+      - unit-test-google-sheets
       - matrix-test-python-311
       - matrix-test-python-312
       - docker-compose-validate

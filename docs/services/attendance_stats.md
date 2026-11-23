@@ -10,28 +10,28 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_init_student_stat`](#_init_student_stat) | Function | L39–L52 | `dict[str, Any]` | Инициализирует базовую структуру счетчиков посещаемости... |
-| [`_count_row_marks`](#_count_row_marks) | Function | L55–L72 | `dict[str, int]` | Подсчитывает отметки посещаемости студента в строке кон... |
-| [`_process_student_row`](#_process_student_row) | Function | L75–L95 | `None` | Извлекает и суммирует отметки одного студента из конкре... |
-| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L98–L109 | `None` | Обрабатывает один лист месяца и накапливает отметки в о... |
-| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L112–L128 | `dict[str, dict[str, Any]]` | Извлекает отметки всех студентов по всем месяцам из кни... |
-| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L131–L147 | `dict[str, dict[str, Any]] \| None` | Считывает закэшированную сквозную статистику посещаемос... |
-| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L150–L164 | `None` | Сохраняет структуру статистики в Redis с настроенным вр... |
-| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L167–L178 | `None` | Принудительно инвалидирует кэш сквозной статистики и ли... |
-| [`_build_snapshot_record`](#_build_snapshot_record) | Function | L181–L195 | `dict[str, Any]` | Формирует нормализованную запись посещаемости для сохра... |
-| [`_save_sqlite_snapshot`](#_save_sqlite_snapshot) | Function | L198–L210 | `None` | Сохраняет срез посещаемости в SQLite и локальный дисков... |
-| [`_extract_snapshot_dict`](#_extract_snapshot_dict) | Function | L213–L225 | `dict[str, dict[str, Any]]` | Преобразует объекты AttendanceSnapshot в словарь сквозн... |
-| [`_load_sqlite_snapshot`](#_load_sqlite_snapshot) | Function | L228–L242 | `dict[str, dict[str, Any]] \| None` | Восстанавливает срез посещаемости из локального кэша ил... |
-| [`_download_and_cache_fresh_stats`](#_download_and_cache_fresh_stats) | Function | L248–L261 | `dict[str, dict[str, Any]]` | Загружает актуальный XLSX-файл из Яндекса и кэширует в ... |
-| [`_trigger_background_attendance_refresh`](#_trigger_background_attendance_refresh) | Function | L264–L276 | `None` | Запускает обновление посещаемости в фоновом режиме без ... |
-| [`_fetch_with_sync_lock`](#_fetch_with_sync_lock) | Function | L279–L292 | `dict[str, dict[str, Any]]` | Синхронизированная загрузка актуальной посещаемости с з... |
-| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L295–L309 | `dict[str, dict[str, Any]]` | Возвращает сквозную статистику посещаемости по стратеги... |
-| [`find_student_attendance`](#find_student_attendance) | Function | L312–L332 | `dict[str, Any] \| None` | Находит статистику студента по точному или частичному с... |
-| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L335–L348 | `None` | Корректирует счетчики студента с учетом замены старой о... |
-| [`get_saved_lesson_marks`](#get_saved_lesson_marks) | Function | L351–L365 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
-| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L371–L380 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL д... |
-| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L383–L404 | `dict[str, str]` | Применяет новые отметки студентов из интерактивной сесс... |
-| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L407–L422 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе от... |
+| [`_init_student_stat`](#_init_student_stat) | Function | L38–L51 | `dict[str, Any]` | Инициализирует базовую структуру счетчиков посещаемости... |
+| [`_count_row_marks`](#_count_row_marks) | Function | L54–L71 | `dict[str, int]` | Подсчитывает отметки посещаемости студента в строке кон... |
+| [`_process_student_row`](#_process_student_row) | Function | L74–L94 | `None` | Извлекает и суммирует отметки одного студента из конкре... |
+| [`_aggregate_sheet_stats`](#_aggregate_sheet_stats) | Function | L97–L108 | `None` | Обрабатывает один лист месяца и накапливает отметки в о... |
+| [`parse_workbook_attendance`](#parse_workbook_attendance) | Function | L111–L127 | `dict[str, dict[str, Any]]` | Извлекает отметки всех студентов по всем месяцам из кни... |
+| [`_load_from_redis_cache`](#_load_from_redis_cache) | Function | L130–L146 | `dict[str, dict[str, Any]] \| None` | Считывает закэшированную сквозную статистику посещаемос... |
+| [`_save_to_redis_cache`](#_save_to_redis_cache) | Function | L149–L163 | `None` | Сохраняет структуру статистики в Redis с настроенным вр... |
+| [`invalidate_attendance_stats_cache`](#invalidate_attendance_stats_cache) | Function | L166–L177 | `None` | Принудительно инвалидирует кэш сквозной статистики и ли... |
+| [`_build_snapshot_record`](#_build_snapshot_record) | Function | L180–L194 | `dict[str, Any]` | Формирует нормализованную запись посещаемости для сохра... |
+| [`_save_sqlite_snapshot`](#_save_sqlite_snapshot) | Function | L197–L209 | `None` | Сохраняет срез посещаемости в SQLite и локальный дисков... |
+| [`_extract_snapshot_dict`](#_extract_snapshot_dict) | Function | L212–L224 | `dict[str, dict[str, Any]]` | Преобразует объекты AttendanceSnapshot в словарь сквозн... |
+| [`_load_sqlite_snapshot`](#_load_sqlite_snapshot) | Function | L227–L241 | `dict[str, dict[str, Any]] \| None` | Восстанавливает срез посещаемости из локального кэша ил... |
+| [`_download_and_cache_fresh_stats`](#_download_and_cache_fresh_stats) | Function | L247–L259 | `dict[str, dict[str, Any]]` | Загружает актуальный XLSX-файл из Google Таблицы и кэши... |
+| [`_trigger_background_attendance_refresh`](#_trigger_background_attendance_refresh) | Function | L262–L274 | `None` | Запускает обновление посещаемости в фоновом режиме без ... |
+| [`_fetch_with_sync_lock`](#_fetch_with_sync_lock) | Function | L277–L290 | `dict[str, dict[str, Any]]` | Синхронизированная загрузка актуальной посещаемости с з... |
+| [`fetch_all_time_attendance`](#fetch_all_time_attendance) | Function | L293–L307 | `dict[str, dict[str, Any]]` | Возвращает сквозную статистику посещаемости по стратеги... |
+| [`find_student_attendance`](#find_student_attendance) | Function | L310–L330 | `dict[str, Any] \| None` | Находит статистику студента по точному или частичному с... |
+| [`_adjust_student_counts`](#_adjust_student_counts) | Function | L333–L346 | `None` | Корректирует счетчики студента с учетом замены старой о... |
+| [`get_saved_lesson_marks`](#get_saved_lesson_marks) | Function | L349–L363 | `dict[str, str]` | Считывает ранее сохраненный срез отметок пары из Redis. |
+| [`_save_lesson_marks`](#_save_lesson_marks) | Function | L369–L378 | `None` | Сохраняет срез отметок пары в Redis с настроенным TTL д... |
+| [`_update_session_marks_in_stats`](#_update_session_marks_in_stats) | Function | L381–L402 | `dict[str, str]` | Применяет новые отметки студентов из интерактивной сесс... |
+| [`apply_session_optimistic_update`](#apply_session_optimistic_update) | Function | L405–L420 | `dict[str, dict[str, Any]]` | Мгновенно обновляет кэш статистики в Redis на основе от... |
 
 ---
 
@@ -42,7 +42,7 @@
 def _init_student_stat(fio: str) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L39-L52`](../../services/attendance_stats.py#L39-L52)
+- **Source Reference**: [`services/attendance_stats.py#L38-L51`](../../services/attendance_stats.py#L38-L51)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -75,7 +75,7 @@ result = _init_student_stat(fio=...)
 def _count_row_marks(sheet: Worksheet, row: int, mc: int) -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L55-L72`](../../services/attendance_stats.py#L55-L72)
+- **Source Reference**: [`services/attendance_stats.py#L54-L71`](../../services/attendance_stats.py#L54-L71)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 
@@ -110,7 +110,7 @@ result = _count_row_marks(sheet=..., row=..., mc=...)
 def _process_student_row(sheet: Worksheet, r: int, mc: int, s_name: str, stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L75-L95`](../../services/attendance_stats.py#L75-L95)
+- **Source Reference**: [`services/attendance_stats.py#L74-L94`](../../services/attendance_stats.py#L74-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -147,7 +147,7 @@ result = _process_student_row(sheet=..., r=..., mc=...)
 def _aggregate_sheet_stats(sheet: Worksheet, s_name: str, stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L98-L109`](../../services/attendance_stats.py#L98-L109)
+- **Source Reference**: [`services/attendance_stats.py#L97-L108`](../../services/attendance_stats.py#L97-L108)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -182,7 +182,7 @@ result = _aggregate_sheet_stats(sheet=..., s_name=..., stats=...)
 def parse_workbook_attendance(wb: openpyxl.Workbook) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L112-L128`](../../services/attendance_stats.py#L112-L128)
+- **Source Reference**: [`services/attendance_stats.py#L111-L127`](../../services/attendance_stats.py#L111-L127)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -215,7 +215,7 @@ result = parse_workbook_attendance(wb=...)
 async def _load_from_redis_cache() -> dict[str, dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L131-L147`](../../services/attendance_stats.py#L131-L147)
+- **Source Reference**: [`services/attendance_stats.py#L130-L146`](../../services/attendance_stats.py#L130-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]] | None`
 
@@ -246,7 +246,7 @@ result = await _load_from_redis_cache()
 async def _save_to_redis_cache(stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L150-L164`](../../services/attendance_stats.py#L150-L164)
+- **Source Reference**: [`services/attendance_stats.py#L149-L163`](../../services/attendance_stats.py#L149-L163)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -279,7 +279,7 @@ result = await _save_to_redis_cache(stats=...)
 async def invalidate_attendance_stats_cache() -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L167-L178`](../../services/attendance_stats.py#L167-L178)
+- **Source Reference**: [`services/attendance_stats.py#L166-L177`](../../services/attendance_stats.py#L166-L177)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -310,7 +310,7 @@ result = await invalidate_attendance_stats_cache()
 def _build_snapshot_record(name: str, data: dict[str, Any]) -> dict[str, Any]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L181-L195`](../../services/attendance_stats.py#L181-L195)
+- **Source Reference**: [`services/attendance_stats.py#L180-L194`](../../services/attendance_stats.py#L180-L194)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any]`
 
@@ -344,7 +344,7 @@ result = _build_snapshot_record(name=..., data=...)
 async def _save_sqlite_snapshot(stats: dict[str, dict[str, Any]]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L198-L210`](../../services/attendance_stats.py#L198-L210)
+- **Source Reference**: [`services/attendance_stats.py#L197-L209`](../../services/attendance_stats.py#L197-L209)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -377,7 +377,7 @@ result = await _save_sqlite_snapshot(stats=...)
 def _extract_snapshot_dict(snapshots: list[Any]) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L213-L225`](../../services/attendance_stats.py#L213-L225)
+- **Source Reference**: [`services/attendance_stats.py#L212-L224`](../../services/attendance_stats.py#L212-L224)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -410,7 +410,7 @@ result = _extract_snapshot_dict(snapshots=...)
 async def _load_sqlite_snapshot() -> dict[str, dict[str, Any]] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L228-L242`](../../services/attendance_stats.py#L228-L242)
+- **Source Reference**: [`services/attendance_stats.py#L227-L241`](../../services/attendance_stats.py#L227-L241)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]] | None`
 
@@ -441,12 +441,12 @@ result = await _load_sqlite_snapshot()
 async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L248-L261`](../../services/attendance_stats.py#L248-L261)
+- **Source Reference**: [`services/attendance_stats.py#L247-L259`](../../services/attendance_stats.py#L247-L259)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
 #### Overview & Architectural Purpose
-Загружает актуальный XLSX-файл из Яндекса и кэширует в Redis и SQLite.
+Загружает актуальный XLSX-файл из Google Таблицы и кэширует в Redis и SQLite.
 
 #### Parameters Contract
 *This method takes no input parameters.*
@@ -472,7 +472,7 @@ result = await _download_and_cache_fresh_stats()
 async def _trigger_background_attendance_refresh() -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L264-L276`](../../services/attendance_stats.py#L264-L276)
+- **Source Reference**: [`services/attendance_stats.py#L262-L274`](../../services/attendance_stats.py#L262-L274)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -503,7 +503,7 @@ result = await _trigger_background_attendance_refresh()
 async def _fetch_with_sync_lock(force_refresh: bool) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L279-L292`](../../services/attendance_stats.py#L279-L292)
+- **Source Reference**: [`services/attendance_stats.py#L277-L290`](../../services/attendance_stats.py#L277-L290)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -536,7 +536,7 @@ result = await _fetch_with_sync_lock(force_refresh=...)
 async def fetch_all_time_attendance(force_refresh: bool = False) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L295-L309`](../../services/attendance_stats.py#L295-L309)
+- **Source Reference**: [`services/attendance_stats.py#L293-L307`](../../services/attendance_stats.py#L293-L307)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 
@@ -569,7 +569,7 @@ result = await fetch_all_time_attendance(force_refresh=...)
 def find_student_attendance(stats: dict[str, dict[str, Any]], target_name: str) -> dict[str, Any] | None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L312-L332`](../../services/attendance_stats.py#L312-L332)
+- **Source Reference**: [`services/attendance_stats.py#L310-L330`](../../services/attendance_stats.py#L310-L330)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, Any] | None`
 
@@ -603,7 +603,7 @@ result = find_student_attendance(stats=..., target_name=...)
 def _adjust_student_counts(stat: dict[str, Any], old_mark: str | None, new_mark: str) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L335-L348`](../../services/attendance_stats.py#L335-L348)
+- **Source Reference**: [`services/attendance_stats.py#L333-L346`](../../services/attendance_stats.py#L333-L346)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -638,7 +638,7 @@ result = _adjust_student_counts(stat=..., old_mark=..., new_mark=...)
 async def get_saved_lesson_marks(t_date: str, l_num: int) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L351-L365`](../../services/attendance_stats.py#L351-L365)
+- **Source Reference**: [`services/attendance_stats.py#L349-L363`](../../services/attendance_stats.py#L349-L363)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, str]`
 
@@ -672,7 +672,7 @@ result = await get_saved_lesson_marks(t_date=..., l_num=...)
 async def _save_lesson_marks(t_date: str, l_num: int, marks: dict[str, str]) -> None
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L371-L380`](../../services/attendance_stats.py#L371-L380)
+- **Source Reference**: [`services/attendance_stats.py#L369-L378`](../../services/attendance_stats.py#L369-L378)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -707,7 +707,7 @@ result = await _save_lesson_marks(t_date=..., l_num=..., marks=...)
 def _update_session_marks_in_stats( session: Any, saved_marks: dict[str, str], stats: dict[str, dict[str, Any]] ) -> dict[str, str]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L383-L404`](../../services/attendance_stats.py#L383-L404)
+- **Source Reference**: [`services/attendance_stats.py#L381-L402`](../../services/attendance_stats.py#L381-L402)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, str]`
 
@@ -742,7 +742,7 @@ result = _update_session_marks_in_stats(session=..., saved_marks=..., stats=...)
 async def apply_session_optimistic_update(session: Any) -> dict[str, dict[str, Any]]
 ```
 
-- **Source Reference**: [`services/attendance_stats.py#L407-L422`](../../services/attendance_stats.py#L407-L422)
+- **Source Reference**: [`services/attendance_stats.py#L405-L420`](../../services/attendance_stats.py#L405-L420)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `dict[str, dict[str, Any]]`
 

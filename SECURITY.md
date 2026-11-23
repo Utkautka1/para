@@ -41,7 +41,7 @@ This repository enforces defense-in-depth principles across all subsystems:
 - **Network Isolation**: Docker containers communicate solely over internal bridge networks with zero host port exposure on `0.0.0.0`.
 - **Secret Isolation & Config Centralization**: All credentials, tokens, and sync constants are strictly injected via `.env` with type-safe validation in `config.py`. Zero secrets are stored in Git, and `.env.example` templates are strictly sanitized to prevent sensitive network topology leakage.
 - **Zero-Trust Upstream API Failover**: Upstream schedule endpoints (primary and fallback mirrors) are treated as untrusted boundaries with strict 10-second per-endpoint timeout budgets and structured exception containment to prevent denial-of-service cascading failures.
-- **Ephemeral Session Token Hygiene**: Session cookies (`yandexuid`, `Session_id`) extracted via automated sync utilities are strictly injected into Redis memory caches with dynamic TTL expiry. Session tokens are never committed to version control.
+- **Service Account Credential Hygiene**: Google Service Account credentials (`data/google_service_account.json`) are strictly file-permission restricted (`chmod 600`), excluded from version control via `.gitignore`, and support memory injection via `GOOGLE_SERVICE_ACCOUNT_JSON`.
 - **Unauthenticated Ingress Trapping**: Unauthorized bot interactions (`bot/handlers/user/auth_fallback.py`) are strictly intercepted and logged as structured security events, blocking unauthorized access to headman workflows and private group operations.
 - **Ephemeral RAM-Disk Media Isolation (`/dev/shm`)**: Audio and video notes ingested for STT transcription are strictly buffered into `/dev/shm` in-memory tmpfs with atomic unlinking in `finally` blocks, preventing persistent physical SSD wear and ensuring zero-trace media destruction.
 - **Audio Concurrency & Rate Limiting Guard**: Voice processing enforces per-user concurrency constraints (`MAX_CONCURRENT_PER_USER=2`) and strict duration (`MAX_AUDIO_DURATION=300s`) and file size (`MAX_AUDIO_SIZE=20MB`) ceilings to neutralize denial-of-service and memory exhaustion attacks.
@@ -54,7 +54,7 @@ To minimize attack surface and credential exposure windows, all production secre
 
 | Secret / Credential | Rotation Cadence | Rotation Procedure | Immediate Revocation Action |
 | :--- | :--- | :--- | :--- |
-| **Yandex Cookies (`Session_id`, `sessar`)** | Automated (12-24h) | Executed via `scripts/sync_yandex_cookie.py` with direct Redis cache update. | Invalidate via Yandex Passport active sessions console; re-run `sync_yandex_cookie.py`. |
+| **Google Service Account Key** | Annual (365 days) | Generate new key in Google Cloud IAM -> deploy to `data/google_service_account.json` (chmod 600). | Revoke service account key in Google Cloud Console. |
 | **DeepSeek API Key** | Quarterly (90 days) | Generate new key in DeepSeek Console -> update `.env` on host -> `docker compose restart solver`. | Revoke key in DeepSeek dashboard; replace with emergency backup key. |
 | **Telegram Bot Token** | Semi-annually (180 days) | Request new token from `@BotFather` -> update `.env` -> `docker compose restart bot api`. | Revoke immediately in `@BotFather` `/revoke` command. |
 | **Internal `API_SECRET_KEY`** | Annual (365 days) | Generate 32-byte cryptographically secure random token (`openssl rand -hex 32`) -> update `.env` across all services. | Replace `.env` and execute zero-downtime rolling restart of `api`, `bot`, `worker`, `solver`. |

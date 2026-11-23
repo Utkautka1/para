@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from itertools import pairwise
 from typing import Any
 
-from integrations.yandex_docs import MONTH_SHEET_MAP
+from integrations.google_sheets import MONTH_SHEET_MAP
 from services.gamification_registry import ACHIEVEMENTS_MAP
 
 # Учебный год начинается в сентябре — порядок нужен для «камбэка» (месяц за месяцем)

@@ -25,14 +25,15 @@ from bot.templates.admin.attendance import (
     get_student_poll_kb,
 )
 from config import ALLOWED_USER_ID, DEPUTY_USER_ID
-from integrations.yandex_docs import (
-    extract_client_config,
+from integrations.google_sheets import (
+    col_to_letter,
     find_date_column_start,
     find_lesson_column,
+    find_lesson_column_in_grid,
     find_student_row,
     get_month_sheet,
+    get_month_sheet_name,
     get_students_list,
-    get_yandex_cookie_header,
     normalize_fio,
     parse_date_cell,
     write_student_mark,
@@ -66,29 +67,25 @@ def create_mock_workbook() -> openpyxl.Workbook:
     return wb
 
 
-def test_get_yandex_cookie_header_variants():
-    """Проверяет формирование заголовка Cookie из YANDEX_COOKIE или YANDEX_SESSION_ID."""
-    with patch("config.YANDEX_COOKIE", "foo=bar; baz=qux"), patch("config.YANDEX_SESSION_ID", "123"):
-        assert get_yandex_cookie_header() == "foo=bar; baz=qux"
-
-    with patch("config.YANDEX_COOKIE", ""), patch("config.YANDEX_SESSION_ID", "3:123456"):
-        assert get_yandex_cookie_header() == "Session_id=3:123456"
-
-    with patch("config.YANDEX_COOKIE", ""), patch("config.YANDEX_SESSION_ID", ""):
-        assert get_yandex_cookie_header() == ""
+def test_col_to_letter_conversion():
+    """Проверяет преобразование числовых индексов колонок в буквы A1."""
+    assert col_to_letter(1) == "A"
+    assert col_to_letter(2) == "B"
+    assert col_to_letter(26) == "Z"
+    assert col_to_letter(27) == "AA"
+    assert col_to_letter(28) == "AB"
 
 
-def test_extract_client_config_success():
-    """Проверяет успешное извлечение JSON конфигурации из HTML."""
-    html = '<html><script id="client-config">{"officeActionData": {"rights": ["write"]}}</script></html>'
-    cfg = extract_client_config(html)
-    assert cfg["officeActionData"]["rights"] == ["write"]
+def test_get_month_sheet_name_mapping():
+    """Проверяет сопоставление номеров месяцев с названиями вкладок."""
+    assert get_month_sheet_name(date(2026, 9, 1)) == "СЕНТ"
+    assert get_month_sheet_name(date(2026, 11, 23)) == "НОЯБ"
+    with pytest.raises(ValueError, match="Неизвестный месяц"):
 
+        class FakeDate:
+            month = 13
 
-def test_extract_client_config_missing():
-    """Проверяет выброс исключения при отсутствии тега client-config."""
-    with pytest.raises(ValueError, match="не найден"):
-        extract_client_config("<html><body>No config</body></html>")
+        get_month_sheet_name(FakeDate())  # type: ignore[arg-type]
 
 
 def test_get_month_sheet():
@@ -450,88 +447,30 @@ def test_ensure_summary_headers():
     assert ws.cell(3, 9).value == "Н"
 
 
-def test_find_sheet_rid():
-    """Проверяет извлечение r:id листа из workbook.xml даже с xmlns атрибутами."""
-    from integrations.yandex_docs import _find_sheet_rid
-
-    xml = (
-        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        '<sheets><sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
-        'name="СЕНТ" sheetId="1" state="visible" r:id="rId1"/></sheets></workbook>'
-    )
-    assert _find_sheet_rid(xml, "СЕНТ") == "rId1"
-    assert _find_sheet_rid(xml, "ОКТ") is None
+def test_find_lesson_column_in_grid():
+    """Проверяет поиск колонки пары в двумерной сетке дат и пар."""
+    dates = ["", "1-КПД-3", "29.09", "", "", "", "", ""]
+    pairs = ["", "", "1", "2", "3", "4", "5", "6"]
+    col = find_lesson_column_in_grid(dates, pairs, date(2026, 9, 29), 2)
+    assert col == 4  # 1-based index (index 3 in list + 1)
+    assert find_lesson_column_in_grid(dates, pairs, date(2026, 9, 29), 9) is None
+    assert find_lesson_column_in_grid(dates, pairs, date(2026, 10, 1), 1) is None
 
 
-def test_resolve_sheet_target_path():
-    """Проверяет корректное разрешение пути листа по r:id с очисткой слэшей."""
-    from integrations.yandex_docs import _resolve_sheet_target_path
+def test_build_batch_data():
+    """Проверяет построение объектов ValueRange для Google Sheets batchUpdate."""
+    from integrations.google_sheets import _build_batch_data
 
-    xml = (
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" Target="/xl/worksheets/sheet1.xml"/>'
-        '<Relationship Id="rId2" Target="worksheets/sheet2.xml"/>'
-        "</Relationships>"
-    )
-    assert _resolve_sheet_target_path(xml, "rId1") == "xl/worksheets/sheet1.xml"
-    assert _resolve_sheet_target_path(xml, "rId2") == "xl/worksheets/sheet2.xml"
-    assert _resolve_sheet_target_path(xml, "rId3") is None
-
-
-def test_cell_has_expected_mark_entities():
-    """Проверяет распознавание отметок с HTML-сущностями и тегами <t> и <v>."""
-    from integrations.yandex_docs import _cell_has_expected_mark
-
-    assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>&#1055;</t></is></c>', "П")
-    assert _cell_has_expected_mark('<c r="D5" t="inlineStr"><is><t>О</t></is></c>', "О")
-    assert _cell_has_expected_mark('<c r="D5"><v>Н</v></c>', "Н")
-    assert not _cell_has_expected_mark('<c r="D5"><v>0</v></c>', "Н")
-    assert not _cell_has_expected_mark('<c r="D5"/>', "П")
-
-
-def test_extract_and_verify_marks_in_raw():
-    """Проверяет извлечение листа и проверку отметок из реального xlsx-архива."""
-    from integrations.yandex_docs import (
-        _extract_sheet_xml,
-        _verify_marks_in_raw,
-        save_workbook_to_bytes,
-    )
-
-    wb = create_mock_workbook()
-    ws = wb["СЕНТ"]
-    ws.cell(5, 4, "П")
-    ws.cell(6, 4, "Н")
-    ws.cell(2, 20, "Опоздавшие")
-    raw = save_workbook_to_bytes(wb)
-    assert _extract_sheet_xml(raw, "СЕНТ") is not None
-    assert _extract_sheet_xml(raw, "ДЕК") is None
-    assert _verify_marks_in_raw(raw, date(2026, 9, 29), {"5": "П", "6": "Н"}) is True
-    assert _verify_marks_in_raw(raw, date(2026, 9, 29), {"5": "О"}) is False
-
-
-@pytest.mark.asyncio
-async def test_verify_upload_with_mock_bytes():
-    """Проверяет асинхронный вызов verify_upload при успешном скачивании байтов."""
-    from integrations.yandex_docs import (
-        WopiSession,
-        save_workbook_to_bytes,
-        verify_upload,
-    )
-
-    wb = create_mock_workbook()
-    ws = wb["СЕНТ"]
-    ws.cell(5, 4, "П")
-    ws.cell(2, 20, "Опоздавшие")
-    raw = save_workbook_to_bytes(wb)
-    session = WopiSession("https://wopi.test/files/1", "token", "lock1")
-    with patch("integrations.yandex_docs._download_raw_bytes", new_callable=AsyncMock, return_value=raw):
-        res = await verify_upload(session, date(2026, 9, 29), 2, {"5": "П"})
-        assert res is True
+    marks = {"5": "П", "6": "Н"}
+    data = _build_batch_data("НОЯБ", "D", marks)
+    assert len(data) == 2
+    assert data[0] == {"range": "'НОЯБ'!D5", "values": [["П"]]}
+    assert data[1] == {"range": "'НОЯБ'!D6", "values": [["Н"]]}
 
 
 @pytest.mark.asyncio
 async def test_try_commit_once_success_handling():
-    """Проверяет успешное сохранение в _try_commit_once при HTTP 200 от WOPI."""
+    """Проверяет успешное сохранение в _try_commit_once через Google Sheets API."""
     from services.attendance_manager import _try_commit_once
 
     session = AttendanceSession(
@@ -542,14 +481,7 @@ async def test_try_commit_once_success_handling():
         marks={"5": "П"},
         initiator_id=123,
     )
-    with (
-        patch("services.attendance_manager.init_wopi_session", new_callable=AsyncMock),
-        patch(
-            "services.attendance_manager.download_workbook", new_callable=AsyncMock, return_value=create_mock_workbook()
-        ),
-        patch("services.attendance_manager.upload_workbook", new_callable=AsyncMock, return_value=True),
-        patch("services.attendance_manager.verify_upload", new_callable=AsyncMock, return_value=True),
-    ):
+    with patch("services.attendance_manager.write_lesson_marks", new_callable=AsyncMock, return_value=True):
         assert await _try_commit_once(session, date(2026, 9, 29)) is True
 
 

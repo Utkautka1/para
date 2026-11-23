@@ -34,6 +34,8 @@ data/*
 !data/bot/.gitkeep
 data/**/*.json
 data/*.json
+*service_account*.json
+quiet-capsule*.json
 *.db
 *.sqlite
 *.tar.gz

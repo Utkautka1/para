@@ -701,8 +701,10 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
     "services/backup_manager.py": {"out": "docs/services/backup_manager.md", "cat": "Automated Backup Engine"},
     "integrations/deepseek.py": {"out": "docs/integrations/deepseek.md", "cat": "DeepSeek LLM Integration"},
     "integrations/docx_parser.py": {"out": "docs/integrations/docx_parser.md", "cat": "Cloud DOCX Parser"},
-    "integrations/yandex_docs.py": {"out": "docs/integrations/yandex_docs.md", "cat": "WOPI Cloud Service"},
-    "integrations/yandex_keepalive.py": {"out": "docs/integrations/yandex_keepalive.md", "cat": "Session Keepalive"},
+    "integrations/google_sheets.py": {
+        "out": "docs/integrations/google_sheets.md",
+        "cat": "Google Sheets Attendance Service",
+    },
     "utils/doc_generator.py": {"out": "docs/utils/doc_generator.md", "cat": "GOST Document Generator"},
     "utils/miniapp_auth.py": {"out": "docs/utils/miniapp_auth.md", "cat": "HMAC-SHA256 Auth"},
     "utils/mute_parser.py": {"out": "docs/utils/mute_parser.md", "cat": "Ban Duration Parser"},
@@ -803,7 +805,6 @@ TARGET_MANIFEST: dict[str, dict[str, str]] = {
         "cat": "Achievement Activity Middleware",
     },
     "scripts/tunnel_sync.py": {"out": "docs/scripts/tunnel_sync.md", "cat": "Cloudflare Tunnel Syncer"},
-    "scripts/sync_yandex_cookie.py": {"out": "docs/scripts/sync_yandex_cookie.md", "cat": "Yandex Cookie Sync"},
     "services/achievement_service.py": {"out": "docs/services/achievement_service.md", "cat": "Achievement Service"},
     "services/schedule_substitutions.py": {
         "out": "docs/services/schedule_substitutions.md",

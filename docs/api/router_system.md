@@ -10,22 +10,56 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_system_info`](#get_system_info) | Function | L29–L60 | `SystemInfoResponse` | Возвращает диагностическую сводку о состоянии сервиса и... |
-| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L63–L70 | `None` | Проверяет безопасность маски для предотвращения сброса ... |
-| [`flush_cache`](#flush_cache) | Function | L74–L82 | `CacheFlushResponse` | Выполняет принудительную очистку ключей Redis по безопа... |
-| [`list_system_incidents`](#list_system_incidents) | Function | L86–L104 | `IncidentListResponse` | Возвращает журнал системных инцидентов и сетевых сбоев ... |
-| [`trigger_system_backup`](#trigger_system_backup) | Function | L108–L114 | `BackupTriggerResponse` | Запускает процесс резервного копирования SQLite и Redis... |
+| [`_collect_system_features`](#_collect_system_features) | Function | L28–L39 | `dict[str, bool]` | Формирует словарь активных возможностей и интеграций си... |
+| [`get_system_info`](#get_system_info) | Function | L43–L62 | `SystemInfoResponse` | Возвращает диагностическую сводку о состоянии сервиса и... |
+| [`_validate_flush_pattern`](#_validate_flush_pattern) | Function | L65–L72 | `None` | Проверяет безопасность маски для предотвращения сброса ... |
+| [`flush_cache`](#flush_cache) | Function | L76–L84 | `CacheFlushResponse` | Выполняет принудительную очистку ключей Redis по безопа... |
+| [`list_system_incidents`](#list_system_incidents) | Function | L88–L106 | `IncidentListResponse` | Возвращает журнал системных инцидентов и сетевых сбоев ... |
+| [`trigger_system_backup`](#trigger_system_backup) | Function | L110–L116 | `BackupTriggerResponse` | Запускает процесс резервного копирования SQLite и Redis... |
 
 ---
 
 ## 3. Comprehensive Function Specifications
+
+### `_collect_system_features`
+```python
+def _collect_system_features(redis_alive: bool) -> dict[str, bool]
+```
+
+- **Source Reference**: [`api/router/system.py#L28-L39`](../../api/router/system.py#L28-L39)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `dict[str, bool]`
+
+#### Overview & Architectural Purpose
+Формирует словарь активных возможностей и интеграций системы.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `redis_alive` | `bool` | Yes | Parameter `redis_alive` of type `bool`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from api.router.system import _collect_system_features
+
+# Execute call
+result = _collect_system_features(redis_alive=...)
+```
+
+---
 
 ### `get_system_info`
 ```python
 async def get_system_info() -> SystemInfoResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L29-L60`](../../api/router/system.py#L29-L60)
+- **Source Reference**: [`api/router/system.py#L43-L62`](../../api/router/system.py#L43-L62)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `SystemInfoResponse`
 
@@ -56,7 +90,7 @@ result = await get_system_info()
 def _validate_flush_pattern(pattern: str) -> None
 ```
 
-- **Source Reference**: [`api/router/system.py#L63-L70`](../../api/router/system.py#L63-L70)
+- **Source Reference**: [`api/router/system.py#L65-L72`](../../api/router/system.py#L65-L72)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -89,7 +123,7 @@ result = _validate_flush_pattern(pattern=...)
 async def flush_cache(payload: CacheFlushRequest) -> CacheFlushResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L74-L82`](../../api/router/system.py#L74-L82)
+- **Source Reference**: [`api/router/system.py#L76-L84`](../../api/router/system.py#L76-L84)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `CacheFlushResponse`
 
@@ -122,7 +156,7 @@ result = await flush_cache(payload=...)
 async def list_system_incidents(limit: int = 50, unresolved_only: bool = False) -> IncidentListResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L86-L104`](../../api/router/system.py#L86-L104)
+- **Source Reference**: [`api/router/system.py#L88-L106`](../../api/router/system.py#L88-L106)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `IncidentListResponse`
 
@@ -156,7 +190,7 @@ result = await list_system_incidents(limit=..., unresolved_only=...)
 async def trigger_system_backup() -> BackupTriggerResponse
 ```
 
-- **Source Reference**: [`api/router/system.py#L108-L114`](../../api/router/system.py#L108-L114)
+- **Source Reference**: [`api/router/system.py#L110-L116`](../../api/router/system.py#L110-L116)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `BackupTriggerResponse`
 

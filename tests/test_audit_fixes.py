@@ -90,7 +90,7 @@ async def test_solver_solve_rate_limit_exceeded() -> None:
 
 @pytest.mark.asyncio
 async def test_fetch_target_students_redis_caching() -> None:
-    """Проверяет быстрое чтение списка студентов из Redis кэша без скачивания WOPI."""
+    """Проверяет быстрое чтение списка студентов из Redis кэша без скачивания таблицы."""
     from datetime import date
 
     from services.attendance_manager import fetch_target_students
@@ -98,7 +98,7 @@ async def test_fetch_target_students_redis_caching() -> None:
     fake_list = [(5, "Иванов И.И."), (6, "Петров П.П.")]
     with (
         patch("services.attendance_manager.get_redis") as mock_r,
-        patch("services.attendance_manager._fetch_students_from_wopi") as mock_wopi,
+        patch("services.attendance_manager._fetch_students_from_google") as mock_google,
     ):
         client_mock = AsyncMock()
         import json
@@ -108,7 +108,7 @@ async def test_fetch_target_students_redis_caching() -> None:
         res = await fetch_target_students(date(2026, 10, 5))
         assert len(res) == 2
         assert res[0] == (5, "Иванов И.И.")
-        mock_wopi.assert_not_called()
+        mock_google.assert_not_called()
 
 
 def _make_fake_lesson():
@@ -203,6 +203,8 @@ async def test_toggle_notify_uses_cached_schedule() -> None:
 
     with (
         patch("bot.handlers.user.schedule.toggle_subscriber", return_value=True),
+        patch("bot.handlers.user.schedule.is_tester_allowed", AsyncMock(return_value=False)),
+        patch("bot.handlers.user.schedule._trigger_notify_achievements"),
         patch(
             "bot.handlers.user.schedule.get_day_schedule_cached", new=AsyncMock(return_value=("текст", []))
         ) as mock_cache,

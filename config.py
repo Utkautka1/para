@@ -17,6 +17,7 @@ from core.config_models import (
     ApiConfig,
     CampusConfig,
     DatabaseConfig,
+    GoogleSheetsConfig,
     NotificationConfig,
     RedisConfig,
     ScheduleConfig,
@@ -308,7 +309,7 @@ _DEFAULT_COOKIES: tuple[str, ...] = (
 
 yandex_config = YandexConfig(
     doc_public_url=get_required_env("YANDEX_DOC_PUBLIC_URL"),
-    attendance_doc_url=get_required_env("ATTENDANCE_DOC_URL"),
+    attendance_doc_url=get_env("ATTENDANCE_DOC_URL", ""),
     sync_day_interval_seconds=get_env_int("ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS", 180),
     sync_night_interval_seconds=get_env_int("ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS", 900),
     session_id=get_env("YANDEX_SESSION_ID", ""),
@@ -329,6 +330,18 @@ REDIS_COOKIE_TTL_SECONDS: int = 5184000  # 60 суток
 YANDEX_KEEPALIVE_INTERVAL_SECONDS: int = yandex_config.keepalive_interval_seconds
 YANDEX_COOKIE_TEST_DOC_URL: str = yandex_config.cookie_test_doc_url
 YANDEX_REQUIRED_COOKIE_NAMES: tuple[str, ...] = yandex_config.required_cookie_names
+
+google_sheets_config = GoogleSheetsConfig(
+    sheet_id=get_env("GOOGLE_SHEET_ID", "1ssjIjrajeCmxWJ9p0l2KVXP0H1wPEMrr8r1fIgHFqvc"),
+    service_account_path=get_env("GOOGLE_SERVICE_ACCOUNT_PATH", "data/google_service_account.json"),
+    service_account_json=get_env("GOOGLE_SERVICE_ACCOUNT_JSON", None),
+    attendance_storage=get_env("ATTENDANCE_STORAGE", "google"),
+)
+
+GOOGLE_SHEET_ID: str = google_sheets_config.sheet_id
+GOOGLE_SERVICE_ACCOUNT_PATH: str = google_sheets_config.service_account_path
+GOOGLE_SERVICE_ACCOUNT_JSON: str | None = google_sheets_config.service_account_json
+ATTENDANCE_STORAGE: str = google_sheets_config.attendance_storage
 
 ATTENDANCE_REDIS_SESSION_KEY: str = "attendance:session"
 ATTENDANCE_SESSION_TTL_SECONDS: int = 7200

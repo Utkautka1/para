@@ -2,7 +2,7 @@
 Сервис агрегации сквозной статистики посещаемости студентов.
 
 Отвечает за:
-  1. Выгрузку и обход всех доступных месяцев (СЕНТ, ОКТ, ...) в таблице Яндекс Документов
+  1. Выгрузку и обход всех доступных месяцев (СЕНТ, ОКТ, ...) в Google Таблице
   2. Подсчёт суммарных отметок (П, О, У, Н) по каждому студенту за всё время
   3. Кэширование агрегированных данных в Redis для мгновенного отклика UI и топика
   4. Формирование персонализированной аналитики для команды /my_attendance
@@ -24,10 +24,9 @@ from config import (
 from core.background import spawn
 from core.logger import get_logger
 from core.redis_cache import cache_flush, cache_get, cache_set
-from integrations.yandex_docs import (
+from integrations.google_sheets import (
     MONTH_SHEET_MAP,
     download_workbook,
-    init_wopi_session,
     normalize_fio,
 )
 
@@ -247,17 +246,16 @@ _FETCH_LOCK = asyncio.Lock()
 
 async def _download_and_cache_fresh_stats() -> dict[str, dict[str, Any]]:
     """
-    Загружает актуальный XLSX-файл из Яндекса и кэширует в Redis и SQLite.
+    Загружает актуальный XLSX-файл из Google Таблицы и кэширует в Redis и SQLite.
 
     Вызывается синхронно при холодном старте или в фоновой задаче Stale-While-Revalidate.
     """
-    wopi = await init_wopi_session()
-    wb = await download_workbook(wopi)
+    wb = await download_workbook()
     fresh_stats = await asyncio.to_thread(parse_workbook_attendance, wb)
     await _save_to_redis_cache(fresh_stats)
     await _save_sqlite_snapshot(fresh_stats)
     await cache_flush("gamification:leaderboard*")
-    log.info("✅ Данные посещаемости обновлены из Яндекс Документов (%s студентов)", len(fresh_stats))
+    log.info("✅ Данные посещаемости обновлены из Google Таблицы (%s студентов)", len(fresh_stats))
     return fresh_stats
 
 

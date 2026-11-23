@@ -16,6 +16,7 @@ from core.config_models import (
     AiSolverConfig,
     ApiConfig,
     CampusConfig,
+    GoogleSheetsConfig,
     NotificationConfig,
     RedisConfig,
     ScheduleConfig,
@@ -59,9 +60,11 @@ def test_campus_and_redis_configs() -> None:
 
 
 def test_yandex_and_api_configs() -> None:
-    """Проверяет конфигурацию WOPI-интеграции Яндекс Документов и шлюза API."""
+    """Проверяет конфигурацию публичных ссылок, Google Sheets и шлюза API."""
     assert isinstance(config.yandex_config, YandexConfig)
     assert config.yandex_config.doc_public_url == config.YANDEX_DOC_PUBLIC_URL
+    assert isinstance(config.google_sheets_config, GoogleSheetsConfig)
+    assert config.google_sheets_config.sheet_id == config.GOOGLE_SHEET_ID
     assert isinstance(config.api_config, ApiConfig)
     assert config.api_config.secret_key == config.API_SECRET_KEY
     assert config.api_config.grpc_port == config.GRPC_PORT

@@ -10,10 +10,11 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`schedule_today_reminders`](#schedule_today_reminders) | Function | L40–L57 | `None` | Планирует напоминания на остаток сегодняшнего дня при с... |
-| [`shutdown_worker`](#shutdown_worker) | Function | L60–L80 | `None` | Освобождает сетевые ресурсы и останавливает шедулер при... |
-| [`_start_worker_loops`](#_start_worker_loops) | Function | L83–L101 | `None` | Запускает параллельные фоновые циклы синхронизации серв... |
-| [`main`](#main) | Function | L104–L132 | `None` | Основная асинхронная точка входа фонового воркера-синхр... |
+| [`schedule_today_reminders`](#schedule_today_reminders) | Function | L39–L56 | `None` | Планирует напоминания на остаток сегодняшнего дня при с... |
+| [`shutdown_worker`](#shutdown_worker) | Function | L59–L79 | `None` | Освобождает сетевые ресурсы и останавливает шедулер при... |
+| [`_start_worker_loops`](#_start_worker_loops) | Function | L82–L99 | `None` | Запускает параллельные фоновые циклы синхронизации серв... |
+| [`_init_worker_subsystems`](#_init_worker_subsystems) | Function | L102–L113 | `None` | Инициализирует базовые подсистемы воркера: телеметрию, ... |
+| [`main`](#main) | Function | L116–L131 | `None` | Основная точка входа фонового воркера-синхронизатора. |
 
 ---
 
@@ -24,7 +25,7 @@
 async def schedule_today_reminders() -> None
 ```
 
-- **Source Reference**: [`worker.py#L40-L57`](../../worker.py#L40-L57)
+- **Source Reference**: [`worker.py#L39-L56`](../../worker.py#L39-L56)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -55,7 +56,7 @@ result = await schedule_today_reminders()
 async def shutdown_worker() -> None
 ```
 
-- **Source Reference**: [`worker.py#L60-L80`](../../worker.py#L60-L80)
+- **Source Reference**: [`worker.py#L59-L79`](../../worker.py#L59-L79)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -86,7 +87,7 @@ result = await shutdown_worker()
 async def _start_worker_loops() -> None
 ```
 
-- **Source Reference**: [`worker.py#L83-L101`](../../worker.py#L83-L101)
+- **Source Reference**: [`worker.py#L82-L99`](../../worker.py#L82-L99)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -112,17 +113,48 @@ result = await _start_worker_loops()
 
 ---
 
+### `_init_worker_subsystems`
+```python
+async def _init_worker_subsystems() -> None
+```
+
+- **Source Reference**: [`worker.py#L102-L113`](../../worker.py#L102-L113)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Инициализирует базовые подсистемы воркера: телеметрию, БД, Redis и задачи.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from worker import _init_worker_subsystems
+
+# Execute call
+result = await _init_worker_subsystems()
+```
+
+---
+
 ### `main`
 ```python
 async def main() -> None
 ```
 
-- **Source Reference**: [`worker.py#L104-L132`](../../worker.py#L104-L132)
+- **Source Reference**: [`worker.py#L116-L131`](../../worker.py#L116-L131)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Основная асинхронная точка входа фонового воркера-синхронизатора.
+Основная точка входа фонового воркера-синхронизатора.
 
 #### Parameters Contract
 *This method takes no input parameters.*

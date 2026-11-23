@@ -93,17 +93,17 @@ class RedisConfig:
 
 @dataclass(frozen=True, slots=True)
 class YandexConfig:
-    """Конфигурация интеграции с Яндекс Документами и журналами посещаемости WOPI."""
+    """Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser)."""
 
     doc_public_url: str
-    attendance_doc_url: str
-    sync_day_interval_seconds: int
-    sync_night_interval_seconds: int
-    session_id: str
-    cookie: str
-    keepalive_interval_seconds: int
-    cookie_test_doc_url: str
-    required_cookie_names: tuple[str, ...]
+    attendance_doc_url: str = ""
+    sync_day_interval_seconds: int = 180
+    sync_night_interval_seconds: int = 900
+    session_id: str = ""
+    cookie: str = ""
+    keepalive_interval_seconds: int = 21600
+    cookie_test_doc_url: str = ""
+    required_cookie_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,3 +208,13 @@ class TracingConfig:
     service_name: str = "para"
     jaeger_ui_url: str = "http://jaeger:16686"
     sampling_ratio: float = 1.0
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleSheetsConfig:
+    """Конфигурация интеграции с Google Sheets & Drive API для журнала посещаемости."""
+
+    sheet_id: str
+    service_account_path: str
+    service_account_json: str | None = None
+    attendance_storage: str = "google"

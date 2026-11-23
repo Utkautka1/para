@@ -20,7 +20,6 @@ from core.bot import bot
 from core.logger import get_logger
 from core.redis import close_redis, init_redis
 from core.telemetry import setup_telemetry
-from integrations.yandex_keepalive import yandex_session_keepalive_loop
 from services.achievement_sync import achievement_sync_loop
 from services.attendance_topic_updater import attendance_topic_sync_loop
 from services.birthday_manager import birthday_sync_loop
@@ -96,21 +95,12 @@ async def _start_worker_loops() -> None:
         exam_topic_sync_loop(),
         attendance_topic_sync_loop(),
         birthday_sync_loop(),
-        yandex_session_keepalive_loop(),
         achievement_sync_loop(bot),
     )
 
 
-async def main() -> None:
-    """
-    Основная асинхронная точка входа фонового воркера-синхронизатора.
-
-    Инициализирует сетевые соединения, планировщик задач и запускает фоновые корутины.
-    В блоке finally гарантированно вызывает процедуру корректной остановки воркера.
-
-    Ничего не возвращает.
-    """
-
+async def _init_worker_subsystems() -> None:
+    """Инициализирует базовые подсистемы воркера: телеметрию, БД, Redis и задачи."""
     log.info("=" * 60)
     log.info("ЗАПУСК Фонового Воркера Расписания (para-worker)")
     log.info("=" * 60)
@@ -122,6 +112,15 @@ async def main() -> None:
     setup_scheduler()
     await schedule_today_reminders()
 
+
+async def main() -> None:
+    """
+    Основная точка входа фонового воркера-синхронизатора.
+
+    Инициализирует подсистемы и запускает фоновые циклы синхронизации.
+    В блоке finally гарантированно останавливает воркер.
+    """
+    await _init_worker_subsystems()
     try:
         await _start_worker_loops()
     except asyncio.CancelledError:
