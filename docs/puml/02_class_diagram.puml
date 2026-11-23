@@ -117,10 +117,10 @@ package "services (Бизнес-логика и парсеры)" <<Rectangle>> {
     +create_solution_docx(task_text, solution_text, output_path) : str
   }
 
-  class WopiSessionManager {
-    +create_attendance_session(group, date, period) : str
-    +get_session_status(session_id) : dict
-    +commit_attendance(session_id, marks_data) : bool
+  class GoogleSheetsAttendanceManager {
+    +fetch_target_students(target_date) : List[Tuple]
+    +write_lesson_marks(sheet_name, col, marks) : void
+    +export_attendance_xlsx() : bytes
   }
 }
 
@@ -145,5 +145,5 @@ TopicUpdater ..> Lesson : отображает в топике
 
 RedisCacheManager --> RedisPool : берет соединение
 
-WopiSessionManager --> RedisCacheManager : хранит состояние сессии
+GoogleSheetsAttendanceManager --> RedisCacheManager : кэширует список студентов
 @enduml

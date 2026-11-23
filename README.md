@@ -6,7 +6,7 @@
 
 ### Enterprise-Grade Academic Operations & Distributed Telegram Ecosystem
 
-*A resilient, dual-protocol distributed system orchestrating real-time schedule dispatching, WOPI collaborative attendance, AI-augmented academic workflow execution, and Telegram Supergroup telemetry.*
+*A resilient, dual-protocol distributed system orchestrating real-time schedule dispatching, Google Sheets collaborative attendance, AI-augmented academic workflow execution, and Telegram Supergroup telemetry.*
 
 <p align="center">
   <img src="docs/assets/typing.svg" alt="Para Telemetry Engine" width="100%"/>
@@ -122,7 +122,7 @@ Most university Telegram bots are written as fragile monolithic scripts prone to
 │                       para-api                         │◄─┘     │  ┌─────────────────────────┐
 │         Dual-Protocol High-Throughput Gateway          │        │  │       para-redis        │
 │ FastAPI (uvloop + httptools) + gRPC HTTP/2 Socket      │        │  │    Redis 7 Container    │
-│ Jaeger Reverse Proxy + WOPI Host + SQLite Client       │        │  │   L2 Cache & AOF Bus    │
+│ Jaeger Reverse Proxy + Google Sheets Host + SQLite Client│        │  │   L2 Cache & AOF Bus    │
 └───────┬───────────────────┬────────────────────┬───────┘        │  │     Distributed FSM     │
         │                   │                    │                │  └────────────┬────────────┘
  Compiled Snapshots    Async SQLAlchemy     OTLP Traces           │               │
@@ -314,7 +314,7 @@ Para complements transient Redis in-memory structures with an enterprise-grade r
   * `SubscriberRepository`: Notification subscriptions and silent-mode toggles with automatic transparent migration from legacy JSON records.
   * `IncidentRepository`: Proactive incident logging and resolution state tracking.
   * `AttendanceRepository`: Historical attendance session snapshots for auditing.
-* **Proactive Incident Alerting Pipeline (`services/alerting.py`)**: When critical events occur (e.g., Circuit Breaker transitions to `OPEN`, Yandex Session cookie expires, or upstream timetable scraping degrades), the incident engine dispatches an immediate structured alert routed by severity to dedicated Debug Forum topics (`DEBUG_CHAT_ID`: `Fatal` #7, `Warning` #5, `Debug` #3) or fallback administrator PM, with distributed Redis cooldown throttling preventing duplicate notifications across containers.
+* **Proactive Incident Alerting Pipeline (`services/alerting.py`)**: When critical events occur (e.g., Circuit Breaker transitions to `OPEN`, Google Sheets API errors occur, or upstream timetable scraping degrades), the incident engine dispatches an immediate structured alert routed by severity to dedicated Debug Forum topics (`DEBUG_CHAT_ID`: `Fatal` #7, `Warning` #5, `Debug` #3) or fallback administrator PM, with distributed Redis cooldown throttling preventing duplicate notifications across containers.
 * **Automated Disaster Recovery Backups (`services/backup_manager.py`)**: APScheduler triggers an automated daily backup at **03:00 MSK**:
   1. Executes online hot SQLite backup (`VACUUM INTO 'data/backup_*.db'`) without locking concurrent reads.
   2. Dumps the latest Redis snapshot (`BGSAVE`).
@@ -342,14 +342,14 @@ Every microservice operates within strict single-digit millisecond or sub-millis
 | **`para-api`** | `GET /health` (Internal Loopback) | **0.85 ms** | **1.20 ms** | `5,000+ req/s` | Sub-millisecond container healthcheck |
 | **`para-bot`** | Telegram Update Dispatch Pipeline| **8.2 ms** | **16.0 ms** | `1,200+ msg/s` | Fast-path middleware routing pipeline |
 | **`para-bot`** | Voice STT Inference (CUDA Turing) | **0.36 s** | **0.91 s** | Real-time | `large-v3-turbo` on GTX 1660 Ti with /dev/shm |
-| **`para-bot`** | Optimistic Attendance Mark Ack | **8.5 ms** | **14.8 ms** | Line-rate | Instant UI response before WOPI settling |
+| **`para-bot`** | Optimistic Attendance Mark Ack | **8.5 ms** | **14.8 ms** | Line-rate | Instant UI response before Google Sheets settling |
 | **`para-bot`** | Anti-Flood Debounce Gate | **250 ms** | **250 ms** | Rate-Limited | Token bucket window drops bursts |
 | **`para-bot`** | FSM State Save (`RedisStorage`) | **0.35 ms** | **0.85 ms** | `2,800+ ops/s` | Non-blocking Redis FSM persistence |
 | **`para-worker`**| Live Schedule Topic Forum Edit | **95 ms** | **145 ms** | 1 / 60s group | Ephemeral atomic Telegram message update |
 | **`para-worker`**| Bell Reminder Cron Trigger | **18 ms** | **45 ms** | Cron event | Sub-50ms APScheduler event jitter |
 | **`para-worker`**| Hot SQLite Backup + Tarball | **180 ms** | **290 ms** | 1 / Day | Online VACUUM INTO + tar.gz rotation |
 | **`para-worker`**| Upstream API Fallback Failover | **10.0 s** | **10.05 s** | Failover | 10s budget per mirror with failover |
-| **`para-worker`**| WOPI 12-Sheet Excel Aggregation | **1.25 s** | **1.80 s** | Background | Offloaded to `asyncio.to_thread` |
+| **`para-worker`**| Google Sheets Multi-Sheet Sync | **1.25 s** | **1.80 s** | Background | Offloaded to `asyncio.to_thread` |
 | **`para-solver`**| Atomic Task Pop (`BLMOVE` Queue) | **0.18 ms** | **0.40 ms** | `5,000+ ops/s` | Crash-resilient at-least-once queue |
 | **`para-solver`**| Multimodal DeepSeek Reasoning | **4.80 s** | **8.10 s** | 3 slots max | Bounded concurrency (`Semaphore(3)`) |
 | **`para-solver`**| GOST 7.32-2017 Academic DOCX | **280 ms** | **420 ms** | Serial worker | Threadpool-offloaded Word builder |

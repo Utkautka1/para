@@ -29,7 +29,7 @@ This Privacy Policy («Policy») governs the collection, processing, storage, an
 
 The software ecosystem comprises five distributed microservices:
 - **`para-bot`**: An interactive Telegram Bot interface built on `aiogram 3.x` with asynchronous event handling;
-- **`para-api`**: A high-performance internal RESTful backend service built on `FastAPI` providing group timetable and WOPI integration;
+- **`para-api`**: A high-performance internal RESTful backend service built on `FastAPI` providing group timetable and attendance data;
 - **`para-worker`**: An autonomous background scheduler managing topic updates, bell reminders, and birthday congratulations;
 - **`para-solver`**: An asynchronous worker consumer processing student homework tasks and compiling GOST-compliant Word reports;
 - **`para-redis`**: An in-memory key-value cache and reliable queue broker coordinating state across containers.
@@ -115,10 +115,10 @@ The software integrates with select external services to fulfill its operational
 - **Data Transferred:** Message contents, user IDs, usernames, and callback query payloads transmitted over Telegram MTProto encrypted protocol.
 - **Privacy Policy:** [https://telegram.org/privacy](https://telegram.org/privacy)
 
-### 5.2. Yandex Cloud & Yandex 360 (Yandex LLC)
-- **Role:** Cloud storage provider for the official attendance spreadsheet (.xlsx) and WOPI (Web Application Open Platform Interface) host.
-- **Data Transferred:** Group attendance sheets containing student names and attendance marks. WOPI session tokens and administrative session cookies (`Session_id`, `_yasc`) are handled securely with automated keepalive refresh.
-- **Privacy Policy:** [https://yandex.ru/legal/confidential/](https://yandex.ru/legal/confidential/)
+### 5.2. Google Cloud Platform & Google Workspace (Google LLC)
+- **Role:** Cloud storage provider for the official attendance spreadsheet (.xlsx) via Google Sheets API v4 and Google Drive API v3.
+- **Data Transferred:** Group attendance sheets containing student names and attendance marks. Authenticated securely via dedicated Service Account credentials.
+- **Privacy Policy:** [https://policies.google.com/privacy](https://policies.google.com/privacy)
 
 ### 5.3. DeepSeek AI (DeepSeek Technology Co., Ltd.)
 - **Role:** Large Language and Vision Model API provider for homework solving.
@@ -139,7 +139,7 @@ Operational state is isolated in Redis key-value storage and in-memory tmpfs wit
 - **Button Click Debounce Flags (`cb_throttle:{user_id}`)**: Automatically expire after 1.0–4.0 seconds;
 - **Day Schedule Cache Pack (`sched:day_pack:{date}`)**: Expires after 180 seconds;
 - **Bell Reminder Sent Flags (`rem:sent:{group}:{date}:{period}:{type}`)**: Expire after 2 hours;
-- **WOPI Session Tokens (`att:session:{session_id}`)**: Expire after 1 hour;
+- **Attendance Session State (`att:session:{session_id}`)**: Expire after 1 hour;
 - **Homework Task Queue Buffers (`hw:tasks:queue`, `hw:tasks:processing`)**: Removed via atomic `LREM` immediately upon document delivery;
 - **All-Time Attendance Stats Cache (`att:stats:all_time`)**: Retained for 1 hour with instant optimistic invalidation upon headman updates;
 - **Voice Audio Processing in Transient RAM-Disk (`/dev/shm`)**: Audio notes and voice messages submitted for attendance marking or schedule search are buffered strictly in the volatile memory filesystem (`/dev/shm`), converted to text via local Whisper STT, and physically unlinked via `os.remove()` inside guaranteed `finally` blocks immediately after transcription. No student voice recordings are ever persisted to magnetic/SSD disk storage or retained in backup archives.

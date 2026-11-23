@@ -103,7 +103,7 @@ async def clear_session() -> None:
     """
     Удаляет активную сессию опроса посещаемости из Redis.
 
-    Вызывается после успешного коммита в Яндекс Документы или при сбросе.
+    Вызывается после успешного коммита в Google Таблицу или при сбросе.
 
     Ничего не возвращает.
     """
@@ -125,10 +125,6 @@ async def _fetch_students_from_google(target_date: date) -> list[tuple[int, str]
     if not students:
         raise ValueError("В таблице не найдено ни одного студента")
     return students
-
-
-# Псевдоним для обратной совместимости тестов
-_fetch_students_from_wopi = _fetch_students_from_google
 
 
 async def _read_cached_students(client) -> list[tuple[int, str]] | None:
@@ -154,7 +150,7 @@ async def fetch_target_students(target_date: date) -> list[tuple[int, str]]:
     """
     Возвращает список студентов с кэшированием в Redis для мгновенного отклика.
 
-    Сначала опрашивает кэш Redis (24 ч), при промахе обращается к WOPI таблице.
+    Сначала опрашивает кэш Redis (24 ч), при промахе обращается к Google Таблице.
 
     Возвращает список кортежей [(row_idx, fio)].
     """

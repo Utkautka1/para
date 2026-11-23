@@ -292,44 +292,15 @@ end
 
 
 # ==============================================================================
-# 5. YANDEX INTEGRATION & ATTENDANCE TRACKER
 # ==============================================================================
-
-_DEFAULT_COOKIES: tuple[str, ...] = (
-    "Session_id",
-    "sessionid2",
-    "sessar",
-    "_yasc",
-    "yandexuid",
-    "i",
-    "yandex_login",
-    "yp",
-    "L",
-)
+# 5. GOOGLE SHEETS ATTENDANCE & TEACHERS DOCX
+# ==============================================================================
 
 yandex_config = YandexConfig(
     doc_public_url=get_required_env("YANDEX_DOC_PUBLIC_URL"),
-    attendance_doc_url=get_env("ATTENDANCE_DOC_URL", ""),
-    sync_day_interval_seconds=get_env_int("ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS", 180),
-    sync_night_interval_seconds=get_env_int("ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS", 900),
-    session_id=get_env("YANDEX_SESSION_ID", ""),
-    cookie=get_env("YANDEX_COOKIE", ""),
-    keepalive_interval_seconds=get_env_int("YANDEX_KEEPALIVE_INTERVAL_SECONDS", 21600),
-    cookie_test_doc_url=get_env("YANDEX_COOKIE_TEST_DOC_URL", ""),
-    required_cookie_names=get_env_list("YANDEX_REQUIRED_COOKIE_NAMES", _DEFAULT_COOKIES),
 )
 
 YANDEX_DOC_PUBLIC_URL: str = yandex_config.doc_public_url
-ATTENDANCE_DOC_URL: str = yandex_config.attendance_doc_url
-ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS: int = yandex_config.sync_day_interval_seconds
-ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS: int = yandex_config.sync_night_interval_seconds
-YANDEX_SESSION_ID: str = yandex_config.session_id
-YANDEX_COOKIE: str = yandex_config.cookie
-REDIS_YANDEX_COOKIE_KEY: str = "yandex:session_cookie"
-REDIS_COOKIE_TTL_SECONDS: int = 5184000  # 60 суток
-YANDEX_KEEPALIVE_INTERVAL_SECONDS: int = yandex_config.keepalive_interval_seconds
-YANDEX_COOKIE_TEST_DOC_URL: str = yandex_config.cookie_test_doc_url
-YANDEX_REQUIRED_COOKIE_NAMES: tuple[str, ...] = yandex_config.required_cookie_names
 
 google_sheets_config = GoogleSheetsConfig(
     sheet_id=get_env("GOOGLE_SHEET_ID", "1ssjIjrajeCmxWJ9p0l2KVXP0H1wPEMrr8r1fIgHFqvc"),
@@ -349,6 +320,8 @@ ATTENDANCE_MAX_COMMIT_RETRIES: int = 3
 ATTENDANCE_COMMIT_RETRY_DELAY_SECONDS: int = 5
 ATTENDANCE_STATS_REDIS_KEY: str = "att:stats:all_time"
 ATTENDANCE_STATS_CACHE_TTL_SECONDS: int = get_env_int("ATTENDANCE_STATS_CACHE_TTL_SECONDS", 1800)
+ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS: int = get_env_int("ATTENDANCE_SYNC_DAY_INTERVAL_SECONDS", 180)
+ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS: int = get_env_int("ATTENDANCE_SYNC_NIGHT_INTERVAL_SECONDS", 900)
 
 REDIS_STUDENTS_CACHE_KEY: str = get_env("REDIS_STUDENTS_CACHE_KEY", "att:cached_students")
 STUDENTS_CACHE_TTL_SECONDS: int = get_env_int("STUDENTS_CACHE_TTL_SECONDS", 86400)

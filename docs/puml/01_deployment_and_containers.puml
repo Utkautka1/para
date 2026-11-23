@@ -13,8 +13,8 @@ cloud "🌐 Внешние сервисы и платформы" as external_clo
   actor "👑 Староста / Администратор" as admin
   node "✈️ Telegram Bot API" as tg_api
   node "🏫 API расписания КТМУ\n(raspisanie-ktmu.ru)" as ktmu_api
-  node "📂 Яндекс Диск API" as yd_api
-  node "📊 Яндекс Документы (WOPI)" as yd_wopi
+  node "📂 Яндекс Диск API (Контакты)" as yd_api
+  node "📊 Google Cloud (Sheets & Drive API)" as g_sheets
   node "🧠 DeepSeek API (LLM/Vision)" as deepseek_api
 }
 
@@ -40,7 +40,7 @@ node "🖥️ Продакшн сервер (ssh home)" as host_server {
       component "Schedule Router\n(/api/v1/schedule)" as api_sched
       component "Teachers Router\n(/api/v1/teachers)" as api_teach
       component "Exams Router\n(/api/v1/exams)" as api_exams
-      component "WOPI Controller\n(/wopi/files/*)" as api_wopi
+      component "Attendance Router\n(/attendance)" as api_att
       component "HTTP Client Pool\n(Keepalive=10, Max=20)" as api_pool
     }
 
@@ -54,7 +54,7 @@ node "🖥️ Продакшн сервер (ssh home)" as host_server {
     node "⏱️ para-worker\n(APScheduler Tasks)" as c_worker {
       component "Topic Sync Task (каждые 60с)\n(Расписание и таймеры пар)" as worker_topic
       component "ZSET Cleaner Task (каждые 60с)\n(Удаление 15-мин уведомлений)" as worker_clean
-      component "Yandex Keepalive (каждые 6ч)\n(Обновление токенов диска)" as worker_yd
+      component "Attendance Topic Sync\n(Обновление топика посещаемости)" as worker_att
     }
 
     node "🧠 para-solver\n(DeepSeek Solver Worker)" as c_solver {
@@ -72,8 +72,8 @@ admin --> tg_api : Управление ботом
 ' Внешние взаимодействия
 tg_api <--> bot_proxy : Polling / Ответы
 c_api --> ktmu_api : Загрузка расписания
-c_api <--> yd_wopi : WOPI REST протокол
-c_api --> yd_api : Чтение таблиц
+c_bot --> g_sheets : Google Sheets API batchUpdate / Drive export
+c_api --> yd_api : Чтение контактов преподавателей
 c_solver --> deepseek_api : Решение задач (AI)
 
 ' Внутреннее взаимодействие Docker Compose

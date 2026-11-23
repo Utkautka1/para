@@ -1,3 +1,3 @@
 """
-Пакет внешних интеграций para (DeepSeek AI, Yandex Docs WOPI, DOCX).
+Пакет внешних интеграций para (DeepSeek AI, Google Sheets API, DOCX).
 """

@@ -2,7 +2,7 @@
 Модуль асинхронного Circuit Breaker и повторных попыток с экспоненциальным backoff.
 
 Предотвращает каскадные сбои при деградации внешних сетевых сервисов
-(DeepSeek AI API, Yandex WOPI, Telegram Bot API) за счет быстрого отсечения запросов.
+(DeepSeek AI API, Google Sheets API, Telegram Bot API) за счет быстрого отсечения запросов.
 """
 
 import asyncio

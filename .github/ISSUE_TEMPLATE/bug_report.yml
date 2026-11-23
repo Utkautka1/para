@@ -19,7 +19,7 @@ body:
         - "para-worker (APScheduler & Telemetry Daemon)"
         - "para-solver (DeepSeek AI Homework Queue)"
         - "para-redis (L2 Storage & FSM Bus)"
-        - "WOPI / Yandex Docs Integration"
+        - "Google Sheets & Attendance Integration"
         - "CI/CD & Developer Tooling"
     validations:
       required: true

@@ -136,7 +136,7 @@
   <!-- Line 7: 75% - 87.5% (18s - 21s) -->
   <g>
     <text x="110" y="90" class="feature-text">
-      WOPI Cloud Spreadsheet (OnlyOffice) + Peer Telemetry Sync
+      Google Sheets API v4 Sync + Peer Telemetry Sync
       <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.75;0.77;0.855;0.875;1" dur="24s" repeatCount="indefinite" />
     </text>
   </g>

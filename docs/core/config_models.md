@@ -129,7 +129,7 @@ result = timezone()
 
 ## Class Model: `YandexConfig`
 
-Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser).
+Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser контактов).
 
 ## Class Model: `ApiConfig`
 

@@ -104,7 +104,7 @@ package "⚡ Redis Key Schema (In-Memory Datastore)" <<Database>> {
   class "att:session:{session_id}" as r_att {
     Тип: STRING (JSON)
     TTL: 1 час
-    Назначение: Авторизованная сессия старосты для редактирования ведомости по WOPI
+    Назначение: Авторизованная сессия старосты для фиксации отметок посещаемости
   }
 }
 

@@ -93,17 +93,9 @@ class RedisConfig:
 
 @dataclass(frozen=True, slots=True)
 class YandexConfig:
-    """Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser)."""
+    """Конфигурация интеграции с Yandex Disk (публичный REST API для docx_parser контактов)."""
 
     doc_public_url: str
-    attendance_doc_url: str = ""
-    sync_day_interval_seconds: int = 180
-    sync_night_interval_seconds: int = 900
-    session_id: str = ""
-    cookie: str = ""
-    keepalive_interval_seconds: int = 21600
-    cookie_test_doc_url: str = ""
-    required_cookie_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

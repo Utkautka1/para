@@ -3,8 +3,8 @@
 > **Subsystem**: `Attendance Operations`
 > **Architecture Layer**: `Domain Business Service`
 > **Concurrency Model**: `AsyncIO Event Loop + Redis Distributed Locks`
-> **Persistence Backend**: `Redis L2 Append-Only + WOPI Cloud Spreadsheets`
-> **Service Level Objective**: `Sub-10ms Cache Writes / 3s WOPI Roundtrip`
+> **Persistence Backend**: `Redis L2 Append-Only + Google Sheets Spreadsheets`
+> **Service Level Objective**: `Sub-10ms Cache Writes / 500ms Google API Roundtrip`
 
 ## 1. Purpose
 Менеджер интерактивной сессии отметки посещаемости.
@@ -16,7 +16,7 @@ graph TD
     B -->|record_mark| C[services.attendance_manager]
     C -->|Optimistic UI| D[(Redis L2 Cache)]
     C -->|Topic Sync| E[Telegram Supergroup Topic]
-    C -->|Async WOPI Commit| F[OnlyOffice Document Server]
+    C -->|Async Google Sheets Batch Commit| F[Google Sheets API v4]
 ```
 
 ---
@@ -27,20 +27,20 @@ graph TD
 | [`get_active_session`](#get_active_session) | Function | L77–L99 | `AttendanceSession \| None` | Считывает и десериализует активную сессию опроса из Red... |
 | [`clear_session`](#clear_session) | Function | L102–L113 | `None` | Удаляет активную сессию опроса посещаемости из Redis. |
 | [`_fetch_students_from_google`](#_fetch_students_from_google) | Function | L116–L127 | `list[tuple[int, str]]` | Считывает список студентов из Google Таблицы. |
-| [`_read_cached_students`](#_read_cached_students) | Function | L134–L150 | `list[tuple[int, str]] \| None` | Считывает список студентов из кэша Redis. |
-| [`fetch_target_students`](#fetch_target_students) | Function | L153–L172 | `list[tuple[int, str]]` | Возвращает список студентов с кэшированием в Redis для ... |
-| [`_assert_no_initiator_conflict`](#_assert_no_initiator_conflict) | Function | L175–L183 | `None` | Проверяет отсутствие конфликта параллельных инициаторов... |
-| [`create_attendance_session`](#create_attendance_session) | Function | L186–L210 | `AttendanceSession` | Инициализирует новую сессию опроса посещаемости и фикси... |
-| [`record_student_mark`](#record_student_mark) | Function | L213–L230 | `AttendanceSession \| None` | Записывает отметку для текущего студента и сдвигает ука... |
-| [`step_back`](#step_back) | Function | L233–L250 | `AttendanceSession \| None` | Возвращает опрос на один шаг назад для исправления ошиб... |
-| [`mark_all_remaining_present`](#mark_all_remaining_present) | Function | L253–L273 | `AttendanceSession \| None` | Массово проставляет статус 'П' (присутствует) всем оста... |
-| [`ensure_summary_headers`](#ensure_summary_headers) | Function | L276–L293 | `None` | Гарантирует сохранение текстовых заголовков и кодов в с... |
-| [`apply_marks_to_sheet`](#apply_marks_to_sheet) | Function | L296–L305 | `None` | Записывает все собранные отметки сессии в колонку даты ... |
-| [`_try_commit_once`](#_try_commit_once) | Function | L308–L316 | `bool` | Выполняет одну итерацию сохранения отметок сессии в Goo... |
-| [`_post_commit_sync`](#_post_commit_sync) | Function | L319–L334 | `None` | Выполняет контрольную сверку и обновление топика после ... |
-| [`_execute_commit_attempts`](#_execute_commit_attempts) | Function | L337–L355 | `bool` | Выполняет цикл повторных попыток выгрузки журнала с экс... |
-| [`commit_session_to_table`](#commit_session_to_table) | Function | L358–L376 | `bool` | Выгружает все зафиксированные отметки сессии в Google Т... |
-| [`calculate_summary_stats`](#calculate_summary_stats) | Function | L379–L393 | `dict[str, int]` | Подсчитывает итоговые количества отметок по категориям ... |
+| [`_read_cached_students`](#_read_cached_students) | Function | L130–L146 | `list[tuple[int, str]] \| None` | Считывает список студентов из кэша Redis. |
+| [`fetch_target_students`](#fetch_target_students) | Function | L149–L168 | `list[tuple[int, str]]` | Возвращает список студентов с кэшированием в Redis для ... |
+| [`_assert_no_initiator_conflict`](#_assert_no_initiator_conflict) | Function | L171–L179 | `None` | Проверяет отсутствие конфликта параллельных инициаторов... |
+| [`create_attendance_session`](#create_attendance_session) | Function | L182–L206 | `AttendanceSession` | Инициализирует новую сессию опроса посещаемости и фикси... |
+| [`record_student_mark`](#record_student_mark) | Function | L209–L226 | `AttendanceSession \| None` | Записывает отметку для текущего студента и сдвигает ука... |
+| [`step_back`](#step_back) | Function | L229–L246 | `AttendanceSession \| None` | Возвращает опрос на один шаг назад для исправления ошиб... |
+| [`mark_all_remaining_present`](#mark_all_remaining_present) | Function | L249–L269 | `AttendanceSession \| None` | Массово проставляет статус 'П' (присутствует) всем оста... |
+| [`ensure_summary_headers`](#ensure_summary_headers) | Function | L272–L289 | `None` | Гарантирует сохранение текстовых заголовков и кодов в с... |
+| [`apply_marks_to_sheet`](#apply_marks_to_sheet) | Function | L292–L301 | `None` | Записывает все собранные отметки сессии в колонку даты ... |
+| [`_try_commit_once`](#_try_commit_once) | Function | L304–L312 | `bool` | Выполняет одну итерацию сохранения отметок сессии в Goo... |
+| [`_post_commit_sync`](#_post_commit_sync) | Function | L315–L330 | `None` | Выполняет контрольную сверку и обновление топика после ... |
+| [`_execute_commit_attempts`](#_execute_commit_attempts) | Function | L333–L351 | `bool` | Выполняет цикл повторных попыток выгрузки журнала с экс... |
+| [`commit_session_to_table`](#commit_session_to_table) | Function | L354–L372 | `bool` | Выгружает все зафиксированные отметки сессии в Google Т... |
+| [`calculate_summary_stats`](#calculate_summary_stats) | Function | L375–L389 | `dict[str, int]` | Подсчитывает итоговые количества отметок по категориям ... |
 
 ---
 
@@ -188,7 +188,7 @@ result = await _fetch_students_from_google(target_date=...)
 async def _read_cached_students(client) -> list[tuple[int, str]] | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L134-L150`](../../services/attendance_manager.py#L134-L150)
+- **Source Reference**: [`services/attendance_manager.py#L130-L146`](../../services/attendance_manager.py#L130-L146)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, str]] | None`
 
@@ -222,7 +222,7 @@ result = await _read_cached_students(client=...)
 async def fetch_target_students(target_date: date) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L153-L172`](../../services/attendance_manager.py#L153-L172)
+- **Source Reference**: [`services/attendance_manager.py#L149-L168`](../../services/attendance_manager.py#L149-L168)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -255,7 +255,7 @@ result = await fetch_target_students(target_date=...)
 async def _assert_no_initiator_conflict(initiator_id: int) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L175-L183`](../../services/attendance_manager.py#L175-L183)
+- **Source Reference**: [`services/attendance_manager.py#L171-L179`](../../services/attendance_manager.py#L171-L179)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -288,7 +288,7 @@ result = await _assert_no_initiator_conflict(initiator_id=...)
 async def create_attendance_session( target_date: date, lesson_num: int, lesson_title: str, initiator_id: int ) -> AttendanceSession
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L186-L210`](../../services/attendance_manager.py#L186-L210)
+- **Source Reference**: [`services/attendance_manager.py#L182-L206`](../../services/attendance_manager.py#L182-L206)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession`
 
@@ -324,7 +324,7 @@ result = await create_attendance_session(target_date=..., lesson_num=..., lesson
 async def record_student_mark(mark: str) -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L213-L230`](../../services/attendance_manager.py#L213-L230)
+- **Source Reference**: [`services/attendance_manager.py#L209-L226`](../../services/attendance_manager.py#L209-L226)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -357,7 +357,7 @@ result = await record_student_mark(mark=...)
 async def step_back() -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L233-L250`](../../services/attendance_manager.py#L233-L250)
+- **Source Reference**: [`services/attendance_manager.py#L229-L246`](../../services/attendance_manager.py#L229-L246)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -388,7 +388,7 @@ result = await step_back()
 async def mark_all_remaining_present() -> AttendanceSession | None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L253-L273`](../../services/attendance_manager.py#L253-L273)
+- **Source Reference**: [`services/attendance_manager.py#L249-L269`](../../services/attendance_manager.py#L249-L269)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `AttendanceSession | None`
 
@@ -419,7 +419,7 @@ result = await mark_all_remaining_present()
 def ensure_summary_headers(sheet) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L276-L293`](../../services/attendance_manager.py#L276-L293)
+- **Source Reference**: [`services/attendance_manager.py#L272-L289`](../../services/attendance_manager.py#L272-L289)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -452,7 +452,7 @@ result = ensure_summary_headers(sheet=...)
 def apply_marks_to_sheet(sheet, session: AttendanceSession, col: int) -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L296-L305`](../../services/attendance_manager.py#L296-L305)
+- **Source Reference**: [`services/attendance_manager.py#L292-L301`](../../services/attendance_manager.py#L292-L301)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -487,7 +487,7 @@ result = apply_marks_to_sheet(sheet=..., session=..., col=...)
 async def _try_commit_once(session: AttendanceSession, t_date: date) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L308-L316`](../../services/attendance_manager.py#L308-L316)
+- **Source Reference**: [`services/attendance_manager.py#L304-L312`](../../services/attendance_manager.py#L304-L312)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -521,7 +521,7 @@ result = await _try_commit_once(session=..., t_date=...)
 async def _post_commit_sync() -> None
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L319-L334`](../../services/attendance_manager.py#L319-L334)
+- **Source Reference**: [`services/attendance_manager.py#L315-L330`](../../services/attendance_manager.py#L315-L330)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -552,7 +552,7 @@ result = await _post_commit_sync()
 async def _execute_commit_attempts(session: AttendanceSession, t_date: date) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L337-L355`](../../services/attendance_manager.py#L337-L355)
+- **Source Reference**: [`services/attendance_manager.py#L333-L351`](../../services/attendance_manager.py#L333-L351)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -586,7 +586,7 @@ result = await _execute_commit_attempts(session=..., t_date=...)
 async def commit_session_to_table(session: AttendanceSession) -> bool
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L358-L376`](../../services/attendance_manager.py#L358-L376)
+- **Source Reference**: [`services/attendance_manager.py#L354-L372`](../../services/attendance_manager.py#L354-L372)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -619,7 +619,7 @@ result = await commit_session_to_table(session=...)
 def calculate_summary_stats(marks: dict[str, str]) -> dict[str, int]
 ```
 
-- **Source Reference**: [`services/attendance_manager.py#L379-L393`](../../services/attendance_manager.py#L379-L393)
+- **Source Reference**: [`services/attendance_manager.py#L375-L389`](../../services/attendance_manager.py#L375-L389)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `dict[str, int]`
 

@@ -309,7 +309,6 @@ services:
       <<: *otel-env
       API_SECRET_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
-      YANDEX_COOKIE: "disabled:not-used-by-this-service"
     volumes:
       # Код монтируется, как у остальных сервисов: деплой = git pull + restart, без пересборки образа
       - ./core:/app/core:ro
@@ -357,7 +356,6 @@ services:
       API_SECRET_KEY: "disabled:not-used-by-this-service"
       SESSION_SECRET: "disabled:not-used-by-this-service"
       DEEPSEEK_API_KEY: "disabled:not-used-by-this-service"
-      YANDEX_COOKIE: "disabled:not-used-by-this-service"
     volumes:
       - ./core:/app/core:ro
       - ./services:/app/services:ro

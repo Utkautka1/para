@@ -74,7 +74,7 @@ FUNCTION_INTENT_PATTERNS: list[tuple[str, str]] = [
     ("record_student_mark", "Records an attendance mark for the current student and advances pointer."),
     ("step_back", "Reverts the attendance polling session pointer to the previous student."),
     ("mark_all_remaining_present", "Batch-assigns 'Present' status to all remaining unpolled students."),
-    ("commit_session_to_table", "Commits all recorded attendance marks to Yandex Docs via WOPI."),
+    ("commit_session_to_table", "Commits all recorded attendance marks to Google Sheets via batchUpdate."),
     ("calculate_summary_stats", "Aggregates summary statistics counting total attendance categories."),
     ("fetch_target_students", "Retrieves the student roster, utilizing Redis L2 cache for speed."),
     ("transcribe_file", "Transcribes audio file to text using faster-whisper under concurrency semaphore."),
@@ -122,8 +122,8 @@ SUBSYSTEM_METADATA: dict[str, dict[str, str]] = {
     "Attendance Operations": {
         "layer": "Domain Business Service",
         "concurrency": "AsyncIO Event Loop + Redis Distributed Locks",
-        "persistence": "Redis L2 Append-Only + WOPI Cloud Spreadsheets",
-        "sla": "Sub-10ms Cache Writes / 3s WOPI Roundtrip",
+        "persistence": "Redis L2 Append-Only + Google Sheets Spreadsheets",
+        "sla": "Sub-10ms Cache Writes / 500ms Google API Roundtrip",
     },
     "KTMU Timetable Engine": {
         "layer": "Upstream Ingress & Harvester",
@@ -187,7 +187,7 @@ MERMAID_DIAGRAMS: dict[str, str] = {
         "    B -->|record_mark| C[services.attendance_manager]\n"
         "    C -->|Optimistic UI| D[(Redis L2 Cache)]\n"
         "    C -->|Topic Sync| E[Telegram Supergroup Topic]\n"
-        "    C -->|Async WOPI Commit| F[OnlyOffice Document Server]\n"
+        "    C -->|Async Google Sheets Batch Commit| F[Google Sheets API v4]\n"
         "```"
     ),
     "KTMU Timetable Engine": (
