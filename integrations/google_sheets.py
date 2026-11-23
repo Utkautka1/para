@@ -17,7 +17,7 @@ from typing import Any
 
 import httpx
 import openpyxl
-from google.auth.transport.requests import Request
+from google.auth.transport import Response
 from google.oauth2.service_account import Credentials
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -53,6 +53,54 @@ SCOPES: list[str] = [
 ]
 
 
+class _GoogleAuthResponse(Response):
+    """Адаптер ответа HTTP-клиента под интерфейс google.auth.transport.Response."""
+
+    def __init__(self, response: httpx.Response) -> None:
+        # _resp — инкапсулированный объект ответа библиотеки httpx
+        self._resp = response
+
+    @property
+    def status(self) -> int:
+        """HTTP-статус код ответа сервера авторизации Google."""
+        return self._resp.status_code
+
+    @property
+    def headers(self) -> Any:
+        """Заголовки ответа сервера авторизации Google."""
+        return self._resp.headers
+
+    @property
+    def data(self) -> bytes:
+        """Бинарное тело ответа сервера с OAuth-токеном."""
+        return self._resp.content
+
+
+class _GoogleAuthRequest:
+    """Адаптер HTTP-транспорта на базе httpx для обновления токенов google-auth."""
+
+    def __call__(
+        self,
+        url: str,
+        method: str = "GET",
+        body: Any = None,
+        headers: Any = None,
+        timeout: float | None = None,
+        **kwargs: Any,
+    ) -> _GoogleAuthResponse:
+        """
+        Выполняет синхронный запрос к OAuth-эндпоинту Google через httpx.
+
+        Используем встроенный в проект httpx вместо сторонней библиотеки requests,
+        чтобы избежать лишних зависимостей и сбоев окружения в контейнерах.
+
+        Возвращает обертку _GoogleAuthResponse с кодом ответа и телом.
+        """
+        with httpx.Client(timeout=timeout or 30.0) as client:
+            resp = client.request(method, url, content=body, headers=headers)
+            return _GoogleAuthResponse(resp)
+
+
 def _load_credentials() -> Any:
     """
     Загружает учетные данные сервисного аккаунта Google из JSON-строки или файла.
@@ -73,11 +121,12 @@ def _fetch_token_sync() -> str:
     Синхронно обновляет и возвращает OAuth токен Google API.
 
     Вызывается внутри asyncio.to_thread для изоляции блокирующего сетевого вызова.
+    Использует собственный адаптер _GoogleAuthRequest на базе httpx.
 
     Возвращает строковый токен доступа.
     """
     creds = _load_credentials()
-    creds.refresh(Request())
+    creds.refresh(_GoogleAuthRequest())
     return str(creds.token)
 
 

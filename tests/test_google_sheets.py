@@ -19,6 +19,8 @@ import pytest
 
 from integrations.google_sheets import (
     _build_batch_data,
+    _GoogleAuthRequest,
+    _GoogleAuthResponse,
     col_to_letter,
     download_workbook,
     export_attendance_xlsx,
@@ -210,3 +212,28 @@ async def test_export_and_download_workbook() -> None:
 
         wb = await download_workbook()
         assert "НОЯБ" in wb.sheetnames
+
+
+def test_google_auth_request_and_response() -> None:
+    """
+    Проверяет работу HTTP-адаптера _GoogleAuthRequest и обертки _GoogleAuthResponse.
+
+    Тестируем согласованность свойств status, headers, data с интерфейсом Google Auth,
+    чтобы гарантировать корректное обновление OAuth-токенов без библиотеки requests.
+    """
+    fake_resp = MagicMock()
+    fake_resp.status_code = 200
+    fake_resp.headers = {"Content-Type": "application/json"}
+    fake_resp.content = b'{"access_token": "mock_token"}'
+
+    wrapper = _GoogleAuthResponse(fake_resp)
+    assert wrapper.status == 200
+    assert wrapper.headers == {"Content-Type": "application/json"}
+    assert wrapper.data == b'{"access_token": "mock_token"}'
+
+    req = _GoogleAuthRequest()
+    with patch("httpx.Client.request", return_value=fake_resp) as mock_req:
+        res = req("https://oauth2.googleapis.com/token", method="POST", body=b"data")
+        assert res.status == 200
+        assert res.data == b'{"access_token": "mock_token"}'
+        mock_req.assert_called_once()

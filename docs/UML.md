@@ -730,6 +730,8 @@ classDiagram
 
     class GoogleSheetsIntegration {
         +get_access_token() str
+        +_GoogleAuthRequest request_adapter
+        +_GoogleAuthResponse response_adapter
         +export_attendance_xlsx() bytes
         +download_workbook() Workbook
         +fetch_students_from_google(target_date) list
