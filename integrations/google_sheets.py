@@ -12,6 +12,7 @@ import asyncio
 import io
 import json
 import urllib.parse
+from collections.abc import Sequence
 from datetime import date, datetime
 from typing import Any
 
@@ -44,6 +45,22 @@ MONTH_SHEET_MAP: dict[int, str] = {
     10: "ОКТ",
     11: "НОЯБ",
     12: "ДЕК",
+}
+
+# Корни и синонимы названий месяцев для нечеткого поиска вкладок таблицы
+MONTH_ALIASES: dict[int, tuple[str, ...]] = {
+    1: ("ЯНВ", "ЯНВАР"),
+    2: ("ФЕВ", "ФЕВР"),
+    3: ("МАР", "МАРТ"),
+    4: ("АПР", "АПРЕЛ"),
+    5: ("МАЙ", "МАЯ"),
+    6: ("ИЮН", "ИЮНЬ"),
+    7: ("ИЮЛ", "ИЮЛЬ"),
+    8: ("АВГ", "АВГУСТ"),
+    9: ("СЕН", "СЕНТ"),
+    10: ("ОКТ", "ОКТЯБР"),
+    11: ("НОЯ", "НОЯБ"),
+    12: ("ДЕК", "ДЕКАБР"),
 }
 
 # Области доступа: редактирование таблиц и чтение файлов Drive для экспорта
@@ -181,18 +198,61 @@ def get_month_sheet_name(target_date: date) -> str:
     return name
 
 
+def find_sheet_for_month(sheet_names: Sequence[str], target_month: int) -> str | None:
+    """
+    Находит имя вкладки в списке доступных по номеру месяца с поддержкой синонимов.
+
+    Сначала проверяет точное каноническое имя, затем совпадение по корням месяцев.
+
+    Возвращает строку с именем найденной вкладки или None при отсутствии совпадений.
+    """
+    canonical = MONTH_SHEET_MAP.get(target_month)
+    if canonical and canonical in sheet_names:
+        return canonical
+
+    prefixes = MONTH_ALIASES.get(target_month, ())
+    for name in sheet_names:
+        clean = name.strip().upper()
+        if any(clean.startswith(p) for p in prefixes):
+            return name
+    return None
+
+
 def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet:
     """
     Возвращает рабочий лист книги openpyxl, соответствующий месяцу даты.
 
-    Используется для совместимости с сервисами статистики и анализа посещаемости.
+    Поддерживает нечеткий поиск по корням и синонимам месяцев.
 
     Возвращает экземпляр Worksheet или выбрасывает ValueError.
     """
-    name = get_month_sheet_name(target_date)
-    if name not in wb.sheetnames:
-        raise ValueError(f"Вкладка '{name}' не найдена в книге")
-    return wb[name]
+    matched = find_sheet_for_month(wb.sheetnames, target_date.month)
+    if not matched:
+        expected = get_month_sheet_name(target_date)
+        raise ValueError(f"Вкладка '{expected}' не найдена в книге")
+    return wb[matched]
+
+
+async def resolve_live_sheet_name(target_date: date, token: str) -> str:
+    """
+    Определяет актуальное имя вкладки в Google Таблице с учётом синонимов.
+
+    Запрашивает список заголовков листов и сопоставляет через find_sheet_for_month.
+
+    Возвращает найденное имя листа или каноническое имя месяца по умолчанию.
+    """
+    try:
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{GOOGLE_SHEET_ID}?fields=sheets.properties.title"
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(url, headers={"Authorization": f"Bearer {token}"})
+            if res.is_success:
+                titles = [s["properties"]["title"] for s in res.json().get("sheets", [])]
+                matched = find_sheet_for_month(titles, target_date.month)
+                if matched:
+                    return matched
+    except Exception as exc:
+        log.debug("Фолбэк на стандартное имя листа для месяца %s: %s", target_date.month, exc)
+    return get_month_sheet_name(target_date)
 
 
 async def export_attendance_xlsx() -> bytes:
@@ -234,8 +294,8 @@ async def fetch_students_from_google(target_date: date) -> list[tuple[int, str]]
 
     Возвращает список пар [(индекс_строки, ФИО_студента)].
     """
-    sheet_name = get_month_sheet_name(target_date)
     token = await get_access_token()
+    sheet_name = await resolve_live_sheet_name(target_date, token)
     range_param = urllib.parse.quote(f"'{sheet_name}'!B5:B35")
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{GOOGLE_SHEET_ID}/values/{range_param}"
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -425,8 +485,8 @@ async def write_lesson_marks(target_date: date, lesson_num: int, marks: dict[str
     Возвращает True в случае успешной записи, иначе False.
     """
     try:
-        sheet_name = get_month_sheet_name(target_date)
         token = await get_access_token()
+        sheet_name = await resolve_live_sheet_name(target_date, token)
         dates, pairs = await _fetch_header_grid(sheet_name, token)
         col = find_lesson_column_in_grid(dates, pairs, target_date, lesson_num)
         if not col:

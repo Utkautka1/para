@@ -10,32 +10,34 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`_GoogleAuthResponse.__init__`](#_googleauthresponse__init__) | Method | L59–L61 | `None` | Executes core domain logic for `__init__`. |
-| [`_GoogleAuthResponse.status`](#_googleauthresponsestatus) | Method | L64–L66 | `int` | HTTP-статус код ответа сервера авторизации Google. |
-| [`_GoogleAuthResponse.headers`](#_googleauthresponseheaders) | Method | L69–L71 | `Any` | Заголовки ответа сервера авторизации Google. |
-| [`_GoogleAuthResponse.data`](#_googleauthresponsedata) | Method | L74–L76 | `bytes` | Бинарное тело ответа сервера с OAuth-токеном. |
-| [`_GoogleAuthRequest.__call__`](#_googleauthrequest__call__) | Method | L82–L101 | `_GoogleAuthResponse` | Выполняет синхронный запрос к OAuth-эндпоинту Google че... |
-| [`_load_credentials`](#_load_credentials) | Function | L104–L116 | `Any` | Загружает учетные данные сервисного аккаунта Google из ... |
-| [`_fetch_token_sync`](#_fetch_token_sync) | Function | L119–L130 | `str` | Синхронно обновляет и возвращает OAuth токен Google API... |
-| [`get_access_token`](#get_access_token) | Function | L133–L141 | `str` | Асинхронно получает валидный токен авторизации для Goog... |
-| [`col_to_letter`](#col_to_letter) | Function | L144–L156 | `str` | Преобразует 1-based числовой индекс колонки в буквенное... |
-| [`normalize_fio`](#normalize_fio) | Function | L159–L167 | `str` | Очищает строковое ФИО от неразрывных пробелов и краевых... |
-| [`get_month_sheet_name`](#get_month_sheet_name) | Function | L170–L181 | `str` | Возвращает название листа месяца по дате. |
-| [`get_month_sheet`](#get_month_sheet) | Function | L184–L195 | `Worksheet` | Возвращает рабочий лист книги openpyxl, соответствующий... |
-| [`export_attendance_xlsx`](#export_attendance_xlsx) | Function | L198–L214 | `bytes` | Экспортирует Google Таблицу посещаемости целиком в бина... |
-| [`download_workbook`](#download_workbook) | Function | L217–L226 | `openpyxl.Workbook` | Скачивает всю Google Таблицу и преобразует её в книгу o... |
-| [`fetch_students_from_google`](#fetch_students_from_google) | Function | L229–L247 | `list[tuple[int, str]]` | Считывает список студентов академической группы из коло... |
-| [`find_lesson_column_in_grid`](#find_lesson_column_in_grid) | Function | L250–L268 | `int \| None` | Находит 1-based номер колонки пары по строкам дат и ном... |
-| [`parse_date_cell`](#parse_date_cell) | Function | L271–L283 | `str \| None` | Приводит значение ячейки даты к стандартизированной стр... |
-| [`find_date_column_start`](#find_date_column_start) | Function | L286–L299 | `int \| None` | Находит начальную колонку даты во второй строке листа o... |
-| [`get_students_list`](#get_students_list) | Function | L302–L318 | `list[tuple[int, str]]` | Извлекает список студентов группы из колонки B листа op... |
-| [`find_student_row`](#find_student_row) | Function | L321–L333 | `int \| None` | Находит номер строки студента в листе openpyxl по имени... |
-| [`find_lesson_column`](#find_lesson_column) | Function | L336–L352 | `int \| None` | Находит номер колонки пары в openpyxl листе или передан... |
-| [`write_student_mark`](#write_student_mark) | Function | L355–L368 | `None` | Записывает отметку посещаемости в ячейку листа openpyxl... |
-| [`_fetch_header_grid`](#_fetch_header_grid) | Function | L371–L387 | `tuple[list[str], list[str]]` | Считывает строки дат (строка 2) и пар (строка 4) из Goo... |
-| [`_build_batch_data`](#_build_batch_data) | Function | L390–L404 | `list[dict[str, Any]]` | Формирует массив обновлений ячеек для Google Sheets API... |
-| [`_send_batch_update`](#_send_batch_update) | Function | L407–L416 | `None` | Отправляет POST-запрос пакетного обновления batchUpdate... |
-| [`write_lesson_marks`](#write_lesson_marks) | Function | L419–L441 | `bool` | Атомарно записывает отметки посещаемости пары в Google ... |
+| [`_GoogleAuthResponse.__init__`](#_googleauthresponse__init__) | Method | L76–L78 | `None` | Executes core domain logic for `__init__`. |
+| [`_GoogleAuthResponse.status`](#_googleauthresponsestatus) | Method | L81–L83 | `int` | HTTP-статус код ответа сервера авторизации Google. |
+| [`_GoogleAuthResponse.headers`](#_googleauthresponseheaders) | Method | L86–L88 | `Any` | Заголовки ответа сервера авторизации Google. |
+| [`_GoogleAuthResponse.data`](#_googleauthresponsedata) | Method | L91–L93 | `bytes` | Бинарное тело ответа сервера с OAuth-токеном. |
+| [`_GoogleAuthRequest.__call__`](#_googleauthrequest__call__) | Method | L99–L118 | `_GoogleAuthResponse` | Выполняет синхронный запрос к OAuth-эндпоинту Google че... |
+| [`_load_credentials`](#_load_credentials) | Function | L121–L133 | `Any` | Загружает учетные данные сервисного аккаунта Google из ... |
+| [`_fetch_token_sync`](#_fetch_token_sync) | Function | L136–L147 | `str` | Синхронно обновляет и возвращает OAuth токен Google API... |
+| [`get_access_token`](#get_access_token) | Function | L150–L158 | `str` | Асинхронно получает валидный токен авторизации для Goog... |
+| [`col_to_letter`](#col_to_letter) | Function | L161–L173 | `str` | Преобразует 1-based числовой индекс колонки в буквенное... |
+| [`normalize_fio`](#normalize_fio) | Function | L176–L184 | `str` | Очищает строковое ФИО от неразрывных пробелов и краевых... |
+| [`get_month_sheet_name`](#get_month_sheet_name) | Function | L187–L198 | `str` | Возвращает название листа месяца по дате. |
+| [`find_sheet_for_month`](#find_sheet_for_month) | Function | L201–L218 | `str \| None` | Находит имя вкладки в списке доступных по номеру месяца... |
+| [`get_month_sheet`](#get_month_sheet) | Function | L221–L233 | `Worksheet` | Возвращает рабочий лист книги openpyxl, соответствующий... |
+| [`resolve_live_sheet_name`](#resolve_live_sheet_name) | Function | L236–L255 | `str` | Определяет актуальное имя вкладки в Google Таблице с уч... |
+| [`export_attendance_xlsx`](#export_attendance_xlsx) | Function | L258–L274 | `bytes` | Экспортирует Google Таблицу посещаемости целиком в бина... |
+| [`download_workbook`](#download_workbook) | Function | L277–L286 | `openpyxl.Workbook` | Скачивает всю Google Таблицу и преобразует её в книгу o... |
+| [`fetch_students_from_google`](#fetch_students_from_google) | Function | L289–L307 | `list[tuple[int, str]]` | Считывает список студентов академической группы из коло... |
+| [`find_lesson_column_in_grid`](#find_lesson_column_in_grid) | Function | L310–L328 | `int \| None` | Находит 1-based номер колонки пары по строкам дат и ном... |
+| [`parse_date_cell`](#parse_date_cell) | Function | L331–L343 | `str \| None` | Приводит значение ячейки даты к стандартизированной стр... |
+| [`find_date_column_start`](#find_date_column_start) | Function | L346–L359 | `int \| None` | Находит начальную колонку даты во второй строке листа o... |
+| [`get_students_list`](#get_students_list) | Function | L362–L378 | `list[tuple[int, str]]` | Извлекает список студентов группы из колонки B листа op... |
+| [`find_student_row`](#find_student_row) | Function | L381–L393 | `int \| None` | Находит номер строки студента в листе openpyxl по имени... |
+| [`find_lesson_column`](#find_lesson_column) | Function | L396–L412 | `int \| None` | Находит номер колонки пары в openpyxl листе или передан... |
+| [`write_student_mark`](#write_student_mark) | Function | L415–L428 | `None` | Записывает отметку посещаемости в ячейку листа openpyxl... |
+| [`_fetch_header_grid`](#_fetch_header_grid) | Function | L431–L447 | `tuple[list[str], list[str]]` | Считывает строки дат (строка 2) и пар (строка 4) из Goo... |
+| [`_build_batch_data`](#_build_batch_data) | Function | L450–L464 | `list[dict[str, Any]]` | Формирует массив обновлений ячеек для Google Sheets API... |
+| [`_send_batch_update`](#_send_batch_update) | Function | L467–L476 | `None` | Отправляет POST-запрос пакетного обновления batchUpdate... |
+| [`write_lesson_marks`](#write_lesson_marks) | Function | L479–L501 | `bool` | Атомарно записывает отметки посещаемости пары в Google ... |
 
 ---
 
@@ -50,7 +52,7 @@
 def __init__(self, response: httpx.Response) -> None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L59-L61`](../../integrations/google_sheets.py#L59-L61)
+- **Source Reference**: [`integrations/google_sheets.py#L76-L78`](../../integrations/google_sheets.py#L76-L78)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -83,7 +85,7 @@ result = __init__(response=...)
 def status(self) -> int
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L64-L66`](../../integrations/google_sheets.py#L64-L66)
+- **Source Reference**: [`integrations/google_sheets.py#L81-L83`](../../integrations/google_sheets.py#L81-L83)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -114,7 +116,7 @@ result = status()
 def headers(self) -> Any
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L69-L71`](../../integrations/google_sheets.py#L69-L71)
+- **Source Reference**: [`integrations/google_sheets.py#L86-L88`](../../integrations/google_sheets.py#L86-L88)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -145,7 +147,7 @@ result = headers()
 def data(self) -> bytes
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L74-L76`](../../integrations/google_sheets.py#L74-L76)
+- **Source Reference**: [`integrations/google_sheets.py#L91-L93`](../../integrations/google_sheets.py#L91-L93)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bytes`
 
@@ -180,7 +182,7 @@ result = data()
 def __call__( self, url: str, method: str = "GET", body: Any = None, headers: Any = None, timeout: float | None = None, **_kwargs: Any,
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L82-L101`](../../integrations/google_sheets.py#L82-L101)
+- **Source Reference**: [`integrations/google_sheets.py#L99-L118`](../../integrations/google_sheets.py#L99-L118)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `_GoogleAuthResponse`
 
@@ -217,7 +219,7 @@ result = __call__(url=..., method=..., body=...)
 def _load_credentials() -> Any
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L104-L116`](../../integrations/google_sheets.py#L104-L116)
+- **Source Reference**: [`integrations/google_sheets.py#L121-L133`](../../integrations/google_sheets.py#L121-L133)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -248,7 +250,7 @@ result = _load_credentials()
 def _fetch_token_sync() -> str
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L119-L130`](../../integrations/google_sheets.py#L119-L130)
+- **Source Reference**: [`integrations/google_sheets.py#L136-L147`](../../integrations/google_sheets.py#L136-L147)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -279,7 +281,7 @@ result = _fetch_token_sync()
 async def get_access_token() -> str
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L133-L141`](../../integrations/google_sheets.py#L133-L141)
+- **Source Reference**: [`integrations/google_sheets.py#L150-L158`](../../integrations/google_sheets.py#L150-L158)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -310,7 +312,7 @@ result = await get_access_token()
 def col_to_letter(col: int) -> str
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L144-L156`](../../integrations/google_sheets.py#L144-L156)
+- **Source Reference**: [`integrations/google_sheets.py#L161-L173`](../../integrations/google_sheets.py#L161-L173)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -343,7 +345,7 @@ result = col_to_letter(col=...)
 def normalize_fio(name: str) -> str
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L159-L167`](../../integrations/google_sheets.py#L159-L167)
+- **Source Reference**: [`integrations/google_sheets.py#L176-L184`](../../integrations/google_sheets.py#L176-L184)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -376,7 +378,7 @@ result = normalize_fio(name=...)
 def get_month_sheet_name(target_date: date) -> str
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L170-L181`](../../integrations/google_sheets.py#L170-L181)
+- **Source Reference**: [`integrations/google_sheets.py#L187-L198`](../../integrations/google_sheets.py#L187-L198)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -404,12 +406,46 @@ result = get_month_sheet_name(target_date=...)
 
 ---
 
+### `find_sheet_for_month`
+```python
+def find_sheet_for_month(sheet_names: Sequence[str], target_month: int) -> str | None
+```
+
+- **Source Reference**: [`integrations/google_sheets.py#L201-L218`](../../integrations/google_sheets.py#L201-L218)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `str | None`
+
+#### Overview & Architectural Purpose
+Находит имя вкладки в списке доступных по номеру месяца с поддержкой синонимов.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `sheet_names` | `Sequence[str]` | Yes | Parameter `sheet_names` of type `Sequence[str]`. |
+| `target_month` | `int` | Yes | Parameter `target_month` of type `int`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from integrations.google_sheets import find_sheet_for_month
+
+# Execute call
+result = find_sheet_for_month(sheet_names=..., target_month=...)
+```
+
+---
+
 ### `get_month_sheet`
 ```python
 def get_month_sheet(wb: openpyxl.Workbook, target_date: date) -> Worksheet
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L184-L195`](../../integrations/google_sheets.py#L184-L195)
+- **Source Reference**: [`integrations/google_sheets.py#L221-L233`](../../integrations/google_sheets.py#L221-L233)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Worksheet`
 
@@ -438,12 +474,47 @@ result = get_month_sheet(wb=..., target_date=...)
 
 ---
 
+### `resolve_live_sheet_name`
+```python
+async def resolve_live_sheet_name(target_date: date, token: str) -> str
+```
+
+- **Source Reference**: [`integrations/google_sheets.py#L236-L255`](../../integrations/google_sheets.py#L236-L255)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `str`
+
+#### Overview & Architectural Purpose
+Определяет актуальное имя вкладки в Google Таблице с учётом синонимов.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `target_date` | `date` | Yes | Target calendar date for schedule or attendance resolution (ISO-8601). |
+| `token` | `str` | Yes | Parameter `token` of type `str`. |
+
+#### Concurrency & Side Effects
+- Emits structured telemetry events to system logging subsystem.
+- Performs non-blocking network I/O over HTTP or gRPC.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from integrations.google_sheets import resolve_live_sheet_name
+
+# Execute call
+result = await resolve_live_sheet_name(target_date=..., token=...)
+```
+
+---
+
 ### `export_attendance_xlsx`
 ```python
 async def export_attendance_xlsx() -> bytes
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L198-L214`](../../integrations/google_sheets.py#L198-L214)
+- **Source Reference**: [`integrations/google_sheets.py#L258-L274`](../../integrations/google_sheets.py#L258-L274)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bytes`
 
@@ -475,7 +546,7 @@ result = await export_attendance_xlsx()
 async def download_workbook() -> openpyxl.Workbook
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L217-L226`](../../integrations/google_sheets.py#L217-L226)
+- **Source Reference**: [`integrations/google_sheets.py#L277-L286`](../../integrations/google_sheets.py#L277-L286)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `openpyxl.Workbook`
 
@@ -506,7 +577,7 @@ result = await download_workbook()
 async def fetch_students_from_google(target_date: date) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L229-L247`](../../integrations/google_sheets.py#L229-L247)
+- **Source Reference**: [`integrations/google_sheets.py#L289-L307`](../../integrations/google_sheets.py#L289-L307)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -540,7 +611,7 @@ result = await fetch_students_from_google(target_date=...)
 def find_lesson_column_in_grid( dates_row: list[str], pairs_row: list[str], target_date: date, lesson_num: int ) -> int | None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L250-L268`](../../integrations/google_sheets.py#L250-L268)
+- **Source Reference**: [`integrations/google_sheets.py#L310-L328`](../../integrations/google_sheets.py#L310-L328)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -576,7 +647,7 @@ result = find_lesson_column_in_grid(dates_row=..., pairs_row=..., target_date=..
 def parse_date_cell(cell_value: object) -> str | None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L271-L283`](../../integrations/google_sheets.py#L271-L283)
+- **Source Reference**: [`integrations/google_sheets.py#L331-L343`](../../integrations/google_sheets.py#L331-L343)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -609,7 +680,7 @@ result = parse_date_cell(cell_value=...)
 def find_date_column_start(sheet: Worksheet, target_date: date) -> int | None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L286-L299`](../../integrations/google_sheets.py#L286-L299)
+- **Source Reference**: [`integrations/google_sheets.py#L346-L359`](../../integrations/google_sheets.py#L346-L359)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -643,7 +714,7 @@ result = find_date_column_start(sheet=..., target_date=...)
 def get_students_list(sheet: Worksheet) -> list[tuple[int, str]]
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L302-L318`](../../integrations/google_sheets.py#L302-L318)
+- **Source Reference**: [`integrations/google_sheets.py#L362-L378`](../../integrations/google_sheets.py#L362-L378)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[tuple[int, str]]`
 
@@ -676,7 +747,7 @@ result = get_students_list(sheet=...)
 def find_student_row(sheet: Worksheet, student_name: str) -> int | None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L321-L333`](../../integrations/google_sheets.py#L321-L333)
+- **Source Reference**: [`integrations/google_sheets.py#L381-L393`](../../integrations/google_sheets.py#L381-L393)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -710,7 +781,7 @@ result = find_student_row(sheet=..., student_name=...)
 def find_lesson_column(sheet: Any, target_date: date, lesson_num: int) -> int | None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L336-L352`](../../integrations/google_sheets.py#L336-L352)
+- **Source Reference**: [`integrations/google_sheets.py#L396-L412`](../../integrations/google_sheets.py#L396-L412)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int | None`
 
@@ -745,7 +816,7 @@ result = find_lesson_column(sheet=..., target_date=..., lesson_num=...)
 def write_student_mark(sheet: Worksheet, row: int, col: int, mark: str) -> None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L355-L368`](../../integrations/google_sheets.py#L355-L368)
+- **Source Reference**: [`integrations/google_sheets.py#L415-L428`](../../integrations/google_sheets.py#L415-L428)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -781,7 +852,7 @@ result = write_student_mark(sheet=..., row=..., col=...)
 async def _fetch_header_grid(sheet_name: str, token: str) -> tuple[list[str], list[str]]
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L371-L387`](../../integrations/google_sheets.py#L371-L387)
+- **Source Reference**: [`integrations/google_sheets.py#L431-L447`](../../integrations/google_sheets.py#L431-L447)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `tuple[list[str], list[str]]`
 
@@ -815,7 +886,7 @@ result = await _fetch_header_grid(sheet_name=..., token=...)
 def _build_batch_data(sheet_name: str, col_letter: str, marks: dict[str, str]) -> list[dict[str, Any]]
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L390-L404`](../../integrations/google_sheets.py#L390-L404)
+- **Source Reference**: [`integrations/google_sheets.py#L450-L464`](../../integrations/google_sheets.py#L450-L464)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `list[dict[str, Any]]`
 
@@ -850,7 +921,7 @@ result = _build_batch_data(sheet_name=..., col_letter=..., marks=...)
 async def _send_batch_update(token: str, payload: dict[str, Any]) -> None
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L407-L416`](../../integrations/google_sheets.py#L407-L416)
+- **Source Reference**: [`integrations/google_sheets.py#L467-L476`](../../integrations/google_sheets.py#L467-L476)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -884,7 +955,7 @@ result = await _send_batch_update(token=..., payload=...)
 async def write_lesson_marks(target_date: date, lesson_num: int, marks: dict[str, str]) -> bool
 ```
 
-- **Source Reference**: [`integrations/google_sheets.py#L419-L441`](../../integrations/google_sheets.py#L419-L441)
+- **Source Reference**: [`integrations/google_sheets.py#L479-L501`](../../integrations/google_sheets.py#L479-L501)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 

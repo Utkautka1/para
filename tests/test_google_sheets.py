@@ -28,12 +28,14 @@ from integrations.google_sheets import (
     find_date_column_start,
     find_lesson_column,
     find_lesson_column_in_grid,
+    find_sheet_for_month,
     find_student_row,
     get_month_sheet,
     get_month_sheet_name,
     get_students_list,
     normalize_fio,
     parse_date_cell,
+    resolve_live_sheet_name,
     write_lesson_marks,
     write_student_mark,
 )
@@ -341,3 +343,48 @@ async def test_fetch_students_from_google_empty_rows() -> None:
         students = await fetch_students_from_google(date(2026, 11, 23))
         assert len(students) == 1
         assert students[0] == (7, "Сидоров С.С.")
+
+
+def test_find_sheet_for_month_canonical() -> None:
+    """Проверяет поиск точного канонического имени листа."""
+    sheets = ["СЕНТ", "ОКТ", "НОЯБ", "ДЕК", "ЯНВ", "ФЕВР"]
+    assert find_sheet_for_month(sheets, 1) == "ЯНВ"
+    assert find_sheet_for_month(sheets, 2) == "ФЕВР"
+
+
+def test_find_sheet_for_month_fuzzy_and_case() -> None:
+    """Проверяет нечеткий поиск листа по корню месяца и регистру."""
+    sheets = ["Январь 2027", "  февраль  ", "Март"]
+    assert find_sheet_for_month(sheets, 1) == "Январь 2027"
+    assert find_sheet_for_month(sheets, 2) == "  февраль  "
+    assert find_sheet_for_month(sheets, 3) == "Март"
+    assert find_sheet_for_month(sheets, 4) is None
+
+
+def test_get_month_sheet_fuzzy_workbook() -> None:
+    """Проверяет загрузку листа openpyxl по нечеткому совпадению."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Февраль"
+    sheet = get_month_sheet(wb, date(2027, 2, 10))
+    assert sheet.title == "Февраль"
+
+
+@pytest.mark.asyncio
+async def test_resolve_live_sheet_name_api_match() -> None:
+    """Проверяет динамическое автоопределение листа через метаданные Google API."""
+    mock_res = MagicMock()
+    mock_res.is_success = True
+    mock_res.json.return_value = {"sheets": [{"properties": {"title": "Январь"}}]}
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_res):
+        name = await resolve_live_sheet_name(date(2027, 1, 15), "test-token")
+        assert name == "Январь"
+
+
+@pytest.mark.asyncio
+async def test_resolve_live_sheet_name_fallback_on_error() -> None:
+    """Проверяет безопасный фолбэк на каноническое имя при сбое Google API."""
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, side_effect=RuntimeError("API error")):
+        name = await resolve_live_sheet_name(date(2027, 1, 15), "test-token")
+        assert name == "ЯНВ"

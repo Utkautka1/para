@@ -732,6 +732,8 @@ classDiagram
         +get_access_token() str
         +_GoogleAuthRequest request_adapter
         +_GoogleAuthResponse response_adapter
+        +find_sheet_for_month(sheet_names, target_month) str
+        +resolve_live_sheet_name(target_date, token) str
         +export_attendance_xlsx() bytes
         +download_workbook() Workbook
         +fetch_students_from_google(target_date) list
