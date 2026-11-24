@@ -5,6 +5,7 @@
 деление длинных текстов на части, логику работы пайплайна и fallback транскрибера.
 """
 
+import asyncio
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -236,10 +237,13 @@ async def test_handle_voice_too_long() -> None:
 
 @pytest.mark.asyncio
 async def test_handle_voice_rate_limit() -> None:
-    """Проверяет срабатывание троттлинга при флуде аудио от одного пользователя."""
-    from bot.handlers.user.voice_transcribe import _USER_IN_FLIGHT
+    """Проверяет срабатывание троттлинга при переполнении очереди ожидания пользователя."""
+    import asyncio
 
-    _USER_IN_FLIGHT[99] = 2  # лимит исчерпан
+    from bot.handlers.user.voice_transcribe import _USER_IN_FLIGHT, _USER_QUEUE_WAITERS
+
+    _USER_IN_FLIGHT[99] = 2  # активные слоты исчерпаны
+    _USER_QUEUE_WAITERS[99] = [asyncio.Event() for _ in range(10)]  # очередь ожидания переполнена
     msg = MagicMock(spec=Message)
     msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
     msg.from_user = User(id=99, is_bot=False, first_name="Флудер")
@@ -252,6 +256,68 @@ async def test_handle_voice_rate_limit() -> None:
         mock_pipe.assert_not_called()
         assert "предыдущее аудиосообщение" in msg.reply.call_args[0][0]
     _USER_IN_FLIGHT.pop(99, None)
+    _USER_QUEUE_WAITERS.pop(99, None)
+
+
+@pytest.mark.asyncio
+async def test_handle_voice_queue_success_on_slot_release() -> None:
+    """Проверяет переход 3-го сообщения из очереди в обработку при освобождении слота."""
+    from bot.handlers.user.voice_transcribe import (
+        _USER_IN_FLIGHT,
+        _USER_QUEUE_WAITERS,
+        release_user_slot,
+    )
+
+    _USER_IN_FLIGHT[99] = 2  # первые два сообщения уже обрабатываются
+    msg = MagicMock(spec=Message)
+    msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
+    msg.from_user = User(id=99, is_bot=False, first_name="Студент")
+    msg.voice = Voice(file_id="v_third", file_unique_id="u_third", duration=5)
+    msg.video_note = None
+
+    status_mock = AsyncMock()
+    msg.reply = AsyncMock(return_value=status_mock)
+
+    async def _simulate_slot_release():
+        await asyncio.sleep(0.05)
+        release_user_slot(99)
+
+    with patch("bot.handlers.user.voice_transcribe.process_audio_pipeline", new_callable=AsyncMock) as mock_pipe:
+        asyncio.create_task(_simulate_slot_release())
+        await handle_voice_or_video_note(msg)
+        mock_pipe.assert_called_once()
+        assert "В очереди" in msg.reply.call_args[0][0]
+        assert "Расшифровываю" in status_mock.edit_text.call_args[0][0]
+
+    _USER_IN_FLIGHT.pop(99, None)
+    _USER_QUEUE_WAITERS.pop(99, None)
+
+
+@pytest.mark.asyncio
+async def test_handle_voice_queue_timeout() -> None:
+    """Проверяет корректное завершение при таймауте ожидания свободного слота."""
+    from bot.handlers.user.voice_transcribe import _USER_IN_FLIGHT, _USER_QUEUE_WAITERS
+
+    _USER_IN_FLIGHT[99] = 2
+    msg = MagicMock(spec=Message)
+    msg.chat = Chat(id=TOPIC_CHAT_ID, type="supergroup")
+    msg.from_user = User(id=99, is_bot=False, first_name="Студент")
+    msg.voice = Voice(file_id="v_timeout", file_unique_id="u_timeout", duration=5)
+    msg.video_note = None
+
+    status_mock = AsyncMock()
+    msg.reply = AsyncMock(return_value=status_mock)
+
+    with (
+        patch("bot.handlers.user.voice_transcribe.wait_for_user_slot", new_callable=AsyncMock, return_value=False),
+        patch("bot.handlers.user.voice_transcribe.process_audio_pipeline", new_callable=AsyncMock) as mock_pipe,
+    ):
+        await handle_voice_or_video_note(msg)
+        mock_pipe.assert_not_called()
+        assert "Не удалось" in status_mock.edit_text.call_args[0][0]
+
+    _USER_IN_FLIGHT.pop(99, None)
+    _USER_QUEUE_WAITERS.pop(99, None)
 
 
 @pytest.mark.asyncio

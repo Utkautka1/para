@@ -6,6 +6,7 @@ Telegram API, gRPC, Redis, DeepSeek AI, Whisper STT и таблиц Яндекс
 Гарантирует fail-fast валидацию обязательных настроек при старте сервисов.
 """
 
+import asyncio
 import os
 import re
 from zoneinfo import ZoneInfo
@@ -489,6 +490,7 @@ WHISPER_BEAM_SIZE: int = whisper_config.beam_size
 MAX_AUDIO_DURATION: int = whisper_config.max_audio_duration
 MAX_AUDIO_SIZE: int = whisper_config.max_audio_size
 MAX_CONCURRENT_PER_USER: int = whisper_config.max_concurrent_per_user
+MAX_USER_QUEUE_DEPTH: int = whisper_config.max_user_queue_depth
 DOWNLOAD_TIMEOUT: float = whisper_config.download_timeout
 TRANSCRIBE_TIMEOUT: float = whisper_config.transcribe_timeout
 
@@ -504,6 +506,7 @@ STT_AUDIO_DIR: str = get_env("STT_AUDIO_DIR", "stt_audio")
 STT_BLPOP_SECONDS: int = 4
 
 _USER_IN_FLIGHT: dict[int, int] = {}
+_USER_QUEUE_WAITERS: dict[int, list[asyncio.Event]] = {}
 
 
 # ==============================================================================

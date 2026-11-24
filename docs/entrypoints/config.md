@@ -10,13 +10,13 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`get_required_env`](#get_required_env) | Function | L39–L52 | `str` | Извлекает обязательную строковую переменную из окружени... |
-| [`get_env`](#get_env) | Function | L55–L64 | `str` | Извлекает опциональную строковую переменную окружения с... |
-| [`get_env_int`](#get_env_int) | Function | L67–L83 | `int` | Извлекает целочисленный параметр окружения с приведение... |
-| [`get_env_int_list`](#get_env_int_list) | Function | L86–L98 | `tuple[int, ...]` | Парсит разделенный запятыми список целых чисел из перем... |
-| [`get_env_float`](#get_env_float) | Function | L101–L115 | `float` | Извлекает параметр с плавающей точкой с приведением тип... |
-| [`get_env_list`](#get_env_list) | Function | L118–L130 | `tuple[str, ...]` | Парсит разделенный запятыми список строк из переменной ... |
-| [`get_env_bool`](#get_env_bool) | Function | L133–L145 | `bool` | Парсит булево значение из переменной окружения. |
+| [`get_required_env`](#get_required_env) | Function | L40–L53 | `str` | Извлекает обязательную строковую переменную из окружени... |
+| [`get_env`](#get_env) | Function | L56–L65 | `str` | Извлекает опциональную строковую переменную окружения с... |
+| [`get_env_int`](#get_env_int) | Function | L68–L84 | `int` | Извлекает целочисленный параметр окружения с приведение... |
+| [`get_env_int_list`](#get_env_int_list) | Function | L87–L99 | `tuple[int, ...]` | Парсит разделенный запятыми список целых чисел из перем... |
+| [`get_env_float`](#get_env_float) | Function | L102–L116 | `float` | Извлекает параметр с плавающей точкой с приведением тип... |
+| [`get_env_list`](#get_env_list) | Function | L119–L131 | `tuple[str, ...]` | Парсит разделенный запятыми список строк из переменной ... |
+| [`get_env_bool`](#get_env_bool) | Function | L134–L146 | `bool` | Парсит булево значение из переменной окружения. |
 
 ---
 
@@ -27,7 +27,7 @@
 def get_required_env(key: str) -> str
 ```
 
-- **Source Reference**: [`config.py#L39-L52`](../../config.py#L39-L52)
+- **Source Reference**: [`config.py#L40-L53`](../../config.py#L40-L53)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -60,7 +60,7 @@ result = get_required_env(key=...)
 def get_env(key: str, default: str) -> str
 ```
 
-- **Source Reference**: [`config.py#L55-L64`](../../config.py#L55-L64)
+- **Source Reference**: [`config.py#L56-L65`](../../config.py#L56-L65)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -94,7 +94,7 @@ result = get_env(key=..., default=...)
 def get_env_int(key: str, default: int | None = None) -> int
 ```
 
-- **Source Reference**: [`config.py#L67-L83`](../../config.py#L67-L83)
+- **Source Reference**: [`config.py#L68-L84`](../../config.py#L68-L84)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `int`
 
@@ -128,7 +128,7 @@ result = get_env_int(key=..., default=...)
 def get_env_int_list(key: str, default: tuple[int, ...] = ()) -> tuple[int, ...]
 ```
 
-- **Source Reference**: [`config.py#L86-L98`](../../config.py#L86-L98)
+- **Source Reference**: [`config.py#L87-L99`](../../config.py#L87-L99)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[int, ...]`
 
@@ -162,7 +162,7 @@ result = get_env_int_list(key=..., default=...)
 def get_env_float(key: str, default: float | None = None) -> float
 ```
 
-- **Source Reference**: [`config.py#L101-L115`](../../config.py#L101-L115)
+- **Source Reference**: [`config.py#L102-L116`](../../config.py#L102-L116)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `float`
 
@@ -196,7 +196,7 @@ result = get_env_float(key=..., default=...)
 def get_env_list(key: str, default: tuple[str, ...] = ()) -> tuple[str, ...]
 ```
 
-- **Source Reference**: [`config.py#L118-L130`](../../config.py#L118-L130)
+- **Source Reference**: [`config.py#L119-L131`](../../config.py#L119-L131)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, ...]`
 
@@ -230,7 +230,7 @@ result = get_env_list(key=..., default=...)
 def get_env_bool(key: str, default: bool = False) -> bool
 ```
 
-- **Source Reference**: [`config.py#L133-L145`](../../config.py#L133-L145)
+- **Source Reference**: [`config.py#L134-L146`](../../config.py#L134-L146)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 

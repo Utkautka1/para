@@ -16,7 +16,8 @@
 | [`get_async_session`](#get_async_session) | Function | L70–L79 | `AsyncGenerator[AsyncSession, None]` | Контекстный менеджер для безопасной работы с асинхронно... |
 | [`_migrate_subscribers_from_json`](#_migrate_subscribers_from_json) | Function | L82–L96 | `None` | Выполняет плавную однократную миграцию подписчиков из s... |
 | [`_migrate_attendance_snapshot_columns`](#_migrate_attendance_snapshot_columns) | Function | L99–L108 | `None` | Добавляет недостающие столбцы посещаемости (late_hours,... |
-| [`init_db`](#init_db) | Function | L111–L122 | `None` | Создает все необходимые таблицы в SQLite и проводит ста... |
+| [`apply_migrations`](#apply_migrations) | Function | L111–L122 | `None` | Применяет актуальные миграции схемы базы данных через A... |
+| [`init_db`](#init_db) | Function | L125–L136 | `None` | Создает все необходимые таблицы в SQLite и проводит ста... |
 
 ---
 
@@ -215,12 +216,43 @@ result = _migrate_attendance_snapshot_columns(conn=...)
 
 ---
 
+### `apply_migrations`
+```python
+def apply_migrations() -> None
+```
+
+- **Source Reference**: [`core/database.py#L111-L122`](../../core/database.py#L111-L122)
+- **Execution Mode**: `Synchronous`
+- **Return Contract**: `None`
+
+#### Overview & Architectural Purpose
+Применяет актуальные миграции схемы базы данных через Alembic.
+
+#### Parameters Contract
+*This method takes no input parameters.*
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Propagates unexpected runtime errors up the call stack to global exception handlers.
+
+#### Production Usage Example
+```python
+from core.database import apply_migrations
+
+# Execute call
+result = apply_migrations()
+```
+
+---
+
 ### `init_db`
 ```python
 async def init_db() -> None
 ```
 
-- **Source Reference**: [`core/database.py#L111-L122`](../../core/database.py#L111-L122)
+- **Source Reference**: [`core/database.py#L125-L136`](../../core/database.py#L125-L136)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

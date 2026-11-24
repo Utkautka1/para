@@ -16,6 +16,7 @@ from aiogram import F, Router
 from aiogram.types import Message
 
 from bot.templates.user.voice import (
+    format_queue_status,
     format_rate_limit_error,
     format_too_big_error,
     format_too_long_error,
@@ -26,11 +27,14 @@ from bot.templates.user.voice import (
 )
 from config import (
     _USER_IN_FLIGHT,
+    _USER_QUEUE_WAITERS,
     DOWNLOAD_TIMEOUT,
     MAX_AUDIO_DURATION,
     MAX_AUDIO_SIZE,
     MAX_CONCURRENT_PER_USER,
+    MAX_USER_QUEUE_DEPTH,
     TOPIC_CHAT_ID,
+    TRANSCRIBE_TIMEOUT,
 )
 from core.background import spawn
 from core.bot import bot
@@ -178,18 +182,46 @@ def acquire_user_slot(user_id: int) -> bool:
 
 def release_user_slot(user_id: int) -> None:
     """
-    Освобождает занятый слот пользователя после завершения транскрибации.
+    Освобождает занятый слот или пробуждает следующее задание из очереди ожидания.
 
-    Уменьшает счетчик активных задач в памяти процесса бота.
-    Удаляет ключ из словаря при обнулении счетчика для экономии RAM.
-
-    Ничего не возвращает.
+    Если есть ожидающие корутины, передает слот первому ожидающему через Event.
     """
+    if user_id <= 0:
+        return
+    waiters = _USER_QUEUE_WAITERS.get(user_id)
+    if waiters:
+        next_waiter = waiters.pop(0)
+        if not waiters:
+            _USER_QUEUE_WAITERS.pop(user_id, None)
+        next_waiter.set()
+        return
 
     if user_id in _USER_IN_FLIGHT:
         _USER_IN_FLIGHT[user_id] -= 1
         if _USER_IN_FLIGHT[user_id] <= 0:
             _USER_IN_FLIGHT.pop(user_id, None)
+
+
+async def wait_for_user_slot(user_id: int, timeout: float = TRANSCRIBE_TIMEOUT) -> bool:
+    """
+    Ставит корутину в очередь ожидания слота пользователя и ожидает его освобождения.
+
+    Возвращает True, если слот успешно передан от завершившейся задачи, иначе False.
+    """
+    event = asyncio.Event()
+    waiters = _USER_QUEUE_WAITERS.setdefault(user_id, [])
+    if len(waiters) >= MAX_USER_QUEUE_DEPTH:
+        return False
+    waiters.append(event)
+    try:
+        await asyncio.wait_for(event.wait(), timeout=timeout)
+        return True
+    except (TimeoutError, asyncio.CancelledError):
+        if user_id in _USER_QUEUE_WAITERS and event in _USER_QUEUE_WAITERS[user_id]:
+            _USER_QUEUE_WAITERS[user_id].remove(event)
+            if not _USER_QUEUE_WAITERS[user_id]:
+                _USER_QUEUE_WAITERS.pop(user_id, None)
+        return False
 
 
 def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | None:
@@ -388,28 +420,28 @@ async def process_audio_pipeline(
         release_user_slot(user_id)
 
 
-async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool:
+async def prepare_voice_status_message(message: Message, user_id: int) -> Message | None:
     """
-    Проверяет лимиты аудиосообщения и резервирует слот пользователя.
+    Резервирует слот или ставит в очередь со статусным сообщением Telegram.
 
-    Отправляет уведомление пользователю при превышении лимитов или троттлинге.
-    Логирует запрос перед началом валидации.
-
-    Возвращает True, если обработку можно запускать, иначе False.
+    Возвращает объект статус-сообщения или None при переполнении очереди/таймауте.
     """
+    if acquire_user_slot(user_id):
+        return await message.reply(format_transcription_status())
 
-    log_voice_request(meta)
-    limit_err = validate_audio_limits(meta.duration, meta.file_size, meta.sender)
-    if limit_err:
-        await message.reply(limit_err)
-        return False
-
-    if not acquire_user_slot(meta.user_id):
-        log.warning("⚠️ Троттлинг: пользователь %s превысил лимит", meta.user_id)
+    queue_pos = len(_USER_QUEUE_WAITERS.get(user_id, [])) + 1
+    if queue_pos > MAX_USER_QUEUE_DEPTH:
+        log.warning("⚠️ Очередь пользователя %s переполнена (%s)", user_id, queue_pos)
         await message.reply(format_rate_limit_error())
-        return False
+        return None
 
-    return True
+    status_msg = await message.reply(format_queue_status(queue_pos))
+    if not await wait_for_user_slot(user_id):
+        await status_msg.edit_text(format_transcription_error())
+        return None
+
+    await status_msg.edit_text(format_transcription_status())
+    return status_msg
 
 
 @router.message(F.voice | F.video_note)
@@ -417,12 +449,9 @@ async def handle_voice_or_video_note(message: Message) -> None:
     """
     Точка входа для голосовых сообщений и видео-кружочков во всех топиках.
 
-    Фильтрует чаты, валидирует лимиты длительности и применяет троттлинг.
-    Запускает асинхронный пайплайн распознавания речи с индикатором статуса.
-
-    Ничего не возвращает.
+    Фильтрует чаты, валидирует лимиты и обслуживает очередь распознавания.
+    Запускает сквозной пайплайн транскрибации речи.
     """
-
     if not await is_voice_request_allowed(message):
         return
 
@@ -430,8 +459,14 @@ async def handle_voice_or_video_note(message: Message) -> None:
     if not meta.file_id:
         return
 
-    if not await _check_and_acquire_voice(message, meta):
+    log_voice_request(meta)
+    limit_err = validate_audio_limits(meta.duration, meta.file_size, meta.sender)
+    if limit_err:
+        await message.reply(limit_err)
         return
 
-    status_msg = await message.reply(format_transcription_status())
+    status_msg = await prepare_voice_status_message(message, meta.user_id)
+    if not status_msg:
+        return
+
     await process_audio_pipeline(meta.file_id, meta.sender, meta.duration, message, status_msg, meta.user_id)

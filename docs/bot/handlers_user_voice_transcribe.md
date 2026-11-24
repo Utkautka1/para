@@ -14,24 +14,25 @@
 ## 2. Public API & Symbol Inventory
 | Symbol | Nature | Line Range | Return Contract | Summary |
 | :--- | :--- | :--- | :--- | :--- |
-| [`AudioMeta.__init__`](#audiometa__init__) | Method | L51–L78 | `Any` | Инициализирует контейнер метаданных входящего голосовог... |
-| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L80–L90 | `Any` | Обеспечивает распаковку основных полей: file_id, durati... |
-| [`is_allowed_chat`](#is_allowed_chat) | Function | L93–L103 | `bool` | Проверяет, разрешена ли обработка голосовых сообщений в... |
-| [`is_voice_request_allowed`](#is_voice_request_allowed) | Function | L106–L125 | `bool` | Проверяет, можно ли тратить GPU-очередь STT на это сооб... |
-| [`extract_audio_meta`](#extract_audio_meta) | Function | L128–L154 | `AudioMeta` | Извлекает нормализованные метаданные аудио- или видеосо... |
-| [`acquire_user_slot`](#acquire_user_slot) | Function | L157–L176 | `bool` | Атомарно проверяет и резервирует слот параллельной обра... |
-| [`release_user_slot`](#release_user_slot) | Function | L179–L192 | `None` | Освобождает занятый слот пользователя после завершения ... |
-| [`validate_audio_limits`](#validate_audio_limits) | Function | L195–L214 | `str \| None` | Проверяет длительность и размер файла на соответствие л... |
-| [`log_voice_request`](#log_voice_request) | Function | L217–L232 | `None` | Логирует структурированную информацию о входящем аудиос... |
-| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L235–L248 | `str` | Извлекает расширение исходного медиафайла Telegram из е... |
-| [`download_temp_audio`](#download_temp_audio) | Function | L251–L276 | `str` | Скачивает медиафайл из Telegram в общий с сервисом stt ... |
-| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L279–L293 | `None` | Удаляет временный аудиофайл с диска с безопасным подавл... |
-| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L296–L308 | `None` | Отправляет последующие части длинного сообщения с экран... |
-| [`deliver_transcription`](#deliver_transcription) | Function | L311–L335 | `None` | Отправляет результат распознавания текста пользователю ... |
-| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L338–L354 | `str` | Выполняет полный цикл скачивания и распознавания речи с... |
-| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L357–L388 | `None` | Координирует сквозной процесс транскрибации от скачиван... |
-| [`_check_and_acquire_voice`](#_check_and_acquire_voice) | Function | L391–L412 | `bool` | Проверяет лимиты аудиосообщения и резервирует слот поль... |
-| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L416–L437 | `None` | Точка входа для голосовых сообщений и видео-кружочков в... |
+| [`AudioMeta.__init__`](#audiometa__init__) | Method | L55–L82 | `Any` | Инициализирует контейнер метаданных входящего голосовог... |
+| [`AudioMeta.__iter__`](#audiometa__iter__) | Method | L84–L94 | `Any` | Обеспечивает распаковку основных полей: file_id, durati... |
+| [`is_allowed_chat`](#is_allowed_chat) | Function | L97–L107 | `bool` | Проверяет, разрешена ли обработка голосовых сообщений в... |
+| [`is_voice_request_allowed`](#is_voice_request_allowed) | Function | L110–L129 | `bool` | Проверяет, можно ли тратить GPU-очередь STT на это сооб... |
+| [`extract_audio_meta`](#extract_audio_meta) | Function | L132–L158 | `AudioMeta` | Извлекает нормализованные метаданные аудио- или видеосо... |
+| [`acquire_user_slot`](#acquire_user_slot) | Function | L161–L180 | `bool` | Атомарно проверяет и резервирует слот параллельной обра... |
+| [`release_user_slot`](#release_user_slot) | Function | L183–L202 | `None` | Освобождает занятый слот или пробуждает следующее задан... |
+| [`wait_for_user_slot`](#wait_for_user_slot) | Function | L205–L224 | `bool` | Ставит корутину в очередь ожидания слота пользователя и... |
+| [`validate_audio_limits`](#validate_audio_limits) | Function | L227–L246 | `str \| None` | Проверяет длительность и размер файла на соответствие л... |
+| [`log_voice_request`](#log_voice_request) | Function | L249–L264 | `None` | Логирует структурированную информацию о входящем аудиос... |
+| [`_determine_audio_extension`](#_determine_audio_extension) | Function | L267–L280 | `str` | Извлекает расширение исходного медиафайла Telegram из е... |
+| [`download_temp_audio`](#download_temp_audio) | Function | L283–L308 | `str` | Скачивает медиафайл из Telegram в общий с сервисом stt ... |
+| [`cleanup_temp_file`](#cleanup_temp_file) | Function | L311–L325 | `None` | Удаляет временный аудиофайл с диска с безопасным подавл... |
+| [`send_overflow_chunks`](#send_overflow_chunks) | Function | L328–L340 | `None` | Отправляет последующие части длинного сообщения с экран... |
+| [`deliver_transcription`](#deliver_transcription) | Function | L343–L367 | `None` | Отправляет результат распознавания текста пользователю ... |
+| [`_download_and_transcribe`](#_download_and_transcribe) | Function | L370–L386 | `str` | Выполняет полный цикл скачивания и распознавания речи с... |
+| [`process_audio_pipeline`](#process_audio_pipeline) | Function | L389–L420 | `None` | Координирует сквозной процесс транскрибации от скачиван... |
+| [`prepare_voice_status_message`](#prepare_voice_status_message) | Function | L423–L444 | `Message \| None` | Резервирует слот или ставит в очередь со статусным сооб... |
+| [`handle_voice_or_video_note`](#handle_voice_or_video_note) | Function | L448–L472 | `None` | Точка входа для голосовых сообщений и видео-кружочков в... |
 
 ---
 
@@ -46,7 +47,7 @@
 def __init__( self, file_id: str, duration: int, sender: str, file_size: int = 0, user_id: int = 0, username: str = "",
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L51-L78`](../../bot/handlers/user/voice_transcribe.py#L51-L78)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L55-L82`](../../bot/handlers/user/voice_transcribe.py#L55-L82)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -87,7 +88,7 @@ result = __init__(file_id=..., duration=..., sender=...)
 def __iter__(self)
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L80-L90`](../../bot/handlers/user/voice_transcribe.py#L80-L90)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L84-L94`](../../bot/handlers/user/voice_transcribe.py#L84-L94)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `Any`
 
@@ -118,7 +119,7 @@ result = __iter__()
 def is_allowed_chat(chat_id: int, chat_type: str) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L93-L103`](../../bot/handlers/user/voice_transcribe.py#L93-L103)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L97-L107`](../../bot/handlers/user/voice_transcribe.py#L97-L107)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -152,7 +153,7 @@ result = is_allowed_chat(chat_id=..., chat_type=...)
 async def is_voice_request_allowed(message: Message) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L106-L125`](../../bot/handlers/user/voice_transcribe.py#L106-L125)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L110-L129`](../../bot/handlers/user/voice_transcribe.py#L110-L129)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -185,7 +186,7 @@ result = await is_voice_request_allowed(message=...)
 def extract_audio_meta(message: Message) -> AudioMeta
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L128-L154`](../../bot/handlers/user/voice_transcribe.py#L128-L154)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L132-L158`](../../bot/handlers/user/voice_transcribe.py#L132-L158)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `AudioMeta`
 
@@ -218,7 +219,7 @@ result = extract_audio_meta(message=...)
 def acquire_user_slot(user_id: int) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L157-L176`](../../bot/handlers/user/voice_transcribe.py#L157-L176)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L161-L180`](../../bot/handlers/user/voice_transcribe.py#L161-L180)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -251,12 +252,12 @@ result = acquire_user_slot(user_id=...)
 def release_user_slot(user_id: int) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L179-L192`](../../bot/handlers/user/voice_transcribe.py#L179-L192)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L183-L202`](../../bot/handlers/user/voice_transcribe.py#L183-L202)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
 #### Overview & Architectural Purpose
-Освобождает занятый слот пользователя после завершения транскрибации.
+Освобождает занятый слот или пробуждает следующее задание из очереди ожидания.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -279,12 +280,46 @@ result = release_user_slot(user_id=...)
 
 ---
 
+### `wait_for_user_slot`
+```python
+async def wait_for_user_slot(user_id: int, timeout: float = TRANSCRIBE_TIMEOUT) -> bool
+```
+
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L205-L224`](../../bot/handlers/user/voice_transcribe.py#L205-L224)
+- **Execution Mode**: `Asynchronous (non-blocking)`
+- **Return Contract**: `bool`
+
+#### Overview & Architectural Purpose
+Ставит корутину в очередь ожидания слота пользователя и ожидает его освобождения.
+
+#### Parameters Contract
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
+| `timeout` | `float` | Yes | Parameter `timeout` of type `float`. |
+
+#### Concurrency & Side Effects
+- Stateless pure functional computation without external mutations.
+
+#### Fault Tolerance & Error Modes
+Encapsulates faults within `try/except` blocks, logging errors and returning safe fallback defaults.
+
+#### Production Usage Example
+```python
+from bot.handlers.user.voice_transcribe import wait_for_user_slot
+
+# Execute call
+result = await wait_for_user_slot(user_id=..., timeout=...)
+```
+
+---
+
 ### `validate_audio_limits`
 ```python
 def validate_audio_limits(duration: int, file_size: int, sender: str) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L195-L214`](../../bot/handlers/user/voice_transcribe.py#L195-L214)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L227-L246`](../../bot/handlers/user/voice_transcribe.py#L227-L246)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
@@ -319,7 +354,7 @@ result = validate_audio_limits(duration=..., file_size=..., sender=...)
 def log_voice_request(meta: AudioMeta) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L217-L232`](../../bot/handlers/user/voice_transcribe.py#L217-L232)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L249-L264`](../../bot/handlers/user/voice_transcribe.py#L249-L264)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -352,7 +387,7 @@ result = log_voice_request(meta=...)
 def _determine_audio_extension(file_path: str | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L235-L248`](../../bot/handlers/user/voice_transcribe.py#L235-L248)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L267-L280`](../../bot/handlers/user/voice_transcribe.py#L267-L280)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -385,7 +420,7 @@ result = _determine_audio_extension(file_path=...)
 async def download_temp_audio(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L251-L276`](../../bot/handlers/user/voice_transcribe.py#L251-L276)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L283-L308`](../../bot/handlers/user/voice_transcribe.py#L283-L308)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -418,7 +453,7 @@ result = await download_temp_audio(file_id=...)
 def cleanup_temp_file(path: str) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L279-L293`](../../bot/handlers/user/voice_transcribe.py#L279-L293)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L311-L325`](../../bot/handlers/user/voice_transcribe.py#L311-L325)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `None`
 
@@ -451,7 +486,7 @@ result = cleanup_temp_file(path=...)
 async def send_overflow_chunks(message: Message, chunks: list[str]) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L296-L308`](../../bot/handlers/user/voice_transcribe.py#L296-L308)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L328-L340`](../../bot/handlers/user/voice_transcribe.py#L328-L340)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -485,7 +520,7 @@ result = await send_overflow_chunks(message=..., chunks=...)
 async def deliver_transcription( message: Message, status_msg: Message, sender_name: str, duration: int, text: str, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L311-L335`](../../bot/handlers/user/voice_transcribe.py#L311-L335)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L343-L367`](../../bot/handlers/user/voice_transcribe.py#L343-L367)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -522,7 +557,7 @@ result = await deliver_transcription(message=..., status_msg=..., sender_name=..
 async def _download_and_transcribe(file_id: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L338-L354`](../../bot/handlers/user/voice_transcribe.py#L338-L354)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L370-L386`](../../bot/handlers/user/voice_transcribe.py#L370-L386)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `str`
 
@@ -555,7 +590,7 @@ result = await _download_and_transcribe(file_id=...)
 async def process_audio_pipeline( file_id: str, sender: str, duration: int, message: Message, status_msg: Message, user_id: int = 0, ) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L357-L388`](../../bot/handlers/user/voice_transcribe.py#L357-L388)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L389-L420`](../../bot/handlers/user/voice_transcribe.py#L389-L420)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -588,23 +623,23 @@ result = await process_audio_pipeline(file_id=..., sender=..., duration=...)
 
 ---
 
-### `_check_and_acquire_voice`
+### `prepare_voice_status_message`
 ```python
-async def _check_and_acquire_voice(message: Message, meta: AudioMeta) -> bool
+async def prepare_voice_status_message(message: Message, user_id: int) -> Message | None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L391-L412`](../../bot/handlers/user/voice_transcribe.py#L391-L412)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L423-L444`](../../bot/handlers/user/voice_transcribe.py#L423-L444)
 - **Execution Mode**: `Asynchronous (non-blocking)`
-- **Return Contract**: `bool`
+- **Return Contract**: `Message | None`
 
 #### Overview & Architectural Purpose
-Проверяет лимиты аудиосообщения и резервирует слот пользователя.
+Резервирует слот или ставит в очередь со статусным сообщением Telegram.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `message` | `Message` | Yes | Aiogram Message event object encapsulating inbound user payload. |
-| `meta` | `AudioMeta` | Yes | Parameter `meta` of type `AudioMeta`. |
+| `user_id` | `int` | Yes | Unique 64-bit Telegram user identifier. |
 
 #### Concurrency & Side Effects
 - Emits structured telemetry events to system logging subsystem.
@@ -614,10 +649,10 @@ Propagates unexpected runtime errors up the call stack to global exception handl
 
 #### Production Usage Example
 ```python
-from bot.handlers.user.voice_transcribe import _check_and_acquire_voice
+from bot.handlers.user.voice_transcribe import prepare_voice_status_message
 
 # Execute call
-result = await _check_and_acquire_voice(message=..., meta=...)
+result = await prepare_voice_status_message(message=..., user_id=...)
 ```
 
 ---
@@ -627,7 +662,7 @@ result = await _check_and_acquire_voice(message=..., meta=...)
 async def handle_voice_or_video_note(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L416-L437`](../../bot/handlers/user/voice_transcribe.py#L416-L437)
+- **Source Reference**: [`bot/handlers/user/voice_transcribe.py#L448-L472`](../../bot/handlers/user/voice_transcribe.py#L448-L472)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

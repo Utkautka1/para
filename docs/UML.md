@@ -47,6 +47,10 @@ Technical specification of the distributed system architecture, end-to-end data 
 13. [Hardened Security Governance & Secrets Lifecycle Management](#13-hardened-security-governance--secrets-lifecycle-management)
 14. [AI Resilience, Circuit Breaker & Prompt Sanitization Architecture](#14-ai-resilience-circuit-breaker--prompt-sanitization-architecture)
 15. [Persistent Relational SQLite Architecture, Incident Alerting & Automated Backups](#15-persistent-relational-sqlite-architecture-incident-alerting--automated-backups)
+   - 15.1. [SQLite Persistence Class Diagram & Repository Contracts](#151-sqlite-persistence-class-diagram--repository-contracts)
+   - 15.2. [Proactive System Incident Alerting Pipeline](#152-proactive-system-incident-alerting-pipeline)
+   - 15.3. [Disaster Recovery Backup & Tarball Archival Pipeline](#153-disaster-recovery-backup--tarball-archival-pipeline)
+   - 15.4. [Asynchronous Alembic Database Migration Lifecycle](#154-asynchronous-alembic-database-migration-lifecycle)
 16. [OpenTelemetry End-to-End Tracing & Locust 500+ RPS Stress Testing Architecture](#16-opentelemetry-end-to-end-tracing--locust-500-rps-stress-testing-architecture)
    - 16.1. [Distributed Tracing Span Topology (Telegram -> gRPC -> Redis -> SQLite)](#161-distributed-tracing-span-topology-telegram---grpc---redis---sqlite)
    - 16.2. [Locust Dual-Protocol Load Testing Architecture & Morning Peak Simulation](#162-locust-dual-protocol-load-testing-architecture--morning-peak-simulation)
@@ -1831,9 +1835,17 @@ sequenceDiagram
     Handler->>Handler: is_allowed_chat(chat_id, type)
     Handler->>Handler: extract_audio_meta(message)
     Handler->>Handler: validate_audio_limits(duration<=300s, size<=20MB)
-    Handler->>Handler: acquire_user_slot(user_id) [Flood control]
-    Handler->>TG: message.reply("Расшифровываю...", message_thread_id)
-    TG-->>User: Visual Status Indicator
+    Handler->>Handler: prepare_voice_status_message(message, user_id)
+    alt Slot available (in-flight < MAX_CONCURRENT_PER_USER)
+        Handler->>Handler: acquire_user_slot(user_id)
+        Handler->>TG: message.reply("Расшифровываю...")
+        TG-->>User: Visual Status Indicator
+    else Slot busy (queued)
+        Handler->>TG: message.reply("🎙 В очереди на расшифровку (позиция: N)...")
+        TG-->>User: Interactive Queue Progress Indicator
+        Handler->>Handler: wait_for_user_slot(user_id, timeout) [asyncio.Event]
+        Handler->>TG: status_msg.edit_text("Расшифровываю...")
+    end
 
     Handler->>Handler: process_audio_pipeline(...)
     Handler->>TG: bot.get_file(file_id) & bot.download_file(...) [timeout=25s]
@@ -1855,7 +1867,7 @@ sequenceDiagram
     end
     TG-->>User: Formatted HTML Quote with Duration & Speaker
     Handler->>Handler: cleanup_temp_file(temp_path) [tmpfs stt_audio]
-    Handler->>Handler: release_user_slot(user_id)
+    Handler->>Handler: release_user_slot(user_id) [Wakes next queued waiter via Event.set()]
 ```
 
 #### Key Architecture & Resilience Principles
@@ -3040,6 +3052,41 @@ flowchart TD
 
     RotateBackups --> SendTg
     SendTg --> AdminInbox
+```
+
+### 15.4. Asynchronous Alembic Database Migration Lifecycle
+
+Alembic async architecture orchestrates schema evolution across development, testing, and production environments via `alembic/env.py` and batch alter execution:
+
+```mermaid
+flowchart TD
+    subgraph CLI["1. Developer & CI/CD CLI"]
+        MakeMigrate["make migrate\n(alembic upgrade head)"]
+        MakeRevision["make migrate-create msg='...'\n(alembic revision --autogenerate)"]
+    end
+
+    subgraph EnvConfig["2. alembic/env.py Resolution"]
+        ReadURL["Resolve sqlalchemy.url\n(DATABASE_URL env -> config.py fallback)"]
+        BatchMode["Enable render_as_batch=True\n(SQLite table rebuild on ALTER)"]
+        LoopCheck{"Running Async Loop?\n(pytest / FastAPI)"}
+        ThreadExec["ThreadPoolExecutor(max_workers=1)\n-> asyncio.run(run_async_migrations)"]
+        DirectExec["asyncio.run(run_async_migrations)"]
+    end
+
+    subgraph Revisions["3. Schema Versioning"]
+        BaseRev["00559cd636a2_baseline_schema.py\n(subscribers, attendance_snapshots,\nsystem_incidents, student_achievements,\nstudent_counters, achievement_baselines)"]
+        AlembicVersion[("Table: alembic_version\n(version_num: 00559cd636a2)")]
+    end
+
+    MakeMigrate --> ReadURL
+    MakeRevision --> ReadURL
+    ReadURL --> BatchMode
+    BatchMode --> LoopCheck
+    LoopCheck -- Yes --> ThreadExec
+    LoopCheck -- No --> DirectExec
+    ThreadExec --> BaseRev
+    DirectExec --> BaseRev
+    BaseRev --> AlembicVersion
 ```
 
 ---

@@ -1,4 +1,4 @@
-.PHONY: help install test lint type-check format docs docs-check dev-redis build up down logs clean export-openapi
+.PHONY: help install test lint type-check format docs docs-check dev-redis build up down logs clean export-openapi migrate migrate-create
 
 PYTHON ?= $(shell if [ -f ./venv/bin/python3 ]; then echo "./venv/bin/python3"; else echo "python3"; fi)
 VENV ?= venv
@@ -48,6 +48,12 @@ type-check: ## Execute static type analysis with MyPy
 format: ## Automatically fix lint errors and format code
 	$(RUFF) check . --fix
 	$(RUFF) format .
+
+migrate: ## Apply database migrations via Alembic
+	PYTHONPATH=. $(VENV)/bin/alembic upgrade head
+
+migrate-create: ## Generate new autodetected migration revision (usage: make migrate-create msg="description")
+	PYTHONPATH=. $(VENV)/bin/alembic revision --autogenerate -m "$(or $(msg),auto_migration)"
 
 docs: ## Regenerate 100 module engineering specifications and docs/index.md
 	$(PYTHON) scripts/generate_docs_suite.py

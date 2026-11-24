@@ -165,6 +165,7 @@ class WhisperConfig:
     max_audio_duration: int = 300
     max_audio_size: int = 20 * 1024 * 1024
     max_concurrent_per_user: int = 2
+    max_user_queue_depth: int = 10
     download_timeout: float = 25.0
     transcribe_timeout: float = 90.0
 

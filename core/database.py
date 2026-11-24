@@ -108,6 +108,20 @@ def _migrate_attendance_snapshot_columns(conn: Any) -> None:
         log.debug("Миграция колонок attendance_snapshots пропущена: %s", exc)
 
 
+def apply_migrations() -> None:
+    """
+    Применяет актуальные миграции схемы базы данных через Alembic.
+
+    Запускается в синхронном контексте или отдельном пуле воркеров.
+    """
+    from alembic.config import Config
+
+    from alembic import command
+
+    cfg = Config("alembic.ini")
+    command.upgrade(cfg, "head")
+
+
 async def init_db() -> None:
     """Создает все необходимые таблицы в SQLite и проводит стартовую миграцию."""
     from db.sqlite.models import Base
