@@ -177,7 +177,7 @@ result = data()
 
 ### `_GoogleAuthRequest.__call__`
 ```python
-def __call__( self, url: str, method: str = "GET", body: Any = None, headers: Any = None, timeout: float | None = None, **kwargs: Any,
+def __call__( self, url: str, method: str = "GET", body: Any = None, headers: Any = None, timeout: float | None = None, **_kwargs: Any,
 ```
 
 - **Source Reference**: [`integrations/google_sheets.py#L82-L101`](../../integrations/google_sheets.py#L82-L101)

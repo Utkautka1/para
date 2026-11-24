@@ -86,7 +86,7 @@ class _GoogleAuthRequest:
         body: Any = None,
         headers: Any = None,
         timeout: float | None = None,
-        **kwargs: Any,
+        **_kwargs: Any,
     ) -> _GoogleAuthResponse:
         """
         Выполняет синхронный запрос к OAuth-эндпоинту Google через httpx.
