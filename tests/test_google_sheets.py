@@ -237,3 +237,107 @@ def test_google_auth_request_and_response() -> None:
         assert res.status == 200
         assert res.data == b'{"access_token": "mock_token"}'
         mock_req.assert_called_once()
+
+
+def test_col_to_letter_triple_coordinates() -> None:
+    """
+    Проверяет трансляцию трехзначных индексов колонок в нотацию A1.
+
+    Тестируем граничные переходы ZZ -> AAA для поддержки широких листов расписания.
+    Возвращает None.
+    """
+    assert col_to_letter(702) == "ZZ"
+    assert col_to_letter(703) == "AAA"
+    assert col_to_letter(704) == "AAB"
+
+
+def test_normalize_fio_multiple_words_and_special_spaces() -> None:
+    """
+    Проверяет очистку ФИО от неразрывных пробелов и концевых пробельных символов.
+
+    Обеспечивает точный матчинг имен студентов при вставке данных из внешних редакторов.
+    Возвращает None.
+    """
+    raw_fio = "  \xa0Иванов Иван Иванович\xa0  "
+    assert normalize_fio(raw_fio) == "Иванов Иван Иванович"
+    assert normalize_fio("   \xa0   ") == ""
+
+
+def test_parse_date_cell_string_and_invalid() -> None:
+    """
+    Проверяет парсинг ячеек с датами в строковом представлении и пустых значений.
+
+    Гарантирует устойчивость алгоритма при чтении неоднородных типов ячеек.
+    Возвращает None.
+    """
+    assert parse_date_cell("23.11") == "23.11"
+    assert parse_date_cell("  24.11  ") == "24.11"
+    assert parse_date_cell(None) is None
+    assert parse_date_cell("") is None
+
+
+def test_find_lesson_column_not_found() -> None:
+    """
+    Проверяет возврат None при отсутствии даты или пары в сетке заголовков.
+
+    Предотвращает некорректную запись отметок при несовпадении номеров пар.
+    Возвращает None.
+    """
+    ws = _create_mock_sheet()
+    assert find_lesson_column(ws, date(2026, 11, 23), 99) is None
+    assert find_lesson_column(ws, date(2026, 1, 1), 1) is None
+
+
+def test_find_student_row_not_found() -> None:
+    """
+    Проверяет поведение поиска при отсутствии запрашиваемого студента в списке.
+
+    Исключает исключения IndexError/AttributeError при обработке чужих студентов.
+    Возвращает None.
+    """
+    ws = _create_mock_sheet()
+    assert find_student_row(ws, "Несуществующий Студент") is None
+
+
+def test_write_student_mark_applies_value() -> None:
+    """
+    Проверяет непосредственную запись отметки в ячейку openpyxl листа.
+
+    Убеждаемся в корректности установки строкового значения в координатах row/col.
+    Возвращает None.
+    """
+    ws = _create_mock_sheet()
+    write_student_mark(ws, 5, 3, "Н")
+    assert ws.cell(5, 3).value == "Н"
+
+
+def test_build_batch_data_empty_marks() -> None:
+    """
+    Проверяет формирование данных batchUpdate для пустого набора отметок.
+
+    Гарантирует отсутствие лишних сетевых полезных нагрузок в API Google.
+    Возвращает None.
+    """
+    data = _build_batch_data("НОЯБ", "C", {})
+    assert data == []
+
+
+@pytest.mark.asyncio
+async def test_fetch_students_from_google_empty_rows() -> None:
+    """
+    Проверяет игнорирование пустых и состоящих только из пробелов строк в таблице.
+
+    Обеспечивает чистоту и неизменность результирующего реестра группы.
+    Возвращает None.
+    """
+    mock_res = MagicMock()
+    mock_res.json.return_value = {"values": [["   "], [""], ["Сидоров С.С."]]}
+    mock_res.raise_for_status = MagicMock()
+
+    with (
+        patch("integrations.google_sheets.get_access_token", new_callable=AsyncMock, return_value="token"),
+        patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_res),
+    ):
+        students = await fetch_students_from_google(date(2026, 11, 23))
+        assert len(students) == 1
+        assert students[0] == (7, "Сидоров С.С.")

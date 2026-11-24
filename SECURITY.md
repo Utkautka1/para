@@ -6,8 +6,9 @@ Security patches and dependency updates are applied exclusively to the `main` br
 
 | Version | Supported | Release Date | Status |
 | :--- | :--- | :--- | :--- |
-| `v3.0.x` | :white_check_mark: | November 2026 | Active Production (Hardened Auth, Fair Achievements, STT Service & Continuous Deployment) |
-| `v2.9.x` | :white_check_mark: | October 2026 | Maintenance Mode (security fixes only) |
+| `v4.0.x` | :white_check_mark: | November 2026 | Active Production (Google Sheets API v4, Jaeger RED SPM, KTMU Shards & Resilient Auth) |
+| `v3.0.x` | :white_check_mark: | November 2026 | Maintenance Mode (Hardened Auth, Fair Achievements, STT Service) |
+| `v2.9.x` | :x: | October 2026 | Deprecated |
 | `v2.4.x` – `v2.8.x` | :x: | October 2026 | Deprecated |
 | `< v2.0` | :x: | Earlier | End of Life |
 

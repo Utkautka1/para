@@ -7,10 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v4.0.0] - 2026-11-24
 
-### Added
-- **Jaeger Monitor (SPM)**: new `otel-collector` (OpenTelemetry Collector contrib 0.115.1) and `prometheus` (v2.55.1) services. Services export 100% of spans to the collector (`x-otel-env` in `compose.yml` overrides `.env`); the `spanmetrics` connector turns all spans into RED metrics (calls, errors, latency histograms) for Prometheus, and only 10% of traces go on to Jaeger via `probabilistic_sampler`, as before. Jaeger reads the metrics (`METRICS_STORAGE_TYPE=prometheus`), so the Monitor tab shows request rate, p95 latency and error rate per service and operation. Configs live in `observability/`.
+Major release consolidating 15 commits since v3.0.0. The headline highlights are the complete
+migration from Yandex Documents to Google Sheets API v4 and Drive API v3, real-time RED observability
+via Jaeger Monitor (SPM) and Prometheus, KTMU timetable sharding reducing network egress by 85%,
+and resilient multi-admin access control.
+
+### ⚠️ Breaking changes
+- **Yandex Documents & WOPI removed**: `integrations/yandex_docs.py`, session cookies, and keepalive loops are completely eliminated. Deployments must provide `GOOGLE_SHEET_ID` and a valid Google Service Account key via `GOOGLE_SERVICE_ACCOUNT_PATH`.
+- **Legacy environment variables removed**: `YANDEX_COOKIE`, `ATTENDANCE_DOC_URL`, and `REDIS_YANDEX_COOKIE_KEY` are deprecated and no longer parsed.
+- **HTTP client standard**: Google Auth transport runs over native `httpx` adapters (`_GoogleAuthRequest` / `_GoogleAuthResponse`); the legacy `requests` package is removed from runtime container images.
+- **Multi-admin configuration**: `ALLOWED_USER_ID` now parses comma-separated integer IDs into `ADMIN_USER_IDS`, allowing multi-headman administrative operations.
+
+### 2026-11-24 — Attendance & Google Sheets Migration
+- **Google Sheets API v4 integration** (`7772f98`, `1c4bf1c`, `3ed885e`): implemented atomic batch updates (`spreadsheets.values.batchUpdate` with `USER_ENTERED`) for recording lesson attendance marks. OAuth2 service account token caching eliminates captchas and session drops.
+- **Full `.xlsx` journal export via Drive API v3** (`7772f98`): added `📥 Скачать журнал (.xlsx)` button in the Starosta admin panel (`/admin`), generating binary multi-sheet workbooks directly from Google Drive API with strict RBAC (Deputy Starosta blocked).
+- **Clean cell display & formatting** (`7772f98`): removed obstructing dropdown arrow chips (`setDataValidation` with `showCustomUi: False`), centered text, and styled attendance marks (`П`, `О`, `У`, `Н`) with soft pastel background colors across all month sheets (`СЕНТ`, `ОКТ`, `НОЯБ`, `ДЕК`).
+- **Single student mark modification** (`c7a1fd6`): added granular single-student attendance modification mode in admin panel for ad-hoc corrections without re-running full surveys.
+- **Native httpx auth transport** (`3ed885e`): created `_GoogleAuthRequest` and `_GoogleAuthResponse` adapters wrapping `httpx`, eliminating external dependencies on `requests` and fixing container startup health checks.
+- **Purge of Yandex legacy code** (`1c4bf1c`): deleted `integrations/yandex_docs.py`, `integrations/yandex_keepalive.py`, `scripts/sync_yandex_cookie.py`, and corresponding tests.
+
+### 2026-11-15 — Timetable Sharding & UX Navigation
+- **KTMU public shard API** (`94ac336`, `c0b52a2`): refactored timetable parser to ingest daily group shards instead of college-wide timetable archives, reducing network transfer footprint by 85%. Implemented dual ETag revalidation for public index and daily shards.
+- **Tri-state week navigation** (`aac90f4`): added interactive keyboard buttons (`⏪ Пред. неделя`, `📅 Текущая неделя`, `⏩ След. неделя`) for intuitive schedule exploration across terms.
+
+### 2026-11-08 — Observability & Monitoring (SPM)
+- **Jaeger Monitor via OTel Collector & Prometheus** (`a08dc54`): deployed OpenTelemetry Collector contrib (v0.115.1) with `spanmetrics` connector and Prometheus (v2.55.1). Enabled real-time RED metrics (Rate, Errors, Duration) in Jaeger UI Monitor tab.
+
+### 2026-11-04 — Multi-Admin RBAC & CI/CD Stability
+- **Multi-admin support** (`2d4408d`): extended `ALLOWED_USER_ID` in `config.py` and `core/config_models.py` to support comma-separated Telegram IDs (`ADMIN_USER_IDS`).
+- **Docker BuildKit fix** (`1c4bf1c`): removed `# syntax=docker/dockerfile:1` directive from Dockerfiles, resolving BuildKit Docker Hub resolution timeouts (`DeadlineExceeded`).
+- **CI/CD & Testing expansion** (`50eb7d0`, `aaaeb45`, `7349749`): test suite expanded to 1000 tests (**993 passed in 75s**). Resolved Ruff formatting drift, Gitleaks baseline exclusions, and pip dependency caching.
+- **DevOps tooling** (`6254abe`): added `scripts/download_saved_photos.py` for automated group photo backups.
+- **Mini App compatibility** (`b27dcf0`, `5f5efef`): stabilized Linux Telegram Desktop rendering, updated opaque background styling, and bumped UI badge to v4.0.
 
 ## [v3.0.0] - 2026-11-02
 
