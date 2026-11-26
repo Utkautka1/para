@@ -12,17 +12,17 @@
 | :--- | :--- | :--- | :--- | :--- |
 | [`load_classmates_list`](#load_classmates_list) | Function | L40–L50 | `list[dict[str, Any]]` | Загружает актуальный список одногруппников из файла bir... |
 | [`resolve_person_tg_id`](#resolve_person_tg_id) | Function | L53–L68 | `int \| None` | Извлекает Telegram ID из записи студента либо из кэша ю... |
-| [`format_mention_tag`](#format_mention_tag) | Function | L71–L92 | `str \| None` | Формирует активный HTML-тег кликабельного упоминания ст... |
-| [`is_sender`](#is_sender) | Function | L95–L108 | `bool` | Проверяет, является ли запись студента автором вызванно... |
-| [`build_mentions_block`](#build_mentions_block) | Function | L111–L126 | `str` | Формирует единую строку кликабельных упоминаний одногру... |
-| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L129–L145 | `str` | Извлекает пользовательский текст сообщения после команд... |
-| [`build_broadcast_message`](#build_broadcast_message) | Function | L148–L164 | `str` | Компонует итоговый HTML-текст поста с текстом автора и ... |
-| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L167–L185 | `None` | Безопасно удаляет исходное командное сообщение админист... |
-| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L188–L214 | `Message` | Отправляет пост от лица бота в целевой топик чата с сох... |
-| [`validate_group_chat`](#validate_group_chat) | Function | L217–L231 | `bool` | Проверяет, что команда /all вызвана в группе или суперг... |
-| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L234–L249 | `tuple[str, int \| None]` | Формирует итоговый HTML-текст рассылки и извлекает ID с... |
-| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L252–L270 | `None` | Отправляет широковещательный пост в чат и удаляет тригг... |
-| [`cmd_ping_all`](#cmd_ping_all) | Function | L274–L289 | `None` | Оркестрирует полный сценарий общего пинга группы 1-КПД-... |
+| [`format_mention_tag`](#format_mention_tag) | Function | L71–L88 | `str \| None` | Формирует невидимый HTML-тег скрытого упоминания студен... |
+| [`is_sender`](#is_sender) | Function | L91–L104 | `bool` | Проверяет, является ли запись студента автором вызванно... |
+| [`build_mentions_block`](#build_mentions_block) | Function | L107–L122 | `str` | Формирует строку невидимых кликабельных упоминаний одно... |
+| [`extract_broadcast_text`](#extract_broadcast_text) | Function | L125–L141 | `str` | Извлекает пользовательский текст сообщения после команд... |
+| [`build_broadcast_message`](#build_broadcast_message) | Function | L144–L160 | `str` | Компонует итоговый HTML-текст поста с чистым текстом ав... |
+| [`safe_delete_command_message`](#safe_delete_command_message) | Function | L163–L181 | `None` | Безопасно удаляет исходное командное сообщение админист... |
+| [`send_broadcast_payload`](#send_broadcast_payload) | Function | L184–L210 | `Message` | Отправляет пост от лица бота в целевой топик чата с сох... |
+| [`validate_group_chat`](#validate_group_chat) | Function | L213–L227 | `bool` | Проверяет, что команда /all вызвана в группе или суперг... |
+| [`compose_broadcast_content`](#compose_broadcast_content) | Function | L230–L245 | `tuple[str, int \| None]` | Формирует итоговый HTML-текст рассылки и извлекает ID с... |
+| [`dispatch_broadcast`](#dispatch_broadcast) | Function | L248–L266 | `None` | Отправляет широковещательный пост в чат и удаляет тригг... |
+| [`cmd_ping_all`](#cmd_ping_all) | Function | L270–L285 | `None` | Оркестрирует полный сценарий общего пинга группы 1-КПД-... |
 
 ---
 
@@ -97,12 +97,12 @@ result = resolve_person_tg_id(person=...)
 def format_mention_tag(person: dict[str, Any]) -> str | None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L71-L92`](../../bot/handlers/admin/ping_all.py#L71-L92)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L71-L88`](../../bot/handlers/admin/ping_all.py#L71-L88)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str | None`
 
 #### Overview & Architectural Purpose
-Формирует активный HTML-тег кликабельного упоминания студента.
+Формирует невидимый HTML-тег скрытого упоминания студента (как в Iris).
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -130,7 +130,7 @@ result = format_mention_tag(person=...)
 def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: str | None) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L95-L108`](../../bot/handlers/admin/ping_all.py#L95-L108)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L91-L104`](../../bot/handlers/admin/ping_all.py#L91-L104)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `bool`
 
@@ -165,12 +165,12 @@ result = is_sender(person=..., sender_id=..., sender_username=...)
 def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L111-L126`](../../bot/handlers/admin/ping_all.py#L111-L126)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L107-L122`](../../bot/handlers/admin/ping_all.py#L107-L122)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Формирует единую строку кликабельных упоминаний одногруппников без автора.
+Формирует строку невидимых кликабельных упоминаний одногруппников без автора.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -199,7 +199,7 @@ result = build_mentions_block(classmates=..., sender=...)
 def extract_broadcast_text(html_text: str) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L129-L145`](../../bot/handlers/admin/ping_all.py#L129-L145)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L125-L141`](../../bot/handlers/admin/ping_all.py#L125-L141)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
@@ -232,12 +232,12 @@ result = extract_broadcast_text(html_text=...)
 def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L148-L164`](../../bot/handlers/admin/ping_all.py#L148-L164)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L144-L160`](../../bot/handlers/admin/ping_all.py#L144-L160)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `str`
 
 #### Overview & Architectural Purpose
-Компонует итоговый HTML-текст поста с текстом автора и пингами внизу.
+Компонует итоговый HTML-текст поста с чистым текстом автора и скрытыми пингами.
 
 #### Parameters Contract
 | Parameter | Type | Required | Description |
@@ -267,7 +267,7 @@ result = build_broadcast_message(user_html=..., mentions=..., has_reply=...)
 async def safe_delete_command_message(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L167-L185`](../../bot/handlers/admin/ping_all.py#L167-L185)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L163-L181`](../../bot/handlers/admin/ping_all.py#L163-L181)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -300,7 +300,7 @@ result = await safe_delete_command_message(message=...)
 async def send_broadcast_payload(message: Message, final_html: str, reply_to_id: int | None) -> Message
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L188-L214`](../../bot/handlers/admin/ping_all.py#L188-L214)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L184-L210`](../../bot/handlers/admin/ping_all.py#L184-L210)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `Message`
 
@@ -335,7 +335,7 @@ result = await send_broadcast_payload(message=..., final_html=..., reply_to_id=.
 async def validate_group_chat(message: Message) -> bool
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L217-L231`](../../bot/handlers/admin/ping_all.py#L217-L231)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L213-L227`](../../bot/handlers/admin/ping_all.py#L213-L227)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `bool`
 
@@ -368,7 +368,7 @@ result = await validate_group_chat(message=...)
 def compose_broadcast_content(classmates: list[dict[str, Any]], message: Message) -> tuple[str, int | None]
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L234-L249`](../../bot/handlers/admin/ping_all.py#L234-L249)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L230-L245`](../../bot/handlers/admin/ping_all.py#L230-L245)
 - **Execution Mode**: `Synchronous`
 - **Return Contract**: `tuple[str, int | None]`
 
@@ -402,7 +402,7 @@ result = compose_broadcast_content(classmates=..., message=...)
 async def dispatch_broadcast(message: Message, final_text: str, reply_id: int | None) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L252-L270`](../../bot/handlers/admin/ping_all.py#L252-L270)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L248-L266`](../../bot/handlers/admin/ping_all.py#L248-L266)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 
@@ -437,7 +437,7 @@ result = await dispatch_broadcast(message=..., final_text=..., reply_id=...)
 async def cmd_ping_all(message: Message) -> None
 ```
 
-- **Source Reference**: [`bot/handlers/admin/ping_all.py#L274-L289`](../../bot/handlers/admin/ping_all.py#L274-L289)
+- **Source Reference**: [`bot/handlers/admin/ping_all.py#L270-L285`](../../bot/handlers/admin/ping_all.py#L270-L285)
 - **Execution Mode**: `Asynchronous (non-blocking)`
 - **Return Contract**: `None`
 

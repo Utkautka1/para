@@ -32,6 +32,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.14. [Scoped Interactive Telegram Command Menus (commands.py)](#814-scoped-interactive-telegram-command-menus-commandspy)
    - 8.15. [Distributed Redis FSM Storage & Resilient Fallback (core/bot.py)](#815-distributed-redis-fsm-storage--resilient-fallback-corebotpy)
    - 8.16. [Voice & Video Note STT Transcription Flow (voice_transcribe.py)](#816-voice--video-note-stt-transcription-flow-voice_transcribepy)
+   - 8.17. [Invisible Zero-Width Mentions /all Broadcast Architecture (ping_all.py)](#817-invisible-zero-width-mentions-all-broadcast-architecture-ping_allpy)
 9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
@@ -1878,6 +1879,42 @@ sequenceDiagram
 5. **Resilient Hardware Fallback**: Automatically degrades from `device="cuda"` (FP16) to a cached `_cpu_model` (INT8) if VRAM is temporarily exhausted or if execution fails at runtime.
 6. **Zero Cold-Start Lag (Warmup)**: `para-stt` pre-loads `large-v3-turbo` into GPU memory at its own startup (`stt.py::_warmup_model`), so bot restarts and deploys never reload the model into VRAM.
 7. **Isolated GPU Service**: `faster-whisper`, `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` (`requirements-bot.txt`) live only in `stt.dockerfile`; the bot image dropped CUDA (~5.4 GB → ~0.5 GB), its GPU reservation and 4 GB memory limit. Bot and STT talk only through Redis (`services/stt_queue.py`).
+
+---
+
+### 8.17. Invisible Zero-Width Mentions /all Broadcast Architecture (ping_all.py)
+
+Autonomous pipeline capturing administrator `/all` announcements and attaching hidden zero-width space mentions (`<a href="tg://user?id=UID">&#8203;</a>`) directly into the broadcast payload, eliminating messy visible username walls while triggering instant push notifications for group members.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as 👨‍💼 Headman / Admin
+    participant Bot as 🤖 Telegram Bot Dispatcher
+    participant Handler as 📢 ping_all.py
+    participant Storage as 📁 birthdays.json
+    participant TG as 💬 Telegram Bot API
+    actor Student as 👤 Classmates (21 users)
+
+    Admin->>Bot: /all [Custom Announcement Text / Media]
+    activate Bot
+    Bot->>Handler: cmd_ping_all(message)
+    activate Handler
+    Handler->>Handler: validate_group_chat(message)
+    Handler->>Storage: load_classmates_list()
+    Storage-->>Handler: 22 Classmate Records (tg_id, username)
+    Handler->>Handler: build_mentions_block(classmates, sender)
+    Note over Handler: Generates <a href="tg://user?id=UID">&#8203;</a> (Zero-Width Space)<br/>Excludes sender from mention set
+    Handler->>Handler: build_broadcast_message(user_html, hidden_mentions)
+    Handler->>TG: send_broadcast_payload (Clean text + hidden tags)
+    TG-->>Admin: Broadcast post published in topic
+    Handler->>TG: safe_delete_command_message()
+    Handler->>Handler: mark_ping_all() [Unlocks 15m achievement window]
+    deactivate Handler
+    deactivate Bot
+
+    TG-->>Student: 🔔 Push Notification & @ Badge (Invisible in text body)
+```
 
 ---
 

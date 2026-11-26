@@ -31,31 +31,31 @@ from bot.handlers.admin.ping_all import (
 
 
 def test_format_mention_tag_with_username_and_tg_id() -> None:
-    """Проверяет оборачивание в tg://user?id при наличии и юзернейма, и tg_id."""
+    """Проверяет формирование невидимого тега tg://user?id при наличии и юзернейма, и tg_id."""
     person = {"full_name": "Мазур Арсений", "username": "Arseniymazur", "tg_id": 1859089085}
-    expected = '<a href="tg://user?id=1859089085">@Arseniymazur</a>'
+    expected = '<a href="tg://user?id=1859089085">&#8203;</a>'
     assert format_mention_tag(person) == expected
 
 
 @patch("bot.handlers.admin.ping_all.get_cached_user_id", return_value=None)
 def test_format_mention_tag_only_username(mock_cache: MagicMock) -> None:
-    """Проверяет возврат чистого @username, если tg_id отсутствует."""
+    """Проверяет возврат невидимой ссылки t.me, если tg_id отсутствует."""
     person = {"full_name": "Калинкевич Арсений", "username": "etow0ndes", "tg_id": None}
-    assert format_mention_tag(person) == "@etow0ndes"
+    assert format_mention_tag(person) == '<a href="https://t.me/etow0ndes">&#8203;</a>'
 
 
 def test_format_mention_tag_without_username_with_tg_id() -> None:
-    """Проверяет формирование ссылки tg://user?id при отсутствии юзернейма."""
+    """Проверяет формирование невидимой ссылки tg://user?id при отсутствии юзернейма."""
     person = {"full_name": "Куулар Алдын-Сай", "username": None, "tg_id": 7225258693}
-    expected = '<a href="tg://user?id=7225258693">Куулар Алдын-Сай</a>'
+    expected = '<a href="tg://user?id=7225258693">&#8203;</a>'
     assert format_mention_tag(person) == expected
 
 
 def test_format_mention_tag_escapes_html_in_name() -> None:
-    """Проверяет экранирование HTML-символов в имени студента без юзернейма."""
+    """Проверяет формирование скрытого тега по tg_id без вывода экранированного имени."""
     person = {"full_name": "Студент <Тест & Символы>", "username": None, "tg_id": 12345}
     res = format_mention_tag(person)
-    assert res == '<a href="tg://user?id=12345">Студент &lt;Тест &amp; Символы&gt;</a>'
+    assert res == '<a href="tg://user?id=12345">&#8203;</a>'
 
 
 def test_format_mention_tag_empty() -> None:
@@ -91,8 +91,8 @@ def test_build_mentions_block_excludes_sender() -> None:
     ]
     sender = User(id=2, is_bot=False, first_name="Author", username="author_user")
     block = build_mentions_block(classmates, sender)
-    assert '<a href="tg://user?id=1">@user1</a>' in block
-    assert '<a href="tg://user?id=3">Студент 3</a>' in block
+    assert '<a href="tg://user?id=1">&#8203;</a>' in block
+    assert '<a href="tg://user?id=3">&#8203;</a>' in block
     assert "author_user" not in block
 
 
@@ -105,24 +105,24 @@ def test_extract_broadcast_text_various_prefixes() -> None:
 
 
 def test_build_broadcast_message_with_text() -> None:
-    """Проверяет размещение текста автора вверху, а пингов внизу сообщения."""
-    mentions = "@user1 @user2"
+    """Проверяет прикрепление скрытых тегов непосредственно к тексту автора."""
+    mentions = '<a href="tg://user?id=1">&#8203;</a>'
     msg = build_broadcast_message("<b>Важное объявление!</b>", mentions)
-    assert msg == "<b>Важное объявление!</b>\n\n@user1 @user2"
+    assert msg == "<b>Важное объявление!</b>" + mentions
 
 
 def test_build_broadcast_message_empty_with_reply() -> None:
     """Проверяет формирование сообщения-заглушки при ответе на сообщение."""
-    mentions = "@user1"
+    mentions = '<a href="tg://user?id=1">&#8203;</a>'
     msg = build_broadcast_message("", mentions, has_reply=True)
-    assert msg == "📢 <b>Внимание к сообщению выше!</b>\n\n@user1"
+    assert msg == "📢 <b>Внимание к сообщению выше!</b>" + mentions
 
 
 def test_build_broadcast_message_empty_without_reply() -> None:
     """Проверяет формирование сообщения по умолчанию при пустом тексте."""
-    mentions = "@user1"
+    mentions = '<a href="tg://user?id=1">&#8203;</a>'
     msg = build_broadcast_message("", mentions, has_reply=False)
-    assert msg == "📢 <b>Общий сбор группы!</b>\n\n@user1"
+    assert msg == "📢 <b>Общий сбор группы!</b>" + mentions
 
 
 @pytest.mark.asyncio
@@ -228,7 +228,7 @@ async def test_cmd_ping_all_success_flow() -> None:
         await cmd_ping_all(msg)
         msg.bot.send_message.assert_awaited_once()
         text = msg.bot.send_message.call_args[1]["text"]
-        assert "@Arseniymazur" in text and "rooting_dev" not in text
+        assert '<a href="tg://user?id=1859089085">&#8203;</a>' in text and "rooting_dev" not in text
         msg.delete.assert_awaited_once()
 
 
@@ -250,7 +250,7 @@ def test_compose_broadcast_content() -> None:
     msg.reply_to_message = MagicMock(message_id=99)
     classmates = [{"full_name": "Б", "username": "user2", "tg_id": 2}]
     final_text, reply_id = compose_broadcast_content(classmates, msg)
-    assert "@user2" in final_text
+    assert '<a href="tg://user?id=2">&#8203;</a>' in final_text
     assert "<b>Сбор</b>" in final_text
     assert reply_id == 99
 

@@ -70,24 +70,20 @@ def resolve_person_tg_id(person: dict[str, Any]) -> int | None:
 
 def format_mention_tag(person: dict[str, Any]) -> str | None:
     """
-    Формирует активный HTML-тег кликабельного упоминания студента.
+    Формирует невидимый HTML-тег скрытого упоминания студента (как в Iris).
 
-    Отдаёт абсолютный приоритет tg://user?id=, так как Telegram шлёт пуш
-    только по ID, а простые @username от ботов зачастую игнорирует.
+    Использует zero-width space &#8203; внутри ссылки tg://user?id=,
+    благодаря чему текст поста остается чистым без простыни никнеймов.
 
-    Возвращает HTML-ссылку упоминания или @username, либо None.
+    Возвращает невидимый HTML-тег скрытого упоминания или ссылку, либо None.
     """
-
     tg_id = resolve_person_tg_id(person)
-    username = person.get("username")
-    name = html.escape(person.get("full_name", ""))
-
     if tg_id:
-        label = f"@{username}" if username else name
-        return f'<a href="tg://user?id={tg_id}">{label}</a>'
+        return f'<a href="tg://user?id={tg_id}">&#8203;</a>'
 
+    username = person.get("username")
     if username:
-        return f"@{username}"
+        return f'<a href="https://t.me/{username}">&#8203;</a>'
 
     return None
 
@@ -110,12 +106,12 @@ def is_sender(person: dict[str, Any], sender_id: int | None, sender_username: st
 
 def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) -> str:
     """
-    Формирует единую строку кликабельных упоминаний одногруппников без автора.
+    Формирует строку невидимых кликабельных упоминаний одногруппников без автора.
 
-    Объединяет валидные теги через пробел в единый текстовый блок.
-    Используется в нижней части широковещательного сообщения.
+    Объединяет валидные скрытые теги в единую скрытую строку.
+    Не содержит видимых пробелов, чтобы не искажать разметку текста.
 
-    Возвращает строку со всеми тегами упоминаний.
+    Возвращает строку со всеми невидимыми тегами упоминаний.
     """
 
     sender_id = sender.id if sender else None
@@ -123,7 +119,7 @@ def build_mentions_block(classmates: list[dict[str, Any]], sender: User | None) 
     tags = [format_mention_tag(p) for p in classmates if not is_sender(p, sender_id, sender_user)]
     valid_tags = [t for t in tags if t]
 
-    return " ".join(valid_tags)
+    return "".join(valid_tags)
 
 
 def extract_broadcast_text(html_text: str) -> str:
@@ -147,21 +143,21 @@ def extract_broadcast_text(html_text: str) -> str:
 
 def build_broadcast_message(user_html: str, mentions: str, has_reply: bool = False) -> str:
     """
-    Компонует итоговый HTML-текст поста с текстом автора и пингами внизу.
+    Компонует итоговый HTML-текст поста с чистым текстом автора и скрытыми пингами.
 
-    Подставляет подходящий заголовок по умолчанию при пустом тексте сообщения.
-    Разделяет текст автора и теги упоминаний двойным переводом строки.
+    Прикрепляет невидимые теги упоминаний непосредственно к тексту без лишних отступов.
+    При пустом сообщении подставляет стандартный заголовок сбора.
 
     Возвращает готовый HTML-текст для рассылки.
     """
 
     if user_html:
-        return f"{user_html}\n\n{mentions}"
+        return f"{user_html}{mentions}"
 
     if has_reply:
-        return f"📢 <b>Внимание к сообщению выше!</b>\n\n{mentions}"
+        return f"📢 <b>Внимание к сообщению выше!</b>{mentions}"
 
-    return f"📢 <b>Общий сбор группы!</b>\n\n{mentions}"
+    return f"📢 <b>Общий сбор группы!</b>{mentions}"
 
 
 async def safe_delete_command_message(message: Message) -> None:
