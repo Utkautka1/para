@@ -558,6 +558,10 @@ TOPIC_STATE_FILE: str = "data/topic_state.json"
 USER_CACHE_FILE_PATH: str = "data/user_cache.json"
 CUSTOM_TEACHERS_FILE_PATH: str = "data/custom_teachers.json"
 
+# Лимиты для массового пинга /all (Telegram доставляет пуш максимум 5 участникам на сообщение)
+PING_ALL_CHUNK_SIZE: int = 5
+PING_ALL_BATCH_DELAY: float = 0.3
+
 
 # ==============================================================================
 # 12. LOGGING, REGEXES & SYSTEM DICTIONARIES

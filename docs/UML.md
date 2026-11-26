@@ -32,7 +32,7 @@ Technical specification of the distributed system architecture, end-to-end data 
    - 8.14. [Scoped Interactive Telegram Command Menus (commands.py)](#814-scoped-interactive-telegram-command-menus-commandspy)
    - 8.15. [Distributed Redis FSM Storage & Resilient Fallback (core/bot.py)](#815-distributed-redis-fsm-storage--resilient-fallback-corebotpy)
    - 8.16. [Voice & Video Note STT Transcription Flow (voice_transcribe.py)](#816-voice--video-note-stt-transcription-flow-voice_transcribepy)
-   - 8.17. [Invisible Zero-Width Mentions /all Broadcast Architecture (ping_all.py)](#817-invisible-zero-width-mentions-all-broadcast-architecture-ping_allpy)
+   - 8.17. [Batched Mentions /all Broadcast Architecture (ping_all.py)](#817-batched-mentions-all-broadcast-architecture-ping_allpy)
 9. [Dual-Protocol gRPC & Telegram Mini App Swagger UI Architecture](#9-dual-protocol-grpc--telegram-mini-app-swagger-ui-architecture)
    - 9.1. [gRPC Microservices Ingress & Protobuf Multiplexing Flow](#91-grpc-microservices-ingress--protobuf-multiplexing-flow)
    - 9.2. [Telegram Mini App Cryptographic Auth & Embedded Swagger UI Flow](#92-telegram-mini-app-cryptographic-auth--embedded-swagger-ui-flow)
@@ -1882,9 +1882,9 @@ sequenceDiagram
 
 ---
 
-### 8.17. Invisible Zero-Width Mentions /all Broadcast Architecture (ping_all.py)
+### 8.17. Batched Mentions /all Broadcast Architecture (ping_all.py)
 
-Autonomous pipeline capturing administrator `/all` announcements and attaching hidden zero-width space mentions (`<a href="tg://user?id=UID">&#8203;</a>`) directly into the broadcast payload, eliminating messy visible username walls while triggering instant push notifications for group members.
+Autonomous pipeline capturing administrator `/all` announcements, publishing the clean author message (without messy username walls), and executing batched mention replies (`chunk_size = 5`) with micro-delays (`0.3s`). This bypasses Telegram's strict 5-push notification limit per message and guarantees 100% notification delivery to all classmates.
 
 ```mermaid
 sequenceDiagram
@@ -1894,7 +1894,7 @@ sequenceDiagram
     participant Handler as 📢 ping_all.py
     participant Storage as 📁 birthdays.json
     participant TG as 💬 Telegram Bot API
-    actor Student as 👤 Classmates (21 users)
+    actor Students as 👥 Classmates (Batches of 5)
 
     Admin->>Bot: /all [Custom Announcement Text / Media]
     activate Bot
@@ -1903,17 +1903,19 @@ sequenceDiagram
     Handler->>Handler: validate_group_chat(message)
     Handler->>Storage: load_classmates_list()
     Storage-->>Handler: 22 Classmate Records (tg_id, username)
-    Handler->>Handler: build_mentions_block(classmates, sender)
-    Note over Handler: Generates <a href="tg://user?id=UID">&#8203;</a> (Zero-Width Space)<br/>Excludes sender from mention set
-    Handler->>Handler: build_broadcast_message(user_html, hidden_mentions)
-    Handler->>TG: send_broadcast_payload (Clean text + hidden tags)
-    TG-->>Admin: Broadcast post published in topic
+    Handler->>Handler: compose_broadcast_content(message)
+    Handler->>TG: send_broadcast_payload (Clean post, 0 usernames)
+    TG-->>Admin: Broadcast post published in topic (sent_msg)
     Handler->>TG: safe_delete_command_message()
+    Handler->>Handler: filter_classmates_to_ping & chunk_classmates(size=5)
+    loop Every Batch of 5 Classmates
+        Handler->>TG: send_mention_batch(reply_to=sent_msg.id, "👥 @u1 @u2...")
+        TG-->>Students: 🔔 Push Notification & @ Badge (5 users)
+        Handler->>Handler: asyncio.sleep(0.3s)
+    end
     Handler->>Handler: mark_ping_all() [Unlocks 15m achievement window]
     deactivate Handler
     deactivate Bot
-
-    TG-->>Student: 🔔 Push Notification & @ Badge (Invisible in text body)
 ```
 
 ---
